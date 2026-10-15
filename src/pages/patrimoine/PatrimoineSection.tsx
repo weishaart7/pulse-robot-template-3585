@@ -1,18 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { THEME_INK } from '@/lib/theme';
 import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { PatrimoineResume } from '@/components/patrimoine/PatrimoineResume';
 import { PatrimoineActifs } from '@/components/patrimoine/PatrimoineActifs';
 import { PatrimoinePassifs } from '@/components/patrimoine/PatrimoinePassifs';
 import { PatrimoinePlusValues } from '@/components/patrimoine/PatrimoinePlusValues';
 import { PatrimoineParTeteDetail } from '@/components/patrimoine/PatrimoineParTeteDetail';
-import { IncompleteAssetsBanner } from '@/components/patrimoine/IncompleteAssetsBanner';
-import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
-import { useAssets } from '@/hooks/useAssets';
-import { Asset } from '@/services/assetService';
 
 const VALID_TABS = ['resume', 'actifs', 'passifs'];
 
@@ -30,11 +23,8 @@ export const PatrimoineSection = () => {
     }
   }, [tabParam]);
 
-  const { assets } = useAssets();
-
   const [showPlusValuesDetail, setShowPlusValuesDetail] = useState(false);
   const [showParTeteDetail, setShowParTeteDetail] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
   const TABS = [
     { id: 'resume', label: 'Résumé' },
@@ -79,24 +69,7 @@ export const PatrimoineSection = () => {
     }
   };
 
-  return (
-    <div className="group/patrimoine p-6">
-      {/* data-banner : PatrimoineResume annule son -mt-12 quand ce conteneur n'est pas vide. */}
-      <div data-banner>
-        {!showPlusValuesDetail && !showParTeteDetail && (
-          <IncompleteAssetsBanner assets={assets} onAssetClick={setSelectedAsset} />
-        )}
-      </div>
-
-      <div className="mt-6">
-        {renderContent()}
-      </div>
-
-      <AssetDetailsDialog
-        asset={selectedAsset}
-        open={!!selectedAsset}
-        onOpenChange={(open) => { if (!open) setSelectedAsset(null); }}
-      />
-    </div>
-  );
+  // Chaque vue (onglets, détails plus-values / par tête) porte son propre cadre
+  // (PatrimoinePanel, bandeau des actifs incomplets compris).
+  return renderContent();
 };

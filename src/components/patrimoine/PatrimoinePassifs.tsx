@@ -1,7 +1,9 @@
-import { INK, EMBER } from '@/lib/palette';
+import { PatrimoinePanel, addButtonClass } from './PatrimoinePanel';
+import { Chip } from '@/components/layout/workspace-panel';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { cn } from '@/lib/utils';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PassifEmpruntForm } from './PassifEmpruntForm';
 import { Plus, MoreHorizontal, Edit, Trash2, Landmark, Receipt } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
@@ -16,10 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-// Palette Famille (teal / lime / rose), même triptyque que PatrimoineResume.tsx
-// et PatrimoineParTeteDetail.tsx — cf. docs/patrimoine.md.
-const TEAL = INK;
-const PINK = EMBER;
+const euros = (n: number) => `${n.toLocaleString('fr-FR')} €`;
 
 export const PatrimoinePassifs = () => {
   const [showForm, setShowForm] = useState(false);
@@ -39,7 +38,7 @@ export const PatrimoinePassifs = () => {
 
   if (showForm || editingItem) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <PassifEmpruntForm
           item={editingItem || undefined}
           onCancel={closeForm}
@@ -53,192 +52,98 @@ export const PatrimoinePassifs = () => {
     );
   }
 
+  const nbEmprunts = emprunts.length;
+  const nbDettes = passifs.length;
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Gestion des passifs</h3>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
-        >
+    <PatrimoinePanel
+      trail="Passifs"
+      title="Passifs"
+      summary={nbEmprunts + nbDettes === 0
+        ? 'Aucun passif renseigné'
+        : `${nbEmprunts} emprunt${nbEmprunts > 1 ? 's' : ''} · ${nbDettes} dette${nbDettes > 1 ? 's' : ''}`}
+      actions={
+        <button onClick={() => setShowForm(true)} className={addButtonClass}>
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
             <Plus className="h-4 w-4 text-background" />
           </span>
           Ajouter un passif/emprunt
         </button>
-      </div>
+      }
+    >
+      <div className="space-y-6">
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${TEAL}1a` }}>
-                <Landmark className="h-4 w-4" style={{ color: TEAL }} />
-              </span>
-              Emprunts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {empruntsLoading ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Chargement...
-              </div>
-            ) : emprunts.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Aucun emprunt enregistré
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {emprunts.map((emprunt) => (
-                  <div
-                    key={emprunt.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/60 bg-card cursor-pointer hover:shadow-sm hover:border-border transition-all"
-                    onClick={() => {
-                      setSelectedPassif(emprunt);
-                      setPassifType('emprunt');
-                      setDetailsOpen(true);
-                    }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${TEAL}1a` }}>
-                        <Landmark className="h-4 w-4" style={{ color: TEAL }} />
-                      </span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="font-medium truncate">{emprunt.libelle}</p>
-                          {/* Emprunt lié à une société (module Sociétés) : déjà reflété
-                              dans la valorisation des parts, donc exclu des totaux. */}
-                          {emprunt.societe_id && (
-                            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
-                              Société · hors totaux
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {emprunt.nature} •
-                          {emprunt.capital_restant_du != null && ` Capital: ${emprunt.capital_restant_du.toLocaleString('fr-FR')}€`}
-                          {emprunt.mensualite != null && ` • Mensualité: ${emprunt.mensualite.toLocaleString('fr-FR')}€`}
-                        </p>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="rounded-full shadow-none"
-                          aria-label="Open menu"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingItem(emprunt);
-                        }}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPendingDelete({ id: emprunt.id, type: 'emprunt', label: emprunt.libelle || emprunt.nature });
-                          }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-2">
+        <section>
+          <div className="flex items-baseline justify-between">
+            <SectionHeader title="Emprunts" markClassName="bg-lagon" />
+            <span className="text-[12px] tabular-nums text-muted-foreground">{emprunts.length}</span>
+          </div>
+          {empruntsLoading ? (
+            <p className="py-3 text-[13px] text-muted-foreground">Chargement...</p>
+          ) : emprunts.length === 0 ? (
+            <p className="border-t border-border py-3 text-[13px] text-muted-foreground">Aucun emprunt enregistré</p>
+          ) : (
+            <ul className="-mx-2 border-b border-border">
+              {emprunts.map((emprunt) => (
+                <PassifRow
+                  key={emprunt.id}
+                  icon={<Landmark className="h-3.5 w-3.5" />}
+                  tone="bg-lagon-soft text-lagon-ink"
+                  title={emprunt.libelle || emprunt.nature}
+                  // Emprunt lié à une société (module Sociétés) : déjà reflété dans la
+                  // valorisation des parts, donc exclu des totaux.
+                  tag={emprunt.societe_id ? 'Société · hors totaux' : undefined}
+                  subtitle={[
+                    emprunt.libelle ? emprunt.nature : null,
+                    emprunt.mensualite != null ? `${euros(emprunt.mensualite)} / mois` : null,
+                  ].filter(Boolean).join(' · ')}
+                  amount={emprunt.capital_restant_du != null ? euros(emprunt.capital_restant_du) : undefined}
+                  amountLabel="Capital restant dû"
+                  onOpen={() => {
+                    setSelectedPassif(emprunt);
+                    setPassifType('emprunt');
+                    setDetailsOpen(true);
+                  }}
+                  onEdit={() => setEditingItem(emprunt)}
+                  onDelete={() => setPendingDelete({ id: emprunt.id, type: 'emprunt', label: emprunt.libelle || emprunt.nature })}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
 
-        <Card className="border border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${PINK}1a` }}>
-                <Receipt className="h-4 w-4" style={{ color: PINK }} />
-              </span>
-              Autres passifs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {passifsLoading ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Chargement...
-              </div>
-            ) : passifs.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Aucun passif enregistré
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {passifs.map((passif) => (
-                  <div
-                    key={passif.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border/60 bg-card cursor-pointer hover:shadow-sm hover:border-border transition-all"
-                    onClick={() => {
-                      setSelectedPassif(passif);
-                      setPassifType('passif');
-                      setDetailsOpen(true);
-                    }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${PINK}1a` }}>
-                        <Receipt className="h-4 w-4" style={{ color: PINK }} />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{passif.nature}</p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          Montant dû: {passif.montant_du.toLocaleString('fr-FR')}€
-                        </p>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="rounded-full shadow-none"
-                          aria-label="Open menu"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingItem(passif);
-                        }}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPendingDelete({ id: passif.id, type: 'passif', label: passif.nature });
-                          }}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <section>
+          <div className="flex items-baseline justify-between">
+            <SectionHeader title="Autres passifs" markClassName="bg-[#c9c2b8]" />
+            <span className="text-[12px] tabular-nums text-muted-foreground">{passifs.length}</span>
+          </div>
+          {passifsLoading ? (
+            <p className="py-3 text-[13px] text-muted-foreground">Chargement...</p>
+          ) : passifs.length === 0 ? (
+            <p className="border-t border-border py-3 text-[13px] text-muted-foreground">Aucun passif enregistré</p>
+          ) : (
+            <ul className="-mx-2 border-b border-border">
+              {passifs.map((passif) => (
+                <PassifRow
+                  key={passif.id}
+                  icon={<Receipt className="h-3.5 w-3.5" />}
+                  tone="bg-[#ece7e1] text-foreground"
+                  title={passif.nature}
+                  amount={euros(passif.montant_du)}
+                  amountLabel="Montant dû"
+                  onOpen={() => {
+                    setSelectedPassif(passif);
+                    setPassifType('passif');
+                    setDetailsOpen(true);
+                  }}
+                  onEdit={() => setEditingItem(passif)}
+                  onDelete={() => setPendingDelete({ id: passif.id, type: 'passif', label: passif.nature })}
+                />
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
 
       <WizardConfirmDialog
@@ -262,6 +167,71 @@ export const PatrimoinePassifs = () => {
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
       />
-    </div>
+      </div>
+    </PatrimoinePanel>
   );
 };
+
+// Ligne d'un emprunt ou d'une dette : pastille, libellé, détail, montant aligné à droite
+// et menu d'actions (même gabarit que la liste des membres de la famille).
+function PassifRow({ icon, tone, title, tag, subtitle, amount, amountLabel, onOpen, onEdit, onDelete }: {
+  icon: React.ReactNode;
+  tone: string;
+  title: string;
+  tag?: string;
+  subtitle?: string;
+  amount?: string;
+  amountLabel: string;
+  onOpen: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className="flex cursor-pointer items-center gap-3 border-t border-border px-2 py-2 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+    >
+      <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px]', tone)}>{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="truncate text-[13px] font-medium text-foreground">{title}</p>
+          {tag && <Chip>{tag}</Chip>}
+        </div>
+        {subtitle && <p className="mt-0.5 truncate text-[12px] text-muted-foreground">{subtitle}</p>}
+      </div>
+      {amount && (
+        <div className="shrink-0 text-right">
+          <p className="text-[13px] tabular-nums text-foreground">{amount}</p>
+          <p className="text-[12px] text-muted-foreground">{amountLabel}</p>
+        </div>
+      )}
+      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-[2px] shadow-none" aria-label="Ouvrir le menu">
+              <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onEdit}>
+              <Edit className="h-4 w-4 mr-2" />
+              Modifier
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete} className="text-destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </li>
+  );
+}

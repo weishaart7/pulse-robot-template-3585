@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PatrimoinePanel, addButtonClass } from './PatrimoinePanel';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
@@ -150,7 +151,7 @@ export const PatrimoineActifs = () => {
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         {editingAsset ? (
           <AssetForm
             asset={editingAsset}
@@ -168,12 +169,14 @@ export const PatrimoineActifs = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Gestion des actifs</h3>
-        <div className="flex items-center gap-3">
-          <label className="flex w-80 cursor-text items-center gap-3 h-9 rounded-2xl border bg-popover px-4 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent focus-within:bg-popover">
-            <Search className="h-5 w-5 shrink-0" />
+    <PatrimoinePanel
+      trail="Actifs"
+      title="Actifs"
+      summary={assets.length === 0 ? 'Aucun actif renseigné' : `${assets.length} actif${assets.length > 1 ? 's' : ''}`}
+      actions={
+        <>
+          <label className="flex h-8 w-36 cursor-text items-center gap-2 rounded-[2px] border border-border bg-background px-2.5 text-[12.5px] text-muted-foreground transition-colors focus-within:border-foreground hover:border-foreground/40 sm:w-64">
+            <Search className="h-3.5 w-3.5 shrink-0" />
             <input
               placeholder="Rechercher un actif..."
               value={searchQuery}
@@ -181,17 +184,16 @@ export const PatrimoineActifs = () => {
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none"
             />
           </label>
-          <button
-            onClick={() => setShowAssetForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
-          >
+          <button onClick={() => setShowAssetForm(true)} className={addButtonClass}>
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
               <Plus className="h-4 w-4 text-background" />
             </span>
             Ajouter un actif
           </button>
-        </div>
-      </div>
+        </>
+      }
+    >
+      <div className="space-y-6">
       
       <PatrimoineTreeView 
         assets={assets}
@@ -206,6 +208,7 @@ export const PatrimoineActifs = () => {
           }
         }}
       />
-    </div>
+      </div>
+    </PatrimoinePanel>
   );
 };

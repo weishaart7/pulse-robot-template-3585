@@ -1,7 +1,7 @@
-import { INK, VIOLET, EGGSHELL } from '@/lib/palette';
+import { PatrimoinePanel } from './PatrimoinePanel';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelTitle, SummaryRow, panelLinkClass } from '@/components/layout/workspace-panel';
 import RangeNavigator from '@/components/ui/range-navigator';
 import { PatrimoineChart } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
@@ -12,18 +12,12 @@ import { usePatrimoineCalculations, UnqualifiedItem } from '@/hooks/usePatrimoin
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
-import { User, Users, Target, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
   onNavigateToParTete?: () => void;
 }
-
-// Palette Famille (teal identité / lime accent positif / rose pour les
-// passifs) appliquée aux cartes résumé — cf. docs/patrimoine.md.
-const TEAL = INK;
-const LIME = VIOLET;
-const LIME_ICON = EGGSHELL;
 
 const UNQUALIFIED_REASON_LABEL: Record<NonNullable<UnqualifiedItem['reason']>, string> = {
   qualification: ' (propre/commun non qualifié)',
@@ -91,44 +85,55 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     [evolutionPatrimoine]
   );
 
+  const pv = patrimoineParPersonne;
+  const share = (v: number) => (pv.totalValue > 0 ? (v / pv.totalValue) * 100 : 0);
+
   return (
-    <div className="space-y-8">
+    <PatrimoinePanel
+      trail="Résumé"
+      title="Résumé"
+      summary={`Actifs ${formatCurrency(financialSummary.totalActifs)} · Passifs ${formatCurrency(financialSummary.totalPassifs)}`}
+      bare
+    >
       {unqualifiedItems.length > 0 && (
-        <div className="rounded-lg border border-spark/30 bg-spark/10 p-4 flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-spark mt-0.5 shrink-0" strokeWidth={1.75} />
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground ">
-              {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
-            </p>
-            <p className="text-xs text-foreground/80 ">
-              {unqualifiedItems.map(i => `${i.label}${UNQUALIFIED_REASON_LABEL[i.reason ?? 'qualification']}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
-            </p>
+        <div className="border-b border-border px-8 py-5">
+          <div className="flex items-start gap-3 rounded-[2px] border border-spark/30 bg-spark/10 p-4">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-spark" strokeWidth={1.75} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-foreground">
+                {unqualifiedItems.length} élément{unqualifiedItems.length > 1 ? 's' : ''} exclu{unqualifiedItems.length > 1 ? 's' : ''} des totaux ci-dessous
+              </p>
+              <p className="mt-0.5 text-[12px] text-foreground/80">
+                {unqualifiedItems.map(i => `${i.label}${UNQUALIFIED_REASON_LABEL[i.reason ?? 'qualification']}`).join(', ')} — à compléter dans Patrimoine pour être pris en compte.
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Patrimoine net — mis en avant en titre. Le -mt-12 compense l'écart de
-          padding vertical entre <main> (pt-3) + PatrimoineSection (p-6) +
-          ce wrapper (mt-6) d'une part, et la marge du haut de la navbar
-          latérale (mt-3) d'autre part, pour aligner leurs bords supérieurs. Annulé
-          quand IncompleteAssetsBanner est affiché au-dessus (conteneur
-          [data-banner] non vide, cf. PatrimoineSection.tsx). */}
-      <div className="-mt-12 group-has-[[data-banner]:not(:empty)]/patrimoine:mt-0 animate-fade-in">
-        <p className="text-[13px] font-medium text-muted-foreground uppercase tracking-wide">Patrimoine net</p>
-        <div className="mt-1">
-          <p className="text-4xl md:text-5xl font-bold text-foreground tracking-tight" style={{ fontFamily: "'Kode Mono', monospace" }}>
+      {/* Bandeau des totaux : patrimoine net mis en avant, actifs et passifs à côté. */}
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div className="px-8 py-5">
+          <p className="text-[12px] text-muted-foreground">Patrimoine net</p>
+          <p className="mt-2 text-[30px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">
             {formatCurrency(financialSummary.patrimoineNet)}
           </p>
         </div>
+        <div className="px-8 py-5">
+          <p className="text-[12px] text-muted-foreground">Actifs</p>
+          <p className="mt-2 text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">{formatCurrency(financialSummary.totalActifs)}</p>
+        </div>
+        <div className="px-8 py-5">
+          <p className="text-[12px] text-muted-foreground">Passifs</p>
+          <p className="mt-2 text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">{formatCurrency(financialSummary.totalPassifs)}</p>
+        </div>
       </div>
 
-      {/* Chart section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1 border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '180ms' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Répartition du patrimoine</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Graphiques */}
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <div className="px-8 py-6">
+          <PanelTitle>Répartition du patrimoine</PanelTitle>
+          <div className="mt-4">
             <PatrimoineChart
               assets={assets}
               passifs={passifs}
@@ -137,173 +142,103 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
               assetDemembrements={assetDemembrements}
               demembrementCtx={demembrementCtx}
             />
-          </CardContent>
-        </Card>
-
-        {/* Evolution chart */}
-        <Card className="lg:col-span-2 border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '210ms' }}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Évolution des actifs</CardTitle>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </div>
+        <div className="px-8 py-6 lg:col-span-2">
+          <PanelTitle>Évolution des actifs</PanelTitle>
+          <div className="mt-4">
             {evolutionPatrimoine.length === 0 ? (
-              <p className="text-muted-foreground/70 text-center py-10 text-sm">
+              <p className="text-[13px] text-muted-foreground">
                 Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
               </p>
             ) : (
               <RangeNavigator points={evolutionPoints} formatValue={formatCurrency} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Patrimoine par tête */}
-        <Card
-          onClick={onNavigateToParTete}
-          className={`border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in ${onNavigateToParTete ? 'cursor-pointer hover:border-border' : ''}`}
-          style={{ animationDelay: '240ms' }}
-        >
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Patrimoine par tête</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <PersonCard
-              icon={User}
-              tone="teal"
-              name={patrimoineParPersonne.userFirstName}
-              value={formatCurrency(patrimoineParPersonne.userValue)}
-              showDetails={patrimoineParPersonne.showSpouse}
-              details={
-                patrimoineParPersonne.showSpouse ? (
-                  <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground/80">
-                    <div>Actifs : {formatCurrency(patrimoineParPersonne.userActifs)}</div>
-                    {patrimoineParPersonne.userOwnValue > 0 && <div className="ml-3 opacity-70">• Biens propres : {formatCurrency(patrimoineParPersonne.userOwnValue)}</div>}
-                    {patrimoineParPersonne.userSharedValue > 0 && <div className="ml-3 opacity-70">• Part biens communs : {formatCurrency(patrimoineParPersonne.userSharedValue)}</div>}
-                    {patrimoineParPersonne.userPassifs > 0 && <div className="text-destructive/80">Passifs : {formatCurrency(patrimoineParPersonne.userPassifs)}</div>}
-                  </div>
-                ) : null
-              }
+      {/* Par tête, plus-values, objectifs */}
+      <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <div className="px-8 py-6">
+          <PanelTitle action={onNavigateToParTete ? <button type="button" onClick={onNavigateToParTete} className={panelLinkClass}>Voir le détail</button> : undefined}>
+            Patrimoine par tête
+          </PanelTitle>
+          <div className="mt-4 space-y-5">
+            <PersonBlock
+              name={pv.userFirstName}
+              value={formatCurrency(pv.userValue)}
+              share={pv.showSpouse ? share(pv.userValue) : undefined}
+              barClassName="bg-lagon"
+              rows={pv.showSpouse ? [
+                ['Actifs', formatCurrency(pv.userActifs)],
+                pv.userOwnValue > 0 ? ['Biens propres', formatCurrency(pv.userOwnValue)] : null,
+                pv.userSharedValue > 0 ? ['Part des communs', formatCurrency(pv.userSharedValue)] : null,
+                pv.userPassifs > 0 ? ['Passifs', formatCurrency(pv.userPassifs)] : null,
+              ] : []}
             />
-
-            {patrimoineParPersonne.showSpouse && (
-              <PersonCard
-                icon={Users}
-                tone="lime"
-                name={patrimoineParPersonne.spouseFirstName}
-                value={formatCurrency(patrimoineParPersonne.spouseValue)}
-                showDetails
-                details={
-                  <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground/80">
-                    <div>Actifs : {formatCurrency(patrimoineParPersonne.spouseActifs)}</div>
-                    {patrimoineParPersonne.spouseOwnValue > 0 && <div className="ml-3 opacity-70">• Biens propres : {formatCurrency(patrimoineParPersonne.spouseOwnValue)}</div>}
-                    {patrimoineParPersonne.spouseSharedValue > 0 && <div className="ml-3 opacity-70">• Part biens communs : {formatCurrency(patrimoineParPersonne.spouseSharedValue)}</div>}
-                    {patrimoineParPersonne.spousePassifs > 0 && <div className="text-destructive/80">Passifs : {formatCurrency(patrimoineParPersonne.spousePassifs)}</div>}
-                  </div>
-                }
+            {pv.showSpouse && (
+              <PersonBlock
+                name={pv.spouseFirstName}
+                value={formatCurrency(pv.spouseValue)}
+                share={share(pv.spouseValue)}
+                barClassName="bg-citron"
+                rows={[
+                  ['Actifs', formatCurrency(pv.spouseActifs)],
+                  pv.spouseOwnValue > 0 ? ['Biens propres', formatCurrency(pv.spouseOwnValue)] : null,
+                  pv.spouseSharedValue > 0 ? ['Part des communs', formatCurrency(pv.spouseSharedValue)] : null,
+                  pv.spousePassifs > 0 ? ['Passifs', formatCurrency(pv.spousePassifs)] : null,
+                ]}
               />
             )}
-
-            {/* Progress bars */}
-            <div className="space-y-3 pt-3">
-              <ProgressBar
-                label={patrimoineParPersonne.userFirstName}
-                color={TEAL}
-                value={patrimoineParPersonne.totalValue > 0 ? patrimoineParPersonne.userValue / patrimoineParPersonne.totalValue * 100 : 0}
-              />
-              {patrimoineParPersonne.showSpouse && (
-                <ProgressBar
-                  label={patrimoineParPersonne.spouseFirstName}
-                  color={LIME}
-                  value={patrimoineParPersonne.totalValue > 0 ? patrimoineParPersonne.spouseValue / patrimoineParPersonne.totalValue * 100 : 0}
-                />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Plus-values card */}
-        <div 
-          onClick={onNavigateToPlusValues} 
-          className={`${onNavigateToPlusValues ? 'cursor-pointer' : ''} animate-fade-in`}
-          style={{ animationDelay: '300ms' }}
-        >
-          <PlusValuesCard plusValuesSummary={plusValuesSummary} />
+          </div>
         </div>
 
-        {/* Objectifs */}
-        <Card className="border border-border hover:shadow-sm transition-shadow duration-500 animate-fade-in" style={{ animationDelay: '360ms' }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Objectifs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="p-4 rounded-md bg-muted/50 mb-4 group-hover:bg-muted transition-colors">
-                <Target className="h-6 w-6 text-muted-foreground/60" strokeWidth={1.5} />
-              </div>
-              <p className="text-muted-foreground/80 text-sm font-medium">
-                Définissez vos objectifs patrimoniaux
-              </p>
-              <p className="text-[11px] text-muted-foreground/50 mt-1.5">
-                Fonctionnalité à venir
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="px-8 py-6">
+          <PlusValuesCard plusValuesSummary={plusValuesSummary} onOpen={onNavigateToPlusValues} />
+        </div>
+
+        <div className="px-8 py-6">
+          <PanelTitle>Objectifs</PanelTitle>
+          <p className="mt-3 text-[13px] text-muted-foreground">Définissez vos objectifs patrimoniaux.</p>
+          <p className="mt-1 text-[12px] text-muted-foreground/70">Fonctionnalité à venir</p>
+        </div>
       </div>
-    </div>
+    </PatrimoinePanel>
   );
 };
 
-/* Sub-components */
+/* Sous-composants */
 
-const PersonCard = ({
-  icon: Icon,
-  tone = 'teal',
-  name,
-  value,
-  showDetails,
-  details
-}: {
-  icon: React.ElementType;
-  tone?: 'teal' | 'lime';
+// Patrimoine d'une personne : montant, part du total (barre) et détail en lignes libellé / valeur.
+const PersonBlock = ({ name, value, share, barClassName, rows }: {
   name: string;
   value: string;
-  showDetails?: boolean;
-  details?: React.ReactNode;
-}) => {
-  const badgeBg = tone === 'lime' ? LIME : `${TEAL}1a`;
-  const iconColor = tone === 'lime' ? LIME_ICON : TEAL;
-  return (
-    <div className="group flex items-start gap-3.5 p-4 rounded-2xl border border-border/50 bg-card hover:border-border transition-all duration-300">
-      <div className="h-9 w-9 shrink-0 rounded-full flex items-center justify-center transition-colors duration-300" style={{ backgroundColor: badgeBg }}>
-        <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
+  share?: number;
+  barClassName: string;
+  rows: ([string, string] | null)[];
+}) => (
+  <div>
+    <div className="flex items-baseline justify-between gap-3">
+      <p className="text-[13px] font-medium text-foreground">{name}</p>
+      <p className="text-[15px] font-medium tabular-nums text-foreground">{value}</p>
+    </div>
+    {share !== undefined && (
+      <div className="mt-2 flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-[1px] bg-secondary">
+          <div className={`h-full transition-all duration-700 ease-out ${barClassName}`} style={{ width: `${share}%` }} />
+        </div>
+        <span className="w-9 text-right text-[12px] tabular-nums text-muted-foreground">{Math.round(share)} %</span>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
-          {name}
-        </p>
-        <p className="text-xl font-bold text-foreground tracking-tight">
-          {value}
-        </p>
-        {details}
-      </div>
-    </div>
-  );
-};
-
-const ProgressBar = ({ label, value, color }: { label: string; value: number; color: string }) => (
-  <div className="space-y-1.5">
-    <div className="flex justify-between text-[11px]">
-      <span className="text-muted-foreground/70">{label}</span>
-      <span className="font-semibold text-foreground/80">{Math.round(value)}%</span>
-    </div>
-    <div className="w-full bg-muted/60 h-1.5 rounded-full overflow-hidden">
-      <div
-        className="h-1.5 rounded-full transition-all duration-700 ease-out"
-        style={{ width: `${value}%`, backgroundColor: color }}
-      />
-    </div>
+    )}
+    {rows.some(Boolean) && (
+      <dl className="mt-2">
+        {rows.filter((r): r is [string, string] => !!r).map(([label, v]) => (
+          <SummaryRow key={label} label={label}>
+            <span className={label === 'Passifs' ? 'tabular-nums text-destructive' : 'tabular-nums'}>{v}</span>
+          </SummaryRow>
+        ))}
+      </dl>
+    )}
   </div>
 );

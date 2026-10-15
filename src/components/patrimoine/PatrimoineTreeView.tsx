@@ -1,4 +1,5 @@
 import { hasConjoint } from '@/lib/family/maritalStatus';
+import { Chip } from '@/components/layout/workspace-panel';
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
@@ -225,15 +226,15 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
     if (total > 0) {
       return { 
         display: `+${formatCurrency(total)}`, 
-        className: 'text-positive font-semibold'
+        className: 'text-positive'
       };
     } else if (total < 0) {
       return { 
         display: formatCurrency(total), 
-        className: 'text-destructive font-semibold'
+        className: 'text-destructive'
       };
     }
-    return { display: '0 €', className: 'text-muted-foreground font-semibold' };
+    return { display: '0 €', className: 'text-muted-foreground' };
   };
 
   return (
@@ -249,12 +250,12 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
         </FullTable.Colgroup>
         <FullTable.Header>
           <FullTable.Row>
-            <FullTable.Head>Nom</FullTable.Head>
+            <FullTable.Head className="pl-0">Actif</FullTable.Head>
             <FullTable.Head>Détenteur</FullTable.Head>
-            <FullTable.Head>Répartition</FullTable.Head>
-            <FullTable.Head>Valeur</FullTable.Head>
-            <FullTable.Head>+/- value</FullTable.Head>
-            <FullTable.Head>Actions</FullTable.Head>
+            <FullTable.Head className="text-right">Poids</FullTable.Head>
+            <FullTable.Head className="text-right">Valeur</FullTable.Head>
+            <FullTable.Head className="text-right">+/- value</FullTable.Head>
+            <FullTable.Head><span className="sr-only">Actions</span></FullTable.Head>
           </FullTable.Row>
         </FullTable.Header>
         <FullTable.Body interactive>
@@ -274,10 +275,11 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                 <React.Fragment key={category}>
                   {/* Category row */}
                   <FullTable.Row isCategory>
-                    <FullTable.Cell>
-                      <Button
-                        variant="ghost"
-                        className="p-0 h-auto font-medium flex items-center gap-3 hover:bg-transparent"
+                    <FullTable.Cell className="pl-0">
+                      <button
+                        type="button"
+                        aria-expanded={isExpanded}
+                        className="flex items-center gap-2 rounded-[2px] text-[13.5px] font-medium tracking-[-0.01em] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground"
                         onClick={() => toggleCategory(category)}
                       >
                         {isExpanded ? (
@@ -285,20 +287,21 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                         ) : (
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         )}
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCategoryColor(category) }} />
+                        <span aria-hidden className="h-3 w-[3px] rounded-full" style={{ backgroundColor: getCategoryColor(category) }} />
                         <span className="text-foreground">{category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}</span>
-                      </Button>
+                        <span className="text-[12px] font-normal tabular-nums text-muted-foreground">{categoryAssets.length}</span>
+                      </button>
                     </FullTable.Cell>
                     <FullTable.Cell>
                       <span className="text-muted-foreground">—</span>
                     </FullTable.Cell>
-                    <FullTable.Cell>
-                      <span className="font-semibold">{categoryWeight} %</span>
+                    <FullTable.Cell className="text-right tabular-nums">
+                      {categoryWeight} %
                     </FullTable.Cell>
-                    <FullTable.Cell>
-                      <span className="font-semibold">{formatCurrency(categoryValue)}</span>
+                    <FullTable.Cell className="text-right tabular-nums">
+                      {formatCurrency(categoryValue)}
                     </FullTable.Cell>
-                    <FullTable.Cell>
+                    <FullTable.Cell className="text-right tabular-nums">
                       <span className={categoryPlusValue.className}>{categoryPlusValue.display}</span>
                     </FullTable.Cell>
                     <FullTable.Cell> </FullTable.Cell>
@@ -313,23 +316,20 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                     return (
                       <FullTable.Row
                         key={asset.id}
-                        className="border-t border-border/30 cursor-pointer hover:bg-muted/30"
+                        className="cursor-pointer"
                         onClick={() => {
                           setSelectedAsset(asset);
                           setDetailsOpen(true);
                         }}
                       >
-                        <FullTable.Cell className="pl-14 py-2.5">
+                        <FullTable.Cell className="py-2 pl-[35px]">
                           <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full opacity-60" style={{ backgroundColor: getCategoryColor(category) }} />
-                            <div className="flex-1">
-                              <div className="font-normal text-sm text-foreground flex items-center gap-1.5">
-                                <span>
-                                  {asset.denomination || getNatureDisplayLabel(asset.nature)}
-                                  {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
-                                    <span className="ml-2 text-xs text-muted-foreground italic">({asset.mode_detention})</span>
-                                  )}
-                                </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 text-[13px] text-foreground">
+                                <span className="truncate">{asset.denomination || getNatureDisplayLabel(asset.nature)}</span>
+                                {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
+                                  <Chip>{asset.mode_detention}</Chip>
+                                )}
                                 {asset.id && demembrementsByAsset[asset.id]?.length > 0 && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -352,29 +352,29 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                                 )}
                               </div>
                               {asset.etablissement && (
-                                <div className="text-xs text-muted-foreground mt-0.5">
+                                <div className="mt-0.5 text-[12px] text-muted-foreground">
                                   {asset.etablissement}
                                 </div>
                               )}
                             </div>
                           </div>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2.5">
-                          <span className="text-sm text-muted-foreground">{formatDetenteur(asset.detenteur)}</span>
+                        <FullTable.Cell className="py-2">
+                          <span className="text-[13px] text-muted-foreground">{formatDetenteur(asset.detenteur)}</span>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2.5">
-                          <span className="text-sm text-muted-foreground">{assetWeight} %</span>
+                        <FullTable.Cell className="py-2 text-right">
+                          <span className="text-[13px] tabular-nums text-muted-foreground">{assetWeight} %</span>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2.5">
-                          <span className="text-sm text-foreground">{asset.valeur_estimee ? formatCurrency(weightedValue) : 'Non évalué'}</span>
+                        <FullTable.Cell className="py-2 text-right">
+                          <span className={asset.valeur_estimee ? 'text-[13px] tabular-nums text-foreground' : 'text-[12px] text-muted-foreground'}>{asset.valeur_estimee ? formatCurrency(weightedValue) : 'Non évalué'}</span>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-sm ${plusValueInfo.className}`}>{plusValueInfo.display}</span>
+                        <FullTable.Cell className="py-2">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <span className={`text-[13px] tabular-nums ${plusValueInfo.className}`}>{plusValueInfo.display}</span>
                             {plusValueInfo.regimeNonDetermine && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="inline-flex items-center justify-center rounded-full bg-spark/10 p-0.5">
+                                  <span className="inline-flex items-center justify-center rounded-[2px] bg-spark/10 p-0.5">
                                     <AlertTriangle className="h-3 w-3 text-spark " strokeWidth={2} />
                                   </span>
                                 </TooltipTrigger>
@@ -385,14 +385,14 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                             )}
                           </div>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2.5">
+                        <FullTable.Cell className="py-2 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="rounded-full shadow-none h-8 w-8"
-                                aria-label="Open edit menu"
+                                className="h-8 w-8 rounded-[2px] shadow-none"
+                                aria-label="Ouvrir le menu"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
@@ -426,13 +426,13 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
             })}
 
           <FullTable.Row isTotal>
-            <FullTable.Cell colSpan={3} className="font-bold text-foreground text-base">
+            <FullTable.Cell colSpan={3} className="pl-0 text-[13.5px] font-medium text-foreground">
               Total
             </FullTable.Cell>
-            <FullTable.Cell className="font-bold text-foreground text-base">
+            <FullTable.Cell className="text-right text-[13.5px] font-medium tabular-nums text-foreground">
               {formatCurrency(totalValue)}
             </FullTable.Cell>
-            <FullTable.Cell className="font-semibold text-foreground">
+            <FullTable.Cell className="text-right text-muted-foreground">
               —
             </FullTable.Cell>
             <FullTable.Cell> </FullTable.Cell>

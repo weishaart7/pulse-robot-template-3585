@@ -1,8 +1,8 @@
-import { INK, EMBER, VIOLET, EGGSHELL } from '@/lib/palette';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, User, Users, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { SummaryRow } from '@/components/layout/workspace-panel';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { PatrimoinePanel, BackButton } from './PatrimoinePanel';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
@@ -11,13 +11,6 @@ import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getRepartitionFoyer, BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
-
-// Palette Famille (teal identité / lime accent positif / rose pour les
-// passifs), même triptyque que PatrimoineResume.tsx — cf. docs/patrimoine.md.
-const TEAL = INK;
-const LIME = VIOLET;
-const LIME_ICON = EGGSHELL;
-const PINK = EMBER;
 
 interface PatrimoineParTeteDetailProps {
   onBack?: () => void;
@@ -93,262 +86,116 @@ export const PatrimoineParTeteDetail = ({ onBack }: PatrimoineParTeteDetailProps
   const userByCategory = computeByCategory(false);
   const spouseByCategory = showSpouse ? computeByCategory(true) : [];
 
-  return (
-    <div className="space-y-8 animate-fade-in">
-      {onBack && (
-        <button
-          onClick={onBack}
-          className="group inline-flex items-center gap-2 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 -ml-1"
-        >
-          <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform duration-200" strokeWidth={1.5} />
-          Retour au résumé
-        </button>
-      )}
+  const people = [
+    { key: 'user', name: userFirstName, net: userValue, actifs: userActifs, passifs: userPassifs, own: userOwnValue, shared: userSharedValue, byCategory: userByCategory, bar: 'bg-lagon' },
+    ...(showSpouse
+      ? [{ key: 'spouse', name: spouseFirstName, net: spouseValue, actifs: spouseActifs, passifs: spousePassifs, own: spouseOwnValue, shared: spouseSharedValue, byCategory: spouseByCategory, bar: 'bg-citron' }]
+      : []),
+  ];
+  const cols = showSpouse ? 'lg:grid-cols-2' : '';
 
-      {/* Top totals */}
-      <div className={`grid grid-cols-1 ${showSpouse ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-5`}>
-        <PersonHeroCard
-          icon={User}
-          name={userFirstName}
-          netValue={userValue}
-          actifs={userActifs}
-          passifs={userPassifs}
-          shareOfTotal={totalValue > 0 ? (userValue / totalValue) * 100 : 100}
-          badgeBg={TEAL}
-          iconColor="#fff"
-          formatCurrency={formatCurrency}
-          delay="0ms"
-        />
-        {showSpouse && (
-          <PersonHeroCard
-            icon={Users}
-            name={spouseFirstName}
-            netValue={spouseValue}
-            actifs={spouseActifs}
-            passifs={spousePassifs}
-            shareOfTotal={totalValue > 0 ? (spouseValue / totalValue) * 100 : 0}
-            badgeBg={LIME}
-            iconColor={LIME_ICON}
-            formatCurrency={formatCurrency}
-            delay="60ms"
-          />
-        )}
-        <SummaryCard
-          label="Patrimoine net total"
-          subtitle="Foyer"
-          value={formatCurrency(totalValue)}
-          icon={Wallet}
-          badgeBg={LIME}
-          iconColor={LIME_ICON}
-          delay="120ms"
-        />
+  return (
+    <PatrimoinePanel
+      trail="Patrimoine par tête"
+      title="Patrimoine par tête"
+      summary={`Patrimoine net du foyer ${formatCurrency(totalValue)}`}
+      actions={onBack && <BackButton onClick={onBack} label="Retour au résumé" />}
+      bare
+    >
+      {/* Bandeau : patrimoine net de chacun, puis du foyer */}
+      <div className={`grid grid-cols-1 divide-y divide-border border-b border-border md:divide-x md:divide-y-0 ${showSpouse ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+        {people.map(p => (
+          <div key={p.key} className="px-8 py-5">
+            <p className="text-[12px] text-muted-foreground">{p.name}</p>
+            <p className="mt-2 text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">{formatCurrency(p.net)}</p>
+            <div className="mt-3 flex items-center gap-2">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-[1px] bg-secondary">
+                <div className={`h-full ${p.bar}`} style={{ width: `${totalValue > 0 ? (p.net / totalValue) * 100 : 100}%` }} />
+              </div>
+              <span className="w-12 text-right text-[12px] tabular-nums text-muted-foreground">
+                {(totalValue > 0 ? (p.net / totalValue) * 100 : 100).toFixed(1)} %
+              </span>
+            </div>
+            <dl className="mt-3">
+              <SummaryRow label="Actifs"><span className="tabular-nums">{formatCurrency(p.actifs)}</span></SummaryRow>
+              <SummaryRow label="Passifs"><span className="tabular-nums">{formatCurrency(p.passifs)}</span></SummaryRow>
+            </dl>
+          </div>
+        ))}
+        <div className="px-8 py-5">
+          <p className="text-[12px] text-muted-foreground">Foyer</p>
+          <p className="mt-2 text-[30px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">{formatCurrency(totalValue)}</p>
+          <p className="mt-2 text-[12px] text-muted-foreground">Patrimoine net total</p>
+        </div>
       </div>
 
-      {/* Breakdown propre/commun */}
+      {/* Biens propres / part des communs */}
       {showSpouse && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BreakdownCard
-            name={userFirstName}
-            ownValue={userOwnValue}
-            sharedValue={userSharedValue}
-            actifs={userActifs}
-            formatCurrency={formatCurrency}
-            delay="180ms"
-          />
-          <BreakdownCard
-            name={spouseFirstName}
-            ownValue={spouseOwnValue}
-            sharedValue={spouseSharedValue}
-            actifs={spouseActifs}
-            formatCurrency={formatCurrency}
-            delay="240ms"
-          />
-        </div>
-      )}
-
-      {/* By category */}
-      <div className={`grid grid-cols-1 ${showSpouse ? 'lg:grid-cols-2' : ''} gap-6`}>
-        <CategoryCard
-          name={userFirstName}
-          entries={userByCategory}
-          total={userActifs}
-          formatCurrency={formatCurrency}
-          delay="300ms"
-        />
-        {showSpouse && (
-          <CategoryCard
-            name={spouseFirstName}
-            entries={spouseByCategory}
-            total={spouseActifs}
-            formatCurrency={formatCurrency}
-            delay="360ms"
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-/* Sub-components */
-
-const PersonHeroCard = ({
-  icon: Icon, name, netValue, actifs, passifs, shareOfTotal, badgeBg, iconColor, formatCurrency, delay
-}: {
-  icon: React.ElementType; name: string; netValue: number; actifs: number; passifs: number;
-  shareOfTotal: number; badgeBg: string; iconColor: string; formatCurrency: (n: number) => string; delay: string;
-}) => (
-  <div
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
-    style={{ animationDelay: delay }}
-  >
-    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: badgeBg }} />
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest">{name}</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">{shareOfTotal.toFixed(1)}% du patrimoine total</p>
-        </div>
-        <div
-          className="h-10 w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-          style={{ backgroundColor: badgeBg }}
-        >
-          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
-        </div>
-      </div>
-      <p className="text-[28px] font-bold text-foreground tracking-tight leading-none mb-4">{formatCurrency(netValue)}</p>
-      <div className="grid grid-cols-2 gap-2 pt-3 border-t border-border/40">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <TrendingUp className="h-3 w-3" style={{ color: TEAL }} strokeWidth={2} />
-            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Actifs</p>
-          </div>
-          <p className="text-[13px] font-semibold text-foreground tabular-nums mt-0.5">{formatCurrency(actifs)}</p>
-        </div>
-        <div>
-          <div className="flex items-center gap-1.5">
-            <TrendingDown className="h-3 w-3" style={{ color: PINK }} strokeWidth={2} />
-            <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Passifs</p>
-          </div>
-          <p className="text-[13px] font-semibold text-foreground tabular-nums mt-0.5">{formatCurrency(passifs)}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const SummaryCard = ({
-  label, subtitle, value, icon: Icon, badgeBg, iconColor, delay
-}: {
-  label: string; subtitle: string; value: string; icon: React.ElementType; badgeBg: string; iconColor: string; delay: string;
-}) => (
-  <div
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
-    style={{ animationDelay: delay }}
-  >
-    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: badgeBg }} />
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">{subtitle}</p>
-        </div>
-        <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: badgeBg }}>
-          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
-        </div>
-      </div>
-      <p className="text-[28px] font-bold text-foreground tracking-tight leading-none">{value}</p>
-    </div>
-  </div>
-);
-
-const BreakdownCard = ({
-  name, ownValue, sharedValue, actifs, formatCurrency, delay
-}: {
-  name: string; ownValue: number; sharedValue: number; actifs: number;
-  formatCurrency: (n: number) => string; delay: string;
-}) => {
-  const ownPct = actifs > 0 ? (ownValue / actifs) * 100 : 0;
-  const sharedPct = actifs > 0 ? (sharedValue / actifs) * 100 : 0;
-  return (
-    <Card className="border border-border animate-fade-in" style={{ animationDelay: delay }}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-[13px] font-semibold tracking-tight text-muted-foreground/80 uppercase tracking-widest">
-          {name} — biens propres / communs
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex h-2 w-full rounded-full overflow-hidden bg-muted/60">
-          <div className="transition-all duration-700" style={{ width: `${ownPct}%`, backgroundColor: TEAL }} />
-          <div className="transition-all duration-700" style={{ width: `${sharedPct}%`, backgroundColor: LIME }} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-border/40 p-3.5">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: TEAL }} />
-              <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Biens propres</p>
-            </div>
-            <p className="text-[16px] font-bold text-foreground tabular-nums">{formatCurrency(ownValue)}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5">{ownPct.toFixed(1)}% des actifs</p>
-          </div>
-          <div className="rounded-xl border border-border/40 p-3.5">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: LIME }} />
-              <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wider">Part biens communs</p>
-            </div>
-            <p className="text-[16px] font-bold text-foreground tabular-nums">{formatCurrency(sharedValue)}</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-0.5">{sharedPct.toFixed(1)}% des actifs</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-const CategoryCard = ({
-  name, entries, total, formatCurrency, delay
-}: {
-  name: string; entries: [string, number][]; total: number;
-  formatCurrency: (n: number) => string; delay: string;
-}) => (
-  <Card className="border border-border animate-fade-in" style={{ animationDelay: delay }}>
-    <CardHeader className="pb-2">
-      <CardTitle className="text-[13px] font-semibold text-muted-foreground/80 uppercase tracking-widest">
-        {name} — répartition par catégorie
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      {entries.length === 0 ? (
-        <p className="text-muted-foreground/60 text-center py-8 text-sm">Aucun actif attribué</p>
-      ) : (
-        <div className="space-y-3">
-          {entries.map(([cat, value]) => {
-            const pct = total > 0 ? (value / total) * 100 : 0;
+        <div className={`grid grid-cols-1 divide-y divide-border border-b border-border lg:divide-x lg:divide-y-0 ${cols}`}>
+          {people.map(p => {
+            const ownPct = p.actifs > 0 ? (p.own / p.actifs) * 100 : 0;
+            const sharedPct = p.actifs > 0 ? (p.shared / p.actifs) * 100 : 0;
             return (
-              <div key={cat} className="space-y-1.5">
-                <div className="flex items-center justify-between text-[12px]">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div
-                      className="w-2 h-2 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: getCategoryColor(cat) }}
-                    />
-                    <span className="text-foreground/85 capitalize truncate">{cat}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground/80 tabular-nums">
-                    <span className="font-medium text-foreground">{formatCurrency(value)}</span>
-                    <span className="text-[10px] opacity-70">{pct.toFixed(0)}%</span>
-                  </div>
+              <div key={p.key} className="px-8 py-6">
+                <SectionHeader title={`${p.name} — biens propres / communs`} />
+                <div className="flex h-1.5 w-full overflow-hidden rounded-[1px] bg-secondary">
+                  <div className="bg-lagon-ink" style={{ width: `${ownPct}%` }} />
+                  <div className="bg-lagon" style={{ width: `${sharedPct}%` }} />
                 </div>
-                <div className="w-full bg-muted/60 h-1 rounded-full overflow-hidden">
-                  <div
-                    className="h-1 rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, backgroundColor: getCategoryColor(cat) }}
-                  />
-                </div>
+                <dl className="mt-3">
+                  <SummaryRow label="Biens propres">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-lagon-ink" /><span className="tabular-nums">{formatCurrency(p.own)}</span></span>
+                      <span className="text-[12px] font-normal tabular-nums text-muted-foreground">{ownPct.toFixed(1)} %</span>
+                    </span>
+                  </SummaryRow>
+                  <SummaryRow label="Part des communs">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-[2px] bg-lagon" /><span className="tabular-nums">{formatCurrency(p.shared)}</span></span>
+                      <span className="text-[12px] font-normal tabular-nums text-muted-foreground">{sharedPct.toFixed(1)} %</span>
+                    </span>
+                  </SummaryRow>
+                </dl>
               </div>
             );
           })}
         </div>
       )}
-    </CardContent>
-  </Card>
-);
+
+      {/* Répartition par catégorie */}
+      <div className={`grid grid-cols-1 divide-y divide-border lg:divide-x lg:divide-y-0 ${cols}`}>
+        {people.map(p => (
+          <div key={p.key} className="px-8 py-6">
+            <SectionHeader title={`${p.name} — répartition par catégorie`} />
+            {p.byCategory.length === 0 ? (
+              <p className="text-[13px] text-muted-foreground">Aucun actif attribué</p>
+            ) : (
+              <ul className="space-y-3">
+                {p.byCategory.map(([cat, value]) => {
+                  const pct = p.actifs > 0 ? (value / p.actifs) * 100 : 0;
+                  return (
+                    <li key={cat}>
+                      <div className="flex items-center justify-between gap-3 text-[13px]">
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span aria-hidden className="h-3 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: getCategoryColor(cat) }} />
+                          <span className="truncate capitalize text-foreground">{cat}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 tabular-nums">
+                          <span className="text-foreground">{formatCurrency(value)}</span>
+                          <span className="w-9 text-right text-[12px] text-muted-foreground">{pct.toFixed(0)} %</span>
+                        </span>
+                      </div>
+                      <div className="mt-1.5 h-1 w-full overflow-hidden rounded-[1px] bg-secondary">
+                        <div className="h-full" style={{ width: `${pct}%`, backgroundColor: getCategoryColor(cat) }} />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </PatrimoinePanel>
+  );
+};

@@ -6,7 +6,7 @@ export const FullTable = ({
   children: React.ReactNode;
   variant?: "default" | "categorized";
 }) => {
-  return <div className={`w-full overflow-auto min-w-[248px] rounded-lg relative ${variant === "categorized" ? "bg-card border border-border" : "p-6 border border-gray-alpha-400 bg-white"}`}>
+  return <div className={`w-full min-w-[248px] relative ${variant === "categorized" ? "no-scrollbar overflow-x-auto" : "overflow-auto rounded-lg p-6 border border-gray-alpha-400 bg-white"}`}>
       <table className={`w-full border-collapse text-sm font-sans ${variant === "categorized" ? "text-foreground" : "text-gray-900"}`}>
         {children}
       </table>
@@ -31,7 +31,7 @@ FullTable.Header = ({
 }: {
   children: React.ReactNode;
 }) => {
-  return <thead className="border-b border-gray-alpha-400">{children}</thead>;
+  return <thead className="border-b border-border">{children}</thead>;
 };
 FullTable.Body = ({
   children,
@@ -45,8 +45,7 @@ FullTable.Body = ({
   virtualize?: boolean;
 }) => {
   return <>
-      <tbody className="table-row h-3" />
-      <tbody className={`${striped ? "[&_tr:where(:nth-child(odd))]:bg-background-200" : ""}${interactive ? " [&_tr:hover]:bg-gray-100" : ""}`}>
+      <tbody className={`${striped ? "[&_tr:where(:nth-child(odd))]:bg-background-200" : ""}${interactive ? " [&_tr:hover]:bg-secondary/60" : ""}`}>
         {children}
       </tbody>
     </>;
@@ -64,14 +63,16 @@ FullTable.Row = ({
   className?: string;
   onClick?: () => void;
 }) => {
-  return <tr className={`transition-colors ${isCategory ? 'bg-muted/50 [&_td]:py-3 [&_td]:font-medium' : '[&_td:first-child]:rounded-l-[4px] [&_td:last-child]:rounded-r-[4px]'} ${isTotal ? 'border-t border-t-border/30 [&_td]:pt-5' : ''} ${className || ''}`} onClick={onClick}>{children}</tr>;
+  return <tr className={`transition-colors ${isCategory ? 'border-t border-border [&_td]:py-3 [&_td]:font-medium' : ''} ${isTotal ? 'border-t border-foreground [&_td]:py-3' : ''} ${className || ''}`} onClick={onClick}>{children}</tr>;
 };
 FullTable.Head = ({
-  children
+  children,
+  className
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
 }) => {
-  return <th className="h-8 px-2 align-middle font-medium text-left py-[10px]">{children}</th>;
+  return <th className={`h-9 px-2 align-middle text-left text-[12px] font-normal text-muted-foreground ${className || ""}`}>{children}</th>;
 };
 FullTable.Cell = ({
   children,

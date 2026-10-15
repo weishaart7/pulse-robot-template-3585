@@ -1,6 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
+import { PanelDivider, PanelTitle, SummaryRow, panelLinkClass } from '@/components/layout/workspace-panel';
 import { formatCurrency, getCategoryColor } from '@/lib/patrimoine/utils';
 
 interface PlusValuesSummary {
@@ -20,124 +19,83 @@ interface PlusValuesSummary {
 
 interface PlusValuesCardProps {
   plusValuesSummary: PlusValuesSummary;
+  /** Ouvre la vue détaillée des plus-values. */
+  onOpen?: () => void;
 }
 
-export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummary }) => {
-  const { totalPlusValues, totalMoinsValues, netPlusValue, byCategory, assetsWithPlusValue } = plusValuesSummary;
-  
-  const hasData = assetsWithPlusValue.length > 0;
-  const isPositive = netPlusValue >= 0;
+const signed = (n: number) => `${n > 0 ? '+' : ''}${formatCurrency(n)}`;
+const tone = (n: number) => (n >= 0 ? 'text-positive' : 'text-destructive');
 
-  if (!hasData) {
-    return (
-      <Card className="border border-border hover:shadow-sm transition-shadow duration-500">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Plus-values</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground/70 text-center py-6 text-sm">
-            Renseignez la valeur d'acquisition de vos actifs pour calculer les plus-values
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+// Bloc « Plus-values » du Résumé, au gabarit des panneaux : titre de section + lien
+// vers le détail, résultat net, ventilation plus / moins-values, principaux actifs et
+// catégories en lignes libellé / valeur.
+export const PlusValuesCard: React.FC<PlusValuesCardProps> = ({ plusValuesSummary, onOpen }) => {
+  const { totalPlusValues, totalMoinsValues, netPlusValue, byCategory, assetsWithPlusValue } = plusValuesSummary;
+  const hasData = assetsWithPlusValue.length > 0;
 
   const topPlusValues = assetsWithPlusValue.filter(a => a.plusValue > 0).slice(0, 3);
   const topMoinsValues = [...assetsWithPlusValue].filter(a => a.plusValue < 0).sort((a, b) => a.plusValue - b.plusValue).slice(0, 3);
+  const categories = Object.entries(byCategory)
+    .filter(([, data]) => data.count > 0)
+    .sort((a, b) => Math.abs(b[1].plusValue) - Math.abs(a[1].plusValue))
+    .slice(0, 4);
 
   return (
-    <Card className="group border border-border hover:shadow-md hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-0.5 overflow-hidden">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Plus-values</CardTitle>
-          <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all duration-300" />
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Net result — hero number */}
-        <div className={`relative p-4 rounded-md overflow-hidden ${
-          isPositive 
-            ? 'bg-positive/10/80 ' 
-            : 'bg-destructive/10/80 '
-        }`}>
-          <div className={`absolute top-0 left-0 w-full h-[2px] ${
-            isPositive ? 'bg-gradient-to-r from-positive to-positive' : 'bg-gradient-to-r from-destructive to-destructive'
-          }`} />
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Résultat net</p>
-          <p className={`text-2xl font-bold tracking-tight ${isPositive ? 'text-positive ' : 'text-destructive '}`}>
-            {isPositive ? '+' : ''}{formatCurrency(netPlusValue)}
+    <div>
+      <PanelTitle action={hasData && onOpen ? <button type="button" onClick={onOpen} className={panelLinkClass}>Voir le détail</button> : undefined}>
+        Plus-values
+      </PanelTitle>
+
+      {!hasData ? (
+        <p className="mt-3 text-[13px] text-muted-foreground">
+          Renseignez la valeur d'acquisition de vos actifs pour calculer les plus-values.
+        </p>
+      ) : (
+        <>
+          <p className={`mt-3 text-[20px] font-medium leading-none tracking-[-0.02em] tabular-nums ${tone(netPlusValue)}`}>
+            {signed(netPlusValue)}
           </p>
-        </div>
+          <p className="mt-1.5 text-[12px] text-muted-foreground">Résultat net latent</p>
 
-        {/* Plus / Moins split */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/40 bg-card">
-            <TrendingUp className="h-3.5 w-3.5 text-positive" strokeWidth={1.5} />
-            <div>
-              <p className="text-[10px] text-muted-foreground/60">Plus-values</p>
-              <p className="text-[13px] font-semibold text-positive ">+{formatCurrency(totalPlusValues)}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/40 bg-card">
-            <TrendingDown className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5} />
-            <div>
-              <p className="text-[10px] text-muted-foreground/60">Moins-values</p>
-              <p className="text-[13px] font-semibold text-destructive ">-{formatCurrency(totalMoinsValues)}</p>
-            </div>
-          </div>
-        </div>
+          <dl className="mt-4">
+            <SummaryRow label="Plus-values"><span className="tabular-nums text-positive">+{formatCurrency(totalPlusValues)}</span></SummaryRow>
+            <SummaryRow label="Moins-values"><span className="tabular-nums text-destructive">-{formatCurrency(totalMoinsValues)}</span></SummaryRow>
+          </dl>
 
-        {/* Top assets */}
-        {topPlusValues.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Top plus-values</p>
-            {topPlusValues.map(asset => (
-              <div key={asset.id} className="flex justify-between items-center text-[12px] py-1.5 group/item">
-                <span className="text-foreground/80 truncate max-w-[60%] group-hover/item:text-foreground transition-colors">{asset.denomination}</span>
-                <span className="text-positive font-medium tabular-nums">+{formatCurrency(asset.plusValue)}</span>
-              </div>
-            ))}
-          </div>
-        )}
+          {(topPlusValues.length > 0 || topMoinsValues.length > 0) && (
+            <>
+              <PanelDivider />
+              <p className="mb-1 text-[12px] text-muted-foreground">Principaux actifs</p>
+              <ul>
+                {[...topPlusValues, ...topMoinsValues].map(asset => (
+                  <li key={asset.id} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
+                    <span className="truncate text-foreground">{asset.denomination}</span>
+                    <span className={`shrink-0 tabular-nums ${tone(asset.plusValue)}`}>{signed(asset.plusValue)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
-        {topMoinsValues.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">Top moins-values</p>
-            {topMoinsValues.map(asset => (
-              <div key={asset.id} className="flex justify-between items-center text-[12px] py-1.5">
-                <span className="text-foreground/80 truncate max-w-[60%]">{asset.denomination}</span>
-                <span className="text-destructive font-medium tabular-nums">{formatCurrency(asset.plusValue)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Category summary */}
-        <div className="space-y-1 pt-3 border-t border-border/30">
-          <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest mb-2">Par catégorie</p>
-          {Object.entries(byCategory)
-            .filter(([_, data]) => data.count > 0)
-            .sort((a, b) => Math.abs(b[1].plusValue) - Math.abs(a[1].plusValue))
-            .slice(0, 4)
-            .map(([category, data]) => (
-              <div key={category} className="flex justify-between items-center text-[12px] py-1">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-[6px] h-[6px] rounded-full" 
-                    style={{ backgroundColor: getCategoryColor(category) }} 
-                  />
-                  <span className="text-muted-foreground/70 truncate max-w-[140px]">
-                    {category.charAt(0).toUpperCase() + category.slice(1)}
-                  </span>
-                </div>
-                <span className={`font-medium tabular-nums ${data.plusValue >= 0 ? 'text-positive ' : 'text-destructive '}`}>
-                  {data.plusValue >= 0 ? '+' : ''}{formatCurrency(data.plusValue)}
-                </span>
-              </div>
-            ))}
-        </div>
-      </CardContent>
-    </Card>
+          {categories.length > 0 && (
+            <>
+              <PanelDivider />
+              <p className="mb-1 text-[12px] text-muted-foreground">Par catégorie</p>
+              <ul>
+                {categories.map(([category, data]) => (
+                  <li key={category} className="flex items-center justify-between gap-3 py-1.5 text-[13px]">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span aria-hidden className="h-3 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: getCategoryColor(category) }} />
+                      <span className="truncate text-foreground">{category.charAt(0).toUpperCase() + category.slice(1)}</span>
+                    </span>
+                    <span className={`shrink-0 tabular-nums ${tone(data.plusValue)}`}>{signed(data.plusValue)}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </>
+      )}
+    </div>
   );
 };
