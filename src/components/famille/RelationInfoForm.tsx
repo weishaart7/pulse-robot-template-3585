@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import ActionHubInput from "@/components/ui/action-hub-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Loader2, Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
+import { Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
+import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { GooeyNav } from '@/components/ui/gooey-nav';
 import { format } from "date-fns";
 import { Chip, SummaryRow, WorkspaceHeader } from "@/components/layout/workspace-panel";
@@ -271,7 +272,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
           trail={["Famille", title ?? ""]}
           actions={
             <Button type="submit" disabled={saving} size="sm" className="h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] text-background hover:opacity-90">
-              {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}
+              {saving ? (<><LogoSpinner />Enregistrement...</>) : 'Enregistrer'}
             </Button>
           }
         />

@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { Loader2, Building2 } from 'lucide-react';
+import { Building2 } from 'lucide-react';
+import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -373,7 +374,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                   <Button type="submit" disabled={saving}>
                     {saving ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <LogoSpinner />
                         Enregistrement...
                       </>
                     ) : editingMember ? 'Modifier' : 'Ajouter'}
