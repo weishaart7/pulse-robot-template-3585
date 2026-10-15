@@ -201,7 +201,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   };
 
   // Appelé à chaque sélection dans le <Select> du régime (et par la case
-  // "pas de contrat de mariage" ci-dessous, avec le régime légal déterminé
+  // bascule "Sans contrat" ci-dessous, avec le régime légal déterminé
   // par la date de mariage).
   const handleRegimeSelect = (nouveauRegime: string) => {
     form.setValue('regimeMatrimonial', nouveauRegime as FormData['regimeMatrimonial']);
@@ -301,7 +301,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
             {activeSection === 'informations-generales' && (
               <div className="divide-y divide-border">
                 <div className="px-8 py-7">
-                  <SectionHeader icon={Heart} title="Date & lieu" />
+                  <SectionHeader icon={FileText} title="Mariage & régime" />
                   <div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <FormField
@@ -340,49 +340,74 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                         )}
                       />
                     </div>
-                  </div>
-                </div>
 
-                <div className="px-8 py-7">
-                  <SectionHeader icon={FileText} title="Régime matrimonial" />
-                  <div>
-                    <FormField
-                      control={form.control}
-                      name="regimeMatrimonial"
-                      render={({ field }) => (
-                        <FormItem className="mb-5">
-                          <div className="relative w-full flex flex-col gap-1">
-                            <FormLabel>Régime</FormLabel>
-                            <Select onValueChange={handleRegimeSelect} value={field.value} disabled={pasDeContrat}>
-                              <FormControl>
-                                <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
-                                  <SelectValue />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {REGIMES_MATRIMONIAUX.map(regime => (
-                                  <SelectItem key={regime} value={regime}>{regime}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
+                    {/* Le contrat conditionne le régime : sans contrat, régime légal
+                        déduit de la date de mariage ; avec contrat, choix explicite. */}
                     <FormField
                       control={form.control}
                       name="pasDeContrat"
                       render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Pas de contrat de mariage" />
+                        <FormItem className="mt-5 flex flex-col items-start gap-3 space-y-0">
+                          <FormLabel>Contrat de mariage</FormLabel>
+                          <div role="radiogroup" className="inline-grid grid-cols-2 gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
+                            {[
+                              { value: false, label: "Avec contrat" },
+                              { value: true, label: "Sans contrat" },
+                            ].map(opt => (
+                              <button
+                                key={opt.label}
+                                type="button"
+                                role="radio"
+                                aria-checked={field.value === opt.value}
+                                onClick={() => field.onChange(opt.value)}
+                                className={cn(
+                                  "h-8 rounded-[2px] border px-4 text-[12.5px] transition-colors",
+                                  field.value === opt.value ? "border-foreground bg-foreground text-background" : "border-transparent text-muted-foreground hover:text-foreground"
+                                )}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </FormItem>
                       )}
                     />
 
-                    {!pasDeContrat && (
-                      <div className="mt-3">
-                        <QualificationRegimeOptions regimeType={simplifiedRegimeType} />
-                      </div>
+                    {pasDeContrat ? (
+                      <p className="mt-4 text-[13px] text-muted-foreground">
+                        Régime légal applicable : <span className="font-medium text-foreground">{regimeMatrimonial}</span>
+                        {!dateMariage && " (à confirmer avec la date du mariage)"}
+                      </p>
+                    ) : (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="regimeMatrimonial"
+                          render={({ field }) => (
+                            <FormItem className="mt-4">
+                              <div className="relative w-full flex flex-col gap-1">
+                                <FormLabel>Régime conventionnel</FormLabel>
+                                <Select onValueChange={handleRegimeSelect} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {REGIMES_MATRIMONIAUX.map(regime => (
+                                      <SelectItem key={regime} value={regime}>{regime}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="mt-3">
+                          <QualificationRegimeOptions regimeType={simplifiedRegimeType} />
+                        </div>
+                      </>
                     )}
 
                     <div className="mt-5 border-t border-border pt-4">
