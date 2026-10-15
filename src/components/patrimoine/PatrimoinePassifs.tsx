@@ -38,7 +38,7 @@ export const PatrimoinePassifs = () => {
 
   if (showForm || editingItem) {
     return (
-      <div className="space-y-6 p-6">
+      <div>
         <PassifEmpruntForm
           item={editingItem || undefined}
           onCancel={closeForm}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Asset } from '@/services/assetService';
-import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -138,20 +139,20 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="workspace-panel no-scrollbar max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-[22px] font-medium leading-tight tracking-[-0.02em]">
             {asset.denomination || getNatureDisplayLabel(asset.nature)}
           </DialogTitle>
           <div className="flex items-center gap-2 mt-2">
-            <Badge variant="outline" className="w-fit">
+            <Chip>
               {getNatureDisplayLabel(asset.nature)}
-            </Badge>
+            </Chip>
             {asset.mode_detention && asset.mode_detention !== 'Pleine propriété' && (
-              <Badge variant="secondary" className="w-fit">
+              <Chip>
                 <Key className="h-3 w-3 mr-1" />
                 {asset.mode_detention}
-              </Badge>
+              </Chip>
             )}
           </div>
         </DialogHeader>
@@ -159,33 +160,33 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
         <div className="space-y-6 mt-4">
           {/* Valeur et détenteur */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg border bg-card">
+            <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <Coins className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Valeur estimée</span>
               </div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
                 {formatCurrency(asset.valeur_estimee)}
               </div>
             </div>
 
-            <div className="p-4 rounded-lg border bg-card">
+            <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Détenteur</span>
               </div>
-              <div className="text-lg font-semibold">
+              <div className="text-[17px] font-medium tabular-nums">
                 {formatDetenteur(asset.detenteur)}
               </div>
             </div>
           </div>
 
-          <div className="p-4 rounded-lg border bg-card">
+          <div className="p-4 rounded-[2px] border border-border">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Qualification du bien</span>
             </div>
-            <Badge variant="outline" className="w-fit">{displayedQualification}</Badge>
+            <Chip>{displayedQualification}</Chip>
             {(asset.clause_entree_communaute || asset.clause_remploi) && (
               <p className="text-xs text-muted-foreground mt-2">
                 {(() => {
@@ -222,7 +223,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
           </div>
 
           {empruntsLies.length > 0 && (
-            <div className="p-4 rounded-lg border bg-card">
+            <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <Link2 className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Financé par</span>
@@ -239,11 +240,11 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <>
               <Separator />
               <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                   <Scale className="h-5 w-5" />
                   Démembrement de propriété
                 </h3>
-                <div className="p-4 rounded-lg border bg-card mb-3">
+                <div className="p-4 rounded-[2px] border border-border mb-3">
                   {trancheBareme669 ? (
                     <div className="grid grid-cols-3 gap-4">
                       <div>
@@ -296,7 +297,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <>
               <Separator />
               <div>
-                <h3 className="text-lg font-semibold mb-3">Détails complémentaires</h3>
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3">Détails complémentaires</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {asset.sous_type_per && (
                     <div>
@@ -320,7 +321,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
           {/* Informations d'acquisition - masquées pour les actifs liquides */}
           {!NATURES_WITHOUT_ACQUISITION.includes(asset.nature) && (
             <div>
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Acquisition
               </h3>
@@ -380,7 +381,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <>
               <Separator />
               <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                   <Building className="h-5 w-5" />
                   Établissement
                 </h3>
@@ -394,7 +395,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <>
               <Separator />
               <div>
-                <h3 className="text-lg font-semibold mb-3">Détails de propriété</h3>
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3">Détails de propriété</h3>
                 <div className="grid grid-cols-2 gap-4">
                   {asset.mode_detention && (
                     <div>
@@ -424,14 +425,14 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <>
               <Separator />
               <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                   <Heart className="h-5 w-5" />
                   Attachement émotionnel
                 </h3>
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-muted rounded-full h-2">
+                  <div className="flex-1 bg-secondary rounded-[1px] h-1.5 overflow-hidden">
                     <div 
-                      className="bg-primary h-2 rounded-full transition-all"
+                      className="bg-lagon h-1.5 transition-all"
                       style={{ width: `${asset.attachement_emotionnel}%` }}
                     />
                   </div>
@@ -451,7 +452,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                     <span className="text-sm text-muted-foreground">Origine de l'actif</span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {asset.origine_actif.map((origine, index) => (
-                        <Badge key={index} variant="secondary">{getOrigineActifLabel(origine)}</Badge>
+                        <Chip key={index}>{getOrigineActifLabel(origine)}</Chip>
                       ))}
                     </div>
                   </div>
@@ -461,7 +462,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                     <span className="text-sm text-muted-foreground">Situations particulières</span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {asset.situation_particuliere.map((situation, index) => (
-                        <Badge key={index} variant="outline">{situation}</Badge>
+                        <Chip key={index}>{situation}</Chip>
                       ))}
                     </div>
                   </div>
@@ -519,18 +520,18 @@ const ValorisationHistorySection = ({ assetId, valorisations, onCreate, onUpdate
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-[14.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
           <History className="h-5 w-5" />
           Historique de valorisation
         </h3>
-        <Button type="button" variant="outline" size="sm" onClick={() => setIsAdding(prev => !prev)}>
+        <Button type="button" variant="outline" size="sm" className={panelButtonClass} onClick={() => setIsAdding(prev => !prev)}>
           <Plus className="h-4 w-4 mr-1" />
           Ajouter
         </Button>
       </div>
 
       {isAdding && (
-        <div className="flex items-end gap-2 mb-3 p-3 rounded-lg border bg-muted/30">
+        <div className="flex items-end gap-2 mb-3 p-3 rounded-[2px] border border-border bg-secondary/50">
           <div className="flex-1">
             <span className="text-xs text-muted-foreground">Date</span>
             <Input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
@@ -539,10 +540,10 @@ const ValorisationHistorySection = ({ assetId, valorisations, onCreate, onUpdate
             <span className="text-xs text-muted-foreground">Valeur (€)</span>
             <Input type="text" placeholder="0" value={newValeur} onChange={(e) => setNewValeur(e.target.value)} />
           </div>
-          <Button type="button" size="icon" variant="ghost" onClick={handleAdd}>
+          <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-[2px]" onClick={handleAdd}>
             <Check className="h-4 w-4" />
           </Button>
-          <Button type="button" size="icon" variant="ghost" onClick={() => setIsAdding(false)}>
+          <Button type="button" size="icon" variant="ghost" className="h-8 w-8 rounded-[2px]" onClick={() => setIsAdding(false)}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -586,7 +587,7 @@ const ValorisationHistorySection = ({ assetId, valorisations, onCreate, onUpdate
       ) : (
         <div className="space-y-1">
           {valorisations.map((v) => (
-            <div key={v.id} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg text-sm">
+            <div key={v.id} className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-[2px] text-sm">
               {editingId === v.id ? (
                 <>
                   <div className="flex items-center gap-2 flex-1">
@@ -594,10 +595,10 @@ const ValorisationHistorySection = ({ assetId, valorisations, onCreate, onUpdate
                     <Input type="text" className="h-8 w-32" value={editValeur} onChange={(e) => setEditValeur(e.target.value)} />
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdate(v.id!)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px]" onClick={() => handleUpdate(v.id!)}>
                       <Check className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px]" onClick={() => setEditingId(null)}>
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -609,10 +610,10 @@ const ValorisationHistorySection = ({ assetId, valorisations, onCreate, onUpdate
                     <span className="font-medium">{formatCurrency(v.valeur)}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(v)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px] text-muted-foreground hover:text-foreground" onClick={() => startEdit(v)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(v.id!)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px] text-muted-foreground hover:text-destructive" onClick={() => onDelete(v.id!)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -713,18 +714,18 @@ const RevenusAssociesSection = ({ assetId, revenus, onCreate, onUpdate, onDelete
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
+        <h3 className="text-[14.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
           <Banknote className="h-5 w-5" />
           Revenus associés
         </h3>
-        <Button type="button" variant="outline" size="sm" onClick={() => setIsAdding(prev => !prev)}>
+        <Button type="button" variant="outline" size="sm" className={panelButtonClass} onClick={() => setIsAdding(prev => !prev)}>
           <Plus className="h-4 w-4 mr-1" />
           Ajouter
         </Button>
       </div>
 
       {isAdding && (
-        <div className="space-y-3 mb-3 p-3 rounded-lg border bg-muted/30">
+        <div className="space-y-3 mb-3 p-3 rounded-[2px] border border-border bg-secondary/50">
           <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="text-xs text-muted-foreground">Nature du revenu</span>
@@ -761,8 +762,8 @@ const RevenusAssociesSection = ({ assetId, revenus, onCreate, onUpdate, onDelete
             <span className="text-sm">Impact sur le budget</span>
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" size="sm" variant="ghost" onClick={() => { setIsAdding(false); setDraft(emptyRevenuDraft()); }}>Annuler</Button>
-            <Button type="button" size="sm" onClick={handleAdd}>Enregistrer</Button>
+            <Button type="button" size="sm" variant="ghost" className="h-8 rounded-[2px] px-3 text-[12.5px]" onClick={() => { setIsAdding(false); setDraft(emptyRevenuDraft()); }}>Annuler</Button>
+            <Button type="button" size="sm" className="h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] text-background hover:bg-foreground/90" onClick={handleAdd}>Enregistrer</Button>
           </div>
         </div>
       )}
@@ -772,7 +773,7 @@ const RevenusAssociesSection = ({ assetId, revenus, onCreate, onUpdate, onDelete
       ) : (
         <div className="space-y-1">
           {revenus.map((r) => (
-            <div key={r.id} className="py-2 px-3 bg-muted/30 rounded-lg text-sm">
+            <div key={r.id} className="py-2 px-3 bg-secondary/50 rounded-[2px] text-sm">
               {editingId === r.id ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-2">
@@ -793,10 +794,10 @@ const RevenusAssociesSection = ({ assetId, revenus, onCreate, onUpdate, onDelete
                     <span className="text-sm">Impact sur le budget</span>
                   </div>
                   <div className="flex justify-end gap-1">
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleUpdate(r.id!)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px]" onClick={() => handleUpdate(r.id!)}>
                       <Check className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingId(null)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px]" onClick={() => setEditingId(null)}>
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -816,10 +817,10 @@ const RevenusAssociesSection = ({ assetId, revenus, onCreate, onUpdate, onDelete
                     {r.commentaire && <p className="text-xs text-muted-foreground/80 mt-0.5">{r.commentaire}</p>}
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(r)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px] text-muted-foreground hover:text-foreground" onClick={() => startEdit(r)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.id!)}>
+                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 rounded-[2px] text-muted-foreground hover:text-destructive" onClick={() => onDelete(r.id!)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>

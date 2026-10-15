@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { panelLinkClass } from '@/components/layout/workspace-panel';
 import { FileText } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
@@ -70,7 +71,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
     && !watchedClauseRemploi;
 
   const origineContent = isIndivisionHorsCouple && showOrigineSection ? (
-    <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+    <div className="rounded-[2px] border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
       Sans effet pour un bien en indivision hors couple
       <FieldHelp>
         La qualification est directement "Indivision", quels que soient l'origine et les clauses éventuelles.
@@ -103,7 +104,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                   value={field.value?.[0] || 'Acquisition à titre onéreux'}
                 >
                   <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                       <SelectValue placeholder="Choisir l'origine de l'actif" />
                     </SelectTrigger>
                   </FormControl>
@@ -130,7 +131,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 <FormLabel>Valeur d'achat / réception (€)</FormLabel>
                 <FieldHelp>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FieldHelp>
                 <FormControl>
-                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                  <Input className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -141,7 +142,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 <FormLabel>Frais d'acquisition (€)</FormLabel>
                 <FieldHelp>Notaire, agence, droits d'enregistrement, etc.</FieldHelp>
                 <FormControl>
-                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                  <Input className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -155,7 +156,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           control={form.control}
           name="clause_entree_communaute"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -180,7 +181,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           control={form.control}
           name="clause_remploi"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -206,7 +207,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
               Montant financé par des fonds propres, à comparer au prix d'acquisition total renseigné ci-dessus. Si cette contribution couvre au moins la moitié du prix : bien propre (art. 1436), récompense due à la communauté pour le solde. Sinon : bien commun, récompense due à l'époux apporteur. Sans effet si la clause de remploi ci-dessus est cochée.
             </FieldHelp>
             <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+              <Input className="bg-background border-border shadow-none" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -218,7 +219,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           control={form.control}
           name="est_propre_par_nature"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -268,7 +269,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
             : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
         </FieldHelp>
         {watchedQualificationAuto !== false && !showQualificationOverride ? (
-          <div className="flex items-start gap-3 rounded-2xl border p-4 bg-muted/30">
+          <div className="flex items-start gap-3 rounded-[2px] border border-border p-4 bg-secondary/50">
             <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
             <div className="space-y-1 flex-1">
               <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
@@ -279,7 +280,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
                 type="button"
                 variant="link"
                 size="sm"
-                className="h-auto p-0"
+                className={`h-auto p-0 ${panelLinkClass}`}
                 onClick={() => setShowQualificationOverride(true)}
               >
                 Modifier manuellement
@@ -296,7 +297,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
               value={field.value}
             >
               <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                   <SelectValue placeholder="Choisir une qualification" />
                 </SelectTrigger>
               </FormControl>
@@ -311,7 +312,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
                 type="button"
                 variant="link"
                 size="sm"
-                className="h-auto p-0"
+                className={`h-auto p-0 ${panelLinkClass}`}
                 onClick={() => {
                   form.setValue('qualification_auto', true);
                   setShowQualificationOverride(false);

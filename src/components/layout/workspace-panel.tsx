@@ -58,4 +58,11 @@ export function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone
 export const panelLinkClass =
   'text-[12.5px] font-medium text-lagon-ink underline-offset-4 hover:underline rounded-[2px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lagon-ink';
 
+/** Boutons des panneaux (à passer en className d'un <Button>, qui fusionne les classes) :
+ *  secondaire à filet et principal noir, 32 px, angles 2 px, comme « Enregistrer ». */
+export const panelButtonClass =
+  'h-8 rounded-[2px] border border-border bg-background px-3 text-[12.5px] font-medium text-foreground shadow-none hover:bg-secondary';
+export const panelPrimaryButtonClass =
+  'h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] font-medium text-background shadow-none hover:bg-foreground/90';
+
 export const PanelDivider = () => <div className="my-5 h-px bg-border" />;

@@ -6,6 +6,7 @@ import { useAssetWizard } from '@/hooks/useAssetWizard';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 import { ChargeForm } from '@/components/assets/ChargeForm';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { ActifFormFrame } from '@/components/assets/ActifFormFrame';
 import { WizardConfirmDialog } from './WizardConfirmDialog';
 import { WizardStepQuoi } from './WizardStepQuoi';
@@ -179,20 +180,26 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       <ActifFormFrame
         title="Ajouter un actif"
         aside={
-          <p className="ds-eyebrow text-muted-foreground">
+          <p className="text-[12.5px] text-muted-foreground">
             Étape {currentStepIndex + 1}/{totalSteps} — {currentStep.label}
           </p>
         }
+        actions={
+          <Button type="button" variant="outline" onClick={handleCancel} className={panelButtonClass}>
+            Annuler
+          </Button>
+        }
       >
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-1">
           {steps.map((step, index) => (
             <div
               key={step.id}
-              className={`h-1 flex-1 rounded-full transition-colors ${index <= currentStepIndex ? 'bg-foreground' : 'bg-border'}`}
+              title={step.label}
+              className={`h-1 flex-1 rounded-[1px] transition-colors ${index <= currentStepIndex ? 'bg-foreground' : 'bg-border'}`}
             />
           ))}
         </div>
@@ -202,22 +209,17 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             {renderStep()}
           </div>
 
-          <div className="flex justify-between pt-8">
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              Annuler
-            </Button>
-            <div className="flex space-x-2">
-              {!isFirstStep && (
-                <Button type="button" variant="outline" onClick={goPrevious}>
-                  Précédent
-                </Button>
-              )}
-              {!isLastStep && (
-                <Button type="button" onClick={goNext}>
-                  Suivant
-                </Button>
-              )}
-            </div>
+          <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5">
+            {!isFirstStep && (
+              <Button type="button" variant="outline" onClick={goPrevious} className={panelButtonClass}>
+                Précédent
+              </Button>
+            )}
+            {!isLastStep && (
+              <Button type="button" onClick={goNext} className={panelPrimaryButtonClass}>
+                Suivant
+              </Button>
+            )}
           </div>
         </Form>
       </ActifFormFrame>

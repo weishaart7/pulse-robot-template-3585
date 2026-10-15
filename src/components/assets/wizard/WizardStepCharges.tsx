@@ -19,7 +19,7 @@ export const WizardStepCharges: React.FC<WizardStepChargesProps> = ({ charges, o
     <ChargesListFields charges={charges} onAdd={onAdd} onEdit={onEdit} onDelete={onDelete} />
     {charges.length === 0 && (
       <div className="flex justify-center">
-        <Button type="button" variant="ghost" onClick={onSkip}>
+        <Button type="button" variant="ghost" onClick={onSkip} className="h-8 rounded-[2px] px-3 text-[12.5px] text-muted-foreground">
           Passer, j'ajouterai plus tard
         </Button>
       </div>

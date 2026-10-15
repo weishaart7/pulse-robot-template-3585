@@ -20,7 +20,7 @@ export const ValeurEstimeeFields: React.FC<ValeurEstimeeFieldsProps> = ({ form }
         <FormLabel>Valeur actuelle estimée (€)</FormLabel>
         <FieldHelp>Valeur du bien à ce jour. C'est elle qui est utilisée dans le calcul du patrimoine.</FieldHelp>
         <FormControl>
-          <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+          <Input className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
         </FormControl>
         <FormMessage />
       </FormItem>

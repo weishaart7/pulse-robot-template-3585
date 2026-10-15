@@ -19,7 +19,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
         <FormItem>
           <FormLabel>Nature *</FormLabel>
           <FormControl>
-            <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" />
+            <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-background border-border shadow-none" />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -29,7 +29,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
         <FormItem>
           <FormLabel>Dénomination</FormLabel>
           <FormControl>
-            <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
+            <Input className="bg-background border-border shadow-none" {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>

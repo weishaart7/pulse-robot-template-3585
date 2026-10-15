@@ -287,11 +287,10 @@ permet de l'alimenter (voir §3).
   `clauses_contrat.extension_propres_par_nature` éventuellement présente en base est ignorée.
 
 - **Habillage : design system du simulateur** ([design-system.md](design-system.md)). Plus de
-  scope `.famille-form` : pages et formulaires suivent les tokens de `:root` (encre, fond eggshell,
-  cartes `rounded-3xl` à filet `border-border` sans halo, blocs de champs `bg-secondary`, titres
-  Inter 300). [SectionHeader.tsx](../src/components/family/SectionHeader.tsx)
-  (badge icône + surtitre `.ds-eyebrow`) est repris dans `FicheClientForm.tsx`, `PartnerForm.tsx`
-  et `RelationInfoForm.tsx`. Le bouton « Ajouter un membre » est une pilule encre, comme le reste de l'app.
+  scope `.famille-form` : les pages suivent le gabarit « panneau de travail » (voir design-system.md
+  §6). [SectionHeader.tsx](../src/components/family/SectionHeader.tsx) (titre 14,5 px à repère
+  coloré) est repris dans `FicheClientForm.tsx`, `PartnerForm.tsx`, `RelationInfoForm.tsx`, la
+  liste des membres et le module Patrimoine. Le bouton « Ajouter un membre » est une pilule encre, comme le reste de l'app.
   Aucun champ, schéma de validation ni
   logique métier n'est modifié par cet habillage.
 

@@ -138,8 +138,8 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
   barre pleine largeur, onglets dimensionnés sur leur libellé et qui rétrécissent ensemble (si un libellé complet ne tient pas, bascule automatique sur les libellés courts `shortLabel` — « Général »,
   « Récompenses », « Donation », « Historique » — infobulle avec le libellé complet ; jamais de défilement) ;
   `role="tablist"`, transition coupée si `prefers-reduced-motion`.
-- Cadre `ActifFormFrame` et cartes des formulaires Famille : `rounded-3xl` (ramené à 8 px dans le dashboard), filet `border-border`, fond `bg-card`, sans halo.
-- Blocs de champs internes : `bg-secondary` (taupe), coins 14 px.
+- **Panneau de travail** (`components/layout/workspace-panel.tsx`, classe `.workspace-panel`) : gabarit commun des pages Famille, Patrimoine et des formulaires d'actif / de passif (`ActifFormFrame`) — barre d'en-tête à fil d'Ariane portant les actions, titre 24 px et rappel, sections séparées par des filets (pas de cartes), titres de section à repère coloré (`SectionHeader`, `PanelTitle`), lignes libellé / valeur (`SummaryRow`), étiquettes `Chip`. Boutons d'action : `panelButtonClass` (filet) et `panelPrimaryButtonClass` (noir), 32 px, angles 2 px ; bascules segmentées pour les choix courts ; encadrés d'information à angles 2 px sur `bg-secondary/50`.
+- Champs : fond blanc, filet `border-border`, angles 2 px dans les panneaux (plus de champs « remplis » `bg-muted`).
 - Champs `bg-muted` au focus ou ouverts : bordure encre, fond eggshell (règle globale dans
   `index.css`).
 - Actions : boutons `Button` par défaut (pilule encre), y compris « Ajouter un membre » et

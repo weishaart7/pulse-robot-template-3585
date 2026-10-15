@@ -29,7 +29,7 @@ export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => (
       <FormLabel>Mode de détention</FormLabel>
       <Select onValueChange={field.onChange} defaultValue={field.value}>
         <FormControl>
-          <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+          <SelectTrigger className="bg-background border-border shadow-none" size="lg">
             <SelectValue placeholder="Choisir un mode de détention" />
           </SelectTrigger>
         </FormControl>
@@ -70,7 +70,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
 
   return (
     <>
-      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4 col-span-full">
+      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 col-span-full">
         <FormControl>
           <Checkbox
             checked={watchedDetenteur === 'Indivision'}
@@ -104,7 +104,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             )}
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                   <SelectValue placeholder={isEpargneAV ? 'Choisir un souscripteur' : 'Choisir un détenteur'} />
                 </SelectTrigger>
               </FormControl>
@@ -149,7 +149,7 @@ export const QuotePartFields: React.FC<QuotePartFieldsProps> = ({ form, familyDa
           </FieldHelp>
           <FormControl>
             <Input
-              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+              className="bg-background border-border shadow-none"
               type="number"
               min="0"
               max="100"
@@ -168,7 +168,7 @@ export const QuotePartFields: React.FC<QuotePartFieldsProps> = ({ form, familyDa
       );
     }} />
   ) : (
-    <div className="col-span-full text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
+    <div className="col-span-full text-sm text-muted-foreground bg-secondary/50 rounded-[2px] px-3 py-2">
       Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
       <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
     </div>
@@ -229,7 +229,7 @@ export const LicitationPacsFields: React.FC<LicitationPacsFieldsProps> = ({ form
   if (!showLicitationPacs) return null;
 
   return (
-    <div className="space-y-4 rounded-2xl border p-4">
+    <div className="space-y-4 rounded-[2px] border border-border p-4">
       <div className="space-y-1 leading-none">
         <FormLabel>Licitation de plus de moitié (art. 515-5-2)</FormLabel>
         <FieldHelp>
@@ -242,7 +242,7 @@ export const LicitationPacsFields: React.FC<LicitationPacsFieldsProps> = ({ form
           <FormLabel>Partenaire acquéreur</FormLabel>
           <Select onValueChange={field.onChange} value={field.value}>
             <FormControl>
-              <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px]">
+              <SelectTrigger className="bg-background border-border shadow-none">
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
             </FormControl>
@@ -260,7 +260,7 @@ export const LicitationPacsFields: React.FC<LicitationPacsFieldsProps> = ({ form
           <FormLabel>Part rachetée par licitation (%)</FormLabel>
           <FieldHelp>Pourcentage de la valeur du bien acquis au-delà de la part initiale de l'acquéreur.</FieldHelp>
           <FormControl>
-            <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" type="number" min="0" max="100" step="0.1" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+            <Input className="bg-background border-border shadow-none" type="number" min="0" max="100" step="0.1" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
           </FormControl>
           <FormMessage />
         </FormItem>

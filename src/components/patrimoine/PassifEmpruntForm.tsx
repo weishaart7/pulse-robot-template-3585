@@ -1,6 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ActifFormFrame } from '@/components/assets/ActifFormFrame';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -9,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { EMPRUNT_NATURES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
-import { ArrowLeft, Wallet } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { Emprunt, Passif } from '@/services/passifService';
 import { usePassifEmpruntForm } from '@/hooks/usePassifEmpruntForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -56,18 +58,23 @@ export const PassifEmpruntForm = ({
     : detenteurOptions;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            <ArrowLeft className="h-4 w-4" />
+    <ActifFormFrame
+      section="Passifs"
+      title={`${item ? 'Modifier' : 'Ajouter'} un passif / emprunt`}
+      trail={item ? 'Modifier' : 'Ajouter'}
+      actions={
+        <>
+          <Button type="button" variant="outline" onClick={onCancel} className={panelButtonClass}>
+            Annuler
           </Button>
-          <CardTitle>{item ? 'Modifier' : 'Ajouter'} un passif / emprunt</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
+          <Button type="submit" form="passif-form" disabled={isLoading || !watchedNature} className={panelPrimaryButtonClass}>
+            {isLoading ? <><LogoSpinner />Enregistrement...</> : (item ? 'Enregistrer' : 'Ajouter')}
+          </Button>
+        </>
+      }
+    >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form id="passif-form" onSubmit={form.handleSubmit(handleSubmit)} className="max-w-4xl space-y-5">
             <FormField control={form.control} name="nature" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nature</FormLabel>
@@ -188,7 +195,7 @@ export const PassifEmpruntForm = ({
                   </FormItem>
                 )} />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField control={form.control} name="mode_amortissement" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Mode d'amortissement</FormLabel>
@@ -228,7 +235,7 @@ export const PassifEmpruntForm = ({
                   )} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField control={form.control} name="taeg" render={({ field }) => (
                     <FormItem>
                       <FormLabel>TAEG (%)</FormLabel>
@@ -275,7 +282,7 @@ export const PassifEmpruntForm = ({
                   control={form.control}
                   name="reporter_budget"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 bg-secondary/50">
                       <FormControl>
                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
@@ -296,7 +303,7 @@ export const PassifEmpruntForm = ({
                   control={form.control}
                   name="assure"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-muted/30">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 bg-secondary/50">
                       <FormControl>
                         <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                       </FormControl>
@@ -308,7 +315,7 @@ export const PassifEmpruntForm = ({
                 />
 
                 {watchedAssure && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <FormField control={form.control} name="quotite_assuree_utilisateur" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Quotité assurée {familyData.userFirstName || 'vous'} (%)</FormLabel>
@@ -384,7 +391,7 @@ export const PassifEmpruntForm = ({
             )}
 
             {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-              <div className="text-sm text-muted-foreground bg-muted rounded-[5px] px-3 py-2">
+              <div className="text-sm text-muted-foreground bg-secondary/50 rounded-[2px] px-3 py-2">
                 Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
                 <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
               </div>
@@ -413,18 +420,8 @@ export const PassifEmpruntForm = ({
                 </FormItem>
               )} />
             )}
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isLoading || !watchedNature}>
-                {isLoading ? 'Enregistrement...' : `${item ? 'Modifier' : 'Ajouter'}`}
-              </Button>
-            </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+    </ActifFormFrame>
   );
 };

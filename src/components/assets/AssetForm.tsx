@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils';
 import { IndivisaireDraft } from './IndivisairesSection';
 import { DemembrementDraft } from './DemembrementSection';
 import { isInCouple } from '@/lib/patrimoine/qualification';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { ActifFormFrame } from './ActifFormFrame';
 import { PlusValueBlock } from './fields/PlusValueBlock';
 import { ValeurEstimeeFields } from './fields/ValeurEstimeeFields';
@@ -89,7 +91,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormItem>
             <FormLabel>Nature *</FormLabel>
             <FormControl>
-              <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" />
+              <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-background border-border shadow-none" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -99,7 +101,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormItem>
             <FormLabel>Dénomination</FormLabel>
             <FormControl>
-              <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
+              <Input className="bg-background border-border shadow-none" {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -123,7 +125,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
   const renderProprieteSection = () => {
     const proprieteRappel = isInCouple(maritalContext.statutCouple) ? (
-      <div className="rounded-2xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+      <div className="rounded-[2px] border border-border bg-secondary/50 p-4 text-sm text-muted-foreground">
         <p>
           Régime matrimonial : <span className="font-medium text-foreground">{maritalContext.regimeMatrimonial || 'Non renseigné'}</span>
         </p>
@@ -139,7 +141,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     return (
     <div className="space-y-6">
       {isAVHorsSuccession && (
-        <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-[2px] border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
           <Info className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
           <p>
             Sans effet sur la transmission
@@ -193,20 +195,32 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div>
       <ActifFormFrame
-        title={asset ? "Modifier l'actif" : 'Ajouter un actif'}
+        title={asset ? (asset.denomination || "Modifier l'actif") : 'Ajouter un actif'}
+        trail={asset ? "Modifier l'actif" : 'Ajouter un actif'}
+        actions={
+          <>
+            <Button type="button" variant="outline" onClick={onCancel} className={panelButtonClass}>
+              Annuler
+            </Button>
+            <Button type="submit" form="asset-form" disabled={isLoading} className={panelPrimaryButtonClass}>
+              {isLoading ? <><LogoSpinner />Enregistrement...</> : 'Enregistrer'}
+            </Button>
+          </>
+        }
       >
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex gap-2 flex-wrap">
+        <form id="asset-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <div className="flex flex-col items-start gap-1.5">
+            <div className="inline-flex flex-wrap gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
               {FORM_TABS.map((tab) => {
                 const locked = isTabLocked(tab.id);
                 return (
                   <button
                     key={tab.id}
                     type="button"
+                    aria-pressed={activeTab === tab.id}
                     aria-disabled={locked}
                     onClick={() => {
                       if (locked) {
@@ -217,12 +231,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                       setActiveTab(tab.id);
                     }}
                     className={cn(
-                      "ds-eyebrow inline-flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all duration-200",
+                      "h-8 rounded-[2px] border px-4 text-[12.5px] transition-colors",
                       locked
-                        ? "bg-border text-muted-foreground opacity-50 cursor-not-allowed"
+                        ? "border-transparent text-muted-foreground opacity-50 cursor-not-allowed"
                         : activeTab === tab.id
-                          ? "bg-foreground text-background"
-                          : "bg-border text-muted-foreground hover:text-foreground"
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
                     )}
                   >
                     {tab.label}
@@ -231,7 +245,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               })}
             </div>
             {showLockedTabHint && isTabLocked('propriete') && (
-              <p className="text-xs text-muted-foreground px-1">
+              <p className="text-[12px] text-muted-foreground">
                 Renseignez d'abord la nature de l'actif
               </p>
             )}
@@ -241,21 +255,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             {renderContent()}
           </div>
 
-          <div className="flex justify-between pt-8">
-            {asset?.id && onDelete && (
-              <Button type="button" variant="destructive" onClick={handleDelete} disabled={isLoading}>
+          {asset?.id && onDelete && (
+            <div className="border-t border-border pt-5">
+              <Button type="button" variant="ghost" onClick={handleDelete} disabled={isLoading} className="h-8 rounded-[2px] px-3 text-[12.5px] font-medium text-destructive hover:bg-destructive/10 hover:text-destructive">
                 Supprimer l'actif
               </Button>
-            )}
-            <div className="flex space-x-2 ml-auto">
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Annuler
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
             </div>
-          </div>
+          )}
         </form>
       </Form>
       </ActifFormFrame>

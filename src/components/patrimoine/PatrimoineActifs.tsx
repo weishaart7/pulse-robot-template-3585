@@ -151,7 +151,7 @@ export const PatrimoineActifs = () => {
     };
 
     return (
-      <div className="space-y-6 p-6">
+      <div>
         {editingAsset ? (
           <AssetForm
             asset={editingAsset}

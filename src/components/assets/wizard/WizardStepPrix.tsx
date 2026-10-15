@@ -34,7 +34,7 @@ export const WizardStepPrix: React.FC<WizardStepPrixProps> = ({ form, maritalCon
       <OrigineFields form={form} maritalContext={maritalContext} section="prix" />
 
       {qualificationDependDuPrix && (
-        <div className="flex items-start gap-3 rounded-2xl border p-4 bg-muted/30">
+        <div className="flex items-start gap-3 rounded-[2px] border border-border p-4 bg-secondary/50">
           <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
           <div className="space-y-1 flex-1">
             <p className="text-xs text-muted-foreground">Qualification du bien</p>

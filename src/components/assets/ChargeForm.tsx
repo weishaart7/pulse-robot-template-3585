@@ -1,4 +1,5 @@
 import React from 'react';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -94,10 +95,10 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
   };
 
   return (
-    <Card className="w-full">
+    <Card className="mt-6 w-full rounded-[4px] border-border shadow-none">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{charge ? 'Modifier la charge' : 'Ajouter une charge'}</CardTitle>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
+        <CardTitle className="text-[14.5px] font-medium tracking-[-0.01em]">{charge ? 'Modifier la charge' : 'Ajouter une charge'}</CardTitle>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-[2px]" onClick={onCancel} aria-label="Fermer">
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
@@ -113,7 +114,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                     <FormLabel>Type de charge</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                        <SelectTrigger className="bg-background border-border shadow-none">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -137,7 +138,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                   <FormItem>
                     <FormLabel>Dénomination</FormLabel>
                     <FormControl>
-                      <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
+                      <Input className="bg-background border-border shadow-none" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -152,7 +153,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                     <FormLabel>Débiteur</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                        <SelectTrigger className="bg-background border-border shadow-none">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -177,7 +178,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                     <FormItem>
                       <FormLabel>Montant</FormLabel>
                       <FormControl>
-                        <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" 
+                        <Input className="bg-background border-border shadow-none" 
                           type="number" 
                           step="0.01"
                           {...field}
@@ -197,7 +198,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                       <FormLabel>Unité</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                          <SelectTrigger className="bg-background border-border shadow-none">
                             <SelectValue />
                           </SelectTrigger>
                         </FormControl>
@@ -223,7 +224,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                     <FormLabel>Périodicité</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring">
+                        <SelectTrigger className="bg-background border-border shadow-none">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -290,6 +291,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
                   <Button
                     type="button"
                     variant={dureeType === 'Indéterminée' ? 'default' : 'outline'}
+                    className={dureeType === 'Indéterminée' ? panelPrimaryButtonClass : panelButtonClass}
                     onClick={() => {
                       form.setValue('duree_type', 'Indéterminée');
                       form.setValue('duree_fin_date', undefined);
@@ -329,10 +331,10 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
             </div>
 
             <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={onCancel}>
+              <Button type="button" variant="outline" onClick={onCancel} className={panelButtonClass}>
                 Annuler
               </Button>
-              <Button type="submit">
+              <Button type="submit" className={panelPrimaryButtonClass}>
                 {charge ? 'Modifier' : 'Ajouter'}
               </Button>
             </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { panelPrimaryButtonClass, panelLinkClass } from '@/components/layout/workspace-panel';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { AssetFormValues, getOrigineActifLabel } from '@/schemas/assetSchema';
@@ -65,17 +66,17 @@ const PARTICULARITES_RECAP_FIELDS: { key: keyof AssetFormValues; label: string }
 ];
 
 const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div className="flex justify-between gap-4 py-1.5 text-sm">
+  <div className="flex justify-between gap-4 py-1.5 text-[13px]">
     <span className="text-muted-foreground">{label}</span>
     <span className="font-medium text-foreground text-right">{value}</span>
   </div>
 );
 
 const RecapSection: React.FC<{ title: string; onEdit: () => void; children: React.ReactNode }> = ({ title, onEdit, children }) => (
-  <div className="rounded-2xl border border-border/60 p-4 space-y-1">
+  <div className="rounded-[2px] border border-border p-4 space-y-1">
     <div className="flex items-center justify-between mb-2">
-      <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">{title}</p>
-      <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onEdit}>
+      <p className="text-[13.5px] font-medium tracking-[-0.01em] text-foreground">{title}</p>
+      <Button type="button" variant="link" size="sm" className={`h-auto p-0 ${panelLinkClass}`} onClick={onEdit}>
         Modifier
       </Button>
     </div>
@@ -187,7 +188,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       <ValorisationDemembreeBlock form={form} familyData={familyData} familyMembers={familyMembers} demembrements={demembrements} />
 
       <div className="flex justify-end pt-2">
-        <Button type="button" onClick={onValidate} disabled={isSubmitting}>
+        <Button type="button" onClick={onValidate} disabled={isSubmitting} className={panelPrimaryButtonClass}>
           {isSubmitting ? 'Création en cours...' : 'Valider et créer l\'actif'}
         </Button>
       </div>

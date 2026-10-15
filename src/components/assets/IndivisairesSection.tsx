@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { Plus, Trash2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,17 +46,17 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
   };
 
   return (
-    <div className="space-y-4 rounded-2xl border p-4 bg-muted/20">
+    <div className="space-y-4 rounded-[2px] border border-border p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
           <p className="text-sm font-medium">Co-indivisaires</p>
         </div>
         <div className="flex gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => addIndivisaire('famille')}>
+          <Button type="button" size="sm" variant="outline" className={panelButtonClass} onClick={() => addIndivisaire('famille')}>
             <Plus className="h-3 w-3 mr-1" /> Famille
           </Button>
-          <Button type="button" size="sm" variant="outline" onClick={() => addIndivisaire('tiers')}>
+          <Button type="button" size="sm" variant="outline" className={panelButtonClass} onClick={() => addIndivisaire('tiers')}>
             <Plus className="h-3 w-3 mr-1" /> Tiers
           </Button>
         </div>
@@ -77,7 +78,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                       value={it.family_link_id || ''}
                       onValueChange={(v) => updateAt(idx, { family_link_id: v })}
                     >
-                      <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                      <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                         <SelectValue placeholder="Sélectionner un membre" />
                       </SelectTrigger>
                       <SelectContent className="bg-background z-50">
@@ -89,7 +90,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    <Input className="bg-background border-border shadow-none"
                       placeholder="Nom du tiers indivisaire"
                       value={it.nom_libre || ''}
                       onChange={(e) => updateAt(idx, { nom_libre: e.target.value })}
@@ -98,7 +99,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                 </div>
                 <div className="col-span-3">
                   <div className="relative">
-                    <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    <Input className="bg-background border-border shadow-none"
                       type="number"
                       min={0}
                       max={100}
@@ -110,7 +111,7 @@ export const IndivisairesSection: React.FC<Props> = ({ familyMembers, value, onC
                   </div>
                 </div>
                 <div className="col-span-2 flex justify-end">
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeAt(idx)}>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-[2px]" onClick={() => removeAt(idx)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

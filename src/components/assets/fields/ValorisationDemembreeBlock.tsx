@@ -46,10 +46,10 @@ export const ValorisationDemembreeBlock: React.FC<ValorisationDemembreeBlockProp
   );
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 animate-fade-in">
+    <div className="rounded-[2px] border border-border p-5 animate-fade-in">
       <div className="flex items-center gap-2 mb-3">
         <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-        <p className="text-[12px] font-semibold text-muted-foreground uppercase tracking-widest">Valorisation démembrée (barème art. 669 CGI)</p>
+        <p className="text-[13.5px] font-medium tracking-[-0.01em] text-foreground">Valorisation démembrée (barème art. 669 CGI)</p>
       </div>
       {trancheBareme669 ? (
         <div className="grid grid-cols-3 gap-4">

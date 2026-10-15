@@ -143,7 +143,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormItem>
               <FormLabel>{etablissementLabel}</FormLabel>
               <FormControl>
-                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} />
+                <Input className="bg-background border-border shadow-none" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -156,7 +156,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Revenus distribués (12 derniers mois)</FormLabel>
               <FormControl>
                 <Input
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
                   {...field}
@@ -175,7 +175,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Régime fiscal</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                     <SelectValue placeholder="Choisir le régime fiscal" />
                   </SelectTrigger>
                 </FormControl>
@@ -198,7 +198,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               value={field.value?.[0] || 'Non'}
             >
               <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                   <SelectValue placeholder="Choisir la situation particulière" />
                 </SelectTrigger>
               </FormControl>
@@ -217,7 +217,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormItem>
               <FormLabel>Numéro de série</FormLabel>
               <FormControl>
-                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+                <Input className="bg-background border-border shadow-none" {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -229,7 +229,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormItem>
               <FormLabel>Quantité / Millésime</FormLabel>
               <FormControl>
-                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+                <Input className="bg-background border-border shadow-none" {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -242,7 +242,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="certificat_expertise"
           render={({ field }) => (
-            <FormItem className="rounded-2xl border p-4 space-y-3">
+            <FormItem className="rounded-[2px] border border-border p-4 space-y-3">
               <div className="flex flex-row items-start space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox
@@ -260,7 +260,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   <FormItem className="pl-7">
                     <FormLabel>Référence</FormLabel>
                     <FormControl>
-                      <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...refField} value={refField.value || ''} />
+                      <Input className="bg-background border-border shadow-none" {...refField} value={refField.value || ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -276,7 +276,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="bien_etranger"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4 bg-muted/30">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 bg-secondary/50">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -308,7 +308,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="transfert_immobilier"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -335,7 +335,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="transfert_societe"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -367,7 +367,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               disabled={isPERObligatoire}
             >
               <FormControl>
-                <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                   <SelectValue placeholder="Choisir un sous-type" />
                 </SelectTrigger>
               </FormControl>
@@ -409,7 +409,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
               >
                 <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                     <SelectValue placeholder="Choisir" />
                   </SelectTrigger>
                 </FormControl>
@@ -438,7 +438,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
                 >
                   <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                       <SelectValue placeholder="Choisir" />
                     </SelectTrigger>
                   </FormControl>
@@ -468,7 +468,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                     <SelectValue placeholder="Choisir" />
                   </SelectTrigger>
                 </FormControl>
@@ -501,7 +501,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
               >
                 <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                     <SelectValue placeholder="Choisir" />
                   </SelectTrigger>
                 </FormControl>
@@ -530,7 +530,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormLabel>
               <FormControl>
                 <Input
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
                   {...field}
@@ -577,7 +577,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value} disabled={!!regimeRuralImpose}>
                 <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                     <SelectValue placeholder="Choisir" />
                   </SelectTrigger>
                 </FormControl>
@@ -607,7 +607,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
                 >
                   <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                       <SelectValue placeholder="Choisir" />
                     </SelectTrigger>
                   </FormControl>
@@ -631,7 +631,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 <FormLabel>Capital garanti (€)</FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    className="bg-background border-border shadow-none"
                     type="number"
                     step="0.01"
                     {...field}
@@ -656,7 +656,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 <FormLabel>Mode de sortie</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value || ''}>
                   <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                       <SelectValue placeholder="Choisir le mode de sortie" />
                     </SelectTrigger>
                   </FormControl>
@@ -686,7 +686,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Abondement employeur (€)</FormLabel>
               <FormControl>
                 <Input
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
                   {...field}
@@ -713,7 +713,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Motif de déblocage anticipé</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || ''}>
                 <FormControl>
-                  <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                     <SelectValue placeholder="Choisir le motif" />
                   </SelectTrigger>
                 </FormControl>
@@ -732,7 +732,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Support d'investissement</FormLabel>
               <FormControl>
                 <Input
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  className="bg-background border-border shadow-none"
                   placeholder="Ex. FCPE monétaire, FCPE actions diversifiées"
                   {...field}
                   value={field.value || ''}
@@ -750,7 +750,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             control={form.control}
             name="cto_multi_actifs"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-2xl border p-4">
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
@@ -770,7 +770,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 <FormLabel>Nature réelle du sous-jacent principal</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" size="lg">
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
                       <SelectValue placeholder="Choisir la nature du sous-jacent" />
                     </SelectTrigger>
                   </FormControl>
@@ -807,7 +807,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 <FormLabel>Taux de rémunération (%)</FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    className="bg-background border-border shadow-none"
                     type="number"
                     step="0.01"
                     {...field}
@@ -828,7 +828,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormLabel>Montant versé (€)</FormLabel>
             <FormControl>
               <Input
-                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                className="bg-background border-border shadow-none"
                 type="number"
                 step="0.01"
                 {...field}
@@ -848,7 +848,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormItem>
                 <FormLabel>Durée de blocage</FormLabel>
                 <FormControl>
-                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" placeholder="Ex. 5 ans, jusqu'au 31/12/2030" {...field} value={field.value || ''} />
+                  <Input className="bg-background border-border shadow-none" placeholder="Ex. 5 ans, jusqu'au 31/12/2030" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -861,7 +861,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 <FormLabel>Réduction d'IR à l'entrée (%)</FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    className="bg-background border-border shadow-none"
                     type="number"
                     step="0.01"
                     {...field}
@@ -883,7 +883,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Montant engagé (€)</FormLabel>
               <FormControl>
                 <Input
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
                   {...field}
@@ -900,7 +900,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormLabel>Montant appelé (€)</FormLabel>
               <FormControl>
                 <Input
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                  className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
                   {...field}
@@ -941,7 +941,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 </FormLabel>
                 <FormControl>
                   <Input
-                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
+                    className="bg-background border-border shadow-none"
                     type="number"
                     step="0.01"
                     {...field}
@@ -963,7 +963,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormItem>
                 <FormLabel>Sous-jacent</FormLabel>
                 <FormControl>
-                  <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+                  <Input className="bg-background border-border shadow-none" {...field} value={field.value || ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -990,7 +990,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormItem>
               <FormLabel>Lieu de stockage</FormLabel>
               <FormControl>
-                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" {...field} value={field.value || ''} />
+                <Input className="bg-background border-border shadow-none" {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -1000,7 +1000,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormItem>
               <FormLabel>Quantité</FormLabel>
               <FormControl>
-                <Input className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring" placeholder="Ex. 500g, 10 onces" {...field} value={field.value || ''} />
+                <Input className="bg-background border-border shadow-none" placeholder="Ex. 500g, 10 onces" {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
             </FormItem>

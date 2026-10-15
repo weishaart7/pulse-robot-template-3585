@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Emprunt, Passif } from '@/services/passifService';
 import { Asset } from '@/services/assetService';
-import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/layout/workspace-panel';
 import { Separator } from '@/components/ui/separator';
 import { TrendingDown, Percent, Calendar, DollarSign, Link2, ShieldCheck } from 'lucide-react';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/patrimoine/utils';
@@ -33,14 +33,14 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="workspace-panel no-scrollbar max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-[22px] font-medium leading-tight tracking-[-0.02em]">
             {emprunt ? emprunt.libelle : simplePassif?.nature}
           </DialogTitle>
-          <Badge variant="outline" className="w-fit mt-2 bg-destructive/10 text-destructive border-destructive/30">
-            {type === 'emprunt' ? 'Emprunt' : 'Passif'}
-          </Badge>
+          <div className="mt-2">
+            <Chip>{type === 'emprunt' ? 'Emprunt' : 'Passif'}</Chip>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
@@ -48,12 +48,12 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
           {emprunt && (
             <>
               {/* Montant principal */}
-              <div className="p-4 rounded-lg border bg-card">
+              <div className="p-4 rounded-[2px] border border-border">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingDown className="h-4 w-4 text-destructive" />
                   <span className="text-sm text-muted-foreground">Capital restant dû</span>
                 </div>
-                <div className="text-2xl font-bold text-destructive">
+                <div className="text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums text-destructive">
                   {formatCurrency(emprunt.capital_restant_du)}
                 </div>
               </div>
@@ -62,23 +62,23 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
 
               {/* Détails financiers */}
               <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
                   Détails financiers
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-muted">
+                  <div className="p-3 rounded-[2px] bg-secondary/60">
                     <span className="text-sm text-muted-foreground">Nature</span>
                     <p className="font-medium">{emprunt.nature}</p>
                   </div>
                   {emprunt.mensualite != null && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <span className="text-sm text-muted-foreground">Mensualité</span>
                       <p className="font-medium">{formatCurrency(emprunt.mensualite)}</p>
                     </div>
                   )}
                   {emprunt.taux_interet != null && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <div className="flex items-center gap-2">
                         <Percent className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Taux d'intérêt</span>
@@ -87,7 +87,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                     </div>
                   )}
                   {emprunt.duree_restante != null && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Durée restante</span>
@@ -96,25 +96,25 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                     </div>
                   )}
                   {emprunt.date_souscription && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <span className="text-sm text-muted-foreground">Date de souscription</span>
                       <p className="font-medium">{new Date(emprunt.date_souscription).toLocaleDateString('fr-FR')}</p>
                     </div>
                   )}
                   {emprunt.mode_amortissement && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <span className="text-sm text-muted-foreground">Mode d'amortissement</span>
                       <p className="font-medium">{emprunt.mode_amortissement}</p>
                     </div>
                   )}
                   {emprunt.type_taux && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <span className="text-sm text-muted-foreground">Type de taux</span>
                       <p className="font-medium">{emprunt.type_taux}</p>
                     </div>
                   )}
                   {emprunt.taeg !== undefined && emprunt.taeg !== null && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <div className="flex items-center gap-2">
                         <Percent className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">TAEG</span>
@@ -123,19 +123,19 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                     </div>
                   )}
                   {emprunt.cout_total_credit !== undefined && emprunt.cout_total_credit !== null && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <span className="text-sm text-muted-foreground">Coût total du crédit</span>
                       <p className="font-medium">{formatCurrency(emprunt.cout_total_credit)}</p>
                     </div>
                   )}
                   {emprunt.type_garantie && emprunt.type_garantie !== 'Aucune' && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <span className="text-sm text-muted-foreground">Type de garantie</span>
                       <p className="font-medium">{emprunt.type_garantie}</p>
                     </div>
                   )}
                   {linkedAsset && (
-                    <div className="p-3 rounded-lg bg-muted">
+                    <div className="p-3 rounded-[2px] bg-secondary/60">
                       <div className="flex items-center gap-2">
                         <Link2 className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground">Actif lié</span>
@@ -150,25 +150,25 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                 <>
                   <Separator />
                   <div>
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                       <ShieldCheck className="h-5 w-5" />
                       Assurance emprunteur
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       {emprunt.quotite_assuree_utilisateur !== undefined && emprunt.quotite_assuree_utilisateur !== null && (
-                        <div className="p-3 rounded-lg bg-muted">
+                        <div className="p-3 rounded-[2px] bg-secondary/60">
                           <span className="text-sm text-muted-foreground">Quotité assurée (vous)</span>
                           <p className="font-medium">{emprunt.quotite_assuree_utilisateur}%</p>
                         </div>
                       )}
                       {emprunt.quotite_assuree_conjoint !== undefined && emprunt.quotite_assuree_conjoint !== null && (
-                        <div className="p-3 rounded-lg bg-muted">
+                        <div className="p-3 rounded-[2px] bg-secondary/60">
                           <span className="text-sm text-muted-foreground">Quotité assurée (conjoint)</span>
                           <p className="font-medium">{emprunt.quotite_assuree_conjoint}%</p>
                         </div>
                       )}
                       {emprunt.capital_garanti_deces !== undefined && emprunt.capital_garanti_deces !== null && (
-                        <div className="p-3 rounded-lg bg-muted col-span-2">
+                        <div className="p-3 rounded-[2px] bg-secondary/60 col-span-2">
                           <span className="text-sm text-muted-foreground">Capital garanti en cas de décès</span>
                           <p className="font-medium">{formatCurrency(emprunt.capital_garanti_deces)}</p>
                         </div>
@@ -196,17 +196,17 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
                   <>
                     <Separator />
                     <div>
-                      <h3 className="text-lg font-semibold mb-3">Projections</h3>
+                      <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3">Projections</h3>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 rounded-lg bg-muted">
+                        <div className="p-3 rounded-[2px] bg-secondary/60">
                           <span className="text-sm text-muted-foreground">Total restant à rembourser</span>
-                          <p className="font-medium text-lg">
+                          <p className="font-medium text-[15px] tabular-nums">
                             {totalRestant !== null ? formatCurrency(totalRestant) : 'Non calculable'}
                           </p>
                         </div>
-                        <div className="p-3 rounded-lg bg-muted">
+                        <div className="p-3 rounded-[2px] bg-secondary/60">
                           <span className="text-sm text-muted-foreground">Coût total des intérêts</span>
-                          <p className="font-medium text-lg text-destructive">
+                          <p className="font-medium text-[15px] tabular-nums text-destructive">
                             {isCalculable ? formatCurrency(coutInterets) : 'Non calculable'}
                           </p>
                           {isCalculable && (
@@ -228,12 +228,12 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
           {/* Pour les passifs simples */}
           {simplePassif && (
             <>
-              <div className="p-4 rounded-lg border bg-card">
+              <div className="p-4 rounded-[2px] border border-border">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingDown className="h-4 w-4 text-destructive" />
                   <span className="text-sm text-muted-foreground">Montant dû</span>
                 </div>
-                <div className="text-2xl font-bold text-destructive">
+                <div className="text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums text-destructive">
                   {formatCurrency(simplePassif.montant_du)}
                 </div>
               </div>
@@ -241,13 +241,13 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
               <Separator />
 
               <div>
-                <h3 className="text-lg font-semibold mb-3">Informations</h3>
-                <div className="p-3 rounded-lg bg-muted">
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3">Informations</h3>
+                <div className="p-3 rounded-[2px] bg-secondary/60">
                   <span className="text-sm text-muted-foreground">Nature du passif</span>
                   <p className="font-medium">{simplePassif.nature}</p>
                 </div>
                 {simplePassif.date_souscription && (
-                  <div className="p-3 rounded-lg bg-muted mt-3">
+                  <div className="p-3 rounded-[2px] bg-secondary/60 mt-3">
                     <span className="text-sm text-muted-foreground">Date de souscription</span>
                     <p className="font-medium">{new Date(simplePassif.date_souscription).toLocaleDateString('fr-FR')}</p>
                   </div>
