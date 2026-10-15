@@ -243,16 +243,16 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   const hasMasseCommune = getSimplifiedRegime(simplifiedRegimeType) === 'communauté' || simplifiedRegimeType === 'separation_societe_acquets';
 
   const sections = relationStatus === "Marié(e)" ? [
-    { id: 'informations-generales' as Section, label: 'Informations générales', icon: Heart },
-    { id: 'recompenses-creances' as Section, label: 'Récompenses & créances', icon: Scale },
+    { id: 'informations-generales' as Section, label: 'Informations générales', shortLabel: 'Général', icon: Heart },
+    { id: 'recompenses-creances' as Section, label: 'Récompenses & créances', shortLabel: 'Récompenses', icon: Scale },
     // Pill conditionnée au régime (contrairement à recompenses-creances,
     // toujours affichée) : la participation aux acquêts n'a de sens que sous
     // ce régime, cf. diagnostic chantier participation aux acquêts.
     ...(simplifiedRegimeType === 'participation_acquets'
-      ? [{ id: 'participation-acquets' as Section, label: 'Participation aux acquêts', icon: Coins }]
+      ? [{ id: 'participation-acquets' as Section, label: 'Participation aux acquêts', shortLabel: 'Participation', icon: Coins }]
       : []),
-    { id: 'donation' as Section, label: 'Donation au dernier vivant', icon: Gift },
-    { id: 'historique' as Section, label: 'Historique matrimonial', icon: History },
+    { id: 'donation' as Section, label: 'Donation au dernier vivant', shortLabel: 'Donation', icon: Gift },
+    { id: 'historique' as Section, label: 'Historique matrimonial', shortLabel: 'Historique', icon: History },
   ] : [];
 
   const v = form.watch();
@@ -265,12 +265,12 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit, onError)} className="workspace-panel rounded-card border border-border bg-card overflow-hidden">
+      <form onSubmit={form.handleSubmit(onSubmit, onError)} className="workspace-panel -mx-4 -mt-3 md:-m-6">
         <WorkspaceHeader
           icon={<Heart strokeWidth={1.75} />}
           trail={["Famille", title ?? ""]}
           actions={
-            <Button type="submit" disabled={saving} size="sm" className="h-9 rounded-[6px] bg-foreground px-4 text-background hover:opacity-90">
+            <Button type="submit" disabled={saving} size="sm" className="h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] text-background hover:opacity-90">
               {saving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</>) : 'Enregistrer'}
             </Button>
           }
@@ -278,17 +278,17 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
         <div className={cn("grid grid-cols-1", showSummary && "lg:grid-cols-[minmax(0,1fr)_320px]")}>
         <div className={cn("min-w-0", showSummary && "lg:border-r lg:border-border")}>
-        <div className="px-6 pt-6">
-          <h1 className="text-[26px] font-medium leading-tight tracking-[-0.02em]">{title}</h1>
-          {summary && <p className="mt-1 text-[13px] text-muted-foreground">{summary}</p>}
+        <div className="px-8 pt-8">
+          <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{title}</h1>
+          {summary && <p className="mt-1 text-[12.5px] text-muted-foreground">{summary}</p>}
         </div>
 
         {/* Barre de navigation des sous-sections */}
         {sections.length > 0 && (
-          <div className="px-6 pt-5 pb-1">
+          <div className="px-8 pt-5 pb-1">
             <GooeyNav
               aria-label="Sous-sections du régime matrimonial"
-              items={sections.map(({ id, label }) => ({ id, label }))}
+              items={sections.map(({ id, label, shortLabel }) => ({ id, label, shortLabel }))}
               value={activeSection}
               onValueChange={(id) => setActiveSection(id as Section)}
             />
@@ -300,7 +300,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
           <>
             {activeSection === 'informations-generales' && (
               <div className="divide-y divide-border">
-                <div className="px-6 py-6">
+                <div className="px-8 py-7">
                   <SectionHeader icon={Heart} title="Date & lieu" />
                   <div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -343,7 +343,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                   </div>
                 </div>
 
-                <div className="px-6 py-6">
+                <div className="px-8 py-7">
                   <SectionHeader icon={FileText} title="Régime matrimonial" />
                   <div>
                     <FormField
@@ -446,7 +446,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
             {activeSection === 'donation' && (
               <div className="divide-y divide-border">
-                <div className="px-6 py-6">
+                <div className="px-8 py-7">
                   <SectionHeader icon={Gift} title="Donation consentie au conjoint" />
                   <div>
                     <div className="flex flex-wrap items-center gap-6">
@@ -484,7 +484,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                   </div>
                 </div>
 
-                <div className="px-6 py-6">
+                <div className="px-8 py-7">
                   <SectionHeader icon={Gift} title="Donation reçue du conjoint" />
                   <div>
                     <div className="flex flex-wrap items-center gap-6">
@@ -531,7 +531,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                   { title: "Mariage précédent du conjoint", flag: "mariagePrecedentConjoint" as const, annees: "dureeMariagePrecedentConjointAnnees" as const, mois: "dureeMariagePrecedentConjointMois" as const, label: "Mon conjoint a été marié(e) précédemment" },
                 ].map((cfg, index) => (
                   <Fragment key={cfg.flag}>
-                                    <div className="px-6 py-6">
+                                    <div className="px-8 py-7">
                     <SectionHeader icon={History} title={cfg.title} />
                     <div>
                       <FormField
@@ -599,7 +599,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         {/* PACS */}
         {relationStatus === "Pacsé(e)" && (
           <div className="divide-y divide-border">
-          <div className="px-6 py-6">
+          <div className="px-8 py-7">
             <SectionHeader icon={Heart} title="Convention" />
             <div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -662,7 +662,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
         {/* CONCUBINAGE */}
         {relationStatus === "Concubinage" && (
-          <div className="px-6 py-6">
+          <div className="px-8 py-7">
             <SectionHeader icon={Heart} title="Concubinage" />
             <div>
               <p className="text-sm text-muted-foreground">
@@ -676,7 +676,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
             base (cf. "Option A" dans relationInfoPayload.ts : rien n'est effacé au changement de
             statut) mais jusqu'ici jamais affichées pour ces deux statuts. */}
         {(relationStatus === "Divorcé(e)" || relationStatus === "Veuf/Veuve") && (
-          <div className="px-6 py-6">
+          <div className="px-8 py-7">
             <SectionHeader
               icon={History}
               title={relationStatus === "Divorcé(e)" ? "Régime applicable au mariage dissous" : "Régime applicable au mariage"}
@@ -742,8 +742,8 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         </div>
 
         {showSummary && (
-          <aside className="border-t border-border px-6 py-6 lg:border-t-0">
-            <h3 className="text-[15px] font-medium tracking-[-0.01em]">Synthèse</h3>
+          <aside className="border-t border-border px-8 py-7 lg:border-t-0">
+            <h3 className="text-[14.5px] font-medium tracking-[-0.01em]">Synthèse</h3>
             {relationStatus === "Marié(e)" ? (
               <>
                 <dl className="mt-3">
@@ -753,16 +753,16 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                   <SummaryRow label="Régime">{v.regimeMatrimonial}</SummaryRow>
                 </dl>
                 <div className="mt-3 flex flex-wrap gap-1.5">
-                  {situationChips.map((c) => <Chip key={c}>{c}</Chip>)}
+                  {situationChips.map((c, i) => <Chip key={c} tone={i === 0 ? "lagon" : "neutral"}>{c}</Chip>)}
                 </div>
                 <div className="my-5 h-px bg-border" />
-                <h3 className="text-[15px] font-medium tracking-[-0.01em]">Donation au dernier vivant</h3>
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em]">Donation au dernier vivant</h3>
                 <dl className="mt-3">
-                  <SummaryRow label="Consentie">{v.donationDernierVivantPersonne ? `Oui${v.dateDonationPersonne ? ` · ${fmtDate(v.dateDonationPersonne)}` : ''}` : 'Non'}</SummaryRow>
-                  <SummaryRow label="Reçue">{v.donationDernierVivantConjoint ? `Oui${v.dateDonationConjoint ? ` · ${fmtDate(v.dateDonationConjoint)}` : ''}` : 'Non'}</SummaryRow>
+                  <SummaryRow label="Consentie">{v.donationDernierVivantPersonne ? <Chip tone="citron">Oui{v.dateDonationPersonne ? ` · ${fmtDate(v.dateDonationPersonne)}` : ''}</Chip> : 'Non'}</SummaryRow>
+                  <SummaryRow label="Reçue">{v.donationDernierVivantConjoint ? <Chip tone="citron">Oui{v.dateDonationConjoint ? ` · ${fmtDate(v.dateDonationConjoint)}` : ''}</Chip> : 'Non'}</SummaryRow>
                 </dl>
                 <div className="my-5 h-px bg-border" />
-                <h3 className="text-[15px] font-medium tracking-[-0.01em]">Historique</h3>
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em]">Historique</h3>
                 <dl className="mt-3">
                   <SummaryRow label="Vous">{v.mariagePrecedentPersonne ? 'Mariage précédent' : 'Premier mariage'}</SummaryRow>
                   <SummaryRow label="Conjoint">{v.mariagePrecedentConjoint ? 'Mariage précédent' : 'Premier mariage'}</SummaryRow>

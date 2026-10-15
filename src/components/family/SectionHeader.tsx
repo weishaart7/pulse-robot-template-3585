@@ -9,5 +9,8 @@ interface SectionHeaderProps {
 // En-tête de carte partagé par les formulaires famille / régime matrimonial :
 // titre de section en sans 15 px medium (esprit « Related Papers » de la maquette de référence).
 export function SectionHeader({ title }: SectionHeaderProps) {
-  return <h3 className="mb-4 text-[15px] font-medium tracking-[-0.01em] text-foreground">{title}</h3>;
+  return <h3 className="mb-3.5 flex items-center gap-2 text-[14.5px] font-medium tracking-[-0.01em] text-foreground">
+      <span aria-hidden className="h-3 w-[3px] rounded-full bg-lagon" />
+      {title}
+    </h3>;
 }

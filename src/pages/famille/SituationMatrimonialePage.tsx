@@ -25,7 +25,7 @@ export default function SituationMatrimonialePage() {
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="pb-6">
+    <div>
       <RelationInfoForm relationStatus={relationStatus} title={title} summary={summary} />
     </div>
   );

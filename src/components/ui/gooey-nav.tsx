@@ -2,12 +2,12 @@
 // liens de route, onglets contrôlés), couleurs et arrondis alignés sur le design system.
 // L'onglet actif se détache de la barre ; un « col » visqueux s'étire puis se rompt entre eux.
 
-import { useEffect, useId, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { motion, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { cn } from "@/lib/utils";
 
-// Ressort amorti, sans dépassement.
-const SPRING = { type: "spring", stiffness: 200, damping: 28, mass: 1 } as const;
+// Ressort court et souple (léger rebond) : la séparation suit le clic sans traîner.
+const SPRING = { type: "spring", visualDuration: 0.38, bounce: 0.18 } as const;
 
 // Le col est rompu une fois l'écart ouvert à cette fraction de l'espacement.
 const NECK_BREAK = 0.22;
@@ -15,21 +15,23 @@ const NECK_BREAK = 0.22;
 // Hauteur nominale du viewBox ; le svg s'étire à la hauteur réelle de la tuile.
 const NECK_H = 100;
 
-const FADE_IN = "transition-colors duration-[400ms]";
-const FADE_OUT = "transition-colors duration-0";
+// Couleurs en fondu dans les deux sens (l'ancien onglet ne « saute » plus au gris).
+const FADE_IN = "transition-colors duration-300 ease-out";
+const FADE_OUT = "transition-colors duration-200 ease-out";
 
 // Barre pierre (un cran plus soutenu que le taupe) ; le col reprend la même couleur via currentColor.
 const BAR = "bg-[#e9e5e0]";
 const BAR_TEXT = "text-[#e9e5e0]";
 
 const SIZES = {
-  sm: { label: "gap-1.5 px-[11px] py-2 text-[14px] leading-5 [&_svg]:size-3.5", radius: 6, separation: 12 },
+  sm: { label: "gap-1.5 px-[10px] py-1.5 text-[12.5px] min-[1440px]:text-[13px] leading-5 [&_svg]:size-3.5", radius: 2, separation: 12 },
   md: { label: "gap-2 px-4 py-2.5 text-[13px] leading-5 [&_svg]:size-4", radius: 8, separation: 18 },
 } as const;
 
 export type GooeyNavSize = keyof typeof SIZES;
 
-export type GooeyNavItem = { id: string; label: string; icon?: ReactNode };
+/** shortLabel : libellé de repli affiché quand les libellés complets ne tiennent pas. */
+export type GooeyNavItem = { id: string; label: string; shortLabel?: string; icon?: ReactNode };
 
 export type GooeyNavProps = {
   items: GooeyNavItem[];
@@ -81,7 +83,7 @@ function Segment({ gap, span, hasSeam, leftFill, rightFill, reduced, radii, clas
 
   return (
     <motion.li
-      className={cn("relative", className)}
+      className={cn("relative min-w-0 flex-auto", className)}
       style={{ ...style, marginLeft }}
       initial={false}
       animate={radii}
@@ -120,6 +122,32 @@ export function GooeyNav({
   ...props
 }: GooeyNavProps) {
   const reduced = useReducedMotion() ?? false;
+
+  // Libellés courts dès qu'un libellé complet est tronqué ; retour aux complets quand la
+  // barre retrouve la largeur qui manquait (mémorisée au passage en mode court).
+  const navRef = useRef<HTMLElement>(null);
+  const [compact, setCompact] = useState(false);
+  const fullWidthRef = useRef(0);
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav || !items.some((item) => item.shortLabel)) return;
+    const check = () => {
+      const labels = [...nav.querySelectorAll<HTMLElement>("[data-gooey-label]")];
+      if (!compact) {
+        const missing = labels.reduce((sum, el) => sum + Math.max(0, el.scrollWidth - el.clientWidth), 0);
+        if (missing > 0) {
+          fullWidthRef.current = nav.clientWidth + missing + 8;
+          setCompact(true);
+        }
+      } else if (nav.clientWidth >= fullWidthRef.current) {
+        setCompact(false);
+      }
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [compact, items]);
   const found = items.findIndex((item) => item.id === value);
   const active = found === -1 ? 0 : found;
   const span = SIZES[size].separation;
@@ -129,8 +157,10 @@ export function GooeyNav({
   const fill = (i: number) => (i === active ? activeColor : "currentColor");
 
   return (
-    <nav className={cn("max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)} {...props}>
-      <ul className="flex w-max items-center" role="tablist">
+    // La barre occupe toute la largeur disponible ; chaque onglet se partage l'espace et son
+    // libellé se tronque au besoin, si bien qu'aucun défilement horizontal n'apparaît.
+    <nav ref={navRef} className={cn("w-full", className)} {...props}>
+      <ul className="flex w-full items-center" role="tablist">
         {items.map((item, i) => {
           const isActive = i === active;
           return (
@@ -155,10 +185,11 @@ export function GooeyNav({
               <button
                 type="button"
                 role="tab"
+                title={compact && item.shortLabel ? item.label : undefined}
                 aria-selected={isActive}
                 onClick={() => onValueChange(item.id)}
                 className={cn(
-                  "flex cursor-pointer items-center whitespace-nowrap font-medium outline-none [&_svg]:shrink-0",
+                  "flex w-full min-w-0 cursor-pointer items-center justify-center whitespace-nowrap font-medium outline-none [&_svg]:shrink-0",
                   "focus-visible:ring-1 focus-visible:ring-ring rounded-[inherit]",
                   isActive ? FADE_IN : cn(FADE_OUT, "text-[#44403b] hover:text-foreground"),
                   SIZES[size].label,
@@ -166,7 +197,15 @@ export function GooeyNav({
                 style={isActive ? { color: activeLabelColor } : undefined}
               >
                 {item.icon}
-                {item.label}
+                {/* Point citron toujours rendu, déplié en largeur sur l'onglet actif : pas de saut de mise en page. */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "h-1.5 shrink-0 rounded-full bg-citron ring-1 ring-citron/40 transition-all duration-300 ease-out",
+                    isActive ? "w-1.5 opacity-100" : "-mr-1.5 w-0 opacity-0",
+                  )}
+                />
+                <span data-gooey-label className="truncate">{compact && item.shortLabel ? item.shortLabel : item.label}</span>
               </button>
             </Segment>
           );

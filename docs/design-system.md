@@ -94,24 +94,43 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 ## 6. Formulaires (Actifs, Famille)
 
 Plus de scope dédié : les formulaires suivent les tokens de `:root`.
+- Touches de couleur (panneaux de travail) reprises du hero de la landing (`public/hero-mesh.png`), tokens
+  Tailwind `lagon` (`#55b4bd`, `ink` `#16707a`, `soft` `#e3f3f4`) et `citron` (`#d9fd86`, `ink` `#4a5a10`, `soft`
+  `#f1fcd0`), toujours par petites touches : pastille lagon de l'icône du fil d'Ariane, trait lagon 3 px devant les
+  titres de section (`SectionHeader`), liens « Voir la fiche » en lagon foncé, étiquette « Avec / Sans contrat » lagon,
+  « Oui » des donations au dernier vivant en étiquette citron, point citron sur l'onglet actif (`GooeyNav`), repères
+  carrés lagon / citron de la Composition du Foyer. Texte secondaire `#4f4a45`, filets `#d8d2ca`, valeurs de synthèse
+  en 500, titres de panneau 16 px, titres de page 28 px, surtitres de l'arbre en 11 px.
+- Gabarit compact des panneaux de travail : barre d'en-tête 64 px collée au bord haut — 16 px au-dessus et au-dessous du bouton de 32 px, espace égal entre
+  le bord supérieur et le filet (fil d'Ariane 12,5 px, pastille 24 px), titres
+  de page 24 px, titres de section / panneau 14,5 px, lignes de synthèse 13 px (libellés 104 px), étiquettes 24 px
+  de haut en 12 px, boutons 32 px en 12,5 px, champs et bouton calendrier 36 px, saisie 13 px, libellés de champs
+  12,5 px, `text-sm` 13 px et `text-xs` 12 px, onglets `GooeyNav` 12,5 / 13 px, chiffres de Composition 20 px.
+  Ces valeurs priment sur les tailles plus grandes citées plus bas pour ces deux pages.
 - Panneaux de travail (Foyer, Régime matrimonial) : briques communes dans `components/layout/workspace-panel.tsx`
   (`WorkspaceHeader` fil d'Ariane + actions, `PanelTitle`, `SummaryRow`, `Chip`, `PanelDivider`) et classe
   `.workspace-panel` pour la lisibilité. Foyer : bandeau en colonnes `divide-x` (Client, Conjoint, Statut +
   Composition en chiffres 22 px), arbre pleine largeur dessous ; bouton « Gérer les membres » à contour et menu
-  Statut du couple à angles quasi droits (2 px).
-- Régime matrimonial (`RelationInfoForm`, `components/famille/matrimonial/*Section`) : panneau unique `rounded-card`
-  filet, barre d'en-tête 56 px (fil d'Ariane 13 px, bouton noir coins 6 px), grille `1fr | 320px` séparée par un filet
-  vertical ; sections `px-6 py-6` séparées par `divide-y` ; titres de section en sans 15 px 500 (`SectionHeader`,
+  Statut du couple à angles quasi droits (2 px). Même angle de 2 px pour le bouton « Enregistrer », les étiquettes
+  (`Chip`) et tous les champs des panneaux de travail (saisies, menus déroulants, bouton calendrier — règle
+  `.workspace-panel` dans `index.css`).
+- Régime matrimonial (`RelationInfoForm`, `components/famille/matrimonial/*Section`) : panneau unique sans cadre
+  propre (bord à bord de la plaque de contenu, marges du `main` annulées par `-mx-4 -mt-3 md:-m-6`, pas de « carte
+  dans la carte » — idem Foyer), barre d'en-tête 56 px (fil d'Ariane 13 px, bouton noir coins 6 px), grille `1fr | 320px` séparée par un filet
+  vertical ; sections `px-8 py-7` séparées par `divide-y` ; titres de section en sans 15 px 500 (`SectionHeader`,
   sans icône — aussi dans Fiche client / Conjoint) ; panneau « Synthèse » en lignes libellé (smoke, colonne 112 px) /
   valeur (encre) 13 px, étiquettes taupe coins 6 px.
   Lisibilité renforcée sur tout le panneau via la classe `.workspace-panel` (`index.css`) : texte secondaire
-  `#5d5852` au lieu du smoke, filets `#dcd7d0`, bordure des champs plus marquée, `text-xs` relevé à 13 px et
+  plus foncé que le smoke, filets marqués, bordure des champs plus marquée, `text-xs` relevé à 13 px et
   `text-sm` à 14 px, libellés de champs homogènes (13 px 500 encre), saisie en 14 px ; synthèse en 14 px,
   étiquettes sur fond pierre `#e9e5e0` 13 px.
   Navigation entre onglets : `GooeyNav` (`components/ui/gooey-nav.tsx`, adapté de rare-ui « gooey-nav » sans
   Next.js) — barre pierre `#e9e5e0` d'où l'onglet actif (fond encre, texte eggshell) se détache de 12 px avec
-  un « col » visqueux qui s'étire puis se rompt (ressort amorti), coins 6 px, Inter 500 14 px, inactifs en graphite
+  un « col » visqueux qui s'étire puis se rompt (ressort court 0,38 s, léger rebond ; couleurs en fondu 200-300 ms ;
+  point citron qui se déplie en largeur, sans saut de mise en page), angles quasi droits (2 px), Inter 500 14 px, padding 10 px, point citron devant le libellé actif, inactifs en graphite
   `#44403b` (encre au survol) ;
+  barre pleine largeur, onglets dimensionnés sur leur libellé et qui rétrécissent ensemble (si un libellé complet ne tient pas, bascule automatique sur les libellés courts `shortLabel` — « Général »,
+  « Récompenses », « Donation », « Historique » — infobulle avec le libellé complet ; jamais de défilement) ;
   `role="tablist"`, transition coupée si `prefers-reduced-motion`.
 - Cadre `ActifFormFrame` et cartes des formulaires Famille : `rounded-3xl` (ramené à 8 px dans le dashboard), filet `border-border`, fond `bg-card`, sans halo.
 - Blocs de champs internes : `bg-secondary` (taupe), coins 14 px.

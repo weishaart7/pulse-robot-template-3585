@@ -9,7 +9,7 @@ import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransit
 import { FamilyLink } from '@/services/familyService';
 import { Users } from 'lucide-react';
 import { grouperMembres } from '@/lib/family/groupesMembres';
-import { PanelTitle, SummaryRow, WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { PanelTitle, SummaryRow, WorkspaceHeader, panelLinkClass } from '@/components/layout/workspace-panel';
 import { useFamilleSubNav } from './useFamilleSubNav';
 import {
   AlertDialog,
@@ -23,6 +23,9 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+
+// Repères de couleur de la composition (touches lagon / citron du hero de la landing).
+const COMPOSITION_TONES = ['bg-lagon', 'bg-citron', 'bg-lagon-ink', 'bg-[#c9c2b8]'];
 
 const STATUTS = ['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
 
@@ -39,7 +42,7 @@ function PersonBlock({ title, name, birth, profession, onOpen }: {
     <section>
       <PanelTitle
         action={
-          <button type="button" onClick={onOpen} className={`text-[13px] text-muted-foreground hover:text-foreground rounded-[4px] ${FOCUS_RING}`}>
+          <button type="button" onClick={onOpen} className={panelLinkClass}>
             Voir la fiche
           </button>
         }
@@ -112,8 +115,8 @@ const FamilleSection = () => {
   const summary = [relationStatus || 'Célibataire', `${membres.length} membre${membres.length > 1 ? 's' : ''}`].join(' · ');
 
   return (
-    <div className="pb-6">
-      <div className="workspace-panel rounded-card border border-border bg-card overflow-hidden">
+    <div>
+      <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
         <WorkspaceHeader
           icon={<Users strokeWidth={1.75} />}
           trail={['Famille', 'Foyer']}
@@ -121,21 +124,21 @@ const FamilleSection = () => {
             <button
               type="button"
               onClick={() => navigate('/dashboard/famille/membres')}
-              className={`inline-flex h-9 items-center rounded-[2px] border border-border px-3.5 text-[13px] font-medium text-foreground transition-colors hover:bg-secondary ${FOCUS_RING}`}
+              className={`inline-flex h-8 items-center rounded-[2px] border border-border px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-secondary ${FOCUS_RING}`}
             >
               {membres.length === 0 ? 'Ajouter des membres' : 'Gérer les membres'}
             </button>
           }
         />
 
-        <div className="px-6 pt-6 pb-5">
-          <h1 className="text-[26px] font-medium leading-tight tracking-[-0.02em]">Foyer</h1>
-          <p className="mt-1 text-[13px] text-muted-foreground">{summary}</p>
+        <div className="px-8 pt-8 pb-5">
+          <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">Foyer</h1>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">{summary}</p>
         </div>
 
         {/* Bandeau : le couple, son statut et la composition de la famille, en colonnes filetées */}
         <div className="grid grid-cols-1 border-y border-border md:grid-cols-2 xl:grid-cols-3 divide-y divide-border md:divide-y-0 md:divide-x">
-          <div className="px-6 py-5">
+          <div className="px-8 py-5">
             <PersonBlock
               title="Client"
               name={clientName}
@@ -145,7 +148,7 @@ const FamilleSection = () => {
             />
           </div>
           {hasPartner ? (
-            <div className="px-6 py-5">
+            <div className="px-8 py-5">
               <PersonBlock
                 title={relationStatus === 'Marié(e)' ? 'Conjoint(e)' : 'Partenaire'}
                 name={partnerName}
@@ -155,17 +158,20 @@ const FamilleSection = () => {
               />
             </div>
           ) : null}
-          <div className={`px-6 py-5 ${hasPartner ? 'md:col-span-2 md:border-t md:border-border xl:col-span-1 xl:border-t-0' : 'xl:col-span-2'}`}>
+          <div className={`px-8 py-5 ${hasPartner ? 'md:col-span-2 md:border-t md:border-border xl:col-span-1 xl:border-t-0' : 'xl:col-span-2'}`}>
             <PanelTitle>Statut du couple</PanelTitle>
             <div className="mt-3 max-w-xs">{statutSelect}</div>
             <div className="mt-5">
               <PanelTitle>Composition</PanelTitle>
               {groupes.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-x-7 gap-y-3">
-                  {groupes.map(g => (
+                  {groupes.map((g, i) => (
                     <div key={g.id}>
-                      <p className="text-[22px] font-medium leading-none tracking-[-0.02em] text-foreground">{g.membres.length}</p>
-                      <p className="mt-1.5 text-[13px] text-muted-foreground">{g.label}</p>
+                      <p className="text-[20px] font-medium leading-none tracking-[-0.02em] text-foreground">{g.membres.length}</p>
+                      <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                        <span className={`h-2.5 w-2.5 rounded-[2px] ring-1 ring-inset ring-black/10 ${COMPOSITION_TONES[i % COMPOSITION_TONES.length]}`} />
+                        {g.label}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -177,7 +183,7 @@ const FamilleSection = () => {
         </div>
 
         {/* Arbre familial, pleine largeur */}
-        <div className="px-6 py-6">
+        <div className="px-8 py-7">
           <PanelTitle>Arbre familial</PanelTitle>
           <div className="mt-5">
             <LiensFamiliauxForm view="arbre" />

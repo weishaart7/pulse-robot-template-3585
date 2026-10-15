@@ -69,6 +69,9 @@ export default {
 				},
 				// Échelle chaude du simulateur (tokens dans index.css)
 				graphite: 'hsl(var(--graphite))',
+				// Touches de couleur reprises du hero de la landing (public/hero-mesh.png)
+				lagon: { DEFAULT: '#55b4bd', ink: '#16707a', soft: '#e3f3f4' },
+				citron: { DEFAULT: '#d9fd86', ink: '#4a5a10', soft: '#f1fcd0' },
 				ash: 'hsl(var(--ash))',
 				spark: 'hsl(var(--spark))',
 				positive: 'hsl(var(--positive))',

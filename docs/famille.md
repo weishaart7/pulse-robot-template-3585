@@ -33,7 +33,7 @@ permet de l'alimenter (voir §3).
 **Flux clés** :
 - **Foyer** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
   `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
-  modifiable, y compris en couple. La page Foyer est un panneau de travail unique (même modèle que Régime
+  modifiable, y compris en couple. La page Foyer est un panneau de travail unique, bord à bord de la plaque de contenu (même modèle que Régime
   matrimonial) : barre d'en-tête (fil d'Ariane « Famille / Foyer » + bouton « Ajouter / Gérer les membres »
   vers la sous-section Membres), titre « Foyer » et rappel « statut · N membres », puis un bandeau en colonnes
   filetées — Client, Conjoint(e)/Partenaire (si en couple) en lignes libellé / valeur (nom, naissance, âge,

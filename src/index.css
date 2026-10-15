@@ -172,15 +172,28 @@
    (texte secondaire plus foncé, filets plus marqués, petites tailles relevées,
    libellés de champs homogènes). */
 .workspace-panel {
-  --muted-foreground: 30 5% 34%;   /* #5d5852, au lieu du smoke #777169 */
-  --border: 34 12% 85%;            /* #dcd7d0, filets plus visibles */
-  --input: 33 12% 78%;
+  --muted-foreground: 30 6% 29%;   /* #4f4a45, texte secondaire bien lisible */
+  --border: 34 11% 83%;            /* #d8d2ca, filets marqués */
+  --input: 33 11% 74%;
 }
-.workspace-panel .text-xs { font-size: 0.8125rem; line-height: 1.15rem; }   /* 13 px */
-.workspace-panel .text-sm { font-size: 0.875rem; line-height: 1.25rem; }    /* 14 px */
-.workspace-panel label { font-size: 0.8125rem; font-weight: 500; color: hsl(var(--foreground)); }
+.workspace-panel .text-xs { font-size: 12px; line-height: 1.05rem; }
+.workspace-panel .text-sm { font-size: 13px; line-height: 1.2rem; }
+.workspace-panel label { font-size: 12.5px; font-weight: 500; color: hsl(var(--foreground)); }
 .workspace-panel input,
-.workspace-panel button[role="combobox"] { font-size: 0.875rem; }
+.workspace-panel button[role="combobox"] { font-size: 13px; }
+/* Gabarit compact : champs et bouton calendrier de 36 px. */
+.workspace-panel input:not([type="checkbox"]):not([type="radio"]),
+.workspace-panel button[role="combobox"] { height: 36px; }
+.workspace-panel button[aria-haspopup="dialog"] { height: 36px; width: 36px; }
+/* Champs à angles quasi droits (2 px), comme la barre d'onglets : saisies, menus déroulants
+   et bouton calendrier des dates. */
+.workspace-panel input:not([type="checkbox"]):not([type="radio"]),
+.workspace-panel textarea,
+.workspace-panel button[role="combobox"],
+.workspace-panel button[aria-haspopup="dialog"] { border-radius: 2px; }
+/* Arbre familial : surtitres des cartes et des générations un cran plus grands et plus foncés. */
+.workspace-panel .ds-eyebrow { color: hsl(var(--muted-foreground)); }
+.workspace-panel .\!text-\[10px\] { font-size: 11px !important; }
 
 /* Titres de page : Inter 300, tracking serré — la graisse fine porte
    l'autorité (référence ElevenLabs). Spécificité supérieure aux utilitaires

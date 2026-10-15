@@ -131,7 +131,7 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
     `Créance de ${epouxLabel(c.epoux_creancier)} sur ${epouxLabel(c.epoux_debiteur)}`;
 
   return (
-    <div className="px-6 py-6">
+    <div className="px-8 py-7">
       <SectionHeader icon={HandCoins} title={libelles.titre} />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         {libelles.description}

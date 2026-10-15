@@ -59,7 +59,7 @@ export function PatrimoineOriginaireSection() {
   const describe = (l: PatrimoineOriginaire) => `${l.nature} (${l.epoux === 'user' ? 'vous' : 'conjoint'})`;
 
   return (
-    <div className="px-6 py-6">
+    <div className="px-8 py-7">
       <SectionHeader icon={Landmark} title="Patrimoine originaire" />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Ce que chaque époux possédait au jour du mariage, ou reçu depuis par succession/donation (art. 1570 C. civ.).

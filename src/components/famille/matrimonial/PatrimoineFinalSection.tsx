@@ -51,7 +51,7 @@ export function PatrimoineFinalSection() {
   const describe = (l: PatrimoineFinal) => `${l.nature} (${l.epoux === 'user' ? 'vous' : 'conjoint'})`;
 
   return (
-    <div className="px-6 py-6">
+    <div className="px-8 py-7">
       <SectionHeader icon={Flag} title="Patrimoine final" />
       <p className="text-xs text-muted-foreground -mt-4 mb-5">
         Ce que chaque époux possède au jour de la dissolution du régime (art. 1571 C. civ.).
