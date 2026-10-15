@@ -124,6 +124,10 @@
     scroll-behavior: smooth;
   }
 
+  /* Zone défilable sans barre visible (zone principale du tableau de bord, arbre). */
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
@@ -179,6 +183,9 @@
 .workspace-panel .text-xs { font-size: 12px; line-height: 1.05rem; }
 .workspace-panel .text-sm { font-size: 13px; line-height: 1.2rem; }
 .workspace-panel label { font-size: 12.5px; font-weight: 500; color: hsl(var(--foreground)); }
+/* Hauteur de ligne unique pour tous les libellés (text-xs / text-sm / leading-none mélangés selon
+   les composants) : sinon deux champs côte à côte ne s'alignent pas. */
+.workspace-panel label[class] { line-height: 1rem; }
 .workspace-panel input,
 .workspace-panel button[role="combobox"] { font-size: 13px; }
 /* Gabarit compact : champs et bouton calendrier de 36 px. */

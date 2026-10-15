@@ -39,13 +39,14 @@ permet de l'alimenter (voir §3).
   filetées — Client, Conjoint(e)/Partenaire (si en couple) en lignes libellé / valeur (nom, naissance, âge,
   profession) avec un lien « Voir la fiche », et une colonne Statut du couple (menu déroulant) + Composition
   (nombre de membres par branche, via `grouperMembres`) — et enfin l'arbre familial pleine largeur (l'arbre
-  demande ~960 px, d'où le bandeau plutôt qu'un panneau latéral). Plus de photo de profil ; le détail du
-  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres vit dans un panneau de travail comme Foyer et Régime matrimonial (barre d'en-tête « Famille / Membres » portant le bouton « Ajouter un membre », titre 24 px et rappel) : une section filetée par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, sur deux colonnes à partir de `lg`. Chaque branche a une couleur fixe ([groupeTones.ts](../src/components/famille/groupeTones.ts) : descendants lagon, ascendants citron, collatéraux lagon foncé, alliés beige, autres gris), reprise par le repère du titre de section, le carré d'initiales des membres vivants et la pastille du bloc « Composition » du Foyer ; étiquettes en `Chip` (lagon pour les avantages fiscaux) ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
+  demande ~960 px, d'où le bandeau plutôt qu'un panneau latéral). Les cartes de l'arbre suivent le gabarit des panneaux : angles de 2 px, filet, fond blanc (couple en noir), initiales en carré coloré selon la branche, libellés de génération en texte 12 px, traits fins couleur filet. Plus de photo de profil ; le détail du
+  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres vit dans un panneau de travail comme Foyer et Régime matrimonial (barre d'en-tête « Famille / Membres » portant le bouton « Ajouter un membre », titre 24 px et rappel) : une section filetée par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, sur deux colonnes à partir de `lg`. Chaque branche a une couleur fixe ([groupeTones.ts](../src/components/famille/groupeTones.ts) : descendants lagon, ascendants citron, collatéraux lagon foncé, alliés beige, autres gris), reprise par le repère du titre de section, le carré d'initiales des membres vivants (liste et arbre, via `groupeIdDuLien`) et la pastille du bloc « Composition » du Foyer ; étiquettes en `Chip` (lagon pour les avantages fiscaux) ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
   état vide explicatif sans membre) vit dans la sous-section Membres. Les personnes décédées sont estompées
-  (carte détourée d'un filet, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
+  (carte à filet pointillé, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
   rattachés au partenaire (`spouse` / `both_parents`) ; rien n'est effacé ni réaffecté
   (`lib/family/statutTransition.ts`, politique « Option A »). Il route vers les fiches client et conjoint et, via l'arbre, vers les membres.
+- **Fiches client et conjoint** suivent le même gabarit de panneau de travail ([FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx), [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx)) : barre d'en-tête « Famille / Foyer / Client » (ou « Conjoint ») portant « Retour » et « Enregistrer », titre (nom) et rappel (date de naissance, âge), puis trois sections filetées sans encadré (Identité, Profession & Naissance, Situation juridique) ; la civilité se choisit dans une bascule segmentée comme le contrat de mariage. Sans statut de couple, la fiche conjoint n'affiche qu'un message renvoyant au Foyer.
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
@@ -102,6 +103,7 @@ permet de l'alimenter (voir §3).
   mariage, PACS, donations, mandat). Avant son introduction, chaque formulaire faisait son propre
   `toISOString().split('T')[0]`, ce qui produisait un décalage d'un jour en fuseau français.
   Les dates futures sont refusées au clavier comme au calendrier (voir §3).
+  Le calendrier est le panneau commun de l'app ([date-picker-panel.tsx](../src/components/ui/date-picker-panel.tsx), voir design-system.md) à trois vues : jours (semaine du lundi, libellés français), mois (grille 3×4) et années (pages de 20 ans) ; un clic sur le mois ou l'année de l'en-tête y saute directement, puis on redescend année → mois → jour. Bornes ici : 1900 à aujourd'hui. Le panneau se ferme dès qu'un jour est choisi.
 
 - **Rattachement des enfants et branche familiale obligatoires.** Le schéma zod de
   `FamilyMemberFormDialog.tsx` exige « Enfant de » pour un Enfant (présélectionné quand une seule

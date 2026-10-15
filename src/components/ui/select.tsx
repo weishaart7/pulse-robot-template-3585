@@ -12,11 +12,11 @@ const SelectContext = React.createContext<{
   indicatorPosition: 'left' | 'right';
   indicatorVisibility: boolean;
   indicator: ReactNode;
-}>({ indicatorPosition: 'left', indicator: null, indicatorVisibility: true });
+}>({ indicatorPosition: 'right', indicator: null, indicatorVisibility: true });
 
 // Root Component
 const Select = ({
-  indicatorPosition = 'left',
+  indicatorPosition = 'right',
   indicatorVisibility = true,
   indicator,
   ...props
@@ -44,15 +44,15 @@ function SelectValue({ ...props }: React.ComponentProps<typeof SelectPrimitive.V
 const selectTriggerVariants = cva(
   `
     flex bg-background w-full items-center justify-between outline-none border border-border shadow-none transition-colors
-    text-foreground data-placeholder:text-muted-foreground hover:border-foreground/25 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-1
-    focus-visible:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border [&>span]:line-clamp-1
+    text-foreground data-placeholder:text-muted-foreground hover:border-foreground/40 focus-visible:border-foreground focus-visible:outline-none focus-visible:ring-0
+    data-[state=open]:border-foreground [&[data-state=open]>svg]:rotate-180 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-border [&>span]:line-clamp-1
     aria-invalid:border-destructive/60 aria-invalid:ring-destructive/10     [[data-invalid=true]_&]:border-destructive/60 [[data-invalid=true]_&]:ring-destructive/10    `,
   {
     variants: {
       size: {
-        sm: 'h-7 px-2.5 text-xs gap-1 rounded-md',
-        md: 'h-9 px-3 text-sm gap-1.5 rounded-md',
-        lg: 'h-9 px-3 text-sm gap-1.5 rounded-md',
+        sm: 'h-7 px-2.5 text-xs gap-1 rounded-[2px]',
+        md: 'h-9 px-3 text-sm gap-1.5 rounded-[2px]',
+        lg: 'h-9 px-3 text-sm gap-1.5 rounded-[2px]',
       },
     },
     defaultVariants: {
@@ -74,7 +74,7 @@ function SelectTrigger({ className, children, size, ...props }: SelectTriggerPro
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDown className="h-4 w-4 opacity-60 -me-0.5" />
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 -me-0.5" />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
@@ -118,7 +118,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border border-border bg-popover shadow-lg text-secondary-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
+          'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-[4px] border border-border bg-popover shadow-md text-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1.5 data-[side=left]:-translate-x-1.5 data-[side=right]:translate-x-1.5 data-[side=top]:-translate-y-1.5',
           className,
@@ -129,7 +129,7 @@ function SelectContent({
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
           className={cn(
-            'p-1.5',
+            'p-1',
             position === 'popper' &&
               'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
           )}
@@ -159,7 +159,7 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        'group relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 text-sm outline-hidden text-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground data-disabled:pointer-events-none data-disabled:opacity-50',
+        'group relative flex w-full cursor-default select-none items-center rounded-[2px] py-2 text-[13px] outline-none text-foreground data-[highlighted]:bg-secondary data-[state=checked]:font-medium data-disabled:pointer-events-none data-disabled:opacity-50',
         indicatorPosition === 'left' ? 'ps-8 pe-2' : 'pe-8 ps-2',
         className,
       )}
@@ -176,7 +176,7 @@ function SelectItem({ className, children, ...props }: React.ComponentProps<type
             )}
           >
             <SelectPrimitive.ItemIndicator>
-              <Check className="h-4 w-4 text-primary group-hover:text-primary-foreground group-focus:text-primary-foreground group-data-[highlighted]:text-primary-foreground" />
+              <Check className="h-3.5 w-3.5 text-foreground" strokeWidth={2.25} />
             </SelectPrimitive.ItemIndicator>
           </span>
         ))}
@@ -211,7 +211,7 @@ function SelectSeparator({ className, ...props }: React.ComponentProps<typeof Se
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
-      className={cn('-mx-1.5 my-1.5 h-px bg-border', className)}
+      className={cn('-mx-1 my-1 h-px bg-border', className)}
       {...props}
     />
   );

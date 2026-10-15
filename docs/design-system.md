@@ -57,6 +57,11 @@ Surtitres techniques (étapes de wizard, en-têtes de section `SectionHeader`) :
 - Fond eggshell partout. Dashboard (`.dashboard-shell`, `index.css`) : coins des cartes resserrés à **8 px** — règle qui écrase `rounded-card`,
   `rounded-2xl`, `rounded-3xl` et `rounded-[16|18|20|22px]` à l'intérieur du dashboard, sans toucher la landing ni
   les fenêtres (dialogues, menus) rendues hors du cadre.
+- Listes déroulantes (`components/ui/select.tsx`) : champ à angles 2 px, filet foncé au survol / à l'ouverture / au focus (plus d'anneau bleu), chevron gris qui pivote à l'ouverture ; menu à angles 4 px, options en 13 px, survol gris clair (plus de surbrillance en couleur primaire), option choisie en gras avec une coche noire à droite.
+- Cases à cocher (`components/ui/checkbox.tsx`) : carré 16 px à angles 2 px, filet gris foncé (plus soutenu au survol), cochée en noir avec coche blanche ; plus d'ombre.
+- Calendriers : tous passent par [date-picker-panel.tsx](../src/components/ui/date-picker-panel.tsx) (le `Calendar` de `components/ui/calendar.tsx` n'en est plus qu'un adaptateur, mode « single » seul). Trois vues : jours (lundi en premier, libellés français), mois, années par pages de 20 ; clic sur le mois ou l'année de l'en-tête pour y sauter. Angles 2 px, jour choisi en noir, aujourd'hui cerné d'un filet. Bornes : 1900 en bas ; en haut `maxDate` si fourni (dates passées seulement dans `SmartDateInput`), sinon aujourd'hui + 50 ans.
+- Notifications : seules les **erreurs** s'affichent (variante `destructive` de `toaster.tsx`, `toast.error` de Sonner) ; les confirmations de succès / info sont masquées de façon centrale, les appels restent en place dans le code.
+- Zone principale (`DashboardLayout.tsx`) : défilement **sans barre visible** (classe utilitaire `.no-scrollbar`, `index.css`, aussi posée sur le défilement horizontal de l'arbre familial) ; un fondu vers le fond eggshell (48 px) apparaît en bas tant qu'il reste du contenu sous la ligne de flottaison.
 - Écran large (≥ `md`) : **pas de barre du haut**. Fond noir chaud `#1e1d19` sur toute la hauteur ; la zone de
   contenu est une plaque eggshell coins 8 px, entourée d'une bande de 14 px de ce noir (haut, bas, droite ; à gauche,
   la barre latérale qui se prolonge dans le même noir). Navigation dans `DashboardSidebar.tsx` : **barre latérale

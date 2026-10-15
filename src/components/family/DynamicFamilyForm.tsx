@@ -152,7 +152,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>{getParentLabel()}{linkType === 'Enfant' ? ' *' : ''}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? ''}>
                 <FormControl>
-                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -180,7 +180,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Branche familiale *</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? ''}>
                 <FormControl>
-                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                     <SelectValue placeholder="Sélectionner une branche" />
                   </SelectTrigger>
                 </FormControl>
@@ -208,7 +208,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Lien de fratrie</FormLabel>
               <Select onValueChange={field.onChange} value={field.value || 'germain'}>
                 <FormControl>
-                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -236,7 +236,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               <FormLabel>Civilité</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                  <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
                 </FormControl>
@@ -450,7 +450,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                 <FormLabel>Enfant adopté</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || 'Non'}>
                   <FormControl>
-                    <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                    <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                       <SelectValue placeholder="Sélectionner" />
                     </SelectTrigger>
                   </FormControl>
@@ -512,7 +512,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                     <FormLabel>Motif de l'exception</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                        <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                           <SelectValue placeholder="Sélectionner un motif" />
                         </SelectTrigger>
                       </FormControl>
@@ -552,7 +552,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                     <FormLabel>Renonce à la succession de *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl>
-                        <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                        <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                           <SelectValue placeholder="Sélectionner un parent" />
                         </SelectTrigger>
                       </FormControl>

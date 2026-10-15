@@ -304,7 +304,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                         <FormControl>
                           <SelectTrigger
                             size="lg"
-                            className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                            className="bg-background border-border shadow-none rounded-md"
                           >
                             <SelectValue placeholder="Sélectionner un lien" />
                           </SelectTrigger>

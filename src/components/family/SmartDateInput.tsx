@@ -1,9 +1,9 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
+import { DatePickerPanel } from '@/components/ui/date-picker-panel';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { FormControl } from '@/components/ui/form';
@@ -20,6 +20,7 @@ interface SmartDateInputProps {
 // réels, année dans [1900, aujourd'hui]).
 export function SmartDateInput({ value, onChange, className }: SmartDateInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="flex items-center gap-2">
@@ -87,24 +88,20 @@ export function SmartDateInput({ value, onChange, className }: SmartDateInputPro
           }}
         />
       </FormControl>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" className="shrink-0" type="button">
+          <Button variant="outline" size="icon" className="shrink-0" type="button" aria-label="Ouvrir le calendrier">
             <CalendarIcon className="h-4 w-4" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
+        <PopoverContent className="w-auto rounded-[4px] border-border p-0 shadow-md" align="end">
+          <DatePickerPanel
             selected={value instanceof Date ? value : undefined}
+            maxDate={new Date()}
             onSelect={(date) => {
-              if (date) {
-                onChange(date);
-              }
+              onChange(date);
+              setOpen(false);
             }}
-            disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-            initialFocus
-            className="p-3 pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

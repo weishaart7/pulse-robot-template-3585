@@ -389,7 +389,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                                 <FormLabel>Régime conventionnel</FormLabel>
                                 <Select onValueChange={handleRegimeSelect} value={field.value}>
                                   <FormControl>
-                                    <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                                    <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                                       <SelectValue />
                                     </SelectTrigger>
                                   </FormControl>
@@ -637,7 +637,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                         <FormLabel>Convention de PACS</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+                            <SelectTrigger size="lg" className="bg-background border-border shadow-none rounded-md">
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>

@@ -13,7 +13,9 @@ export function Toaster() {
 
   return (
     <ToastProvider>
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {/* Seules les erreurs s'affichent : les confirmations (succès, info) sont
+          jugées trop intrusives ; un échec d'enregistrement doit rester visible. */}
+      {toasts.filter(t => t.variant === "destructive").map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
             <div className="grid gap-1">
