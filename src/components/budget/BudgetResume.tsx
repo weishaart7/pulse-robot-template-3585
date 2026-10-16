@@ -1,6 +1,6 @@
 import { ASH, INK, NEGATIVE, STONE } from '@/lib/palette';
-import React, { useMemo } from 'react';
-import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Line, ReferenceLine, ResponsiveContainer, Tooltip } from 'recharts';
+import React, { useMemo, useState } from 'react';
+import { ComposedChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Line, ReferenceLine, ResponsiveContainer, Tooltip } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
@@ -345,7 +345,8 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   );
 };
 
-// Composant graphique saisonnalité
+// Bandeau « Évolution mensuelle » : chiffres de l'année à gauche, graphique à droite (solde du
+// mois et cumul depuis janvier, ou revenus et charges), mois en cours repéré, mois à venir estompés.
 interface SeasonalityChartProps {
   revenus: Revenu[];
   charges: Charge[];
@@ -397,72 +398,174 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenus, charges, currentYear]);
 
+  const [vue, setVue] = useState<'solde' | 'flux'>('solde');
 
-  // Sans ponctuel ni ligne qui démarre ou s'arrête dans l'année, les 12 mois sont identiques :
-  // le graphique n'apprend rien, le bandeau est omis.
+  if (revenus.length === 0 && charges.length === 0) return null;
+
+  const currentMonth = new Date().getMonth();
+  // Solde cumulé depuis janvier, et part « à venir » des mois postérieurs au mois en cours.
+  let cumul = 0;
+  const data = monthlyData.map((m, i) => {
+    cumul += m.solde;
+    return { ...m, cumul, futur: i > currentMonth };
+  });
+  const cumulADate = data[currentMonth].cumul;
+  const cumulFinAnnee = data[11].cumul;
+  // Sans ponctuel ni ligne qui démarre ou s'arrête dans l'année, les 12 mois sont identiques.
   const isFlat = monthlyData.every(m => m.revenus === monthlyData[0].revenus && m.charges === monthlyData[0].charges);
-  if ((revenus.length === 0 && charges.length === 0) || isFlat) return null;
+  const meilleur = data.reduce((best, m) => (m.solde > best.solde ? m : best), data[0]);
+  const plusSerre = data.reduce((low, m) => (m.solde < low.solde ? m : low), data[0]);
+  const nbDeficit = data.filter(m => m.solde < 0).length;
+  const MOIS_LONGS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const moisLong = (label: string) => MOIS_LONGS[MONTHS.indexOf(label)];
+  const signed = (n: number) => `${n >= 0 ? '+' : '−'}${formatCurrency(Math.abs(n))}`;
+
+  const axisTick = { fill: 'hsl(var(--muted-foreground))', fontSize: 11 };
+  const kFormat = (value: number) => `${Math.round(value / 1000)}k€`;
+  const legend = vue === 'solde'
+    ? [{ color: LAGON_INK, label: 'Solde du mois' }, { color: INK, label: 'Cumul depuis janvier', line: true }]
+    : [{ color: LAGON_INK, label: 'Revenus' }, { color: CITRON_MID, label: 'Charges' }];
 
   return (
-    <div className="px-8 py-6">
-      <PanelTitle
-        action={
-          <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Swatch color={LAGON_INK} />Revenus</span>
-            <span className="flex items-center gap-1.5"><Swatch color={CITRON_MID} />Charges</span>
-            <span className="flex items-center gap-1.5"><Swatch color={INK} />Solde</span>
+    <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)] lg:divide-x lg:divide-y-0">
+      {/* Chiffres de l'année. */}
+      <div className="px-8 py-6">
+        <PanelTitle>Année {currentYear}</PanelTitle>
+        <dl className="mt-3">
+          <SummaryRow label="Cumul à date">
+            <span className="tabular-nums" style={{ color: cumulADate < 0 ? NEGATIVE : undefined }}>{signed(cumulADate)}</span>
+          </SummaryRow>
+          <SummaryRow label="Fin d'année">
+            <span className="tabular-nums" style={{ color: cumulFinAnnee < 0 ? NEGATIVE : undefined }}>{signed(cumulFinAnnee)}</span>
+          </SummaryRow>
+          {isFlat ? (
+            <SummaryRow label="Mensuel">
+              <span className="tabular-nums">{signed(data[0].solde)}</span>
+              <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">chaque mois</span>
+            </SummaryRow>
+          ) : (
+            <>
+              <SummaryRow label="Meilleur mois">
+                <span className="tabular-nums">{signed(meilleur.solde)}</span>
+                <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">{moisLong(meilleur.month)}</span>
+              </SummaryRow>
+              <SummaryRow label="Plus serré">
+                <span className="tabular-nums">{signed(plusSerre.solde)}</span>
+                <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">{moisLong(plusSerre.month)}</span>
+              </SummaryRow>
+            </>
+          )}
+          <SummaryRow label="Mois en déficit">
+            <span className="tabular-nums" style={{ color: nbDeficit > 0 ? NEGATIVE : undefined }}>{nbDeficit}</span>
+          </SummaryRow>
+        </dl>
+        {isFlat && (
+          <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
+            Montants identiques chaque mois : aucun ponctuel ni ligne qui démarre ou s'arrête cette année.
+          </p>
+        )}
+      </div>
+
+      {/* Graphique. */}
+      <div className="min-w-0 px-8 py-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <PanelTitle>Évolution mensuelle</PanelTitle>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+              {legend.map(l => (
+                <span key={l.label} className="flex items-center gap-1.5">
+                  {l.line
+                    ? <span className="inline-block h-[2px] w-3 rounded-full" style={{ backgroundColor: l.color }} />
+                    : <Swatch color={l.color} />}
+                  {l.label}
+                </span>
+              ))}
+            </div>
+            <div className="inline-flex h-7 items-center rounded-[2px] border border-border p-0.5">
+              {([['solde', 'Solde'], ['flux', 'Revenus & charges']] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={vue === id}
+                  onClick={() => setVue(id)}
+                  className={`h-full rounded-[1px] px-2.5 text-[12px] font-medium transition-colors ${
+                    vue === id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        }
-      >
-        Évolution mensuelle {currentYear}
-      </PanelTitle>
-      <div className="mt-4 h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={3} barCategoryGap="28%">
-            <CartesianGrid stroke={STONE} vertical={false} />
-            <XAxis
-              dataKey="month"
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              dy={6}
-            />
-            <YAxis
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(value) => `${(value / 1000).toFixed(0)}k€`}
-              width={40}
-            />
-            <Tooltip
-              cursor={{ fill: 'hsl(var(--secondary))' }}
-              formatter={(value: number, name: string) => [
-                formatCurrency(value),
-                name === 'revenus' ? 'Revenus' : name === 'charges' ? 'Charges' : 'Solde'
-              ]}
-              contentStyle={{
-                backgroundColor: 'hsl(var(--popover))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '2px',
-                padding: '8px 10px',
-              }}
-              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500, marginBottom: '4px', fontSize: '12px' }}
-              itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px', padding: '1px 0' }}
-            />
-            <ReferenceLine y={0} stroke={ASH} />
-            <Bar dataKey="revenus" fill={LAGON_INK} radius={[1, 1, 0, 0]} name="revenus" />
-            <Bar dataKey="charges" fill={CITRON_MID} radius={[1, 1, 0, 0]} name="charges" />
-            <Line
-              type="monotone"
-              dataKey="solde"
-              stroke={INK}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4, fill: INK, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
-              name="solde"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+        </div>
+
+        <div className="mt-4 h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={data} margin={{ top: 16, right: 4, left: 0, bottom: 0 }} barGap={2} barCategoryGap={vue === 'solde' ? '30%' : '24%'}>
+              <CartesianGrid stroke={STONE} vertical={false} />
+              <XAxis dataKey="month" tick={axisTick} axisLine={false} tickLine={false} dy={6} />
+              <YAxis yAxisId="left" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={kFormat} width={40} />
+              {vue === 'solde' && (
+                <YAxis yAxisId="right" orientation="right" tick={axisTick} axisLine={false} tickLine={false} tickFormatter={kFormat} width={44} />
+              )}
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--secondary))' }}
+                labelFormatter={(label: string) => `${moisLong(label)} ${currentYear}`}
+                formatter={(value: number, name: string) => [
+                  name === 'solde' || name === 'cumul' ? signed(value) : formatCurrency(value),
+                  { revenus: 'Revenus', charges: 'Charges', solde: 'Solde du mois', cumul: 'Cumul depuis janvier' }[name] ?? name,
+                ]}
+                contentStyle={{
+                  backgroundColor: 'hsl(var(--popover))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '4px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                  padding: '8px 10px',
+                }}
+                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500, marginBottom: '4px', fontSize: '12px' }}
+                itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px', padding: '1px 0' }}
+              />
+              <ReferenceLine yAxisId="left" y={0} stroke={ASH} />
+              {/* Mois en cours : repère vertical ; les mois à venir sont estompés. */}
+              <ReferenceLine
+                yAxisId="left"
+                x={MONTHS[currentMonth]}
+                stroke={INK}
+                strokeOpacity={0.25}
+                strokeDasharray="3 3"
+                label={{ value: 'Auj.', position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+              />
+              {vue === 'solde' ? (
+                <>
+                  <Bar yAxisId="left" dataKey="solde" name="solde" radius={[1, 1, 0, 0]} maxBarSize={28}>
+                    {data.map(m => (
+                      <Cell key={m.month} fill={m.solde < 0 ? NEGATIVE : LAGON_INK} fillOpacity={m.futur ? 0.35 : 1} />
+                    ))}
+                  </Bar>
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="cumul"
+                    name="cumul"
+                    stroke={INK}
+                    strokeWidth={1.75}
+                    dot={false}
+                    activeDot={{ r: 4, fill: INK, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+                  />
+                </>
+              ) : (
+                <>
+                  <Bar yAxisId="left" dataKey="revenus" name="revenus" radius={[1, 1, 0, 0]} maxBarSize={18}>
+                    {data.map(m => <Cell key={m.month} fill={LAGON_INK} fillOpacity={m.futur ? 0.35 : 1} />)}
+                  </Bar>
+                  <Bar yAxisId="left" dataKey="charges" name="charges" radius={[1, 1, 0, 0]} maxBarSize={18}>
+                    {data.map(m => <Cell key={m.month} fill={CITRON_MID} fillOpacity={m.futur ? 0.35 : 1} />)}
+                  </Bar>
+                </>
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

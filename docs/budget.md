@@ -126,8 +126,12 @@ filetées, lignes `SummaryRow`, titres `PanelTitle`, pas de cartes.
      rappelle les libellés de ses lignes (3 max, puis « +n »), son montant et sa part — et
      **Endettement (HCSF)** : taux d'effort avec jauge 0–50 % et repère au plafond `TAUX_EFFORT_MAX`
      (rouge au-delà), crédits, revenus pondérés, capacité, nombre de ponctuels, rappel de pondération.
-  3. **Évolution mensuelle** : bandeau affiché seulement si les 12 mois diffèrent (ponctuel, ligne qui
-     démarre ou s'arrête dans l'année) ; omis sinon.
+  3. **Évolution mensuelle** (bandeau bas, toujours affiché dès qu'une ligne existe) : à gauche,
+     **Année N** — cumul à date (jusqu'au mois en cours), cumul de fin d'année, meilleur mois et mois le
+     plus serré (ou solde mensuel unique si les 12 mois sont identiques), nombre de mois en déficit ; à
+     droite, graphique à deux vues (bascule segmentée) : **Solde** — barres du solde du mois (lagon foncé,
+     rouge si négatif) et courbe du cumul depuis janvier sur un axe à droite — ou **Revenus & charges**
+     (barres lagon foncé / citron). Mois en cours repéré (« Auj. », trait pointillé), mois à venir estompés.
 Purement visuel : aucune logique de calcul modifiée.
 
 - **`src/lib/budget/periodicite.ts` : point d'entrée unique de la conversion de périodicité.** Il n'y a
@@ -146,7 +150,7 @@ Purement visuel : aucune logique de calcul modifiée.
   `BudgetResume` (KPI, donuts, graphique mensuel), `BudgetList` et `Dashboard.tsx` consomment tous ce
   module ; tests dans `periodicite.test.ts`.
 
-- **Graphique « Évolution mensuelle » (`SeasonalityChart`)** — masqué quand les 12 mois sont identiques : une ligne récurrente est lissée
+- **Graphique « Évolution mensuelle » (`SeasonalityChart`)** : une ligne récurrente est lissée
   (annuel / 12) sur chaque mois de l'année civile où elle est active, `date_debut`/`date_fin` comprises au
   mois près ; un ponctuel tombe en entier sur le mois de sa `date_debut` (janvier sans date).
 
