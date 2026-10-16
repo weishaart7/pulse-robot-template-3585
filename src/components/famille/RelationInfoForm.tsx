@@ -6,7 +6,7 @@ import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ActionHubInput from "@/components/ui/action-hub-input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
 import { LogoSpinner } from "@/components/brand/LogoSpinner";
@@ -23,9 +23,14 @@ import { RecompensesSection } from "@/components/famille/matrimonial/Recompenses
 import { CreancesEntreEpouxSection } from "@/components/famille/matrimonial/CreancesEntreEpouxSection";
 import { PatrimoineOriginaireSection } from "@/components/famille/matrimonial/PatrimoineOriginaireSection";
 import { PatrimoineFinalSection } from "@/components/famille/matrimonial/PatrimoineFinalSection";
-import { determinerRegimeLegal, REGIMES_MATRIMONIAUX } from "@/lib/patrimoine/regimeLegal";
+import { determinerRegimeLegal, CLASSES_REGIMES_MATRIMONIAUX } from "@/lib/patrimoine/regimeLegal";
 import { getSimplifiedRegime, RegimeType, toRegimeType } from "@/types/matrimonial";
 import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
+import { useAssets } from "@/hooks/useAssets";
+import { calculerRequalifications, Requalification } from "@/lib/patrimoine/requalification";
+import { appliquerRequalifications } from "@/services/requalificationService";
+import { lirePerimetre } from "@/lib/patrimoine/societeAcquets";
+import { RequalificationDialog } from "@/components/famille/matrimonial/RequalificationDialog";
 
 const formSchema = z.object({
   conventionPacs: z.enum(['Régime de la séparation des biens', 'Indivision']).default('Régime de la séparation des biens'),
@@ -45,6 +50,7 @@ const formSchema = z.object({
   residenceSeparee: z.boolean().default(false),
   separationDeCorps: z.boolean().default(false),
   separationCorpsClauseRenonciation: z.boolean().default(false),
+  dateJugementSeparationCorps: z.date().optional(),
   donationDernierVivantPersonne: z.boolean().default(false),
   dateDonationPersonne: z.date().optional(),
   donationDernierVivantConjoint: z.boolean().default(false),
@@ -79,6 +85,7 @@ const FIELD_TO_SECTION: Partial<Record<keyof FormData, Section>> = {
   residenceSeparee: 'informations-generales',
   separationDeCorps: 'informations-generales',
   separationCorpsClauseRenonciation: 'informations-generales',
+  dateJugementSeparationCorps: 'informations-generales',
   donationDernierVivantPersonne: 'donation',
   dateDonationPersonne: 'donation',
   donationDernierVivantConjoint: 'donation',
@@ -105,6 +112,9 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   const { toast } = useToast();
   const { data: maritalData, saving, saveData, setDonationDernierVivant } = useMaritalStatus();
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
+  const { assets, fetchAssets } = useAssets();
+  const [requalifications, setRequalifications] = useState<Requalification[] | null>(null);
+  const [requalifEnCours, setRequalifEnCours] = useState(false);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -136,6 +146,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         residenceSeparee: maritalData.residence_separee || false,
         separationDeCorps: maritalData.separation_de_corps || false,
         separationCorpsClauseRenonciation: maritalData.separation_corps_clause_renonciation || false,
+        dateJugementSeparationCorps: maritalData.date_jugement_separation_corps ? new Date(maritalData.date_jugement_separation_corps) : undefined,
         donationDernierVivantPersonne: maritalData.donation_dernier_vivant_personne || false,
         dateDonationPersonne: maritalData.date_donation_personne ? new Date(maritalData.date_donation_personne) : undefined,
         donationDernierVivantConjoint: maritalData.donation_dernier_vivant_conjoint || false,
@@ -175,12 +186,40 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         await saveData(payload as any);
       }
 
+      // Le régime (ou ses dates) a pu changer : les qualifications enregistrées
+      // sur les biens peuvent être périmées. Proposées avant d'aller plus loin.
+      const changements = calculerRequalifications(
+        assets || [],
+        { ...(maritalData as any), statut_couple: relationStatus, ...payload },
+        lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets)
+      );
+      if (changements.length > 0) {
+        setRequalifications(changements);
+        return;
+      }
       onSuccess?.();
     } catch (error) {
       // Notification déjà affichée par useMaritalStatus.
       if (import.meta.env.DEV) {
         console.error('Erreur de sauvegarde:', error);
       }
+    }
+  };
+
+  const appliquerRequalif = async () => {
+    if (!requalifications) return;
+    setRequalifEnCours(true);
+    try {
+      await appliquerRequalifications(requalifications);
+      await fetchAssets();
+      toast({ title: 'Biens requalifiés', description: `${requalifications.length} bien(s) mis à jour.` });
+      setRequalifications(null);
+      onSuccess?.();
+    } catch (error) {
+      if (import.meta.env.DEV) console.error('Requalification après enregistrement du régime :', error);
+      toast({ title: 'Erreur', description: 'La requalification des biens a échoué.', variant: 'destructive' });
+    } finally {
+      setRequalifEnCours(false);
     }
   };
 
@@ -395,8 +434,16 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {REGIMES_MATRIMONIAUX.map(regime => (
-                                      <SelectItem key={regime} value={regime}>{regime}</SelectItem>
+                                    {CLASSES_REGIMES_MATRIMONIAUX.map((classe, i) => (
+                                      <Fragment key={classe.label}>
+                                        {i > 0 && <SelectSeparator />}
+                                        <SelectGroup>
+                                          <SelectLabel>{classe.label}</SelectLabel>
+                                          {classe.regimes.map(regime => (
+                                            <SelectItem key={regime} value={regime}>{regime}</SelectItem>
+                                          ))}
+                                        </SelectGroup>
+                                      </Fragment>
                                     ))}
                                   </SelectContent>
                                 </Select>
@@ -406,7 +453,11 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                           )}
                         />
                         <div className="mt-3">
-                          <QualificationRegimeOptions regimeType={simplifiedRegimeType} />
+                          <QualificationRegimeOptions
+                            regimeType={simplifiedRegimeType}
+                            regimeMatrimonial={regimeMatrimonial}
+                            dateMariage={dateMariage ? format(dateMariage, 'yyyy-MM-dd') : undefined}
+                          />
                         </div>
                       </>
                     )}
@@ -432,7 +483,27 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                       {/* L'époux séparé de corps reste conjoint successible sauf clause de
                           renonciation dans la convention (C. civ. art. 732, référentiel §5.1) */}
                       {separationDeCorps && (
-                        <div className="ml-7 border-l border-border pl-4">
+                        <div className="ml-7 border-l border-border pl-4 space-y-3">
+                          <FormField
+                            control={form.control}
+                            name="dateJugementSeparationCorps"
+                            render={({ field }) => (
+                              <FormItem className="max-w-xs">
+                                <div className="relative w-full flex flex-col gap-1">
+                                  <FormLabel>Date du jugement de séparation de corps</FormLabel>
+                                  <SmartDateInput
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
+                                  />
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Les biens acquis à partir de cette date relèvent de la séparation de biens (art. 302).
+                                </p>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                           <FormField
                             control={form.control}
                             name="separationCorpsClauseRenonciation"
@@ -806,6 +877,15 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         )}
         </div>
       </form>
+      <RequalificationDialog
+        changements={requalifications}
+        pending={requalifEnCours}
+        onCancel={() => {
+          setRequalifications(null);
+          onSuccess?.();
+        }}
+        onConfirm={appliquerRequalif}
+      />
     </Form>
   );
 }

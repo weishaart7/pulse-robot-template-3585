@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
 import { isEpargneAssuranceVie } from '@/constants/assetTypes';
-import { isPacsIndivision } from '@/lib/patrimoine/qualification';
-import { FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
+import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
+import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
 import { IndivisairesSection, IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementSection, DemembrementDraft } from '@/components/assets/DemembrementSection';
@@ -47,23 +47,38 @@ export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => (
 interface DetenteurFieldsProps {
   form: AssetForm;
   detenteurOptions: string[];
+  maritalContext: MaritalContext;
+  assetId?: string;
 }
 
 // Case "indivision avec un tiers" + sélecteur de détenteur.
 export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
   form,
-  detenteurOptions
+  detenteurOptions,
+  maritalContext,
+  assetId
 }) => {
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');
   const watchedQualificationBien = form.watch('qualification_bien');
+  const values = form.watch();
 
   const isEpargneAV = isEpargneAssuranceVie(watchedNature);
-  // "Le couple" (bien commun, 50/50 fixé par la loi) n'a de sens que si la
-  // qualification n'est pas "Bien propre"/"Bien personnel" (100/0 binaire,
-  // aucun pourcentage possible) — cf. useAssetForm.ts pour la resélection
-  // forcée si la qualification change après coup.
-  const filteredDetenteurOptions = (watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel'
+  const qualifiePropre = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel';
+  // "Le couple" n'a de sens que pour un bien commun (50/50 de droit) ou indivis
+  // entre époux (quote-part) — jamais pour un bien propre/personnel (100/0
+  // binaire). Un bien qualifié propre parce qu'il a un seul détenteur peut
+  // toutefois devenir indivis en choisissant "Le couple" (séparation de biens,
+  // participation, après séparation de corps : art. 1538) : l'option reste
+  // alors proposée, à condition que la qualification soit automatique.
+  // cf. useAssetForm.ts pour la resélection forcée si la qualification change
+  // après coup.
+  const coupleRequalifie =
+    values.qualification_auto !== false &&
+    !['Bien propre', 'Bien personnel'].includes(
+      qualifierBien(buildQualificationContext(maritalContext, { ...values, detenteur: 'Le couple' }, assetId)).qualification
+    );
+  const filteredDetenteurOptions = (qualifiePropre && !coupleRequalifie
     ? detenteurOptions.filter(option => option !== 'Le couple')
     : detenteurOptions
   ).filter(option => option !== 'Indivision');
@@ -97,7 +112,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             {/* "Souscripteur" pour les 4 natures épargne/assurance-vie : vocabulaire
                 assurantiel, même colonne `detenteur` (cf. constants/assetTypes.ts). */}
             <FormLabel>{isEpargneAV ? 'Souscripteur' : 'Détenteur'}</FormLabel>
-            {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+            {qualifiePropre && !coupleRequalifie && (
               <FieldHelp>
                 "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
               </FieldHelp>
@@ -298,7 +313,7 @@ export const DetentionFields: React.FC<DetentionFieldsProps> = ({
   <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <ModeDetentionField form={form} />
-      <DetenteurFields form={form} detenteurOptions={detenteurOptions} />
+      <DetenteurFields form={form} detenteurOptions={detenteurOptions} maritalContext={maritalContext} />
       <QuotePartFields form={form} familyData={familyData} />
     </div>
 

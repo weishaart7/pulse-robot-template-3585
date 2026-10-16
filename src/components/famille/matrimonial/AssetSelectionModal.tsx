@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { useAssets } from '@/hooks/useAssets';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { cn } from '@/lib/utils';
 
 interface AssetSelectionModalProps {
   title: string;
+  /** Phrase d'explication sous le titre. */
+  description?: string;
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (selectedAssets: string[]) => void;
@@ -18,6 +21,7 @@ interface AssetSelectionModalProps {
 
 export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
   title,
+  description,
   isOpen,
   onClose,
   onConfirm,
@@ -59,79 +63,70 @@ export const AssetSelectionModal: React.FC<AssetSelectionModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
+      <DialogContent className="workspace-panel max-w-2xl gap-0 overflow-hidden rounded-[4px] p-0 sm:rounded-[4px]">
+        <DialogHeader className="border-b border-border px-6 pb-4 pt-5">
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">{title}</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Sélectionnez les biens à inclure dans cette clause :
+            {description ?? 'Cochez les biens à inclure.'}
           </p>
-          
-          {assets && assets.length > 0 ? (
-            <>
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-2">
-                  {assets.map(asset => (
-                    <div 
-                      key={asset.id} 
-                      className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${
-                        selectedAssets.includes(asset.id)
-                          ? 'bg-foreground/5 border-foreground/30'
-                          : 'border-border hover:bg-muted/50'
-                      }`}
+        </DialogHeader>
+
+        {assets && assets.length > 0 ? (
+          <ScrollArea className="h-[320px]">
+            <ul className="divide-y divide-border">
+              {assets.map(asset => {
+                const checked = selectedAssets.includes(asset.id);
+                return (
+                  <li key={asset.id}>
+                    <label
+                      htmlFor={`asset-select-${asset.id}`}
+                      className={cn(
+                        'flex cursor-pointer items-center gap-3 px-6 py-2.5 transition-colors hover:bg-secondary/60',
+                        checked && 'bg-secondary/50'
+                      )}
                     >
-                      <Checkbox 
-                        id={asset.id} 
-                        checked={selectedAssets.includes(asset.id)} 
-                        onCheckedChange={() => handleAssetToggle(asset.id)} 
+                      <Checkbox
+                        id={`asset-select-${asset.id}`}
+                        checked={checked}
+                        onCheckedChange={() => handleAssetToggle(asset.id)}
                       />
-                      <Label htmlFor={asset.id} className="flex-1 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">{asset.denomination || 'Sans nom'}</p>
-                            <p className="text-xs text-muted-foreground">{asset.nature}</p>
-                          </div>
-                          <span className="font-semibold text-foreground">
-                            {formatCurrency(asset.valeur_estimee)}
-                          </span>
-                        </div>
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-              
-              {selectedAssets.length > 0 && (
-                <div className="p-3 bg-muted/50 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">
-                      {selectedAssets.length} bien{selectedAssets.length > 1 ? 's' : ''} sélectionné{selectedAssets.length > 1 ? 's' : ''}
-                    </span>
-                    <span className="font-semibold">
-                      Total : {formatCurrency(totalSelected)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="p-6 text-center border border-dashed rounded-lg">
-              <p className="text-muted-foreground">
-                {assetIdsFilter
-                  ? "Aucun bien n'est encore désigné dans la société d'acquêts. Désignez d'abord des biens dans la clause principale."
-                  : "Aucun bien trouvé. Veuillez d'abord ajouter des biens dans la section Patrimoine."}
-              </p>
-            </div>
-          )}
-          
-          <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button variant="outline" onClick={onClose}>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[13px] font-medium text-foreground">
+                          {asset.denomination || 'Sans nom'}
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">{asset.nature}</span>
+                      </span>
+                      <span className="text-[13px] font-medium tabular-nums text-foreground">
+                        {formatCurrency(asset.valeur_estimee)}
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </ScrollArea>
+        ) : (
+          <div className="px-6 py-8">
+            <p className="rounded-[2px] bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
+              {assetIdsFilter
+                ? "Aucun bien n'est encore désigné dans la société d'acquêts."
+                : 'Aucun bien saisi. Ajoutez d\'abord des biens dans la section Patrimoine.'}
+            </p>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between gap-3 border-t border-border px-6 py-3">
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {selectedAssets.length > 0
+              ? `${selectedAssets.length} bien${selectedAssets.length > 1 ? 's' : ''} · ${formatCurrency(totalSelected)}`
+              : 'Aucun bien sélectionné'}
+          </span>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" className={panelButtonClass} onClick={onClose}>
               Annuler
             </Button>
-            <Button onClick={handleConfirm} className="bg-foreground text-background hover:opacity-90" >
-              Confirmer la sélection
+            <Button type="button" className={panelPrimaryButtonClass} onClick={handleConfirm}>
+              Valider
             </Button>
           </div>
         </div>

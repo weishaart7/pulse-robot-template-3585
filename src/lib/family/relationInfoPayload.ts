@@ -17,6 +17,7 @@ export interface RelationInfoFormValues {
   residenceSeparee?: boolean;
   separationDeCorps?: boolean;
   separationCorpsClauseRenonciation?: boolean;
+  dateJugementSeparationCorps?: Date;
   donationDernierVivantPersonne?: boolean;
   dateDonationPersonne?: Date;
   donationDernierVivantConjoint?: boolean;
@@ -63,6 +64,8 @@ export const buildRelationInfoPayload = (
       duree_mariage_precedent_conjoint_mois: data.dureeMariagePrecedentConjointMois ?? null,
       separation_de_corps: data.separationDeCorps ?? false,
       separation_corps_clause_renonciation: data.separationCorpsClauseRenonciation ?? false,
+      // Vidée si la case est décochée : la date ne vaut que pour une séparation de corps en cours.
+      date_jugement_separation_corps: data.separationDeCorps ? formatDate(data.dateJugementSeparationCorps) ?? null : null,
     };
   }
 

@@ -53,7 +53,7 @@ permet de l'alimenter (voir §3).
 - **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure 5 onglets (`GooeyNav`) dans un panneau de travail unique inspiré de la maquette de référence : barre d'en-tête (fil d'Ariane « Famille / … » + bouton « Enregistrer » noir), colonne principale (titre, rappel, onglets, sections séparées par des filets) et, pour Marié(e) / Pacsé(e), un panneau « Synthèse » à droite (≥ `lg`) qui relit en direct les valeurs du formulaire en lignes libellé / valeur (statut, mariage, lieu, régime, contrat et situation en étiquettes, donations au dernier vivant, mariages précédents ; pour le PACS : date, convention, résidence) — affichage seul, aucun calcul visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal (avec, sous les régimes concernés, la
   désignation des biens de la société d'acquêts — voir §2),
-  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. L'onglet « Informations générales » regroupe en un seul bloc « Mariage & régime » : date et lieu, puis la question « Contrat de mariage » (bascule Avec / Sans contrat). Sans contrat, le régime légal déduit de la date de mariage est affiché en lecture seule ; avec contrat seulement, le sélecteur du régime conventionnel et ses options de qualification apparaissent. Le
+  récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. L'onglet « Informations générales » regroupe en un seul bloc « Mariage & régime » : date et lieu, puis la question « Contrat de mariage » (bascule Avec / Sans contrat). Sans contrat, le régime légal déduit de la date de mariage est affiché en lecture seule ; avec contrat seulement, le sélecteur du régime conventionnel (classé en deux groupes, régimes communautaires puis séparatistes, `CLASSES_REGIMES_MATRIMONIAUX` dans `lib/patrimoine/regimeLegal.ts`) et ses options de qualification apparaissent. La case « Séparation de corps » révèle la date du jugement (`marital_status.date_jugement_separation_corps`, vidée si la case est décochée) et la clause de renonciation aux droits successoraux ; à compter de cette date, les biens acquis sont qualifiés comme sous séparation de biens (art. 302, voir docs/patrimoine.md). Le
   catalogue de clauses du contrat (préciput, attribution intégrale, partage inégal, clauses
   personnalisées) a été retiré en V1, voir §2. Pour
   Divorcé(e)/Veuf-Veuve, un bloc lecture seule affiche le régime de l'union dissoute (régime
@@ -273,6 +273,14 @@ permet de l'alimenter (voir §3).
   moment du retrait) ; `marital_status.clauses_contrat` est conservée, réservée aux deux clés
   ci-dessous.
 
+- **Biens acquis à deux sous régime séparatiste (art. 1538).** Sous séparation de biens et
+  participation aux acquêts, un bien détenu par « Le couple » est qualifié en indivision (quote-part
+  saisie sur l'actif, 50/50 par défaut) et non plus forcé en bien propre ; le moteur de succession
+  le prend en compte via la quote-part (`getPartSuccessorale`). Aucun dossier concerné en base au
+  2026-10-16 (seuls deux foyers, en communauté réduite aux acquêts). Migration
+  `20261016090000_marital_status_date_jugement_separation_corps.sql` pour la date du jugement de
+  séparation de corps.
+
 - **Société d'acquêts : gardée comme mécanisme de qualification, pas comme clause.** Cette entrée
   de l'ancien catalogue n'est pas un simple avantage matrimonial optionnel :
   `qualification.ts::qualifierBien` en a structurellement besoin, c'est le seul mécanisme désignant
@@ -285,6 +293,24 @@ permet de l'alimenter (voir §3).
   l'art. 1526 ne concerne que la communauté universelle et n'est pas utilisée en pratique ; un bien
   propre par nature (art. 1404) reste toujours propre en régime communautaire. La clé
   `clauses_contrat.extension_propres_par_nature` éventuellement présente en base est ignorée.
+
+- **Périmètre de la société d'acquêts.** Le contrat fixe librement le contenu de la société
+  (art. 1387, 1497) : on le décrit par règles plutôt que bien par bien
+  ([lib/patrimoine/societeAcquets.ts](../src/lib/patrimoine/societeAcquets.ts)) — « Tous les acquêts »
+  ou des catégories (logement de la famille, résidences secondaires, tous les immeubles, tous les
+  meubles, valeurs mobilières), complétées de biens ajoutés ou exclus nommément. Stockage dans
+  `clauses_contrat.societe_acquets` (`selectedAssets` = ajoutés, `excludedAssets` = exclus,
+  `options.tousAcquets` / `options.categories` ; l'ancienne case `options.residencePrincipale` vaut la
+  catégorie « logement de la famille » et reste écrite). Ordre de qualification dans `qualifierBien` :
+  propre par nature / remploi → bien reçu à titre gratuit (hors société) → exclu nommément → ajouté
+  nommément (commun, vaut apport d'un bien antérieur) → acquis avant le mariage (hors société) →
+  acquêt couvert par le périmètre (commun) → sinon indivision si détenu par les deux, propre sinon.
+  Chaque changement du périmètre est enregistré aussitôt ; s'il modifie la qualification de biens
+  existants en qualification automatique, une confirmation les liste puis les requalifie en lot
+  ([lib/patrimoine/requalification.ts](../src/lib/patrimoine/requalification.ts) ; un bien devenu
+  commun passe au détenteur « Le couple » 50/50, comme dans le formulaire). La requalification
+  corrige aussi au passage les qualifications périmées (ex. biens restés « Bien commun » d'un ancien
+  régime). Le bouton « Enregistrer » du régime matrimonial fait la même vérification après écriture (régime, dates de mariage / PACS / jugement de séparation de corps) et propose la même confirmation (`RequalificationDialog.tsx`, écriture par `services/requalificationService.ts`) ; refuser garde le régime enregistré et les biens tels quels. Un bien détenu par « Le couple » qui deviendrait propre n'est jamais requalifié automatiquement (l'époux propriétaire n'est pas déductible) : il reste à reprendre sur sa fiche.
 
 - **Habillage : design system du simulateur** ([design-system.md](design-system.md)). Plus de
   scope `.famille-form` : les pages suivent le gabarit « panneau de travail » (voir design-system.md

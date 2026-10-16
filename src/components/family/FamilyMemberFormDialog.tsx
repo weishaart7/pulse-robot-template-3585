@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Building2 } from 'lucide-react';
 import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { Button } from '@/components/ui/button';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Form } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -274,13 +275,13 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
     return (
       <>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="workspace-panel no-scrollbar max-w-4xl max-h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]">
+          <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+            <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">
               {editingMember ? 'Modifier un membre' : 'Ajouter un membre de la famille'}
             </DialogTitle>
           </DialogHeader>
-          <div className="mt-6">
+          <div className="mt-2">
             <Form {...memberForm}>
               <form onSubmit={memberForm.handleSubmit(handleMemberSubmit)} className="space-y-6">
                 <FormField
@@ -305,7 +306,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                         <FormControl>
                           <SelectTrigger
                             size="lg"
-                            className="bg-background border-border shadow-none rounded-md"
+                            className="bg-background border-border shadow-none rounded-[2px]"
                           >
                             <SelectValue placeholder="Sélectionner un lien" />
                           </SelectTrigger>
@@ -343,7 +344,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                             setSelectedAsset(item.assets);
                             setAssetDetailsOpen(true);
                           }}
-                          className="w-full flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                          className="w-full flex items-center justify-between gap-3 rounded-[2px] border border-border px-3 py-2 text-left hover:bg-secondary/60 transition-colors"
                         >
                           <span className="flex items-center gap-2 text-sm font-medium truncate">
                             <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -358,10 +359,11 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2">
+                <div className="-mx-6 flex justify-end gap-2 border-t border-border px-6 pt-4">
                   <Button
                     type="button"
                     variant="outline"
+                    className={panelButtonClass}
                     onClick={() => {
                       setDialogOpen(false);
                       setEditingMember(null);
@@ -371,7 +373,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
                   >
                     Annuler
                   </Button>
-                  <Button type="submit" disabled={saving}>
+                  <Button type="submit" disabled={saving} className={panelPrimaryButtonClass}>
                     {saving ? (
                       <>
                         <LogoSpinner />

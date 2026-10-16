@@ -401,3 +401,106 @@ describe('qualifierBien — financement mixte (art. 1436) : frais d\'acquisition
     expect(result.qualification).toBe('Bien propre');
   });
 });
+
+describe('qualifierBien — bien acquis par les deux époux hors communauté (art. 1538)', () => {
+  const base = {
+    statutCouple: 'Marié(e)',
+    dateMariage: '2010-06-01',
+    dateAcquisition: '2015-03-01',
+    origineActif: ['Achat'],
+  };
+
+  it.each(['Séparation de biens', 'Participation aux acquêts'])('%s : détenu par le couple → indivision', (regime) => {
+    expect(qualifierBien({ ...base, regimeMatrimonial: regime, detenteur: 'Le couple' }).qualification).toBe('Indivision');
+    expect(qualifierBien({ ...base, regimeMatrimonial: regime, detenteur: 'common' }).qualification).toBe('Indivision');
+  });
+
+  it.each(['Séparation de biens', 'Participation aux acquêts'])('%s : un seul détenteur → propre', (regime) => {
+    expect(qualifierBien({ ...base, regimeMatrimonial: regime, detenteur: 'user' }).qualification).toBe('Bien propre');
+  });
+});
+
+describe('qualifierBien — séparation de corps (art. 302)', () => {
+  const base = {
+    statutCouple: 'Marié(e)',
+    regimeMatrimonial: 'Communauté réduite aux acquêts',
+    dateMariage: '2000-06-01',
+    origineActif: ['Achat'],
+    dateJugementSeparationCorps: '2020-01-15',
+  };
+
+  it('bien acquis avant le jugement : garde la qualification du régime (commun)', () => {
+    expect(qualifierBien({ ...base, dateAcquisition: '2019-05-01', detenteur: 'user' }).qualification).toBe('Bien commun');
+  });
+
+  it('bien acquis à la date du jugement ou après par un époux : propre', () => {
+    expect(qualifierBien({ ...base, dateAcquisition: '2020-01-15', detenteur: 'user' }).qualification).toBe('Bien propre');
+  });
+
+  it('bien acquis après le jugement par les deux : indivision', () => {
+    expect(qualifierBien({ ...base, dateAcquisition: '2021-01-01', detenteur: 'Le couple' }).qualification).toBe('Indivision');
+  });
+
+  it('sans date de jugement : aucun effet', () => {
+    expect(qualifierBien({ ...base, dateJugementSeparationCorps: undefined, dateAcquisition: '2021-01-01', detenteur: 'user' }).qualification).toBe('Bien commun');
+  });
+});
+
+describe("qualifierBien — périmètre de la société d'acquêts", () => {
+  const perimetre = (p: Partial<{ tousAcquets: boolean; categories: any[]; biensDesignes: string[]; biensExclus: string[] }>) => ({
+    tousAcquets: false, categories: [], biensDesignes: [], biensExclus: [], ...p,
+  });
+  const base = {
+    statutCouple: 'Marié(e)',
+    regimeMatrimonial: "Séparation de biens avec société d'acquêts",
+    dateMariage: '2010-06-01',
+    dateAcquisition: '2015-03-01',
+    origineActif: ['Achat'],
+    detenteur: 'user',
+    assetId: 'a1',
+  };
+
+  it('immeuble acquis pendant le mariage, catégorie Immeubles → commun même acheté par un seul', () => {
+    const r = qualifierBien({ ...base, natureActif: 'Résidences secondaires', societeAcquets: perimetre({ categories: ['immeubles'] }) });
+    expect(r.qualification).toBe('Bien commun');
+  });
+
+  it('meuble hors catégorie Immeubles → propre', () => {
+    expect(qualifierBien({ ...base, natureActif: 'Montres', societeAcquets: perimetre({ categories: ['immeubles'] }) }).qualification).toBe('Bien propre');
+  });
+
+  it('catégorie Meubles couvre un meuble', () => {
+    expect(qualifierBien({ ...base, natureActif: 'Montres', societeAcquets: perimetre({ categories: ['meubles'] }) }).qualification).toBe('Bien commun');
+  });
+
+  it('ancienne case résidence principale toujours prise en compte', () => {
+    expect(qualifierBien({ ...base, natureActif: 'Résidence principale', societeAcquets: perimetre({ categories: ['residence_principale'] }) }).qualification).toBe('Bien commun');
+  });
+
+  it('tous les acquêts → commun', () => {
+    expect(qualifierBien({ ...base, natureActif: 'Montres', societeAcquets: perimetre({ tousAcquets: true }) }).qualification).toBe('Bien commun');
+  });
+
+  it('bien acquis avant le mariage → hors société, sauf désignation nommée (apport)', () => {
+    const avant = { ...base, dateAcquisition: '2005-01-01', natureActif: 'Montres' };
+    expect(qualifierBien({ ...avant, societeAcquets: perimetre({ tousAcquets: true }) }).qualification).toBe('Bien propre');
+    expect(qualifierBien({ ...avant, societeAcquets: perimetre({ biensDesignes: ['a1'] }) }).qualification).toBe('Bien commun');
+  });
+
+  it('bien reçu par donation → hors société même désigné ou couvert', () => {
+    expect(qualifierBien({ ...base, origineActif: ['Donation'], natureActif: 'Montres', societeAcquets: perimetre({ tousAcquets: true, biensDesignes: ['a1'] }) }).qualification).toBe('Bien propre');
+  });
+
+  it('exclusion nommée prime sur la catégorie ; détenu par les deux → indivision', () => {
+    const r = qualifierBien({ ...base, detenteur: 'Le couple', natureActif: 'Résidences secondaires', societeAcquets: perimetre({ categories: ['immeubles'], biensExclus: ['a1'] }) });
+    expect(r.qualification).toBe('Indivision');
+  });
+
+  it('remploi → propre même dans le périmètre', () => {
+    expect(qualifierBien({ ...base, clauseRemploi: true, natureActif: 'Résidences secondaires', societeAcquets: perimetre({ tousAcquets: true }) }).qualification).toBe('Bien propre');
+  });
+
+  it('hors périmètre, détenu par les deux → indivision', () => {
+    expect(qualifierBien({ ...base, detenteur: 'Le couple', natureActif: 'Montres', societeAcquets: perimetre({}) }).qualification).toBe('Indivision');
+  });
+});

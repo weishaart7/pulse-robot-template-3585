@@ -27,6 +27,28 @@ export const REGIMES_MATRIMONIAUX = [
   REGIME_PARTICIPATION_AUX_ACQUETS,
 ] as const;
 
+// Mêmes régimes, classés pour le sélecteur : communautaires (priorité aux
+// biens communs) puis séparatistes (priorité aux biens propres, biens acquis
+// ensemble en indivision, art. 1538).
+export const CLASSES_REGIMES_MATRIMONIAUX = [
+  {
+    label: 'Régimes communautaires',
+    regimes: [
+      REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS,
+      REGIME_COMMUNAUTE_MEUBLES_ET_ACQUETS,
+      REGIME_COMMUNAUTE_UNIVERSELLE,
+    ],
+  },
+  {
+    label: 'Régimes séparatistes',
+    regimes: [
+      REGIME_SEPARATION_DE_BIENS,
+      REGIME_SEPARATION_BIENS_SOCIETE_ACQUETS,
+      REGIME_PARTICIPATION_AUX_ACQUETS,
+    ],
+  },
+] as const;
+
 const DATE_ENTREE_VIGUEUR_COMMUNAUTE_REDUITE = new Date('1966-02-01');
 
 export type RegimeLegal = typeof REGIME_COMMUNAUTE_MEUBLES_ET_ACQUETS | typeof REGIME_COMMUNAUTE_REDUITE_AUX_ACQUETS;

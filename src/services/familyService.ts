@@ -33,6 +33,7 @@ export interface MaritalStatus {
   statut_couple?: string | null;
   separation_de_corps?: boolean;
   separation_corps_clause_renonciation?: boolean;
+  date_jugement_separation_corps?: string | null;
   nom_conjoint?: string;
   prenom_conjoint?: string;
   civilite_conjoint?: string;

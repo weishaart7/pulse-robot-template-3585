@@ -33,7 +33,7 @@ export const PassifDetailsDialog = ({ passif, type, assets = [], open, onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="workspace-panel no-scrollbar max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px]">
+      <DialogContent className="workspace-panel no-scrollbar max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]">
         <DialogHeader>
           <DialogTitle className="text-[22px] font-medium leading-tight tracking-[-0.02em]">
             {emprunt ? emprunt.libelle : simplePassif?.nature}

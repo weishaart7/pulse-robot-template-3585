@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +15,7 @@ import { Recompense, SensRecompense, EpouxConcerne, NatureDepense, ModeEvaluatio
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { cn } from '@/lib/utils';
 
-const FIELD_CLS = "bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
+const FIELD_CLS = "bg-background border-border shadow-none rounded-[2px] focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
 
 const SENS_LABELS: Record<SensRecompense, string> = {
   communaute_vers_epoux: 'La communauté doit récompense à l\'époux',
@@ -150,7 +151,7 @@ export function RecompensesSection() {
       {recompenses.length > 0 && (
         <div className="space-y-3 mb-5">
           {recompenses.map(r => (
-            <div key={r.id} className="rounded-md border border-border bg-background p-4 flex items-start justify-between gap-3">
+            <div key={r.id} className="rounded-[2px] border border-border bg-background p-4 flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">{describe(r)}</p>
                 <p className="text-xs text-muted-foreground">
@@ -167,7 +168,7 @@ export function RecompensesSection() {
       )}
 
       {!isAdding && biensFinancementMixteNonCouverts.length > 0 && (
-        <div className="rounded-md border border-dashed border-border bg-background p-4 mb-4 space-y-2">
+        <div className="rounded-[2px] border border-dashed border-border bg-background p-4 mb-4 space-y-2">
           <p className="text-xs font-medium text-muted-foreground">
             Financement mixte déclaré sans récompense associée
           </p>
@@ -177,8 +178,7 @@ export function RecompensesSection() {
                 key={a.id}
                 type="button"
                 variant="outline"
-                size="sm"
-                className="justify-start"
+                className={`${panelButtonClass} h-auto min-h-8 justify-start whitespace-normal py-1.5 text-left`}
                 onClick={() => prefillFromAsset(a.id!, a.financement_mixte_apport_propre!)}
               >
                 <Wand2 className="h-3.5 w-3.5 mr-2 shrink-0" />
@@ -190,7 +190,7 @@ export function RecompensesSection() {
       )}
 
       {isAdding ? (
-        <div className="rounded-md border border-border bg-background p-4 space-y-4">
+        <div className="rounded-[2px] border border-border bg-background p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Sens</Label>
@@ -355,7 +355,7 @@ export function RecompensesSection() {
           )}
 
           {valeursManquantes && (
-            <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-amber-50 text-amber-900 text-xs">
+            <div className="flex items-start gap-2 px-3 py-2 rounded-[2px] bg-amber-50 text-amber-900 text-xs">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
               <span>
                 Il manque la valeur du bien à l'acquisition et/ou à la liquidation. Sans ces deux montants, le calcul retiendra la dépense telle quelle (montant nominal), même si vous avez choisi un autre mode d'évaluation ci-dessus.
@@ -364,12 +364,12 @@ export function RecompensesSection() {
           )}
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
+            <Button type="button" variant="outline" className={panelButtonClass} onClick={resetForm}>Annuler</Button>
             <Button
               type="button"
               onClick={handleSubmit}
               disabled={!peutSoumettre || saving}
-              className="bg-foreground text-background hover:opacity-90"
+              className={panelPrimaryButtonClass}
               
             >
               {saving ? 'Enregistrement...' : 'Ajouter la récompense'}
@@ -377,8 +377,8 @@ export function RecompensesSection() {
           </div>
         </div>
       ) : (
-        <Button type="button" variant="outline" onClick={() => setIsAdding(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button type="button" variant="outline" className={panelButtonClass} onClick={() => setIsAdding(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
           Ajouter une récompense
         </Button>
       )}

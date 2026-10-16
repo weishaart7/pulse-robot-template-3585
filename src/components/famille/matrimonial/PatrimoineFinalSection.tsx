@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +11,7 @@ import { useAssets } from '@/hooks/useAssets';
 import { PatrimoineFinal, EpouxConcerne } from '@/types/participationAcquets';
 import { SectionHeader } from '@/components/family/SectionHeader';
 
-const FIELD_CLS = "bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
+const FIELD_CLS = "bg-background border-border shadow-none rounded-[2px] focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20";
 
 export function PatrimoineFinalSection() {
   const { data: lignes, saving, addLigne, removeLigne } = usePatrimoineFinal();
@@ -62,7 +63,7 @@ export function PatrimoineFinalSection() {
       {lignes.length > 0 && (
         <div className="space-y-3 mb-5">
           {lignes.map(l => (
-            <div key={l.id} className="rounded-md border border-border bg-background p-4 flex items-start justify-between gap-3">
+            <div key={l.id} className="rounded-[2px] border border-border bg-background p-4 flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-sm font-medium">{describe(l)}</p>
                 <p className="text-xs text-muted-foreground">
@@ -80,7 +81,7 @@ export function PatrimoineFinalSection() {
       )}
 
       {isAdding ? (
-        <div className="rounded-md border border-border bg-background p-4 space-y-4">
+        <div className="rounded-[2px] border border-border bg-background p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs">Époux concerné</Label>
@@ -135,12 +136,12 @@ export function PatrimoineFinalSection() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={resetForm}>Annuler</Button>
+            <Button type="button" variant="outline" className={panelButtonClass} onClick={resetForm}>Annuler</Button>
             <Button
               type="button"
               onClick={handleSubmit}
               disabled={!nature || !valeur || saving}
-              className="bg-foreground text-background hover:opacity-90"
+              className={panelPrimaryButtonClass}
               
             >
               {saving ? 'Enregistrement...' : 'Ajouter la ligne'}
@@ -148,8 +149,8 @@ export function PatrimoineFinalSection() {
           </div>
         </div>
       ) : (
-        <Button type="button" variant="outline" onClick={() => setIsAdding(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button type="button" variant="outline" className={panelButtonClass} onClick={() => setIsAdding(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
           Ajouter un bien au patrimoine final
         </Button>
       )}

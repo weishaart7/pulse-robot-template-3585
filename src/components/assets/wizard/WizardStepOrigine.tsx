@@ -17,6 +17,7 @@ interface WizardStepOrigineProps {
   indivisaires: IndivisaireDraft[];
   setIndivisaires: (value: IndivisaireDraft[]) => void;
   qualificationRaison?: string;
+  assetId?: string;
 }
 
 // Étape "Origine et propriété" : d'où vient le bien (date, origine, clauses
@@ -36,7 +37,8 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
   maritalContext,
   indivisaires,
   setIndivisaires,
-  qualificationRaison
+  qualificationRaison,
+  assetId
 }) => {
   const watchedNature = form.watch('nature');
   const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
@@ -46,7 +48,7 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
       {!sansAcquisition && <OrigineFields form={form} maritalContext={maritalContext} section="origine" />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <DetenteurFields form={form} detenteurOptions={detenteurOptions} />
+        <DetenteurFields form={form} detenteurOptions={detenteurOptions} maritalContext={maritalContext} assetId={assetId} />
         <QualificationFields form={form} qualificationRaison={qualificationRaison} />
       </div>
 

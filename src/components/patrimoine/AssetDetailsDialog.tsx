@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { lirePerimetre } from '@/lib/patrimoine/societeAcquets';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -80,6 +81,9 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     dateMariage: maritalStatus?.date_mariage,
     conventionPacs: maritalStatus?.convention_pacs,
     datePacs: maritalStatus?.date_pacs,
+    dateJugementSeparationCorps: maritalStatus?.separation_de_corps
+      ? maritalStatus?.date_jugement_separation_corps ?? undefined
+      : undefined,
     dateAcquisition: asset.date_acquisition,
     origineActif: asset.origine_actif,
     modeDetention: asset.mode_detention,
@@ -88,8 +92,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     clauseRemploi: asset.clause_remploi,
     natureActif: asset.nature,
     assetId: asset.id,
-    societeAcquetsAssetIds: (maritalStatus as any)?.clauses_contrat?.societe_acquets?.selectedAssets,
-    societeAcquetsResidencePrincipale: (maritalStatus as any)?.clauses_contrat?.societe_acquets?.options?.residencePrincipale,
+    societeAcquets: lirePerimetre((maritalStatus as any)?.clauses_contrat?.societe_acquets),
     valeurAcquisition: asset.valeur_acquisition,
     fraisAcquisition: asset.frais_acquisition,
     apportFondsPropres: asset.financement_mixte_apport_propre,
@@ -139,7 +142,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="workspace-panel no-scrollbar max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px]">
+      <DialogContent className="workspace-panel no-scrollbar max-w-2xl max-h-[85vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]">
         <DialogHeader>
           <DialogTitle className="text-[22px] font-medium leading-tight tracking-[-0.02em]">
             {asset.denomination || getNatureDisplayLabel(asset.nature)}

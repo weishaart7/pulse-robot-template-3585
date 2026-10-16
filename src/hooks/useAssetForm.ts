@@ -9,7 +9,8 @@ import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
 import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
-import { qualifierBien } from '@/lib/patrimoine/qualification';
+import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
+import { lirePerimetre, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
 import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
@@ -39,9 +40,38 @@ export interface MaritalContext {
   dateMariage?: string;
   conventionPacs?: string;
   datePacs?: string;
-  societeAcquetsAssetIds?: string[];
-  societeAcquetsResidencePrincipale?: boolean;
+  societeAcquets?: PerimetreSocieteAcquets;
+  dateJugementSeparationCorps?: string;
 }
+
+// Contexte de qualifierBien() à partir du contexte matrimonial et des valeurs
+// courantes du formulaire — partagé par l'auto-qualification ci-dessous et
+// DetenteurFields (qui teste l'effet du choix « Le couple »).
+export const buildQualificationContext = (
+  maritalContext: MaritalContext,
+  value: Partial<AssetFormValues>,
+  assetId?: string
+): QualificationContext => ({
+  statutCouple: maritalContext.statutCouple,
+  regimeMatrimonial: maritalContext.regimeMatrimonial,
+  dateMariage: maritalContext.dateMariage,
+  conventionPacs: maritalContext.conventionPacs,
+  datePacs: maritalContext.datePacs,
+  dateJugementSeparationCorps: maritalContext.dateJugementSeparationCorps,
+  dateAcquisition: value.date_acquisition ? new Date(value.date_acquisition).toISOString() : undefined,
+  origineActif: value.origine_actif as string[] | undefined,
+  modeDetention: value.mode_detention,
+  detenteur: value.detenteur,
+  clauseEntreeCommunaute: value.clause_entree_communaute,
+  clauseRemploi: value.clause_remploi,
+  natureActif: value.nature,
+  assetId,
+  societeAcquets: maritalContext.societeAcquets,
+  estPropreParNature: value.est_propre_par_nature,
+  valeurAcquisition: value.valeur_acquisition,
+  fraisAcquisition: value.frais_acquisition,
+  apportFondsPropres: value.financement_mixte_apport_propre,
+});
 
 export interface FamilyMember {
   id?: string;
@@ -112,8 +142,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
           dateMariage: maritalStatus?.date_mariage,
           conventionPacs: maritalStatus?.convention_pacs,
           datePacs: maritalStatus?.date_pacs,
-          societeAcquetsAssetIds: societeAcquets?.selectedAssets,
-          societeAcquetsResidencePrincipale: societeAcquets?.options?.residencePrincipale,
+          societeAcquets: lirePerimetre(societeAcquets),
+          dateJugementSeparationCorps: maritalStatus?.separation_de_corps
+            ? maritalStatus?.date_jugement_separation_corps ?? undefined
+            : undefined,
         });
       } catch (error) {
         if (import.meta.env.DEV) console.error('Erreur lors du chargement des données familiales:', error);
@@ -250,27 +282,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       'financement_mixte_apport_propre', 'valeur_acquisition', 'frais_acquisition',
     ];
     const recompute = (value: any) => {
-      const { qualification, raison } = qualifierBien({
-        statutCouple: maritalContext.statutCouple,
-        regimeMatrimonial: maritalContext.regimeMatrimonial,
-        dateMariage: maritalContext.dateMariage,
-        conventionPacs: maritalContext.conventionPacs,
-        datePacs: maritalContext.datePacs,
-        dateAcquisition: value.date_acquisition ? new Date(value.date_acquisition).toISOString() : undefined,
-        origineActif: value.origine_actif as string[] | undefined,
-        modeDetention: value.mode_detention,
-        detenteur: value.detenteur,
-        clauseEntreeCommunaute: value.clause_entree_communaute,
-        clauseRemploi: value.clause_remploi,
-        natureActif: value.nature,
-        assetId: asset?.id,
-        societeAcquetsAssetIds: maritalContext.societeAcquetsAssetIds,
-        societeAcquetsResidencePrincipale: maritalContext.societeAcquetsResidencePrincipale,
-        estPropreParNature: value.est_propre_par_nature,
-        valeurAcquisition: value.valeur_acquisition,
-        fraisAcquisition: value.frais_acquisition,
-        apportFondsPropres: value.financement_mixte_apport_propre,
-      });
+      const { qualification, raison } = qualifierBien(buildQualificationContext(maritalContext, value, asset?.id));
       form.setValue('qualification_bien', qualification);
       setQualificationRaison(raison);
 

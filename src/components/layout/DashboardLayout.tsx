@@ -46,7 +46,7 @@ const DashboardLayout = () => {
             <div
               aria-hidden
               className={cn(
-                "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent transition-opacity duration-200 md:bottom-3.5 md:right-3.5 md:rounded-b-[8px]",
+                "pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background from-15% via-background/75 to-transparent transition-opacity duration-200 md:bottom-3.5 md:right-3.5 md:rounded-b-[8px]",
                 moreBelow ? "opacity-100" : "opacity-0"
               )}
             />

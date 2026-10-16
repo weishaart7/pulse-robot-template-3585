@@ -17,12 +17,14 @@
  *   succession → commun (art. 1405 al. 2) ; vaut aussi sous communauté
  *   universelle, où c'est la seule exception restante hors "propres par
  *   nature" (art. 1404)
- * - Régime de séparation de biens → toujours bien propre
+ * - Régime de séparation de biens (et participation aux acquêts) → bien
+ *   propre à son acquéreur, indivision s'il a été acquis par les deux époux
+ *   (art. 1538)
+ * - Séparation de corps : bien acquis à partir de la date du jugement →
+ *   traité comme sous séparation de biens (art. 302), quel que soit le régime
  * - Régime de séparation de biens avec société d'acquêts (3 masses : propre
- *   époux A / société d'acquêts commune / propre époux B) → bien commun si
- *   désigné dans la société d'acquêts (par ID ou via le flag "résidence
- *   principale, quel que soit le bien"), indivision si détenu par les deux
- *   sans désignation, propre sinon
+ *   époux A / société d'acquêts commune / propre époux B) → voir la branche
+ *   dédiée (périmètre par catégories, désignations et exclusions nommées)
  * - Régime de communauté universelle → commun pour tout le reste (biens à
  *   titre onéreux, ou libéralités sans stipulation expresse)
  * - PACS avec convention de séparation de patrimoines (par défaut) → bien propre
@@ -38,6 +40,7 @@
 
 import { getAssetCategory } from '@/constants/assetTypes';
 import { isDetenteurCommon } from './utils';
+import { categorieCouvrante, PerimetreSocieteAcquets } from './societeAcquets';
 
 export type QualificationBien =
   | 'Bien propre'
@@ -63,10 +66,8 @@ export interface QualificationContext {
   natureActif?: string;
   /** ID de l'actif qualifié, pour le confronter à la liste de biens désignés dans la société d'acquêts. */
   assetId?: string;
-  /** IDs des biens désignés dans la société d'acquêts (régime séparation de biens avec société d'acquêts). */
-  societeAcquetsAssetIds?: string[];
-  /** Flag "résidence principale, quel que soit le bien" de la société d'acquêts : suit l'actif de nature "Résidence principale". */
-  societeAcquetsResidencePrincipale?: boolean;
+  /** Périmètre de la société d'acquêts (régime séparation de biens avec société d'acquêts), cf. societeAcquets.ts. */
+  societeAcquets?: PerimetreSocieteAcquets;
   /** Bien propre par nature (art. 1404 : vêtements, actions en réparation d'un dommage corporel/moral, créances et pensions incessibles, instruments de travail nécessaires à la profession), saisi manuellement sur l'actif. */
   estPropreParNature?: boolean;
   /** Prix total d'acquisition (financement mixte, art. 1436), pour le comparer à apportFondsPropres. */
@@ -75,6 +76,8 @@ export interface QualificationContext {
   fraisAcquisition?: number;
   /** Financement mixte (art. 1436, régimes communautaires uniquement) : montant de la contribution en fonds propres apportée à l'acquisition, saisi manuellement sur l'actif. Sans effet si clauseRemploi est actée (remploi total, cas distinct traité en priorité). */
   apportFondsPropres?: number;
+  /** Date du jugement de séparation de corps (marital_status.date_jugement_separation_corps) : à partir de cette date, la séparation de biens remplace le régime (art. 302). Sans effet si absente. */
+  dateJugementSeparationCorps?: string;
 }
 
 export const ORIGINES_PROPRES = [
@@ -189,6 +192,15 @@ export const isPacsIndivision = (statutCouple?: string, conventionPacs?: string,
   return isPacsAvant2007(datePacs);
 };
 
+// Date d'acquisition à partir d'une date de référence (incluse). Faux si
+// l'une des deux est absente ou invalide.
+const estPosterieureOuEgale = (date?: string, reference?: string): boolean => {
+  if (!date || !reference) return false;
+  const d = new Date(date);
+  const r = new Date(reference);
+  return !isNaN(d.getTime()) && !isNaN(r.getTime()) && d >= r;
+};
+
 export const qualifierBien = (ctx: QualificationContext): {
   qualification: QualificationBien;
   raison: string;
@@ -215,7 +227,14 @@ export const qualifierBien = (ctx: QualificationContext): {
   // donc un ex-marié devenu Pacsé(e)/Concubinage peut garder une valeur
   // périmée. Neutralisé ici une bonne fois pour toutes plutôt que de
   // reporter la vérification sur chacun des 8 usages ci-dessous.
-  const regimeMatrimonial = isMarie(statutCouple) ? ctx.regimeMatrimonial : undefined;
+  // Séparation de corps (art. 302) : la séparation de biens remplace le régime
+  // pour les biens acquis à compter du jugement ; les biens antérieurs gardent
+  // la qualification du régime d'origine.
+  const apresSeparationCorps =
+    isMarie(statutCouple) && estPosterieureOuEgale(dateAcquisition, ctx.dateJugementSeparationCorps);
+  const regimeMatrimonial = isMarie(statutCouple)
+    ? (apresSeparationCorps ? 'Séparation de biens' : ctx.regimeMatrimonial)
+    : undefined;
 
   // Cas indivision (plusieurs détenteurs hors couple)
   if (detenteur && detenteur.toLowerCase().includes('indivision')) {
@@ -283,43 +302,69 @@ export const qualifierBien = (ctx: QualificationContext): {
     };
   }
 
-  // Séparation de biens avec société d'acquêts : régime à 3 masses. Un bien
-  // désigné dans la société d'acquêts (par ID ou via le flag "résidence
-  // principale, quel que soit le bien") est commun ; un bien détenu par les
-  // deux sans désignation est en indivision ordinaire (pas de communauté par
-  // défaut dans ce régime) ; sinon il reste propre à son acquéreur.
+  // Séparation de biens avec société d'acquêts : régime à 3 masses, dont le
+  // contenu de la masse commune est fixé par le contrat (art. 1497). Ordre :
+  // (propre par nature et remploi déjà traités plus haut)
+  //   1. bien reçu à titre gratuit → hors société (seuls les acquêts y entrent) ;
+  //   2. exclu nommément → hors société ;
+  //   3. désigné nommément → commun (vaut aussi apport exprès d'un bien antérieur) ;
+  //   4. acquis avant le mariage → hors société ;
+  //   5. acquêt couvert par le périmètre (tous les acquêts ou une catégorie) → commun ;
+  //   6. sinon → indivision si détenu par les deux, propre à l'acquéreur sinon.
   if (isSeparationSocieteAcquets(regimeMatrimonial)) {
-    const { assetId, societeAcquetsAssetIds, societeAcquetsResidencePrincipale } = ctx;
-    const estDesigne =
-      (!!assetId && !!societeAcquetsAssetIds?.includes(assetId)) ||
-      (!!societeAcquetsResidencePrincipale && natureActif === 'Résidence principale');
+    const { assetId, societeAcquets } = ctx;
+    const horsSociete = (motif: string) =>
+      isDetenteurCommon(detenteur)
+        ? { qualification: 'Indivision' as const, raison: `${motif} Détenu par les deux époux : indivision selon la quote-part de chacun (art. 1538).` }
+        : { qualification: 'Bien propre' as const, raison: `${motif} Propre à son acquéreur.` };
 
-    if (estDesigne) {
+    if ((origineActif || []).some((o) => ORIGINES_PROPRES.includes(o))) {
+      return horsSociete('Bien reçu à titre gratuit : hors société d\'acquêts, qui ne contient que des acquêts.');
+    }
+    if (assetId && societeAcquets?.biensExclus.includes(assetId)) {
+      return horsSociete('Bien exclu nommément de la société d\'acquêts.');
+    }
+    if (assetId && societeAcquets?.biensDesignes.includes(assetId)) {
       return {
         qualification: 'Bien commun',
-        raison: 'Bien commun car désigné dans la société d\'acquêts (masse commune du régime).',
+        raison: 'Bien commun : désigné nommément dans la société d\'acquêts.',
       };
     }
-
-    if (isDetenteurCommon(detenteur)) {
+    if (dateMariage && dateAcquisition) {
+      const dAcq = new Date(dateAcquisition);
+      const dMar = new Date(dateMariage);
+      if (!isNaN(dAcq.getTime()) && !isNaN(dMar.getTime()) && dAcq < dMar) {
+        return horsSociete('Bien acquis avant le mariage : hors société d\'acquêts, sauf désignation nommée (apport).');
+      }
+    }
+    const categorie = societeAcquets ? categorieCouvrante(societeAcquets, natureActif) : null;
+    if (categorie) {
       return {
-        qualification: 'Indivision',
-        raison: 'Bien détenu par les deux sans désignation dans la société d\'acquêts : indivision ordinaire.',
+        qualification: 'Bien commun',
+        raison: `Bien commun : acquis pendant le mariage, inclus dans la société d'acquêts (${categorie}).`,
       };
     }
-
-    return {
-      qualification: 'Bien propre',
-      raison: 'Séparation de biens avec société d\'acquêts : bien non désigné dans la société d\'acquêts, propre à son acquéreur.',
-    };
+    return horsSociete('Bien hors du périmètre de la société d\'acquêts.');
   }
 
   // Séparation de biens (et participation aux acquêts, qui fonctionne comme
-  // une séparation de biens pendant le mariage) → toujours propre
+  // une séparation de biens pendant le mariage) : propre à son acquéreur, ou
+  // indivision si les deux époux l'ont acquis ensemble (art. 1538) — la
+  // quote-part de chacun se saisit sur l'actif (50/50 par défaut, présomption
+  // d'indivision par moitié faute de preuve contraire).
   if (isSeparationDeBiens(regimeMatrimonial) || isParticipationAcquets(regimeMatrimonial)) {
+    const contexte = apresSeparationCorps
+      ? 'Bien acquis après le jugement de séparation de corps : la séparation de biens remplace le régime (art. 302)'
+      : 'Régime de séparation de biens (ou participation aux acquêts, pendant le mariage)';
+    if (isDetenteurCommon(detenteur)) {
+      return {
+        qualification: 'Indivision',
+        raison: `${contexte} : bien acquis par les deux époux, en indivision selon la quote-part de chacun (art. 1538).`,
+      };
+    }
     return {
       qualification: 'Bien propre',
-      raison: 'Régime de séparation de biens (ou participation aux acquêts, pendant le mariage) : tout bien est propre à son acquéreur.',
+      raison: `${contexte} : le bien est propre à son acquéreur.`,
     };
   }
 
