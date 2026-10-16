@@ -7,7 +7,7 @@ Ce document extrait la fonctionnalité "clauses du contrat de mariage" retirée 
 Ne pas confondre avec le catalogue de clauses ci-dessous — ces mécanismes portent aussi le mot "clause" mais sont des fonctionnalités distinctes, toujours actives :
 
 - **Qualification de bien par bien** (`src/lib/patrimoine/qualification.ts`) : `clauseEntreeCommunaute`/`clauseRemploi`, cases à cocher par actif (`assets.clause_entree_communaute`/`assets.clause_remploi`), saisies dans `OrigineQualificationFields.tsx`.
-- **Société d'acquêts / extension aux propres par nature** : gardées comme mécanisme de qualification (décision explicite du 2026-09-22, cf. section dédiée plus bas) — reconstruites dans `src/components/famille/matrimonial/QualificationRegimeOptions.tsx`, toujours stockées dans `marital_status.clauses_contrat.societe_acquets` / `.extension_propres_par_nature`.
+- **Société d'acquêts / extension aux propres par nature** : gardées comme mécanisme de qualification (décision explicite du 2026-09-22, cf. section dédiée plus bas) — reconstruites dans `src/components/famille/matrimonial/SocieteAcquetsSection.tsx`, toujours stockées dans `marital_status.clauses_contrat.societe_acquets` / `.extension_propres_par_nature`.
 - **Clauses de donation/legs** (`liberalites.clauses`, ex. "Dispense de rapport", "Rapport forfaitaire") — gérées par `DonationForm.tsx`/`LegsForm.tsx`, indépendantes du contrat de mariage.
 - **Clause bénéficiaire d'assurance-vie** (`av_contract_details.clause_beneficiaire*`) — domaine contrat AV, `ClauseBeneficiaireBuilder.tsx`.
 - **Clause de renonciation en cas de séparation de corps** (`marital_status.separation_corps_clause_renonciation`) — champ indépendant, géré directement dans `RelationInfoForm.tsx`.
@@ -109,7 +109,7 @@ Stocké dans `marital_status.clauses_personnalisees` (jsonb, colonne supprimée)
 - **`src/components/famille/matrimonial/ClauseItem.tsx`** (retiré) : rendu générique d'une clause (checkbox + sélection de biens + options pleine propriété/usufruit/résidence principale/maintien divorce + `PartConjointInput` pour les clauses à pourcentage).
 - **`src/components/famille/matrimonial/ClausesPersonnaliseesSection.tsx`** (retiré) : section clauses personnalisées (texte libre + tags).
 - **`src/components/famille/matrimonial/PartConjointInput.tsx`** (retiré) : input de pourcentage pour partage_inegal/partage_inegal_acquets.
-- **`src/components/famille/matrimonial/AssetSelectionModal.tsx`** (conservé, générique) : toujours utilisé par `QualificationRegimeOptions.tsx`.
+- **`src/components/famille/matrimonial/AssetSelectionModal.tsx`** (conservé, générique) : toujours utilisé par `SocieteAcquetsSection.tsx`.
 - **`RelationInfoForm.tsx`** : section/onglet `'clauses-contrat'` (nav, rendu, libellé "Clauses du contrat") retirée. L'AlertDialog "Clause(s) devenue(s) incompatible(s)" (déclenché par `handleRegimeSelect`/`getClausesIncompatibles` lors d'un changement de régime) retiré — `handleRegimeSelect` fait maintenant un simple `form.setValue`.
 
 ### Alertes de conseil (`src/lib/alertes/`)
@@ -138,7 +138,7 @@ Décision du 2026-09-22 : contrairement au reste du catalogue, `societe_acquets`
 - `societe_acquets` (+ `selectedAssets`, `options.residencePrincipale`) : seul mécanisme désignant les biens de la société d'acquêts sous le régime "Séparation de biens avec société d'acquêts" — sans lui, ce régime ne peut plus jamais qualifier un bien comme commun (`qualification.ts:302-306`).
 - `extension_propres_par_nature` : fait tomber les biens propres par nature (art. 1404) en commun sous un régime communautaire (art. 1526) (`qualification.ts:261-268`).
 
-Ces deux clés restent donc stockées dans `marital_status.clauses_contrat` (même format `ClauseState` qu'avant : `{ enabled, selectedAssets?, options? }`), lues par `useAssetForm.ts` et `AssetDetailsDialog.tsx`, et éditées par le nouveau composant minimal **`src/components/famille/matrimonial/QualificationRegimeOptions.tsx`** (monté dans `RelationInfoForm.tsx`, section "Régime matrimonial") :
+Ces deux clés restent donc stockées dans `marital_status.clauses_contrat` (même format `ClauseState` qu'avant : `{ enabled, selectedAssets?, options? }`), lues par `useAssetForm.ts` et `AssetDetailsDialog.tsx`, et éditées par le nouveau composant minimal **`src/components/famille/matrimonial/SocieteAcquetsSection.tsx`** (monté dans `RelationInfoForm.tsx`, section "Régime matrimonial") :
 - Sous `separation_societe_acquets` : sélection des biens (réutilise `AssetSelectionModal.tsx`) + case "Résidence principale (quel que soit le bien)".
 - Sous un régime communautaire (`getSimplifiedRegime(regimeType) === 'communauté'`) : case "Étendre la communauté aux biens propres par nature (art. 1404, 1526)".
 
@@ -150,7 +150,7 @@ Pour rétablir la fonctionnalité complète :
 1. Réintroduire `ClauseType`/`ClauseDefinition`/`ClauseState`/`ClausesData`/`MatrimonialClauseImpact`/`MatrimonialAnalysisResult` dans `src/types/matrimonial.ts`.
 2. Recréer `src/constants/matrimonialClauses.ts` (catalogue ci-dessus).
 3. Recréer `src/lib/patrimoine/avantagesMatrimoniaux.ts` et `analyseClausesTransmission.ts`, rebrancher `TransmissionContext.clausesData` dans `lib/transmission/index.ts` (bloc "0bis"), restaurer `parseClausesData`/`partConjointInegal`/`clausesData` dans `transmissionHelpers.ts`.
-4. Recréer `useMatrimonialClauses.ts`/`useCustomMatrimonialClauses.ts`, `MatrimonialRegimeOptions.tsx`/`ClauseItem.tsx`/`ClausesPersonnaliseesSection.tsx`/`PartConjointInput.tsx` — **attention à fusionner proprement avec `QualificationRegimeOptions.tsx`**, qui devra redevenir un sous-cas de `societe_acquets`/`extension_propres_par_nature` dans le catalogue plutôt qu'un composant séparé.
+4. Recréer `useMatrimonialClauses.ts`/`useCustomMatrimonialClauses.ts`, `MatrimonialRegimeOptions.tsx`/`ClauseItem.tsx`/`ClausesPersonnaliseesSection.tsx`/`PartConjointInput.tsx` — **attention à fusionner proprement avec `SocieteAcquetsSection.tsx`**, qui devra redevenir un sous-cas de `societe_acquets`/`extension_propres_par_nature` dans le catalogue plutôt qu'un composant séparé.
 5. Restaurer `regimeChangeClauses.ts` (`getClausesIncompatibles`) et l'AlertDialog dans `RelationInfoForm.tsx`.
 6. Restaurer les 3 règles d'alerte retirées de `regles.ts` + `AlerteContext.clausesContrat`.
 7. Migration Supabase : recréer la colonne `marital_status.clauses_personnalisees` (jsonb).

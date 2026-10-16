@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Chip, panelButtonClass } from '@/components/layout/workspace-panel';
 import { useMaritalStatus } from '@/hooks/useFamilyData';
-import { useAssets } from '@/hooks/useAssets';
+import type { Asset } from '@/services/assetService';
 import { useToast } from '@/hooks/use-toast';
-import { RegimeType } from '@/types/matrimonial';
+import { Landmark } from 'lucide-react';
+import { SectionHeader } from '@/components/family/SectionHeader';
 import {
   CATEGORIES_SOCIETE_ACQUETS,
   CategorieSocieteAcquets,
@@ -14,17 +15,18 @@ import {
   lirePerimetre,
   PerimetreSocieteAcquets,
 } from '@/lib/patrimoine/societeAcquets';
-import { calculerRequalifications, Requalification } from '@/lib/patrimoine/requalification';
+import { calculerRequalifications, compositionSocieteAcquets, Requalification } from '@/lib/patrimoine/requalification';
 import { appliquerRequalifications } from '@/services/requalificationService';
 import { cn } from '@/lib/utils';
 import { AssetSelectionModal } from './AssetSelectionModal';
 import { RequalificationDialog } from './RequalificationDialog';
 
-interface QualificationRegimeOptionsProps {
-  regimeType: RegimeType;
-  /** Valeurs courantes du formulaire (peut-être pas encore enregistrées) : servent à requalifier les biens. */
-  regimeMatrimonial?: string;
-  dateMariage?: string;
+interface SocieteAcquetsSectionProps {
+  /** Actifs du formulaire parent (même instance que le résumé de l'onglet Général). */
+  assets: Asset[];
+  fetchAssets: () => Promise<void>;
+  /** Régime ou date de mariage modifiés sans être enregistrés : périmètre en lecture seule. */
+  regimeNonEnregistre: boolean;
 }
 
 /**
@@ -36,39 +38,68 @@ interface QualificationRegimeOptionsProps {
  * qualification de biens existants (en qualification automatique), une
  * confirmation liste ces biens avant de tout appliquer.
  */
-export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProps> = ({
-  regimeType,
-  regimeMatrimonial,
-  dateMariage,
+export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
+  assets,
+  fetchAssets,
+  regimeNonEnregistre,
 }) => {
   const { data: maritalData, saveData } = useMaritalStatus();
-  const { assets, fetchAssets } = useAssets();
   const { toast } = useToast();
   const [modal, setModal] = useState<'designes' | 'exclus' | null>(null);
   const [enAttente, setEnAttente] = useState<{ perimetre: PerimetreSocieteAcquets; changements: Requalification[] } | null>(null);
   const [application, setApplication] = useState(false);
 
-  if (regimeType !== 'separation_societe_acquets') return null;
-
   const clausesContrat = (maritalData as any)?.clauses_contrat || {};
-  const perimetre = lirePerimetre(clausesContrat.societe_acquets);
+  // Périmètre local, mis à jour immédiatement : des clics rapprochés partaient
+  // sinon de l'état serveur pas encore rafraîchi et s'écrasaient entre eux.
+  const [perimetre, setPerimetre] = useState<PerimetreSocieteAcquets>(() => lirePerimetre(clausesContrat.societe_acquets));
+  const stockeServeur = JSON.stringify(clausesContrat.societe_acquets ?? null);
+  const ecrituresEnCours = useRef(0);
+  useEffect(() => {
+    if (ecrituresEnCours.current > 0) return;
+    setPerimetre(lirePerimetre(clausesContrat.societe_acquets));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stockeServeur]);
+  // Écritures sérialisées : chacune part de la précédente.
+  const fileEcriture = useRef<Promise<unknown>>(Promise.resolve());
 
-  const enregistrer = (p: PerimetreSocieteAcquets) =>
-    saveData({ clauses_contrat: { ...clausesContrat, societe_acquets: ecrirePerimetre(p) } } as any);
+  const enregistrer = (p: PerimetreSocieteAcquets) => {
+    setPerimetre(p);
+    ecrituresEnCours.current += 1;
+    const ecriture = fileEcriture.current
+      .catch(() => undefined)
+      .then(() => saveData({ clauses_contrat: { ...clausesContrat, societe_acquets: ecrirePerimetre(p) } } as any, { silent: true }))
+      .catch((error) => {
+        // Échec (déjà notifié par useMaritalStatus) : on revient à l'état enregistré.
+        setPerimetre(lirePerimetre(clausesContrat.societe_acquets));
+        throw error;
+      })
+      .finally(() => {
+        ecrituresEnCours.current -= 1;
+      });
+    fileEcriture.current = ecriture;
+    return ecriture;
+  };
+
+  // Toujours le régime enregistré (cf. regimeNonEnregistre).
+  const contexte = { ...(maritalData as any) };
+  const composition = compositionSocieteAcquets(assets, contexte, perimetre);
+  const euros = (v: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
   const changer = (patch: Partial<PerimetreSocieteAcquets>) => {
+    if (regimeNonEnregistre) return;
     const nouveau = { ...perimetre, ...patch };
-    const changements = calculerRequalifications(
-      assets || [],
-      {
-        ...(maritalData as any),
-        regime_matrimonial: regimeMatrimonial ?? maritalData?.regime_matrimonial,
-        date_mariage: dateMariage ?? maritalData?.date_mariage,
-      },
-      nouveau
-    );
+    // Bascule vers « Certaines catégories » sans encore rien de coché : état
+    // de saisie intermédiaire, affiché seulement. Enregistrer ce périmètre vide
+    // proposerait de sortir tous les biens de la société avant même le choix.
+    if (!nouveau.tousAcquets && nouveau.categories.length === 0 && nouveau.biensDesignes.length === 0 && perimetre.tousAcquets) {
+      setPerimetre(nouveau);
+      return;
+    }
+    const changements = calculerRequalifications(assets, contexte, nouveau);
     if (changements.length === 0) {
-      enregistrer(nouveau);
+      enregistrer(nouveau).catch(() => undefined);
     } else {
       setEnAttente({ perimetre: nouveau, changements });
     }
@@ -97,7 +128,7 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
     });
 
   const nomBien = (id: string) => {
-    const a = (assets || []).find(x => x.id === id);
+    const a = assets.find(x => x.id === id);
     return a ? a.denomination || a.nature : null;
   };
   const etiquettes = (ids: string[]) => {
@@ -111,10 +142,17 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
   };
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <p className="text-[13px] font-medium text-foreground">Périmètre de la société d'acquêts</p>
-        <p className="text-sm text-muted-foreground">
+    <div className="divide-y divide-border">
+    {regimeNonEnregistre && (
+      <p className="mx-8 mt-6 rounded-[2px] bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
+        Le régime ou la date du mariage ont été modifiés sans être enregistrés. Enregistrez-les d'abord pour
+        définir le périmètre : il requalifie les biens selon le régime enregistré.
+      </p>
+    )}
+    <fieldset disabled={regimeNonEnregistre} className={cn('min-w-0 space-y-4 px-8 py-7', regimeNonEnregistre && 'opacity-60')}>
+      <SectionHeader icon={Landmark} title="Périmètre" />
+      <div className="-mt-4 space-y-2">
+        <p className="text-xs text-muted-foreground">
           Seuls les biens acquis à titre onéreux pendant le mariage y entrent ; les biens reçus par donation ou
           succession restent propres. Les biens saisis plus tard sont classés automatiquement.
         </p>
@@ -174,6 +212,38 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
         </p>
       </div>
 
+    </fieldset>
+
+    <div className="px-8 py-7">
+      <SectionHeader icon={Landmark} title="Composition" />
+      <p className="-mt-4 mb-4 text-xs text-muted-foreground">
+        Biens communs qui résultent du périmètre, d'après les biens saisis dans Patrimoine.
+      </p>
+      {composition.biens.length === 0 ? (
+        <p className="rounded-[2px] bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
+          Aucun bien saisi n'entre dans la société d'acquêts.
+        </p>
+      ) : (
+        <ul className="divide-y divide-border border-y border-border">
+          {composition.biens.map(({ asset, raison }) => (
+            <li key={asset.id} className="flex items-start justify-between gap-4 py-2.5">
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] font-medium text-foreground">{asset.denomination || asset.nature}</span>
+                <span className="block text-xs text-muted-foreground">{raison.replace(/^Bien commun : /, '').replace(/^./, c => c.toUpperCase())}</span>
+              </span>
+              <span className="shrink-0 text-[13px] font-medium tabular-nums">{euros(asset.valeur_estimee || 0)}</span>
+            </li>
+          ))}
+          <li className="flex items-center justify-between py-2.5 text-[13px]">
+            <span className="text-muted-foreground">
+              {composition.biens.length} bien{composition.biens.length > 1 ? 's' : ''} · valeur estimée
+            </span>
+            <span className="font-medium tabular-nums">{euros(composition.total)}</span>
+          </li>
+        </ul>
+      )}
+    </div>
+
       <AssetSelectionModal
         title={modal === 'exclus' ? "Biens exclus de la société d'acquêts" : "Biens ajoutés à la société d'acquêts"}
         description={
@@ -194,7 +264,12 @@ export const QualificationRegimeOptions: React.FC<QualificationRegimeOptionsProp
       <RequalificationDialog
         changements={enAttente?.changements ?? null}
         pending={application}
-        onCancel={() => setEnAttente(null)}
+        cancelLabel="Annuler"
+        onCancel={() => {
+          setEnAttente(null);
+          // Rien n'a été enregistré : l'affichage revient au périmètre enregistré.
+          setPerimetre(lirePerimetre(clausesContrat.societe_acquets));
+        }}
         onConfirm={appliquer}
       />
     </div>

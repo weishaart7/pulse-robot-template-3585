@@ -137,7 +137,7 @@ export const useMaritalStatus = () => {
     ...FAMILY_QUERY_OPTIONS,
   });
 
-  const saveData = async (status: MaritalStatus) => {
+  const saveData = async (status: MaritalStatus, options?: { silent?: boolean }) => {
     if (!isAuthenticated) {
       toast({
         title: "Erreur",
@@ -151,10 +151,12 @@ export const useMaritalStatus = () => {
       setSaving(true);
       const savedStatus = await familyService.upsertMaritalStatus(status);
       queryClient.setQueryData(key, savedStatus);
-      toast({
-        title: "Succès",
-        description: "Situation matrimoniale enregistrée avec succès",
-      });
+      if (!options?.silent) {
+        toast({
+          title: "Succès",
+          description: "Situation matrimoniale enregistrée avec succès",
+        });
+      }
       return savedStatus;
     } catch (error) {
       if (import.meta.env.DEV) {

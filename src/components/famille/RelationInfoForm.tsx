@@ -8,17 +8,17 @@ import { Input } from "@/components/ui/input";
 import ActionHubInput from "@/components/ui/action-hub-input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Heart, FileText, Gift, History, Scale, Coins } from "lucide-react";
+import { Heart, FileText, Gift, History, Scale, Coins, Landmark } from "lucide-react";
 import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { GooeyNav } from '@/components/ui/gooey-nav';
 import { format } from "date-fns";
-import { Chip, SummaryRow, WorkspaceHeader } from "@/components/layout/workspace-panel";
+import { Chip, SummaryRow, WorkspaceHeader, panelLinkClass } from "@/components/layout/workspace-panel";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDateInput } from "@/components/family/SmartDateInput";
 import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
 import { SectionHeader } from "@/components/family/SectionHeader";
-import { QualificationRegimeOptions } from "@/components/famille/matrimonial/QualificationRegimeOptions";
+import { SocieteAcquetsSection } from "@/components/famille/matrimonial/SocieteAcquetsSection";
 import { RecompensesSection } from "@/components/famille/matrimonial/RecompensesSection";
 import { CreancesEntreEpouxSection } from "@/components/famille/matrimonial/CreancesEntreEpouxSection";
 import { PatrimoineOriginaireSection } from "@/components/famille/matrimonial/PatrimoineOriginaireSection";
@@ -27,9 +27,9 @@ import { determinerRegimeLegal, CLASSES_REGIMES_MATRIMONIAUX } from "@/lib/patri
 import { getSimplifiedRegime, RegimeType, toRegimeType } from "@/types/matrimonial";
 import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
 import { useAssets } from "@/hooks/useAssets";
-import { calculerRequalifications, Requalification } from "@/lib/patrimoine/requalification";
+import { calculerRequalifications, compositionSocieteAcquets, libellePerimetre, Requalification } from "@/lib/patrimoine/requalification";
 import { appliquerRequalifications } from "@/services/requalificationService";
-import { lirePerimetre } from "@/lib/patrimoine/societeAcquets";
+import { CATEGORIES_SOCIETE_ACQUETS, lirePerimetre } from "@/lib/patrimoine/societeAcquets";
 import { RequalificationDialog } from "@/components/famille/matrimonial/RequalificationDialog";
 
 const formSchema = z.object({
@@ -64,12 +64,13 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-type Section = 'informations-generales' | 'recompenses-creances' | 'participation-acquets' | 'donation' | 'historique';
+type Section = 'informations-generales' | 'recompenses-creances' | 'participation-acquets' | 'societe-acquets' | 'donation' | 'historique';
 
 const SECTION_LABELS: Record<Section, string> = {
   'informations-generales': 'Informations générales',
   'recompenses-creances': 'Récompenses & créances',
   'participation-acquets': 'Participation aux acquêts',
+  'societe-acquets': "Société d'acquêts",
   'donation': 'Donation au dernier vivant',
   'historique': 'Historique matrimonial',
 };
@@ -157,6 +158,12 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         mariagePrecedentConjoint: maritalData.mariage_precedent_conjoint || false,
         dureeMariagePrecedentConjointAnnees: maritalData.duree_mariage_precedent_conjoint_annees,
         dureeMariagePrecedentConjointMois: maritalData.duree_mariage_precedent_conjoint_mois,
+      }, {
+        // marital_status est aussi réécrit hors de ce formulaire (périmètre de la
+        // société d'acquêts, onglet dédié) : sans cette option, chaque écriture
+        // effaçait les modifications non enregistrées (ex. régime changé dans le
+        // sélecteur, puis retour à l'ancien régime et disparition de l'onglet).
+        keepDirtyValues: true,
       });
     }
   }, [maritalData, form]);
@@ -280,6 +287,25 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   // séparation de biens avec société d'acquêts) ; créances entre époux, elles,
   // s'appliquent dans tous les régimes matrimoniaux (art. 1479, 1543 C. civ.).
   const simplifiedRegimeType: RegimeType = toRegimeType(regimeMatrimonial);
+  // Régime, contrat ou date de mariage modifiés à l'écran mais pas encore
+  // enregistrés : le périmètre de la société d'acquêts requalifierait les biens
+  // pour un régime qui n'existe pas en base. L'onglet est alors en lecture seule.
+  const regimeNonEnregistre =
+    regimeMatrimonial !== maritalData?.regime_matrimonial ||
+    !!pasDeContrat !== !!maritalData?.pas_de_contrat_mariage ||
+    (dateMariage ? format(dateMariage, 'yyyy-MM-dd') : null) !== (maritalData?.date_mariage ?? null);
+  const resumeSocieteAcquets = (() => {
+    const perimetre = lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets);
+    const { biens, total } = compositionSocieteAcquets(
+      assets || [],
+      { ...(maritalData as any), regime_matrimonial: regimeMatrimonial, date_mariage: dateMariage ? format(dateMariage, 'yyyy-MM-dd') : maritalData?.date_mariage },
+      perimetre
+    );
+    const libelle = libellePerimetre(perimetre, Object.fromEntries(CATEGORIES_SOCIETE_ACQUETS.map(c => [c.key, c.label.toLowerCase()])));
+    const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(total);
+    const libelleMaj = libelle.charAt(0).toUpperCase() + libelle.slice(1);
+    return `${libelleMaj} · ${biens.length} bien${biens.length > 1 ? 's' : ''} · ${euros}`;
+  })();
   const hasMasseCommune = getSimplifiedRegime(simplifiedRegimeType) === 'communauté' || simplifiedRegimeType === 'separation_societe_acquets';
 
   const sections = relationStatus === "Marié(e)" ? [
@@ -290,6 +316,10 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
     // ce régime, cf. diagnostic chantier participation aux acquêts.
     ...(simplifiedRegimeType === 'participation_acquets'
       ? [{ id: 'participation-acquets' as Section, label: 'Participation aux acquêts', shortLabel: 'Participation', icon: Coins }]
+      : []),
+    // Même principe pour la société d'acquêts (périmètre et composition).
+    ...(simplifiedRegimeType === 'separation_societe_acquets' && !pasDeContrat
+      ? [{ id: 'societe-acquets' as Section, label: "Société d'acquêts", shortLabel: 'Société', icon: Landmark }]
       : []),
     { id: 'donation' as Section, label: 'Donation au dernier vivant', shortLabel: 'Donation', icon: Gift },
     { id: 'historique' as Section, label: 'Historique matrimonial', shortLabel: 'Historique', icon: History },
@@ -452,13 +482,17 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                             </FormItem>
                           )}
                         />
-                        <div className="mt-3">
-                          <QualificationRegimeOptions
-                            regimeType={simplifiedRegimeType}
-                            regimeMatrimonial={regimeMatrimonial}
-                            dateMariage={dateMariage ? format(dateMariage, 'yyyy-MM-dd') : undefined}
-                          />
-                        </div>
+                        {simplifiedRegimeType === 'separation_societe_acquets' && (
+                          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-[2px] bg-secondary/50 px-3 py-2 text-[13px]">
+                            <span>
+                              <span className="text-muted-foreground">Société d'acquêts : </span>
+                              {resumeSocieteAcquets}
+                            </span>
+                            <button type="button" className={panelLinkClass} onClick={() => setActiveSection('societe-acquets')}>
+                              Définir le périmètre
+                            </button>
+                          </div>
+                        )}
                       </>
                     )}
 
@@ -539,6 +573,14 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                 <PatrimoineOriginaireSection />
                 <PatrimoineFinalSection />
               </div>
+            )}
+
+            {activeSection === 'societe-acquets' && simplifiedRegimeType === 'separation_societe_acquets' && (
+              <SocieteAcquetsSection
+                assets={assets || []}
+                fetchAssets={fetchAssets}
+                regimeNonEnregistre={regimeNonEnregistre}
+              />
             )}
 
             {activeSection === 'donation' && (

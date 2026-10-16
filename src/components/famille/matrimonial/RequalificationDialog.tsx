@@ -16,13 +16,15 @@ interface RequalificationDialogProps {
   /** null = fermé. */
   changements: Requalification[] | null;
   pending: boolean;
+  /** Libellé du refus : « Annuler » quand rien n'est encore enregistré. */
+  cancelLabel?: string;
   onCancel: () => void;
   onConfirm: () => void;
 }
 
 // Confirmation commune avant requalification en lot (périmètre de la société
 // d'acquêts, enregistrement du régime) : liste chaque bien, avant → après.
-export const RequalificationDialog: React.FC<RequalificationDialogProps> = ({ changements, pending, onCancel, onConfirm }) => {
+export const RequalificationDialog: React.FC<RequalificationDialogProps> = ({ changements, pending, cancelLabel = 'Ne pas modifier les biens', onCancel, onConfirm }) => {
   const n = changements?.length ?? 0;
   return (
     <AlertDialog open={changements !== null} onOpenChange={open => !open && !pending && onCancel()}>
@@ -48,7 +50,7 @@ export const RequalificationDialog: React.FC<RequalificationDialogProps> = ({ ch
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className={panelButtonClass} disabled={pending}>Ne pas modifier les biens</AlertDialogCancel>
+          <AlertDialogCancel className={panelButtonClass} disabled={pending}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction
             className={panelPrimaryButtonClass}
             disabled={pending}

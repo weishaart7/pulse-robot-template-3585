@@ -285,7 +285,7 @@ permet de l'alimenter (voir §3).
   de l'ancien catalogue n'est pas un simple avantage matrimonial optionnel :
   `qualification.ts::qualifierBien` en a structurellement besoin, c'est le seul mécanisme désignant
   les biens de la société d'acquêts sous `separation_societe_acquets`. Elle reste donc éditable, dans le nouveau composant minimal
-  [QualificationRegimeOptions.tsx](../src/components/famille/matrimonial/QualificationRegimeOptions.tsx)
+  [SocieteAcquetsSection.tsx](../src/components/famille/matrimonial/SocieteAcquetsSection.tsx)
   (monté dans la section « Régime matrimonial » de `RelationInfoForm.tsx`, réutilise
   `AssetSelectionModal.tsx`), et stockées avec le même format qu'avant dans
   `marital_status.clauses_contrat.societe_acquets`. L'ancienne option « extension de la communauté
@@ -294,6 +294,14 @@ permet de l'alimenter (voir §3).
   propre par nature (art. 1404) reste toujours propre en régime communautaire. La clé
   `clauses_contrat.extension_propres_par_nature` éventuellement présente en base est ignorée.
 
+- **Onglet « Société d'acquêts ».** Affiché seulement sous ce régime avec contrat (même principe que
+  l'onglet Participation aux acquêts) : section Périmètre et section Composition (biens communs
+  qui en résultent, motif et valeur, total — `compositionSocieteAcquets()` dans
+  `lib/patrimoine/requalification.ts`, qualification recalculée, ou manuelle si l'actif est en mode
+  manuel). L'onglet Général n'en garde qu'une ligne de résumé (périmètre · nombre de biens · valeur)
+  avec un lien vers l'onglet. Composant :
+  [SocieteAcquetsSection.tsx](../src/components/famille/matrimonial/SocieteAcquetsSection.tsx)
+  (ex-`QualificationRegimeOptions.tsx`).
 - **Périmètre de la société d'acquêts.** Le contrat fixe librement le contenu de la société
   (art. 1387, 1497) : on le décrit par règles plutôt que bien par bien
   ([lib/patrimoine/societeAcquets.ts](../src/lib/patrimoine/societeAcquets.ts)) — « Tous les acquêts »

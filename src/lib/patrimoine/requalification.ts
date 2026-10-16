@@ -32,6 +32,36 @@ export interface Requalification {
   patch: Partial<Asset>;
 }
 
+/** Qualification recalculée d'un actif dans un contexte matrimonial donné. */
+export const qualifierActif = (
+  asset: Asset,
+  marital: ContexteMatrimonialLot,
+  societeAcquets: PerimetreSocieteAcquets
+) =>
+  qualifierBien({
+    statutCouple: marital.statut_couple ?? undefined,
+    regimeMatrimonial: marital.regime_matrimonial ?? undefined,
+    dateMariage: marital.date_mariage ?? undefined,
+    conventionPacs: marital.convention_pacs ?? undefined,
+    datePacs: marital.date_pacs ?? undefined,
+    dateJugementSeparationCorps: marital.separation_de_corps
+      ? marital.date_jugement_separation_corps ?? undefined
+      : undefined,
+    dateAcquisition: asset.date_acquisition ?? undefined,
+    origineActif: asset.origine_actif ?? undefined,
+    modeDetention: asset.mode_detention ?? undefined,
+    detenteur: asset.detenteur ?? undefined,
+    clauseEntreeCommunaute: asset.clause_entree_communaute ?? undefined,
+    clauseRemploi: asset.clause_remploi ?? undefined,
+    natureActif: asset.nature,
+    assetId: asset.id,
+    societeAcquets,
+    estPropreParNature: asset.est_propre_par_nature ?? undefined,
+    valeurAcquisition: asset.valeur_acquisition ?? undefined,
+    fraisAcquisition: asset.frais_acquisition ?? undefined,
+    apportFondsPropres: asset.financement_mixte_apport_propre ?? undefined,
+  });
+
 export const calculerRequalifications = (
   assets: Asset[],
   marital: ContexteMatrimonialLot,
@@ -40,29 +70,7 @@ export const calculerRequalifications = (
   assets
     .filter((a) => a.qualification_auto !== false && a.detenteur !== 'Indivision')
     .flatMap((asset) => {
-      const { qualification } = qualifierBien({
-        statutCouple: marital.statut_couple ?? undefined,
-        regimeMatrimonial: marital.regime_matrimonial ?? undefined,
-        dateMariage: marital.date_mariage ?? undefined,
-        conventionPacs: marital.convention_pacs ?? undefined,
-        datePacs: marital.date_pacs ?? undefined,
-        dateJugementSeparationCorps: marital.separation_de_corps
-          ? marital.date_jugement_separation_corps ?? undefined
-          : undefined,
-        dateAcquisition: asset.date_acquisition ?? undefined,
-        origineActif: asset.origine_actif ?? undefined,
-        modeDetention: asset.mode_detention ?? undefined,
-        detenteur: asset.detenteur ?? undefined,
-        clauseEntreeCommunaute: asset.clause_entree_communaute ?? undefined,
-        clauseRemploi: asset.clause_remploi ?? undefined,
-        natureActif: asset.nature,
-        assetId: asset.id,
-        societeAcquets,
-        estPropreParNature: asset.est_propre_par_nature ?? undefined,
-        valeurAcquisition: asset.valeur_acquisition ?? undefined,
-        fraisAcquisition: asset.frais_acquisition ?? undefined,
-        apportFondsPropres: asset.financement_mixte_apport_propre ?? undefined,
-      });
+      const { qualification } = qualifierActif(asset, marital, societeAcquets);
       if (qualification === asset.qualification_bien) return [];
       // Bien du couple devenu propre/personnel : on ne sait pas de quel époux,
       // on ne devine pas — laissé tel quel, à reprendre sur sa fiche.
@@ -79,3 +87,32 @@ export const calculerRequalifications = (
       return [{ asset, avant: asset.qualification_bien, apres: qualification, patch }];
     });
 
+
+/**
+ * Biens qui composent la société d'acquêts selon le périmètre (qualification
+ * recalculée, ou qualification manuelle si l'actif est en mode manuel).
+ */
+export const compositionSocieteAcquets = (
+  assets: Asset[],
+  marital: ContexteMatrimonialLot,
+  societeAcquets: PerimetreSocieteAcquets
+) => {
+  const biens = assets.flatMap((asset) => {
+    if (asset.detenteur === 'Indivision') return [];
+    const auto = asset.qualification_auto !== false;
+    const { qualification, raison } = qualifierActif(asset, marital, societeAcquets);
+    const retenue = auto ? qualification : asset.qualification_bien;
+    return retenue === 'Bien commun'
+      ? [{ asset, raison: auto ? raison : 'Qualifié manuellement en bien commun.' }]
+      : [];
+  });
+  return { biens, total: biens.reduce((t, b) => t + (b.asset.valeur_estimee || 0), 0) };
+};
+
+/** Libellé court du périmètre, pour le résumé de l'onglet Général. */
+export const libellePerimetre = (p: PerimetreSocieteAcquets, labels: Record<string, string>) => {
+  if (p.tousAcquets) return 'Tous les acquêts';
+  const parts = p.categories.map((c) => labels[c]);
+  if (p.biensDesignes.length) parts.push(`${p.biensDesignes.length} bien(s) ajouté(s)`);
+  return parts.length ? parts.join(', ') : 'Périmètre non défini';
+};
