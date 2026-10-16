@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, TrendingUp, TrendingDown, DollarSign, Percent } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
+import { PanelTitle, SummaryRow } from '@/components/layout/workspace-panel';
+import { CITRON_INK, CITRON_MID, GREY, GREY_LIGHT, LAGON, LAGON_DEEP, LAGON_INK, LAGON_MID } from '@/components/budget/budgetColors';
 import { Asset } from '@/services/assetService';
 import { assetService } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { computeAmortissement, computeQuotePart } from '@/lib/immobilier/rentabilite';
+import { computeQuotePart } from '@/lib/immobilier/rentabilite';
+import { computeFluxBien, computeIndicateurs, sommeFlux, type FluxBien } from '@/lib/immobilier/portefeuille';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getFractionDemembrement } from '@/lib/patrimoine/demembrementFraction';
@@ -14,30 +16,6 @@ interface ImmobilierOverviewProps {
   assets: Asset[];
 }
 
-// Facteurs de conversion périodicité -> annuel/mensuel. `PERIODICITE_OPTIONS`
-// (immobilierPropertySchema.ts) propose Mensuelle/Trimestrielle/Semestrielle/Annuelle pour les revenus
-// comme pour les charges. Une valeur non reconnue garde son comportement existant : traitée comme déjà
-// annuelle pour les revenus (`defaultAnnualFactor`/`defaultMonthlyDivisor` = 1/12), exclue (0) pour les
-// charges — cf. docs/immobilier.md §3.
-const annualFactor = (periodicite: string | undefined, defaultFactor: number): number => {
-  switch ((periodicite || '').toLowerCase()) {
-    case 'mensuelle': return 12;
-    case 'trimestrielle': return 4;
-    case 'semestrielle': return 2;
-    case 'annuelle': return 1;
-    default: return defaultFactor;
-  }
-};
-const monthlyDivisor = (periodicite: string | undefined, defaultDivisor: number | null): number | null => {
-  switch ((periodicite || '').toLowerCase()) {
-    case 'mensuelle': return 1;
-    case 'trimestrielle': return 3;
-    case 'semestrielle': return 6;
-    case 'annuelle': return 12;
-    default: return defaultDivisor;
-  }
-};
-
 interface AssetMetrics {
   nombreBiens: number;
   valeurTotaleBiens: number;
@@ -46,7 +24,12 @@ interface AssetMetrics {
   cashflowMensuel: number;
   plusValueBrute: number;
   tauxPlusValue: number;
+  /** Valeur retenue par bien (même pondération que la valeur totale), pour la répartition. */
+  parBien: { id: string; nom: string; valeur: number }[];
 }
+
+// Couleurs de la répartition par bien : palette des panneaux de travail (lagon / citron / gris).
+const BIEN_COLORS = [LAGON_INK, LAGON, CITRON_MID, LAGON_MID, CITRON_INK, LAGON_DEEP, GREY, GREY_LIGHT];
 
 export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }) => {
   const [metrics, setMetrics] = useState<AssetMetrics>({
@@ -57,6 +40,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
     cashflowMensuel: 0,
     plusValueBrute: 0,
     tauxPlusValue: 0,
+    parBien: [],
   });
   const [loading, setLoading] = useState(true);
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
@@ -87,15 +71,10 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
       try {
         setLoading(true);
         
-        let totalLoyerAnnuel = 0;
-        let totalChargesAnnuelles = 0;
-        let totalRevenusMensuels = 0;
-        let totalChargesMensuelles = 0;
-        let totalCreditMensuel = 0;
-        let totalPrixAchat = 0;
-        let totalInvestissement = 0;
+        const fluxBiens: FluxBien[] = [];
         let totalValeurActuelle = 0;
         let totalCoutAcquisition = 0;
+        const parBien: AssetMetrics['parBien'] = [];
 
         for (const asset of assets) {
           // Quote-part du foyer (indivision) : pondère revenus, charges, crédit et base de
@@ -103,12 +82,6 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           // non renseignée).
           const quotePart = computeQuotePart(asset) / 100;
 
-          // Prix d'achat et investissement total
-          const prixAchat = (asset.valeur_acquisition || 0) * quotePart;
-          const fraisAcquisition = (asset.frais_acquisition || 0) * quotePart;
-          totalPrixAchat += prixAchat;
-          totalInvestissement += prixAchat + fraisAcquisition;
-          
           // Démembrement (barème 669 CGI) : une valeur estimée en usufruit/nue-propriété ne
           // vaut pas sa valeur pleine propriété — même fraction que le Résumé Patrimoine
           // (getFractionDemembrement), pour que « Valeur totale » et « Plus-value brute »
@@ -120,7 +93,9 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
 
           if (fraction !== null) {
             // Valeur actuelle
-            totalValeurActuelle += (asset.valeur_estimee || 0) * fraction * quotePart;
+            const valeurBien = (asset.valeur_estimee || 0) * fraction * quotePart;
+            totalValeurActuelle += valeurBien;
+            parBien.push({ id: asset.id || asset.denomination || asset.nature, nom: asset.denomination || asset.nature, valeur: valeurBien });
 
             // Coût d'acquisition pour la plus-value : champs immobilier détaillés
             // (montant_immeuble + frais annexes) si renseignés, sinon repli sur les champs
@@ -142,43 +117,20 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
             totalCoutAcquisition += coutAcquisition * quotePart;
           }
 
-          // Revenus — tous les biens transférés, pas seulement les biens locatifs : un bien
-          // (résidence secondaire, terrain...) peut avoir des revenus/charges sans être de
+          // Revenus, charges et crédit — tous les biens transférés, pas seulement les biens locatifs :
+          // un bien (résidence secondaire, terrain...) peut avoir des revenus/charges sans être de
           // nature locative (cf. RENTAL_PROPERTY_TYPES), notamment via le formulaire générique
-          // d'actif (AssetForm.tsx, onglet "Charges") qui n'est pas restreint par nature.
-          const revenus = await assetService.getAssetRevenus(asset.id);
-          for (const revenu of revenus) {
-            const montant = (revenu.montant || 0) * quotePart;
-            totalLoyerAnnuel += montant * annualFactor(revenu.periodicite, 1);
-            totalRevenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
-          }
-
-          // Financement : mensualité de crédit + assurance emprunteur, nulles si le bien n'est pas
-          // financé ou si le prêt est soldé (même moteur que les simulateurs de rentabilité).
-          const credit = computeAmortissement(asset);
-          totalCreditMensuel += (credit.mensualiteCredit + credit.mensualiteAssurance) * quotePart;
-
-          // Charges
-          const charges = await assetService.getAssetCharges(asset.id);
-          for (const charge of charges) {
-            const montant = (charge.montant || 0) * quotePart;
-            totalChargesAnnuelles += montant * annualFactor(charge.periodicite, 0);
-
-            const divisor = monthlyDivisor(charge.periodicite, null);
-            totalChargesMensuelles += divisor ? montant / divisor : 0;
-          }
+          // d'actif (AssetForm.tsx, onglet "Charges") qui n'est pas restreint par nature. Mêmes
+          // formules que les indicateurs par bien de « Mes biens » (lib/immobilier/portefeuille.ts).
+          const [revenus, charges] = await Promise.all([
+            assetService.getAssetRevenus(asset.id),
+            assetService.getAssetCharges(asset.id),
+          ]);
+          fluxBiens.push(computeFluxBien(asset, revenus, charges));
         }
 
         // Calcul des métriques
-        const rentabiliteBrute = totalPrixAchat > 0 
-          ? (totalLoyerAnnuel / totalPrixAchat) * 100 
-          : 0;
-
-        const rentabiliteNette = totalInvestissement > 0
-          ? ((totalLoyerAnnuel - totalChargesAnnuelles) / totalInvestissement) * 100
-          : 0;
-
-        const cashflowMensuel = totalRevenusMensuels - totalChargesMensuelles - totalCreditMensuel;
+        const { rentabiliteBrute, rentabiliteNette, cashflowMensuel } = computeIndicateurs(sommeFlux(fluxBiens));
         const plusValueBrute = totalValeurActuelle - totalCoutAcquisition;
         
         const tauxPlusValue = totalCoutAcquisition > 0
@@ -193,6 +145,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           cashflowMensuel,
           plusValueBrute,
           tauxPlusValue,
+          parBien: parBien.filter(b => b.valeur > 0).sort((a, b) => b.valeur - a.valeur),
         });
       } catch (error) {
         if (import.meta.env.DEV) {
@@ -206,103 +159,97 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
     calculateMetrics();
   }, [assets, assetDemembrements, demembrementCtx]);
 
-  const formatPercent = (value: number) => `${value.toFixed(2)}%`;
+  const formatPercent = (value: number) =>
+    `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
 
   if (loading) {
-    return (
-      <LoadingSpinner text="Chargement des statistiques..." />
-    );
+    return <div className="px-8 py-6"><LoadingSpinner text="Chargement des statistiques..." /></div>;
   }
 
   if (assets.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Aucun bien immobilier</h3>
-        <p className="text-muted-foreground">
-          Ajoutez des biens depuis la section Patrimoine pour voir vos statistiques ici.
+      <div className="px-8 py-7">
+        <p className="max-w-md text-[13px] text-muted-foreground">
+          Aucun bien immobilier : les actifs de nature immobilière créés dans Patrimoine apparaissent ici automatiquement.
         </p>
       </div>
     );
   }
 
+  const gain = metrics.plusValueBrute >= 0;
+
+  // En-tête du portefeuille, sur le modèle du Résumé Patrimoine : valeur et plus-value, indicateurs en
+  // lignes libellé / valeur, puis répartition de la valeur par bien.
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Nombre de biens</CardTitle>
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{metrics.nombreBiens}</div>
-          <p className="text-xs text-muted-foreground">en portefeuille</p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
+      <div className="px-8 py-6">
+        <p className="text-[12px] text-muted-foreground">Valeur du portefeuille</p>
+        <p className="mt-2 text-[34px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">
+          {formatCurrency(metrics.valeurTotaleBiens)}
+        </p>
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
+          <span className={`inline-flex h-6 items-center gap-1 rounded-[2px] px-2 font-medium tabular-nums ${gain ? 'bg-positive/10 text-positive' : 'bg-destructive/10 text-destructive'}`}>
+            {gain ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+            {gain ? '+' : ''}{formatPercent(metrics.tauxPlusValue)}
+          </span>
+          <span className="text-muted-foreground">
+            plus-value brute ({gain ? '+' : ''}{formatCurrency(metrics.plusValueBrute)})
+          </span>
+        </p>
+        <dl className="mt-5">
+          <SummaryRow label="Biens"><span className="tabular-nums">{metrics.nombreBiens}</span></SummaryRow>
+          <SummaryRow label="Cashflow">
+            <span className={`tabular-nums ${metrics.cashflowMensuel >= 0 ? 'text-positive' : 'text-destructive'}`}>
+              {formatCurrency(metrics.cashflowMensuel)}
+            </span>
+            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par mois, crédit compris</span>
+          </SummaryRow>
+          <SummaryRow label="Rent. brute">
+            <span className="tabular-nums">{formatPercent(metrics.rentabiliteBrute)}</span>
+            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">loyers / prix d'achat</span>
+          </SummaryRow>
+          <SummaryRow label="Rent. nette">
+            <span className="tabular-nums">{formatPercent(metrics.rentabiliteNette)}</span>
+            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">après charges / investissement</span>
+          </SummaryRow>
+        </dl>
+      </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Valeur totale</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(metrics.valeurTotaleBiens)}</div>
-          <p className="text-xs text-muted-foreground">somme des valeurs estimées (quote-part du foyer)</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Rentabilité brute</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatPercent(metrics.rentabiliteBrute)}</div>
-          <p className="text-xs text-muted-foreground">loyer annuel / prix d'achat</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Rentabilité nette</CardTitle>
-          <Percent className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatPercent(metrics.rentabiliteNette)}</div>
-          <p className="text-xs text-muted-foreground">(loyer - charges) / investissement</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Cashflow mensuel</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${metrics.cashflowMensuel >= 0 ? 'text-positive' : 'text-destructive'}`}>
-            {formatCurrency(metrics.cashflowMensuel)}
-          </div>
-          <p className="text-xs text-muted-foreground">revenus - charges - crédit mensuels</p>
-        </CardContent>
-      </Card>
-
-      <Card className="md:col-span-2">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Plus-value brute</CardTitle>
-          {metrics.plusValueBrute >= 0 ? (
-            <TrendingUp className="h-4 w-4 text-positive" />
-          ) : (
-            <TrendingDown className="h-4 w-4 text-destructive" />
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className={`text-2xl font-bold ${metrics.plusValueBrute >= 0 ? 'text-positive' : 'text-destructive'}`}>
-            {formatCurrency(metrics.plusValueBrute)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Taux de plus-value : {formatPercent(metrics.tauxPlusValue)}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="px-8 py-6">
+        <PanelTitle>Répartition par bien</PanelTitle>
+        {metrics.parBien.length === 0 || metrics.valeurTotaleBiens <= 0 ? (
+          <p className="mt-3 text-[13px] text-muted-foreground">Aucun bien valorisé.</p>
+        ) : (
+          <>
+            <div className="mt-4 flex h-2.5 w-full gap-[2px] overflow-hidden rounded-[1px]">
+              {metrics.parBien.map((b, i) => (
+                <div
+                  key={b.id}
+                  title={`${b.nom} · ${formatPercent((b.valeur / metrics.valeurTotaleBiens) * 100)}`}
+                  className="h-full"
+                  style={{ width: `${(b.valeur / metrics.valeurTotaleBiens) * 100}%`, backgroundColor: BIEN_COLORS[i % BIEN_COLORS.length] }}
+                />
+              ))}
+            </div>
+            <ul className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+              {metrics.parBien.map((b, i) => (
+                <li key={b.id} className="flex items-baseline justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2 text-[13px] text-foreground">
+                    <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: BIEN_COLORS[i % BIEN_COLORS.length] }} />
+                    <span className="truncate">{b.nom}</span>
+                  </span>
+                  <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
+                    <span className="text-[13px] font-medium text-foreground">{formatCurrency(b.valeur)}</span>
+                    <span className="w-14 text-right text-[12px] text-muted-foreground">
+                      {((b.valeur / metrics.valeurTotaleBiens) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 };

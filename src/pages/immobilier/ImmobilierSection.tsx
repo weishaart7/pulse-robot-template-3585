@@ -1,20 +1,17 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { THEME_INK } from '@/lib/theme';
+import React, { useState, useCallback } from 'react';
 import { useModuleSubNav } from '@/hooks/useModuleSubNav';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Building2, LayoutGrid, Table as TableIcon, Home } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { Building2 } from 'lucide-react';
 import { useImmobilierAssets } from '@/hooks/useImmobilierAssets';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImmobilierPropertyDetailView } from '@/components/immobilier/ImmobilierPropertyDetailView';
 import { ImmobilierGestionDialog } from '@/components/immobilier/ImmobilierGestionDialog';
 import { ImmobilierOverview } from '@/components/immobilier/ImmobilierOverview';
 import { FoncierFoyerSection } from '@/components/immobilier/FoncierFoyerSection';
 import { GestionBiensSection } from '@/components/immobilier/GestionBiensSection';
+import { MesBiensList } from '@/components/immobilier/MesBiensList';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
 import { Asset } from '@/services/assetService';
-import { RENTAL_PROPERTY_TYPES } from '@/schemas/immobilierPropertySchema';
 
 const MEUBLE_NATURES = [
   'Immeubles locatifs (LMNP)',
@@ -27,7 +24,6 @@ export const ImmobilierSection = () => {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [lmnpAsset, setLmnpAsset] = useState<Asset | null>(null);
 
   const isMeuble = (asset: Asset) => MEUBLE_NATURES.includes(asset.nature || '');
@@ -56,19 +52,6 @@ export const ImmobilierSection = () => {
       setGestionDialogOpen(true);
     }
   }, []);
-
-  // Tri optimisé des assets
-  const sortedAssets = useMemo(() => {
-    return [...assets].sort((a, b) => {
-      const aIsResidencePrincipale = a.nature?.toLowerCase().includes('résidence principale');
-      const bIsResidencePrincipale = b.nature?.toLowerCase().includes('résidence principale');
-      
-      if (aIsResidencePrincipale && !bIsResidencePrincipale) return -1;
-      if (!aIsResidencePrincipale && bIsResidencePrincipale) return 1;
-      
-      return (b.valeur_estimee || 0) - (a.valeur_estimee || 0);
-    });
-  }, [assets]);
 
   const TABS = [
     { id: 'biens', label: 'Vue d\'ensemble' },
@@ -116,205 +99,43 @@ export const ImmobilierSection = () => {
     switch (activeTab) {
       case 'biens':
         return (
-          <div className="space-y-6">
-            <Card className="border border-border">
-              <CardHeader>
-                <CardTitle>Vue d'ensemble</CardTitle>
-                <CardDescription>
-                  Statistiques de votre portefeuille immobilier
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ImmobilierOverview assets={assets} />
-              </CardContent>
-            </Card>
+          <>
+            <ImmobilierOverview assets={assets} />
             <FoncierFoyerSection />
-          </div>
+          </>
         );
       case 'valorisation':
-        return (
-          <Card className="border border-border">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Mes biens</CardTitle>
-                  <CardDescription>
-                    Biens immobiliers transférés depuis la section Patrimoine
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant={viewMode === 'cards' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('cards')}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'table' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('table')}
-                  >
-                    <TableIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Chargement...</p>
-                </div>
-              ) : assets.length === 0 ? (
-                <div className="text-center py-12">
-                  <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Aucun bien pour le moment</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Pour ajouter un bien ici, allez dans Patrimoine → Actifs et cochez "Transfert dans Immobilier" lors de l'ajout d'un actif immobilier.
-                  </p>
-                </div>
-              ) : viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sortedAssets.map((asset) => {
-                    const isHouse = asset.typologie_bien?.toLowerCase().includes('maison') || 
-                                   asset.denomination?.toLowerCase().includes('maison') ||
-                                   asset.nature?.toLowerCase().includes('maison');
-                    const IconComponent = isHouse ? Home : Building2;
-                    
-                    return (
-                    <div
-                      key={asset.id}
-                      className="group relative rounded-md border border-border/50 bg-card p-6 shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer overflow-hidden"
-                      onClick={() => handleManageInfo(asset)}
-                    >
-                      {/* Gradient background */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                      
-                      {/* Animated border on hover */}
-                      <div className="absolute inset-0 rounded-md border-2 border-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                      
-                      {/* Content */}
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                              <IconComponent className="h-6 w-6 text-primary" />
-                            </div>
-                          </div>
-                          {isMeuble(asset) && (
-                            <Badge variant="secondary" className="text-xs">Meublé</Badge>
-                          )}
-                        </div>
-                        
-                        <h3 className="text-lg font-semibold mb-1 text-foreground group-hover:text-secondary transition-colors duration-300">
-                          {asset.denomination || 'Sans dénomination'}
-                        </h3>
-                        
-                        <p className="text-xs text-muted-foreground mb-4 truncate">
-                          {asset.nature}
-                        </p>
-                        
-                        {asset.valeur_estimee && (
-                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(asset.valeur_estimee)}
-                          </div>
-                        )}
-                        
-                        <div className="flex gap-2 mt-4">
-                          {RENTAL_PROPERTY_TYPES.includes(asset.nature || '') && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleGestion(asset);
-                              }}
-                              className="flex-1"
-                            >
-                              Gérer
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Dénomination</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assets.map((asset) => (
-                        <TableRow key={asset.id}>
-                          <TableCell className="font-medium">
-                            {asset.denomination || 'Sans dénomination'}
-                          </TableCell>
-                          <TableCell>{asset.nature}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-2 justify-end">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleManageInfo(asset)}
-                              >
-                                Informations
-                              </Button>
-                              {RENTAL_PROPERTY_TYPES.includes(asset.nature || '') && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleGestion(asset)}
-                                >
-                                  Gérer
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
+        return isLoading
+          ? <div className="px-8 py-6"><LoadingSpinner text="Chargement des biens..." /></div>
+          : <MesBiensList assets={assets} isMeuble={isMeuble} onOpen={handleManageInfo} onGestion={handleGestion} />;
       case 'revenus':
-        return (
-          <Card className="border border-border">
-            <CardHeader>
-              <CardTitle>Gestion des biens</CardTitle>
-              <CardDescription>
-                Tous les revenus et charges de votre portefeuille immobilier, consolidés en un seul écran.
-                Utilisez le bouton « Gérer » depuis « Mes biens » pour ajouter, modifier ou supprimer une ligne.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Chargement...</p>
-                </div>
-              ) : (
-                <GestionBiensSection assets={assets} />
-              )}
-            </CardContent>
-          </Card>
-        );
+        return isLoading
+          ? <div className="px-8 py-6"><LoadingSpinner text="Chargement..." /></div>
+          : <GestionBiensSection assets={assets} />;
       default:
         return null;
     }
   };
 
+  const tabLabel = TABS.find(t => t.id === activeTab)?.label ?? "Vue d'ensemble";
+  const summary = isLoading
+    ? 'Chargement…'
+    : `${assets.length} bien${assets.length > 1 ? 's' : ''} transféré${assets.length > 1 ? 's' : ''} depuis Patrimoine`;
+
+  // Cadre « panneau de travail », sur le modèle de Budget, Patrimoine et Famille : barre d'en-tête
+  // (fil d'Ariane), titre 24 px et rappel, puis le contenu bord à bord sous un filet.
   return (
-    <div className="p-6">
-      {renderContent()}
+    <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+      <WorkspaceHeader icon={<Building2 strokeWidth={1.75} />} trail={['Immobilier', tabLabel]} />
+
+      <div className="px-8 pt-6 pb-4">
+        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{tabLabel}</h1>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{summary}</p>
+      </div>
+
+      <div className="border-t border-border">
+        {renderContent()}
+      </div>
 
 
       <ImmobilierGestionDialog

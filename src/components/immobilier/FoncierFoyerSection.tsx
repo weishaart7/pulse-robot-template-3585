@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { LogoSpinner } from '@/components/brand/LogoSpinner';
+import { Chip, PanelTitle, SummaryRow, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
 import {
@@ -172,220 +170,228 @@ export const FoncierFoyerSection = () => {
     result.nouveauDeficitReportableHorsInterets > 0 ||
     result.nouveauDeficitReportableInterets > 0;
 
+  const numberInputClass = 'bg-background border-border shadow-none tabular-nums';
+
+  // Bandeaux bord à bord, sur le modèle des panneaux de travail : en-tête, puis paramètres et
+  // résultats du foyer à gauche, biens et déficits de l'année à droite, puis stock de déficits reportés.
   return (
-    <Card className="border border-border">
-      <CardHeader>
-        <CardTitle>Synthèse foncière du foyer — location nue</CardTitle>
-        <CardDescription>
-          Agrège tous vos biens loués nus ({biensNus.length}) pour appliquer les règles du régime réel au niveau
-          du foyer fiscal : seuil micro-foncier, plafond du déficit imputable, report sur 10 ans.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <section className="border-b border-border">
+      <div className="px-8 pt-6 pb-4">
+        <PanelTitle>Synthèse foncière du foyer · location nue</PanelTitle>
+        <p className="mt-1 max-w-3xl text-[12.5px] text-muted-foreground">
+          Agrège vos {biensNus.length} bien{biensNus.length > 1 ? 's' : ''} loué{biensNus.length > 1 ? 's' : ''} nu{biensNus.length > 1 ? 's' : ''} pour
+          appliquer les règles du régime réel au niveau du foyer fiscal : seuil micro-foncier, plafond du déficit
+          imputable, report sur 10 ans.
+        </p>
         {result.regimeReelObligatoire && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Régime réel obligatoire</AlertTitle>
-            <AlertDescription>
+          <div className="mt-4 flex items-start gap-3 rounded-[2px] border border-spark/30 bg-spark/5 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-spark" strokeWidth={1.75} />
+            <p className="text-[13px] text-foreground">
+              <span className="font-medium">Régime réel obligatoire.</span>{' '}
               Vos revenus fonciers bruts s'élèvent à {formatCurrency(result.loyersBrutsFoyer)}, au-delà du seuil du
               micro-foncier ({formatCurrency(SEUIL_MICRO_FONCIER)}).
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <div className="max-w-[200px] space-y-2">
-          <Label htmlFor="tmi-foyer">Taux marginal d'imposition du foyer (%)</Label>
-          <Input
-            id="tmi-foyer"
-            type="number"
-            step="1"
-            min="0"
-            max="100"
-            value={tmiInput}
-            onChange={(e) => setTmiInput(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <h4 className="mb-2 text-sm font-semibold">Biens loués nus pris en compte</h4>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Bien</TableHead>
-                <TableHead className="text-right">Loyers bruts</TableHead>
-                <TableHead className="text-right">Charges hors intérêts</TableHead>
-                <TableHead className="text-right">Intérêts + assurance</TableHead>
-                <TableHead className="text-right">Quote-part</TableHead>
-                <TableHead>Rénovation énergétique (E/F/G)</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {biensNus.map((asset, index) => {
-                const bien = biensInput[index];
-                return (
-                  <TableRow key={asset.id}>
-                    <TableCell>{asset.denomination || asset.nature}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(bien?.loyersBruts || 0)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(bien?.chargesHorsInterets || 0)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(bien?.interetsEtAssuranceEmprunt || 0)}</TableCell>
-                    <TableCell className="text-right">{bien?.quotePart ?? 100} %</TableCell>
-                    <TableCell>
-                      <Checkbox
-                        checked={!!renovationEnergetique[asset.id!]}
-                        onCheckedChange={(checked) =>
-                          setRenovationEnergetique((prev) => ({ ...prev, [asset.id!]: !!checked }))
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Loyers bruts foyer</p>
-            <p className="font-medium">{formatCurrency(result.loyersBrutsFoyer)}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Résultat foncier global</p>
-            <p className="font-medium">{formatCurrency(result.resultatFoncierGlobal)}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Résultat foncier imposable</p>
-            <p className="font-medium">{formatCurrency(result.resultatFoncierImposable)}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Prélèvements sociaux</p>
-            <p className="font-medium">{formatCurrency(result.prelevementsSociaux)}</p>
-          </div>
-        </div>
-
-        {result.deficitImputableRevenuGlobal > 0 && (
-          <div className="rounded-lg border p-4 space-y-1">
-            <p className="text-sm font-medium">
-              Déficit imputable sur le revenu global cette année : {formatCurrency(result.deficitImputableRevenuGlobal)}
-              {' '}(plafond {formatCurrency(result.plafondDeficitApplicable)}
-              {result.plafondDeficitApplicable === PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE
-                ? ' — rénovation énergétique'
-                : ''}
-              )
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Économie d'impôt potentielle : {formatCurrency(result.economieImpotPotentielle)}
             </p>
           </div>
         )}
+      </div>
 
-        {result.consommationDeficitsReportes.length > 0 && (
-          <div className="rounded-lg border p-4 space-y-1">
-            <p className="text-sm font-medium">Consommation des déficits reportés cette année</p>
-            {result.consommationDeficitsReportes.map((c) => (
-              <p key={c.id} className="text-sm text-muted-foreground">
-                Report {c.anneeOrigine} ({c.type === 'interets' ? 'intérêts' : 'hors intérêts'}) : −{formatCurrency(c.montantConsomme)}
-              </p>
-            ))}
+      <div className="grid grid-cols-1 divide-y divide-border border-t border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
+        {/* Paramètre et résultats du foyer. */}
+        <div className="px-8 py-6">
+          <div className="max-w-[14rem] space-y-1.5">
+            <Label htmlFor="tmi-foyer">Taux marginal d'imposition</Label>
+            <div className="relative">
+              <Input
+                id="tmi-foyer"
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                value={tmiInput}
+                onChange={(e) => setTmiInput(e.target.value)}
+                className={`${numberInputClass} pr-8`}
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">%</span>
+            </div>
           </div>
-        )}
+          <dl className="mt-5">
+            <SummaryRow label="Loyers bruts"><span className="tabular-nums">{formatCurrency(result.loyersBrutsFoyer)}</span></SummaryRow>
+            <SummaryRow label="Résultat global"><span className="tabular-nums">{formatCurrency(result.resultatFoncierGlobal)}</span></SummaryRow>
+            <SummaryRow label="Imposable"><span className="tabular-nums">{formatCurrency(result.resultatFoncierImposable)}</span></SummaryRow>
+            <SummaryRow label="Prél. sociaux"><span className="tabular-nums">{formatCurrency(result.prelevementsSociaux)}</span></SummaryRow>
+            {result.deficitImputableRevenuGlobal > 0 && (
+              <>
+                <SummaryRow label="Déficit imputable">
+                  <span className="tabular-nums">{formatCurrency(result.deficitImputableRevenuGlobal)}</span>
+                  <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
+                    plafond {formatCurrency(result.plafondDeficitApplicable)}
+                    {result.plafondDeficitApplicable === PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE ? ' · rénovation énergétique' : ''}
+                  </span>
+                </SummaryRow>
+                <SummaryRow label="Économie d'impôt">
+                  <span className="tabular-nums text-positive">{formatCurrency(result.economieImpotPotentielle)}</span>
+                  <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">potentielle</span>
+                </SummaryRow>
+              </>
+            )}
+          </dl>
+        </div>
 
-        {(result.nouveauDeficitReportableHorsInterets > 0 || result.nouveauDeficitReportableInterets > 0) && (
-          <div className="rounded-lg border border-spark/30 bg-spark/10 p-4 space-y-1 ">
-            <p className="text-sm font-medium">Nouveau déficit reportable généré cette année (10 ans, revenus fonciers uniquement)</p>
-            {result.nouveauDeficitReportableHorsInterets > 0 && (
-              <p className="text-sm text-muted-foreground">
-                Hors intérêts : {formatCurrency(result.nouveauDeficitReportableHorsInterets)}
-              </p>
-            )}
-            {result.nouveauDeficitReportableInterets > 0 && (
-              <p className="text-sm text-muted-foreground">
-                Intérêts d'emprunt : {formatCurrency(result.nouveauDeficitReportableInterets)}
-              </p>
-            )}
+        {/* Biens pris en compte et mouvements de déficits de l'année. */}
+        <div className="min-w-0 px-8 py-6">
+          <PanelTitle>Biens pris en compte</PanelTitle>
+          <div className="mt-3 overflow-x-auto">
+            <div className="min-w-[34rem]">
+              <div className="grid grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,1fr))_5.5rem] gap-x-4 border-b border-border pb-2 text-[12px] text-muted-foreground">
+                <span>Bien</span>
+                <span className="text-right">Loyers bruts</span>
+                <span className="text-right">Charges</span>
+                <span className="text-right">Intérêts + ass.</span>
+                <span className="text-right">Quote-part</span>
+                <span className="text-center" title="Rénovation énergétique (DPE E, F ou G)">Rénov. E/F/G</span>
+              </div>
+              <ul className="divide-y divide-border border-b border-border">
+                {biensNus.map((asset, index) => {
+                  const bien = biensInput[index];
+                  return (
+                    <li key={asset.id} className="grid grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,1fr))_5.5rem] items-center gap-x-4 py-2.5 text-[13px] tabular-nums">
+                      <span className="truncate font-medium text-foreground">{asset.denomination || asset.nature}</span>
+                      <span className="text-right">{formatCurrency(bien?.loyersBruts || 0)}</span>
+                      <span className="text-right">{formatCurrency(bien?.chargesHorsInterets || 0)}</span>
+                      <span className="text-right">{formatCurrency(bien?.interetsEtAssuranceEmprunt || 0)}</span>
+                      <span className="text-right">{bien?.quotePart ?? 100} %</span>
+                      <span className="flex justify-center">
+                        <Checkbox
+                          aria-label={`Rénovation énergétique — ${asset.denomination || asset.nature}`}
+                          checked={!!renovationEnergetique[asset.id!]}
+                          onCheckedChange={(checked) =>
+                            setRenovationEnergetique((prev) => ({ ...prev, [asset.id!]: !!checked }))
+                          }
+                        />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           </div>
-        )}
 
-        {aQuelqueChoseAReporter && (
-          <Button onClick={handleReporter} disabled={isReporting} variant="outline">
-            {isReporting ? 'Application en cours...' : 'Reporter le solde à l\'année suivante'}
-          </Button>
-        )}
-
-        <div className="space-y-3 border-t pt-4">
-          <h4 className="text-sm font-semibold">Déficits reportés (saisis manuellement, ex. depuis votre 2044)</h4>
-
-          {deficits.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Année d'origine</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Restant</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {deficits.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell>{d.annee_origine}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{d.type === 'interets' ? 'Intérêts' : 'Hors intérêts'}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">{formatCurrency(d.montant_restant)}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => handleSupprimerDeficit(d.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+          {result.consommationDeficitsReportes.length > 0 && (
+            <div className="mt-5">
+              <p className="text-[13px] font-medium text-foreground">Déficits reportés consommés cette année</p>
+              <ul className="mt-1.5">
+                {result.consommationDeficitsReportes.map((c) => (
+                  <li key={c.id} className="flex justify-between gap-4 py-1 text-[13px]">
+                    <span className="text-muted-foreground">Report {c.anneeOrigine} · {c.type === 'interets' ? 'intérêts' : 'hors intérêts'}</span>
+                    <span className="tabular-nums text-foreground">−{formatCurrency(c.montantConsomme)}</span>
+                  </li>
                 ))}
-              </TableBody>
-            </Table>
+              </ul>
+            </div>
           )}
 
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="deficit-annee">Année</Label>
-              <Input
-                id="deficit-annee"
-                type="number"
-                className="w-28"
-                value={nouveauDeficit.annee_origine}
-                onChange={(e) => setNouveauDeficit((p) => ({ ...p, annee_origine: e.target.value }))}
-              />
+          {(result.nouveauDeficitReportableHorsInterets > 0 || result.nouveauDeficitReportableInterets > 0) && (
+            <div className="mt-5 rounded-[2px] border border-spark/30 bg-spark/5 px-4 py-3">
+              <p className="text-[13px] font-medium text-foreground">Nouveau déficit reportable cette année</p>
+              <p className="text-[12px] text-muted-foreground">Imputable sur les revenus fonciers des 10 années suivantes.</p>
+              <ul className="mt-1.5">
+                {result.nouveauDeficitReportableHorsInterets > 0 && (
+                  <li className="flex justify-between gap-4 py-0.5 text-[13px]">
+                    <span className="text-muted-foreground">Hors intérêts</span>
+                    <span className="tabular-nums text-foreground">{formatCurrency(result.nouveauDeficitReportableHorsInterets)}</span>
+                  </li>
+                )}
+                {result.nouveauDeficitReportableInterets > 0 && (
+                  <li className="flex justify-between gap-4 py-0.5 text-[13px]">
+                    <span className="text-muted-foreground">Intérêts d'emprunt</span>
+                    <span className="tabular-nums text-foreground">{formatCurrency(result.nouveauDeficitReportableInterets)}</span>
+                  </li>
+                )}
+              </ul>
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="deficit-type">Type</Label>
-              <Select
-                value={nouveauDeficit.type}
-                onValueChange={(v: TypeDeficitFoncierReporte) => setNouveauDeficit((p) => ({ ...p, type: v }))}
-              >
-                <SelectTrigger id="deficit-type" className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hors_interets">Hors intérêts</SelectItem>
-                  <SelectItem value="interets">Intérêts</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="deficit-montant">Montant (€)</Label>
+          )}
+
+          {aQuelqueChoseAReporter && (
+            <Button onClick={handleReporter} disabled={isReporting} variant="outline" className={`mt-4 ${panelButtonClass}`}>
+              {isReporting ? <><LogoSpinner /> Application en cours...</> : "Reporter le solde à l'année suivante"}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Stock de déficits reportés, saisi à la main. */}
+      <div className="border-t border-border px-8 py-6">
+        <PanelTitle>
+          <span className="flex items-baseline gap-2">
+            Déficits reportés
+            <span className="text-[12px] font-normal text-muted-foreground">saisis manuellement, ex. depuis votre 2044</span>
+          </span>
+        </PanelTitle>
+
+        {deficits.length > 0 && (
+          <ul className="mt-3 max-w-2xl divide-y divide-border border-y border-border">
+            {deficits.map((d) => (
+              <li key={d.id} className="flex items-center gap-4 py-2 text-[13px]">
+                <span className="w-14 tabular-nums font-medium text-foreground">{d.annee_origine}</span>
+                <Chip tone={d.type === 'interets' ? 'lagon' : 'neutral'}>{d.type === 'interets' ? 'Intérêts' : 'Hors intérêts'}</Chip>
+                <span className="ml-auto tabular-nums text-foreground">{formatCurrency(d.montant_restant)}</span>
+                <button
+                  type="button"
+                  aria-label={`Supprimer le déficit ${d.annee_origine}`}
+                  onClick={() => handleSupprimerDeficit(d.id)}
+                  className="flex h-8 w-8 items-center justify-center rounded-[2px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-end gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="deficit-annee">Année</Label>
+            <Input
+              id="deficit-annee"
+              type="number"
+              className={`w-28 ${numberInputClass}`}
+              value={nouveauDeficit.annee_origine}
+              onChange={(e) => setNouveauDeficit((p) => ({ ...p, annee_origine: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="deficit-type">Type</Label>
+            <Select
+              value={nouveauDeficit.type}
+              onValueChange={(v: TypeDeficitFoncierReporte) => setNouveauDeficit((p) => ({ ...p, type: v }))}
+            >
+              <SelectTrigger id="deficit-type" className="w-40 rounded-[2px] border-border bg-background shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hors_interets">Hors intérêts</SelectItem>
+                <SelectItem value="interets">Intérêts</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="deficit-montant">Montant</Label>
+            <div className="relative">
               <Input
                 id="deficit-montant"
                 type="number"
-                className="w-32"
+                className={`w-36 pr-7 ${numberInputClass}`}
                 value={nouveauDeficit.montant}
                 onChange={(e) => setNouveauDeficit((p) => ({ ...p, montant: e.target.value }))}
               />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">€</span>
             </div>
-            <Button onClick={handleAjouterDeficit} size="sm">
-              <Plus className="mr-1 h-4 w-4" /> Ajouter
-            </Button>
           </div>
+          <Button onClick={handleAjouterDeficit} className={panelPrimaryButtonClass}>
+            <Plus className="h-4 w-4" /> Ajouter
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 };

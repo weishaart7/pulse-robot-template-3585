@@ -29,12 +29,12 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 
 | Onglet | Composant | Rôle |
 |---|---|---|
-| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute ; tous pondérés par la quote-part d'indivision du foyer, `computeQuotePart`, comme les simulateurs — sauf le nombre de biens ; valeur totale et plus-value pondérées en plus par la fraction de démembrement du bien, `getFractionDemembrement`, à l'identique du Résumé Patrimoine), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
-| Mes biens | `ImmobilierSection.tsx` (cartes ou tableau) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
-| Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du bouton « Gérer » |
+| Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille et répartition de la valeur par bien (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute ; tous pondérés par la quote-part d'indivision du foyer, `computeQuotePart`, comme les simulateurs — sauf le nombre de biens ; valeur totale et plus-value pondérées en plus par la fraction de démembrement du bien, `getFractionDemembrement`, à l'identique du Résumé Patrimoine), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
+| Mes biens | [MesBiensList.tsx](src/components/immobilier/MesBiensList.tsx) (sections par famille, rentabilité brute et cashflow par bien) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
+| Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du menu ⋯ → « Revenus et charges » de « Mes biens » |
 
 Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/components/immobilier/ImmobilierGestionDialog.tsx)
-(bouton « Gérer », non-LMNP) — CRUD des revenus/charges du bien et bascule « Transfert dans budget ».
+(menu ⋯ → « Revenus et charges » de « Mes biens », non-LMNP ; ex-bouton « Gérer ») — CRUD des revenus/charges du bien et bascule « Transfert dans budget ».
 
 Pour la nature « Immeubles locatifs (loués nus) » spécifiquement, la fiche détail
 ([ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx)) affiche
@@ -111,6 +111,49 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   `LMNPDetailView` qui le passe en prop dès la création).
 
 ## 2. Architecture & décisions
+
+- **Design** — « panneau de travail » commun à Famille, Patrimoine et Budget
+  ([design-system.md](design-system.md)) : `ImmobilierSection` porte le cadre (classe `.workspace-panel`,
+  barre d'en-tête à fil d'Ariane « Immobilier / onglet », titre 24 px de l'onglet et rappel « n biens
+  transférés depuis Patrimoine », contenu bord à bord sous un filet). Les fiches détail (bien, LMNP), la
+  fenêtre « Revenus et charges » et ses formulaires gardent encore leur ancien habillage.
+  - **Vue d'ensemble** (`ImmobilierOverview`) : bandeau calqué sur le Résumé Patrimoine — valeur du
+    portefeuille en 34 px, étiquette de plus-value brute (taux et montant, vert / rouge), lignes Biens /
+    Cashflow (par mois, crédit compris) / Rentabilité brute / Rentabilité nette ; à droite, **répartition
+    de la valeur par bien** (barre + légende sur deux colonnes, palette lagon / citron / gris de
+    `budgetColors.ts`). La valeur par bien est celle déjà calculée dans la boucle des KPI (même
+    pondération quote-part × fraction de démembrement), simplement conservée. Pourcentages au format
+    français (« 1,07 % »).
+  - **Indicateurs par bien et du portefeuille** : [portefeuille.ts](src/lib/immobilier/portefeuille.ts)
+    (`computeFluxBien`, `computeIndicateurs`, `sommeFlux`, tests `portefeuille.test.ts`) réunit les formules
+    de flux jusque-là écrites dans la boucle d'`ImmobilierOverview`, **sans changement de règle** : loyers et
+    charges annualisés / mensualisés selon la périodicité (périodicité inconnue : annuelle pour un revenu,
+    exclue pour une charge — convention propre à ces indicateurs, cf. §3), crédit + assurance emprunteur
+    via `computeAmortissement`, le tout × quote-part. La Vue d'ensemble applique `computeIndicateurs` à la
+    somme des flux des biens ; « Mes biens » l'applique bien par bien, ce qui garantit que les deux écrans
+    concordent (le cashflow du portefeuille est la somme des cashflows par bien ; les rentabilités du
+    portefeuille sont des ratios sur les totaux, pas une moyenne des rentabilités par bien).
+  - **Mes biens** ([MesBiensList.tsx](src/components/immobilier/MesBiensList.tsx)) : bascule cartes /
+    tableau supprimée. Une section par famille de biens (Résidences, Immobilier locatif — natures de
+    `RENTAL_PROPERTY_TYPES` —, Pierre-papier & parts, Terrains & forêts, Autres), repère coloré, nombre de
+    biens et somme des valeurs estimées ; biens triés par valeur décroissante. Chaque ligne : pictogramme
+    maison / immeuble teinté de la couleur de la famille, dénomination, nature, étiquettes « Meublé » et
+    « Quote-part x % » (si < 100 %), valeur estimée (brute, non pondérée), rentabilité brute et cashflow
+    mensuel (« — » pour un bien sans revenu, charge ni crédit). Clic sur la ligne : fiche du bien (ou vue
+    LMNP) ; menu ⋯ : « Voir la fiche », et « Revenus et charges » (ex-bouton « Gérer ») pour les natures
+    locatives, comme avant.
+  - **Gestion des biens** (`GestionBiensSection`) : bande d'en-tête (rappel du chemin d'ajout, totaux
+    revenus / charges / solde annuel du portefeuille), puis une section par bien (empilées sur deux colonnes
+    dès `lg` s'il y a plusieurs biens) : repère, nombre de lignes, solde annuel ; chaque ligne avec
+    étiquette lagon « Revenu » / citron « Charge », nature, montant annualisé signé et rappel « montant ·
+    périodicité » ; revenus et charges du bien en pied.
+  - **Synthèse foncière** (`FoncierFoyerSection`) : bandeaux bord à bord — en-tête avec encadré « Régime
+    réel obligatoire » (angles 2 px), puis à gauche le taux marginal d'imposition (suffixe %) et les
+    résultats du foyer en lignes libellé / valeur (déficit imputable et économie d'impôt si applicables),
+    à droite les biens pris en compte (grille filetée, case « Rénov. E/F/G »), les déficits reportés
+    consommés, le nouveau déficit reportable et le bouton de report ; enfin la bande « Déficits reportés »
+    (liste filetée, étiquette lagon « Intérêts » / neutre « Hors intérêts », suppression au survol rouge)
+    et le formulaire d'ajout (suffixe €, bouton noir 32 px).
 
 - **`src/lib/immobilier/` centralise désormais la rentabilité location nue, LMNP et LMP, ainsi que
   l'agrégation foncière au niveau du foyer — pas encore les KPI de portefeuille.**
