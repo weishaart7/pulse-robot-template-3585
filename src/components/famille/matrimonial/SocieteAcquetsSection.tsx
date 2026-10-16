@@ -15,7 +15,7 @@ import {
   lirePerimetre,
   PerimetreSocieteAcquets,
 } from '@/lib/patrimoine/societeAcquets';
-import { calculerRequalifications, compositionSocieteAcquets, Requalification } from '@/lib/patrimoine/requalification';
+import { calculerRequalifications, compositionSocieteAcquets, ContexteMatrimonialLot, Requalification } from '@/lib/patrimoine/requalification';
 import { appliquerRequalifications } from '@/services/requalificationService';
 import { cn } from '@/lib/utils';
 import { AssetSelectionModal } from './AssetSelectionModal';
@@ -25,8 +25,16 @@ interface SocieteAcquetsSectionProps {
   /** Actifs du formulaire parent (même instance que le résumé de l'onglet Général). */
   assets: Asset[];
   fetchAssets: () => Promise<void>;
-  /** Régime ou date de mariage modifiés sans être enregistrés : périmètre en lecture seule. */
-  regimeNonEnregistre: boolean;
+  /**
+   * Régime, contrat ou date de mariage modifiés sans être enregistrés : le
+   * périmètre se règle en brouillon (rien n'est écrit ni requalifié ici) ; le
+   * formulaire parent l'enregistre avec le régime, en une seule confirmation.
+   */
+  brouillon?: {
+    perimetre: PerimetreSocieteAcquets | null;
+    contexte: ContexteMatrimonialLot;
+    onChange: (p: PerimetreSocieteAcquets) => void;
+  };
 }
 
 /**
@@ -41,7 +49,7 @@ interface SocieteAcquetsSectionProps {
 export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
   assets,
   fetchAssets,
-  regimeNonEnregistre,
+  brouillon,
 }) => {
   const { data: maritalData, saveData } = useMaritalStatus();
   const { toast } = useToast();
@@ -81,14 +89,17 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
     return ecriture;
   };
 
-  // Toujours le régime enregistré (cf. regimeNonEnregistre).
   const contexte = { ...(maritalData as any) };
-  const composition = compositionSocieteAcquets(assets, contexte, perimetre);
+  const perimetreAffiche = brouillon ? brouillon.perimetre ?? perimetre : perimetre;
+  const composition = compositionSocieteAcquets(assets, brouillon?.contexte ?? contexte, perimetreAffiche);
   const euros = (v: number) =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
   const changer = (patch: Partial<PerimetreSocieteAcquets>) => {
-    if (regimeNonEnregistre) return;
+    if (brouillon) {
+      brouillon.onChange({ ...perimetreAffiche, ...patch });
+      return;
+    }
     const nouveau = { ...perimetre, ...patch };
     // Bascule vers « Certaines catégories » sans encore rien de coché : état
     // de saisie intermédiaire, affiché seulement. Enregistrer ce périmètre vide
@@ -124,7 +135,7 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
 
   const basculerCategorie = (key: CategorieSocieteAcquets, checked: boolean) =>
     changer({
-      categories: checked ? [...perimetre.categories, key] : perimetre.categories.filter(c => c !== key),
+      categories: checked ? [...perimetreAffiche.categories, key] : perimetreAffiche.categories.filter(c => c !== key),
     });
 
   const nomBien = (id: string) => {
@@ -143,13 +154,13 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
 
   return (
     <div className="divide-y divide-border">
-    {regimeNonEnregistre && (
+    {brouillon && (
       <p className="mx-8 mt-6 rounded-[2px] bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
-        Le régime ou la date du mariage ont été modifiés sans être enregistrés. Enregistrez-les d'abord pour
-        définir le périmètre : il requalifie les biens selon le régime enregistré.
+        Le régime n'est pas encore enregistré : ce périmètre sera enregistré avec lui (bouton « Enregistrer »),
+        et les biens requalifiés en une seule fois.
       </p>
     )}
-    <fieldset disabled={regimeNonEnregistre} className={cn('min-w-0 space-y-4 px-8 py-7', regimeNonEnregistre && 'opacity-60')}>
+    <div className="min-w-0 space-y-4 px-8 py-7">
       <SectionHeader icon={Landmark} title="Périmètre" />
       <div className="-mt-4 space-y-2">
         <p className="text-xs text-muted-foreground">
@@ -165,11 +176,11 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
               key={opt.label}
               type="button"
               role="radio"
-              aria-checked={perimetre.tousAcquets === opt.value}
-              onClick={() => perimetre.tousAcquets !== opt.value && changer({ tousAcquets: opt.value })}
+              aria-checked={perimetreAffiche.tousAcquets === opt.value}
+              onClick={() => perimetreAffiche.tousAcquets !== opt.value && changer({ tousAcquets: opt.value })}
               className={cn(
                 'h-8 rounded-[2px] border px-4 text-[12.5px] transition-colors',
-                perimetre.tousAcquets === opt.value
+                perimetreAffiche.tousAcquets === opt.value
                   ? 'border-foreground bg-foreground text-background'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
@@ -178,13 +189,13 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
             </button>
           ))}
         </div>
-        {!perimetre.tousAcquets && (
+        {!perimetreAffiche.tousAcquets && (
           <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
             {CATEGORIES_SOCIETE_ACQUETS.map(c => (
               <div key={c.key} className="flex h-9 items-center space-x-3">
                 <Checkbox
                   id={`sa-${c.key}`}
-                  checked={perimetre.categories.includes(c.key)}
+                  checked={perimetreAffiche.categories.includes(c.key)}
                   onCheckedChange={checked => basculerCategorie(c.key, !!checked)}
                 />
                 <Label htmlFor={`sa-${c.key}`} className="cursor-pointer">{c.label}</Label>
@@ -199,20 +210,20 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
           <Button type="button" variant="outline" className={panelButtonClass} onClick={() => setModal('designes')}>
             Biens ajoutés nommément
           </Button>
-          {etiquettes(perimetre.biensDesignes)}
+          {etiquettes(perimetreAffiche.biensDesignes)}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" className={panelButtonClass} onClick={() => setModal('exclus')}>
             Biens exclus nommément
           </Button>
-          {etiquettes(perimetre.biensExclus)}
+          {etiquettes(perimetreAffiche.biensExclus)}
         </div>
         <p className="text-xs text-muted-foreground">
           Un bien ajouté nommément entre dans la société même s'il a été acquis avant le mariage (apport).
         </p>
       </div>
 
-    </fieldset>
+    </div>
 
     <div className="px-8 py-7">
       <SectionHeader icon={Landmark} title="Composition" />
@@ -255,10 +266,10 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
         onClose={() => setModal(null)}
         onConfirm={ids =>
           modal === 'exclus'
-            ? changer({ biensExclus: ids, biensDesignes: perimetre.biensDesignes.filter(id => !ids.includes(id)) })
-            : changer({ biensDesignes: ids, biensExclus: perimetre.biensExclus.filter(id => !ids.includes(id)) })
+            ? changer({ biensExclus: ids, biensDesignes: perimetreAffiche.biensDesignes.filter(id => !ids.includes(id)) })
+            : changer({ biensDesignes: ids, biensExclus: perimetreAffiche.biensExclus.filter(id => !ids.includes(id)) })
         }
-        preSelectedAssets={modal === 'exclus' ? perimetre.biensExclus : perimetre.biensDesignes}
+        preSelectedAssets={modal === 'exclus' ? perimetreAffiche.biensExclus : perimetreAffiche.biensDesignes}
       />
 
       <RequalificationDialog

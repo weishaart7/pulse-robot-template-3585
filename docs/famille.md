@@ -302,6 +302,11 @@ permet de l'alimenter (voir §3).
   avec un lien vers l'onglet. Composant :
   [SocieteAcquetsSection.tsx](../src/components/famille/matrimonial/SocieteAcquetsSection.tsx)
   (ex-`QualificationRegimeOptions.tsx`).
+  Tant que le régime, le contrat ou la date de mariage sont modifiés sans être enregistrés, le
+  périmètre se règle en brouillon (aucune écriture ni requalification, composition calculée sur les
+  valeurs du formulaire) ; « Enregistrer » écrit régime et périmètre ensemble
+  (`clauses_contrat.societe_acquets` dans le même upsert) et propose une seule confirmation de
+  requalification. Hors brouillon, chaque changement du périmètre est enregistré aussitôt.
 - **Périmètre de la société d'acquêts.** Le contrat fixe librement le contenu de la société
   (art. 1387, 1497) : on le décrit par règles plutôt que bien par bien
   ([lib/patrimoine/societeAcquets.ts](../src/lib/patrimoine/societeAcquets.ts)) — « Tous les acquêts »

@@ -29,7 +29,7 @@ import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
 import { useAssets } from "@/hooks/useAssets";
 import { calculerRequalifications, compositionSocieteAcquets, libellePerimetre, Requalification } from "@/lib/patrimoine/requalification";
 import { appliquerRequalifications } from "@/services/requalificationService";
-import { CATEGORIES_SOCIETE_ACQUETS, lirePerimetre } from "@/lib/patrimoine/societeAcquets";
+import { CATEGORIES_SOCIETE_ACQUETS, ecrirePerimetre, lirePerimetre, PerimetreSocieteAcquets } from "@/lib/patrimoine/societeAcquets";
 import { RequalificationDialog } from "@/components/famille/matrimonial/RequalificationDialog";
 
 const formSchema = z.object({
@@ -116,6 +116,9 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   const { assets, fetchAssets } = useAssets();
   const [requalifications, setRequalifications] = useState<Requalification[] | null>(null);
   const [requalifEnCours, setRequalifEnCours] = useState(false);
+  // Périmètre de la société d'acquêts réglé avant l'enregistrement du régime :
+  // écrit avec lui par onSubmit (cf. SocieteAcquetsSection, prop brouillon).
+  const [perimetreBrouillon, setPerimetreBrouillon] = useState<PerimetreSocieteAcquets | null>(null);
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -171,6 +174,17 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   const onSubmit = async (data: FormData) => {
     try {
       const payload = buildRelationInfoPayload(relationStatus, data) as Record<string, unknown>;
+      const perimetreEnregistre = lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets);
+      const perimetreEffectif =
+        perimetreBrouillon && toRegimeType(data.regimeMatrimonial) === 'separation_societe_acquets' && !data.pasDeContrat
+          ? perimetreBrouillon
+          : perimetreEnregistre;
+      if (perimetreEffectif !== perimetreEnregistre) {
+        payload.clauses_contrat = {
+          ...((maritalData as any)?.clauses_contrat || {}),
+          societe_acquets: ecrirePerimetre(perimetreEffectif),
+        };
+      }
 
       if (relationStatus === 'Marié(e)') {
         const {
@@ -193,12 +207,14 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         await saveData(payload as any);
       }
 
-      // Le régime (ou ses dates) a pu changer : les qualifications enregistrées
-      // sur les biens peuvent être périmées. Proposées avant d'aller plus loin.
+      setPerimetreBrouillon(null);
+
+      // Le régime (ou ses dates, ou le périmètre en brouillon) a pu changer :
+      // les qualifications enregistrées sur les biens peuvent être périmées.
       const changements = calculerRequalifications(
         assets || [],
         { ...(maritalData as any), statut_couple: relationStatus, ...payload },
-        lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets)
+        perimetreEffectif
       );
       if (changements.length > 0) {
         setRequalifications(changements);
@@ -288,17 +304,28 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   // s'appliquent dans tous les régimes matrimoniaux (art. 1479, 1543 C. civ.).
   const simplifiedRegimeType: RegimeType = toRegimeType(regimeMatrimonial);
   // Régime, contrat ou date de mariage modifiés à l'écran mais pas encore
-  // enregistrés : le périmètre de la société d'acquêts requalifierait les biens
-  // pour un régime qui n'existe pas en base. L'onglet est alors en lecture seule.
+  // enregistrés : le périmètre de la société d'acquêts ne peut pas requalifier
+  // les biens pour un régime absent de la base. Il se règle alors en brouillon,
+  // enregistré avec le régime.
   const regimeNonEnregistre =
     regimeMatrimonial !== maritalData?.regime_matrimonial ||
     !!pasDeContrat !== !!maritalData?.pas_de_contrat_mariage ||
     (dateMariage ? format(dateMariage, 'yyyy-MM-dd') : null) !== (maritalData?.date_mariage ?? null);
+  // Régime revenu à sa valeur enregistrée : le brouillon n'a plus d'objet.
+  useEffect(() => {
+    if (!regimeNonEnregistre) setPerimetreBrouillon(null);
+  }, [regimeNonEnregistre]);
+  const contexteFormulaire = {
+    ...(maritalData as any),
+    regime_matrimonial: regimeMatrimonial,
+    date_mariage: dateMariage ? format(dateMariage, 'yyyy-MM-dd') : maritalData?.date_mariage,
+  };
   const resumeSocieteAcquets = (() => {
-    const perimetre = lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets);
+    const perimetre =
+      (regimeNonEnregistre && perimetreBrouillon) || lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets);
     const { biens, total } = compositionSocieteAcquets(
       assets || [],
-      { ...(maritalData as any), regime_matrimonial: regimeMatrimonial, date_mariage: dateMariage ? format(dateMariage, 'yyyy-MM-dd') : maritalData?.date_mariage },
+      contexteFormulaire,
       perimetre
     );
     const libelle = libellePerimetre(perimetre, Object.fromEntries(CATEGORIES_SOCIETE_ACQUETS.map(c => [c.key, c.label.toLowerCase()])));
@@ -579,7 +606,11 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
               <SocieteAcquetsSection
                 assets={assets || []}
                 fetchAssets={fetchAssets}
-                regimeNonEnregistre={regimeNonEnregistre}
+                brouillon={
+                  regimeNonEnregistre
+                    ? { perimetre: perimetreBrouillon, contexte: contexteFormulaire, onChange: setPerimetreBrouillon }
+                    : undefined
+                }
               />
             )}
 
