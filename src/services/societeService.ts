@@ -134,7 +134,8 @@ export const societeService = {
     if (error) throw error;
     
     // Log creation of sensitive financial data
-    await secureService.logDataModification(user.id, 'societes', `Created new company: ${sanitizedSociete.denomination}`);
+    // Identifiant seul, jamais la dénomination (donnée patrimoniale, cf. règle RGPD du projet).
+    await secureService.logDataModification(user.id, 'societes', `Created company: ${data.id}`);
     
     return data;
   },

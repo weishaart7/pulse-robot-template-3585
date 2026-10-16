@@ -30,6 +30,13 @@ matrimonial mais consommées par Transmission). La table `scenarios_regime` rest
 lecture (alerte de conseil n°16, voir §3) mais orpheline côté écriture : aucun formulaire ne
 permet de l'alimenter (voir §3).
 
+Les quatre tables du régime ont `user_id → auth.users ON DELETE CASCADE`, mais leur
+`bien_concerne_id → assets` est volontairement en `ON DELETE SET NULL` (exception assumée à la règle
+CASCADE du projet) : le bien n'y est qu'une référence facultative, la ligne porte ses propres
+montants, et une récompense ou une créance reste due même si le bien a été vendu ou supprimé
+(art. 1469 al. 3 C. civ. : bien aliéné, profit évalué au jour de l'aliénation). Supprimer un bien ne
+doit donc pas effacer silencieusement ces lignes.
+
 **Flux clés** :
 - **Foyer** est un tableau de bord en lecture seule (dérivé de `family_profiles` /
   `marital_status` / `family_links`) doté d'un menu déroulant Statut (6 valeurs) toujours
@@ -163,6 +170,14 @@ permet de l'alimenter (voir §3).
   `SECURITY INVOKER` donc soumise à la RLS) qui ré-initialise `enfant_de`/`parent_de` des membres
   dépendants puis supprime le membre dans une seule transaction. Confirmation utilisateur
   (`AlertDialog`) listant les dépendants avant suppression.
+
+- **Changement de lien d'un membre ayant des rattachés.** Modifier le lien d'un membre auquel
+  d'autres sont rattachés (`enfant_de` = son id : petits-enfants d'un Enfant, grands-parents d'un
+  Parent, neveux d'un Frère/Sœur…) passe par une confirmation qui les liste
+  (`FamilyMemberFormDialog.tsx`). Une fois confirmé, leur rattachement est réinitialisé
+  (`familyService.resetRattachements`) avant la modification du membre, via
+  `updateLink(id, data, reinitialiser)`. Les deux écritures ne sont pas transactionnelles : en cas
+  d'échec de la seconde, les rattachés restent réinitialisés et le cache est relu en base.
 
 - **Cache partagé des données Famille (React Query).** `useFamilyProfile`, `useMaritalStatus` et
   `useFamilyLinks` lisent un cache React Query commun (clés `['family', 'profile'|'marital'|'links',

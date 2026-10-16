@@ -248,19 +248,35 @@ export const useFamilyLinks = () => {
     }
   };
 
-  const updateLink = async (id: string, link: Partial<FamilyLink>) => {
+  // `reinitialiser` : membres rattachés à celui-ci dont le rattachement est
+  // remis à zéro (changement de lien confirmé dans FamilyMemberFormDialog) —
+  // avant la modification, pour ne jamais laisser un petit-enfant rattaché à
+  // un membre qui n'est plus un Enfant.
+  const updateLink = async (id: string, link: Partial<FamilyLink>, reinitialiser: string[] = []) => {
     try {
       setSaving(true);
+      if (reinitialiser.length > 0) {
+        await familyService.resetRattachements(reinitialiser);
+      }
       const updatedLink = await familyService.updateFamilyLink(id, link);
-      await commitLinks(prev => prev.map(item => item.id === id ? updatedLink : item));
+      await commitLinks(prev => prev.map(item => {
+        if (item.id === id) return updatedLink;
+        return item.id && reinitialiser.includes(item.id) ? { ...item, enfant_de: null, parent_de: null } : item;
+      }));
       toast({
         title: "Succès",
-        description: "Membre de la famille modifié avec succès",
+        description: reinitialiser.length > 0
+          ? `Membre modifié avec succès. Rattachement de ${reinitialiser.length} membre(s) réinitialisé.`
+          : "Membre de la famille modifié avec succès",
       });
       return updatedLink;
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Error updating family link:', error);
+      }
+      // Les rattachements ont pu être réinitialisés avant l'échec : on relit la base.
+      if (reinitialiser.length > 0) {
+        queryClient.invalidateQueries({ queryKey: key });
       }
       toast({
         title: "Erreur",

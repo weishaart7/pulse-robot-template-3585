@@ -9,6 +9,16 @@ import { Button } from '@/components/ui/button';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Form } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
@@ -101,7 +111,7 @@ interface FamilyMemberFormDialogProps {
   maritalStatus: MaritalStatus | null;
   saving: boolean;
   addLink: (link: Omit<FamilyLink, 'id' | 'user_id'>) => Promise<FamilyLink>;
-  updateLink: (id: string, link: Partial<FamilyLink>) => Promise<FamilyLink>;
+  updateLink: (id: string, link: Partial<FamilyLink>, reinitialiser?: string[]) => Promise<FamilyLink>;
 }
 
 export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, FamilyMemberFormDialogProps>(
@@ -114,6 +124,12 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
     const [coOwnedAssets, setCoOwnedAssets] = useState<AssetIndivisaireWithAsset[]>([]);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
     const [assetDetailsOpen, setAssetDetailsOpen] = useState(false);
+    // Changement de lien d'un membre auquel d'autres sont rattachés (ex. Enfant
+    // ayant des petits-enfants) : enregistrement suspendu à une confirmation.
+    const [changementLien, setChangementLien] = useState<{
+      memberData: Omit<FamilyLink, 'id' | 'user_id'>;
+      rattaches: FamilyLink[];
+    } | null>(null);
 
     useEffect(() => {
       if (!dialogOpen || !editingMember?.id) {
@@ -244,15 +260,40 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           fiscalement_a_charge: data.fiscalement_a_charge,
           personne_a_charge: data.personne_a_charge,
         };
-        if (editingMember) {
-          await updateLink(editingMember.id!, memberData);
-        } else {
-          await addLink(memberData);
+        const rattaches = editingMember && data.lien_familial !== editingMember.lien_familial
+          ? familyLinks.filter(l => l.enfant_de === editingMember.id)
+          : [];
+        if (rattaches.length > 0) {
+          setChangementLien({ memberData, rattaches });
+          return;
         }
-        setDialogOpen(false);
-        setEditingMember(null);
-        setSelectedLinkType('');
-        memberForm.reset(DEFAULT_VALUES);
+        await enregistrer(memberData);
+      } catch (error) {
+        // Notification déjà affichée par useFamilyLinks : la fenêtre reste ouverte.
+        if (import.meta.env.DEV) {
+          console.error('Erreur lors de la sauvegarde du membre:', error);
+        }
+      }
+    };
+
+    const enregistrer = async (memberData: Omit<FamilyLink, 'id' | 'user_id'>, reinitialiser: string[] = []) => {
+      if (editingMember) {
+        await updateLink(editingMember.id!, memberData, reinitialiser);
+      } else {
+        await addLink(memberData);
+      }
+      setDialogOpen(false);
+      setEditingMember(null);
+      setSelectedLinkType('');
+      memberForm.reset(DEFAULT_VALUES);
+    };
+
+    const confirmerChangementLien = async () => {
+      if (!changementLien) return;
+      const { memberData, rattaches } = changementLien;
+      setChangementLien(null);
+      try {
+        await enregistrer(memberData, rattaches.map(l => l.id!));
       } catch (error) {
         // Notification déjà affichée par useFamilyLinks : la fenêtre reste ouverte.
         if (import.meta.env.DEV) {
@@ -376,6 +417,33 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!changementLien} onOpenChange={(open) => { if (!open) setChangementLien(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Changer le lien de ce membre ?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="text-sm text-muted-foreground">
+                <p>
+                  Les membres suivants sont rattachés à{' '}
+                  <strong>{editingMember?.prenom ? `${editingMember.prenom} ` : ''}{editingMember?.nom}</strong>{' '}
+                  en tant que {editingMember?.lien_familial}. Leur rattachement sera réinitialisé : il
+                  faudra le ressaisir pour qu'ils soient pris en compte dans la succession.
+                </p>
+                <ul className="list-disc pl-5 mt-2">
+                  {changementLien?.rattaches.map(l => (
+                    <li key={l.id}>{l.prenom ? `${l.prenom} ` : ''}{l.nom} ({l.lien_familial})</li>
+                  ))}
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmerChangementLien}>Changer le lien</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AssetDetailsDialog
         asset={selectedAsset}

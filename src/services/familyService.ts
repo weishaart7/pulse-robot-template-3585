@@ -300,6 +300,26 @@ export const familyService = {
     return data;
   },
 
+  // Réinitialise le rattachement (enfant_de / parent_de) des membres donnés,
+  // avant un changement de lien du membre auquel ils étaient rattachés.
+  async resetRattachements(ids: string[]): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Utilisateur non connecté');
+
+    const { error } = await supabase
+      .from('family_links')
+      .update({ enfant_de: null, parent_de: null })
+      .in('id', ids)
+      .eq('user_id', user.id);
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error resetting family links attachment:', error);
+      }
+      throw error;
+    }
+  },
+
   // Suppression atomique (fonction Postgres delete_family_link_cascade, SECURITY
   // INVOKER donc soumise à la RLS) : réinitialise enfant_de/parent_de des membres
   // dépendants puis supprime le membre, dans une seule transaction.
