@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -16,19 +16,6 @@ export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({
   form,
   showMeublesField = false,
 }) => {
-  // Auto-calculate frais_notaire when montant_immeuble changes
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'montant_immeuble' && value.montant_immeuble) {
-        const montant = Number(value.montant_immeuble);
-        if (!isNaN(montant) && montant > 0) {
-          form.setValue('frais_notaire', montant * 0.075);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
   const renderNumberField = (
     name: NumericFieldNames,
     label: string,

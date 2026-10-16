@@ -10,6 +10,7 @@ import {
   computeMicroBicLMNP,
   computePrixAcquisitionTotal,
   computeQuotePart,
+  estimerFraisNotaire,
   repartirDeficitFoncier,
   computeRentabilite,
   computeRentabiliteLMNP,
@@ -447,5 +448,18 @@ describe('repartirDeficitFoncier', () => {
     const r = repartirDeficitFoncier(1_000, 30_000, 4_000, PLAFOND_DEFICIT_FONCIER);
     expect(r.imputableRevenuGlobal + r.reportableHorsInterets + r.reportableInterets).toBe(r.deficitTotal);
     expect(r.reportableInterets).toBe(3_000);
+  });
+});
+
+describe('estimerFraisNotaire', () => {
+  it('estime 7,5 % du prix d’achat, arrondi à l’euro', () => {
+    expect(estimerFraisNotaire(200_000)).toBe(15_000);
+    expect(estimerFraisNotaire(123_457)).toBe(9_259);
+  });
+
+  it('renvoie 0 pour un prix nul, négatif ou invalide', () => {
+    expect(estimerFraisNotaire(0)).toBe(0);
+    expect(estimerFraisNotaire(-1)).toBe(0);
+    expect(estimerFraisNotaire(Number.NaN)).toBe(0);
   });
 });

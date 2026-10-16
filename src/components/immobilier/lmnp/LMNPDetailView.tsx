@@ -10,8 +10,6 @@ import { SectionHeader } from '@/components/family/SectionHeader';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
 import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
-import { supabase } from '@/integrations/supabase/client';
-import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { RevenuForm } from '../RevenuForm';
 import { ChargeForm } from '../ChargeForm';
@@ -23,6 +21,7 @@ import {
   computeAmortissementImmeubleLMNP as computeAmortissement,
   computeResultatReelLMNP,
   computeResultatReelLMP,
+  estimerFraisNotaire,
 } from '@/lib/immobilier/rentabilite';
 import { dateAcquisitionDepuisAnnee } from '@/lib/immobilier/dateAcquisition';
 import { SimulateurRentabiliteLMNPSection } from './SimulateurRentabiliteLMNPSection';
@@ -101,7 +100,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   const handlePrixAchatChange = (value: number) => {
     setPrixAchat(value);
     if (value > 0) {
-      setFraisNotaire(Math.round(value * 0.075));
+      setFraisNotaire(estimerFraisNotaire(value));
     }
   };
 
@@ -109,7 +108,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     const d = formDataRef.current;
     setIsSaving(true);
     try {
-      const updateData: TablesUpdate<'assets'> = {
+      const updateData: Partial<Asset> = {
         montant_immeuble: d.prixAchat || null,
         zone_bien: d.zoneBien || null,
         pourcentage_terrain_force: d.forceTerrainPct ? d.terrainPctCustom : null,
@@ -125,12 +124,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
         type_location_lmnp: d.typeLocationLmnp || null,
       };
 
-      const { error } = await supabase
-        .from('assets')
-        .update(updateData)
-        .eq('id', asset.id);
-
-      if (error) throw error;
+      await assetService.updateAsset(asset.id!, updateData);
 
       if (!silent) {
         toast({ title: 'Enregistré', description: 'Les informations LMNP ont été mises à jour.' });
@@ -227,10 +221,9 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   const handleToggleImpactBudget = async (checked: boolean) => {
     if (!asset.id) return;
     try {
-      await Promise.all([
-        supabase.from('asset_revenus').update({ impact_budget: checked }).eq('asset_id', asset.id),
-        supabase.from('asset_charges').update({ impact_budget: checked }).eq('asset_id', asset.id),
-      ]);
+      // Les erreurs Supabase sont désormais levées par le service (Promise.all sur les réponses
+      // brutes les ignorait et affichait « Transfert activé » même en cas d'échec).
+      await assetService.setImpactBudget(asset.id, checked);
       setImpactBudget(checked);
       toast({
         title: checked ? 'Transfert activé' : 'Transfert désactivé',

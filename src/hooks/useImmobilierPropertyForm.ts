@@ -3,9 +3,8 @@ import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import type { TablesUpdate } from '@/integrations/supabase/types';
-import { Asset } from '@/services/assetService';
+import { estimerFraisNotaire } from '@/lib/immobilier/rentabilite';
+import { Asset, assetService } from '@/services/assetService';
 import { 
   immobilierPropertySchema, 
   ImmobilierPropertyFormValues,
@@ -37,13 +36,14 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
     }
   }, [asset, form]);
 
-  // Auto-calculate frais_notaire when montant_immeuble changes (7.5%)
+  // Frais de notaire pré-remplis (estimerFraisNotaire) quand l'utilisateur modifie le prix de
+  // l'immeuble — seul abonnement de ce type sur le formulaire (plus de doublon dans PropertyCostSection).
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'montant_immeuble' && value.montant_immeuble) {
-        const montant = Number(value.montant_immeuble);
-        if (!isNaN(montant) && montant > 0) {
-          form.setValue('frais_notaire', montant * 0.075);
+        const frais = estimerFraisNotaire(Number(value.montant_immeuble));
+        if (frais > 0) {
+          form.setValue('frais_notaire', frais);
         }
       }
     });
@@ -60,7 +60,7 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
       // `data.champ || null` écrasait silencieusement un `0` saisi (cf. docs/immobilier.md §3).
       const numOrNull = (v: number | '' | undefined): number | null => typeof v === 'number' ? v : null;
 
-      const updateData: TablesUpdate<'assets'> = {
+      const updateData: Partial<Asset> = {
         typologie_bien: data.typologie_bien || null,
         surface_m2: numOrNull(data.surface_m2),
         // Colonne `date` : date locale formatée, comme Patrimoine (useAssetForm.ts). toISOString()
@@ -85,12 +85,8 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
         regime_location: data.regime_location || null,
       };
 
-      const { error } = await supabase
-        .from('assets')
-        .update(updateData)
-        .eq('id', asset.id);
-
-      if (error) throw error;
+      // Via assetService : contrôle de propriété applicatif avant écriture (en plus des RLS).
+      await assetService.updateAsset(asset.id!, updateData);
 
       toast({
         title: 'Succès',

@@ -93,12 +93,16 @@ export const ImmobilierSection = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'biens':
-        return (
-          <>
-            <ImmobilierOverview assets={assets} />
-            <FoncierFoyerSection />
-          </>
-        );
+        // Attendre la liste avant de monter la Vue d'ensemble : sinon elle affiche « Aucun bien
+        // immobilier » le temps du premier chargement.
+        return isLoading && assets.length === 0
+          ? <div className="px-8 py-6"><LoadingSpinner text="Chargement des biens..." /></div>
+          : (
+            <>
+              <ImmobilierOverview assets={assets} />
+              <FoncierFoyerSection />
+            </>
+          );
       case 'valorisation':
         return isLoading
           ? <div className="px-8 py-6"><LoadingSpinner text="Chargement des biens..." /></div>

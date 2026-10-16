@@ -232,9 +232,34 @@ export const assetService = {
     return data as Asset;
   },
 
-  /** Tous les biens en location nue du foyer (type_location = 'Location nue'), tous natures
-   * confondues — utilisé pour apprécier le seuil micro-foncier (15 000 €) au niveau du foyer,
-   * cf. src/lib/immobilier/foncierFoyer.ts. */
+  /** Bascule « Transfert dans budget » d'un bien : applique `impact_budget` à toutes ses lignes de
+   * revenus et de charges, après contrôle de propriété (comme updateAsset). */
+  async setImpactBudget(assetId: string, impactBudget: boolean): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: existingAsset, error: existingError } = await supabase
+      .from('assets')
+      .select('user_id')
+      .eq('id', assetId)
+      .single();
+
+    if (existingError) throw existingError;
+    if (!existingAsset || existingAsset.user_id !== user.id) {
+      throw new Error('Unauthorized: Asset not found or access denied');
+    }
+
+    const [{ error: revenusError }, { error: chargesError }] = await Promise.all([
+      supabase.from('asset_revenus').update({ impact_budget: impactBudget }).eq('asset_id', assetId),
+      supabase.from('asset_charges').update({ impact_budget: impactBudget }).eq('asset_id', assetId),
+    ]);
+    if (revenusError) throw revenusError;
+    if (chargesError) throw chargesError;
+  },
+
+  /** Biens en location nue du foyer (type_location = 'Location nue') transférés dans Immobilier,
+   * natures immobilières hors LMNP/LMP (NATURES_LOCATION_NUE) — utilisé pour apprécier le seuil
+   * micro-foncier (15 000 €) au niveau du foyer, cf. src/lib/immobilier/foncierFoyer.ts. */
   async getBiensLocationNue(): Promise<Asset[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');

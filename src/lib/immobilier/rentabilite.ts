@@ -106,6 +106,14 @@ export function computeQuotePart(asset: Pick<Asset, 'pourcentage_utilisateur' | 
   return Math.min(100, (pu ?? 0) + (pc ?? 0));
 }
 
+/** Taux forfaitaire de pré-remplissage des frais de notaire (ancien), modifiable ensuite par l'utilisateur. */
+export const TAUX_FRAIS_NOTAIRE_ESTIME = 0.075;
+
+/** Estimation des frais de notaire à partir du prix d'achat, arrondie à l'euro (0 si prix nul ou invalide). */
+export function estimerFraisNotaire(prixAchat: number): number {
+  return Number.isFinite(prixAchat) && prixAchat > 0 ? Math.round(prixAchat * TAUX_FRAIS_NOTAIRE_ESTIME) : 0;
+}
+
 export function computePrixAcquisitionTotal(asset: Asset): number {
   return (
     (asset.montant_immeuble || 0) +

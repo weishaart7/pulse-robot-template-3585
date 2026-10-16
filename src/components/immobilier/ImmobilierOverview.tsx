@@ -71,6 +71,14 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
       try {
         setLoading(true);
         
+        // Revenus et charges de tout le portefeuille en deux requêtes (`IN`), comme « Mes biens » et
+        // « Gestion des biens », au lieu de deux requêtes par bien.
+        const ids = assets.map((a) => a.id).filter((id): id is string => !!id);
+        const [tousRevenus, toutesCharges] = await Promise.all([
+          assetService.getAssetRevenusByAssetIds(ids),
+          assetService.getAssetChargesByAssetIds(ids),
+        ]);
+
         const fluxBiens: FluxBien[] = [];
         let totalValeurActuelle = 0;
         let totalCoutAcquisition = 0;
@@ -122,11 +130,11 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           // nature locative (cf. RENTAL_PROPERTY_TYPES), notamment via le formulaire générique
           // d'actif (AssetForm.tsx, onglet "Charges") qui n'est pas restreint par nature. Mêmes
           // formules que les indicateurs par bien de « Mes biens » (lib/immobilier/portefeuille.ts).
-          const [revenus, charges] = await Promise.all([
-            assetService.getAssetRevenus(asset.id),
-            assetService.getAssetCharges(asset.id),
-          ]);
-          fluxBiens.push(computeFluxBien(asset, revenus, charges));
+          fluxBiens.push(computeFluxBien(
+            asset,
+            tousRevenus.filter((r) => r.asset_id === asset.id),
+            toutesCharges.filter((c) => c.asset_id === asset.id),
+          ));
         }
 
         // Calcul des métriques

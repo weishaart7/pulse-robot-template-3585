@@ -10,7 +10,6 @@ import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetS
 import { RevenuForm } from './RevenuForm';
 import { ChargeForm } from './ChargeForm';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ImmobilierGestionDialogProps {
@@ -87,21 +86,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
     
     setIsUpdatingBudget(true);
     try {
-      // Update all revenus for this asset
-      const { error: revenusError } = await supabase
-        .from('asset_revenus')
-        .update({ impact_budget: checked })
-        .eq('asset_id', asset.id);
-
-      if (revenusError) throw revenusError;
-
-      // Update all charges for this asset
-      const { error: chargesError } = await supabase
-        .from('asset_charges')
-        .update({ impact_budget: checked })
-        .eq('asset_id', asset.id);
-
-      if (chargesError) throw chargesError;
+      await assetService.setImpactBudget(asset.id, checked);
 
       setImpactBudget(checked);
       
@@ -291,25 +276,15 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
             assetId={asset.id}
             open={revenuFormOpen}
             onOpenChange={setRevenuFormOpen}
-            onSuccess={() => {
-              fetchRevenus();
-              // If impact_budget is enabled, new revenues should inherit it
-              if (impactBudget) {
-                handleToggleImpactBudget(true);
-              }
-            }}
+            onSuccess={fetchRevenus}
+            impactBudget={impactBudget}
           />
           <ChargeForm
             assetId={asset.id}
             open={chargeFormOpen}
             onOpenChange={setChargeFormOpen}
-            onSuccess={() => {
-              fetchCharges();
-              // If impact_budget is enabled, new charges should inherit it
-              if (impactBudget) {
-                handleToggleImpactBudget(true);
-              }
-            }}
+            onSuccess={fetchCharges}
+            impactBudget={impactBudget}
           />
         </>
       )}
