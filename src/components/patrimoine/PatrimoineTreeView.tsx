@@ -2,7 +2,7 @@ import { hasConjoint } from '@/lib/family/maritalStatus';
 import { Chip } from '@/components/layout/workspace-panel';
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, MoreHorizontal, Edit, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Emprunt } from '@/services/passifService';
 import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
@@ -12,6 +12,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -403,17 +404,20 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                                 e.stopPropagation();
                                 onAssetEdit(asset);
                               }}>
-                                <Edit className="h-4 w-4 mr-2" />
+                                <Pencil />
                                 Modifier
                               </DropdownMenuItem>
                               {onAssetDelete && (
-                                <DropdownMenuItem onClick={(e) => {
-                                  e.stopPropagation();
-                                  onAssetDelete(asset);
-                                }}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Supprimer
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem variant="destructive" onClick={(e) => {
+                                    e.stopPropagation();
+                                    onAssetDelete(asset);
+                                  }}>
+                                    <Trash2 />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>

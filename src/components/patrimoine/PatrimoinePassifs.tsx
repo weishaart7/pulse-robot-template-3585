@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PassifEmpruntForm } from './PassifEmpruntForm';
-import { Plus, MoreHorizontal, Edit, Trash2, Landmark, Receipt } from 'lucide-react';
+import { Plus, MoreHorizontal, Pencil, Trash2, Landmark, Receipt } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { useAssets } from '@/hooks/useAssets';
 import { PassifDetailsDialog } from './PassifDetailsDialog';
@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -222,11 +223,12 @@ function PassifRow({ icon, tone, title, tag, subtitle, amount, amountLabel, onOp
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
+              <Pencil />
               Modifier
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onClick={onDelete}>
+              <Trash2 />
               Supprimer
             </DropdownMenuItem>
           </DropdownMenuContent>

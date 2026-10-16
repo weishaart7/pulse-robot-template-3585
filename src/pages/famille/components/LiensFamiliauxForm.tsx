@@ -1,13 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, Edit, MoreHorizontal, Plus, Users } from 'lucide-react';
+import { Trash2, Pencil, MoreHorizontal, Plus, Users } from 'lucide-react';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -213,11 +214,12 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => dialogRef.current?.openForEdit(member)}>
-                            <Edit className="h-4 w-4 mr-2" />
+                            <Pencil />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setMemberToDelete(member)}>
-                            <Trash2 className="h-4 w-4 mr-2" />
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onClick={() => setMemberToDelete(member)}>
+                            <Trash2 />
                             Supprimer
                           </DropdownMenuItem>
                         </DropdownMenuContent>

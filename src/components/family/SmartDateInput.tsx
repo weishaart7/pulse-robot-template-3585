@@ -8,17 +8,23 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { FormControl } from '@/components/ui/form';
 
+// Borne haute sans maxDate : même horizon que le calendrier (date-picker-panel.tsx).
+const MAX_YEARS_AHEAD = 50;
+
 interface SmartDateInputProps {
   value: Date | string | undefined;
   onChange: (value: Date | string) => void;
   className?: string;
+  /** Date maximale acceptée (saisie et calendrier). Par défaut aujourd'hui ; `null` pour autoriser
+   *  les dates futures (jusqu'à la borne haute du calendrier). */
+  maxDate?: Date | null;
 }
 
 // Saisie de date JJ/MM/AAAA avec auto-formatage pendant la frappe et sélecteur calendrier
 // en complément. La valeur reste une string tant que le format n'est pas complet et valide ;
 // elle ne devient un Date qu'une fois JJ/MM/AAAA entièrement saisi et vérifié (jour/mois/année
-// réels, année dans [1900, aujourd'hui]).
-export function SmartDateInput({ value, onChange, className }: SmartDateInputProps) {
+// réels, année dans [1900, maxDate] — aujourd'hui par défaut).
+export function SmartDateInput({ value, onChange, className, maxDate = new Date() }: SmartDateInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
 
@@ -76,7 +82,7 @@ export function SmartDateInput({ value, onChange, className }: SmartDateInputPro
                 date.getMonth() === month - 1 &&
                 date.getFullYear() === year &&
                 year >= 1900 &&
-                date <= new Date()
+                (maxDate ? date <= maxDate : year <= new Date().getFullYear() + MAX_YEARS_AHEAD)
               ) {
                 onChange(date);
                 return;
@@ -97,7 +103,7 @@ export function SmartDateInput({ value, onChange, className }: SmartDateInputPro
         <PopoverContent className="w-auto rounded-[4px] border-border p-0 shadow-md" align="end">
           <DatePickerPanel
             selected={value instanceof Date ? value : undefined}
-            maxDate={new Date()}
+            maxDate={maxDate ?? undefined}
             onSelect={(date) => {
               onChange(date);
               setOpen(false);
