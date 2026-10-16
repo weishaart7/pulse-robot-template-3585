@@ -1,10 +1,21 @@
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
-import { computeAmortissement, computeQuotePart } from '@/lib/immobilier/rentabilite';
+import { computeAmortissement, computePrixAcquisitionTotal, computeQuotePart } from '@/lib/immobilier/rentabilite';
 
 // Flux d'un bien pour les indicateurs de portefeuille (Vue d'ensemble, Mes biens), extraits tels
 // quels d'ImmobilierOverview pour que les totaux du portefeuille soient la somme exacte des
 // indicateurs par bien. Convention propre à ces indicateurs (cf. docs/immobilier.md §2-3) : une
 // périodicité non reconnue est traitée comme annuelle pour un revenu, exclue (0) pour une charge.
+
+/**
+ * Prix de revient d'un bien, base unique des rentabilités brute et nette — la même que le simulateur de
+ * la fiche (computePrixAcquisitionTotal : prix de l'immeuble + frais d'acquisition et travaux), pour
+ * qu'un bien affiche la même rentabilité partout. Repli sur les champs génériques de Patrimoine
+ * (valeur_acquisition + frais_acquisition) pour un actif dont le coût de revient détaillé est vide.
+ */
+export const computePrixRevient = (asset: Asset): number => {
+  const detaille = computePrixAcquisitionTotal(asset);
+  return detaille > 0 ? detaille : (asset.valeur_acquisition || 0) + (asset.frais_acquisition || 0);
+};
 
 const annualFactor = (periodicite: string | undefined, defaultFactor: number): number => {
   switch ((periodicite || '').toLowerCase()) {
@@ -27,10 +38,8 @@ const monthlyDivisor = (periodicite: string | undefined, defaultDivisor: number 
 };
 
 export interface FluxBien {
-  /** Prix d'achat (valeur_acquisition) × quote-part du foyer. */
-  prixAchat: number;
-  /** Prix d'achat + frais d'acquisition, × quote-part. */
-  investissement: number;
+  /** Prix de revient (computePrixRevient) × quote-part du foyer. */
+  prixRevient: number;
   loyerAnnuel: number;
   chargesAnnuelles: number;
   revenusMensuels: number;
@@ -42,8 +51,7 @@ export interface FluxBien {
 /** Flux d'un bien, pondérés par la quote-part d'indivision du foyer (100 % si non renseignée). */
 export const computeFluxBien = (asset: Asset, revenus: AssetRevenu[], charges: AssetCharge[]): FluxBien => {
   const quotePart = computeQuotePart(asset) / 100;
-  const prixAchat = (asset.valeur_acquisition || 0) * quotePart;
-  const fraisAcquisition = (asset.frais_acquisition || 0) * quotePart;
+  const prixRevient = computePrixRevient(asset) * quotePart;
 
   let loyerAnnuel = 0;
   let revenusMensuels = 0;
@@ -66,8 +74,7 @@ export const computeFluxBien = (asset: Asset, revenus: AssetRevenu[], charges: A
   const creditMensuel = (credit.mensualiteCredit + credit.mensualiteAssurance) * quotePart;
 
   return {
-    prixAchat,
-    investissement: prixAchat + fraisAcquisition,
+    prixRevient,
     loyerAnnuel,
     chargesAnnuelles,
     revenusMensuels,
@@ -77,9 +84,9 @@ export const computeFluxBien = (asset: Asset, revenus: AssetRevenu[], charges: A
 };
 
 export interface IndicateursFlux {
-  /** Loyers annuels / prix d'achat, en %. */
+  /** Loyers annuels / prix de revient, en %. */
   rentabiliteBrute: number;
-  /** (Loyers − charges) annuels / investissement, en %. */
+  /** (Loyers − charges) annuels / prix de revient, en %. */
   rentabiliteNette: number;
   /** Revenus − charges − crédit, par mois. */
   cashflowMensuel: number;
@@ -87,9 +94,9 @@ export interface IndicateursFlux {
 
 /** Indicateurs d'un bien ou d'une somme de biens (mêmes formules dans les deux cas). */
 export const computeIndicateurs = (flux: FluxBien): IndicateursFlux => ({
-  rentabiliteBrute: flux.prixAchat > 0 ? (flux.loyerAnnuel / flux.prixAchat) * 100 : 0,
-  rentabiliteNette: flux.investissement > 0
-    ? ((flux.loyerAnnuel - flux.chargesAnnuelles) / flux.investissement) * 100
+  rentabiliteBrute: flux.prixRevient > 0 ? (flux.loyerAnnuel / flux.prixRevient) * 100 : 0,
+  rentabiliteNette: flux.prixRevient > 0
+    ? ((flux.loyerAnnuel - flux.chargesAnnuelles) / flux.prixRevient) * 100
     : 0,
   cashflowMensuel: flux.revenusMensuels - flux.chargesMensuelles - flux.creditMensuel,
 });
@@ -97,13 +104,12 @@ export const computeIndicateurs = (flux: FluxBien): IndicateursFlux => ({
 export const sommeFlux = (flux: FluxBien[]): FluxBien =>
   flux.reduce<FluxBien>(
     (acc, f) => ({
-      prixAchat: acc.prixAchat + f.prixAchat,
-      investissement: acc.investissement + f.investissement,
+      prixRevient: acc.prixRevient + f.prixRevient,
       loyerAnnuel: acc.loyerAnnuel + f.loyerAnnuel,
       chargesAnnuelles: acc.chargesAnnuelles + f.chargesAnnuelles,
       revenusMensuels: acc.revenusMensuels + f.revenusMensuels,
       chargesMensuelles: acc.chargesMensuelles + f.chargesMensuelles,
       creditMensuel: acc.creditMensuel + f.creditMensuel,
     }),
-    { prixAchat: 0, investissement: 0, loyerAnnuel: 0, chargesAnnuelles: 0, revenusMensuels: 0, chargesMensuelles: 0, creditMensuel: 0 },
+    { prixRevient: 0, loyerAnnuel: 0, chargesAnnuelles: 0, revenusMensuels: 0, chargesMensuelles: 0, creditMensuel: 0 },
   );

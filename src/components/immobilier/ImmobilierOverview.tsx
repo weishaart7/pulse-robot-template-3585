@@ -206,11 +206,11 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           </SummaryRow>
           <SummaryRow label="Rent. brute">
             <span className="tabular-nums">{formatPercent(metrics.rentabiliteBrute)}</span>
-            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">loyers / prix d'achat</span>
+            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">loyers / prix de revient</span>
           </SummaryRow>
           <SummaryRow label="Rent. nette">
             <span className="tabular-nums">{formatPercent(metrics.rentabiliteNette)}</span>
-            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">après charges / investissement</span>
+            <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">après charges / prix de revient</span>
           </SummaryRow>
         </dl>
       </div>

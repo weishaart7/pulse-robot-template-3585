@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
-import { computeFluxBien, computeIndicateurs, sommeFlux } from './portefeuille';
+import { computeFluxBien, computeIndicateurs, computePrixRevient, sommeFlux } from './portefeuille';
 
 const revenu = (montant: number, periodicite: string): AssetRevenu =>
   ({ asset_id: 'a', nature: 'Loyers', montant, periodicite, date_debut: '2024-01-01' }) as AssetRevenu;
@@ -21,8 +21,7 @@ describe('computeFluxBien', () => {
     expect(f.revenusMensuels).toBe(1000);
     expect(f.chargesAnnuelles).toBe(1200);
     expect(f.chargesMensuelles).toBe(100);
-    expect(f.prixAchat).toBe(200_000);
-    expect(f.investissement).toBe(220_000);
+    expect(f.prixRevient).toBe(220_000);
     expect(f.creditMensuel).toBe(0);
   });
 
@@ -38,7 +37,7 @@ describe('computeFluxBien', () => {
 describe('computeIndicateurs', () => {
   it('calcule rentabilités brute / nette et cashflow mensuel', () => {
     const ind = computeIndicateurs(computeFluxBien(asset(), [revenu(1000, 'Mensuelle')], [charge(1200, 'annuelle')]));
-    expect(ind.rentabiliteBrute).toBeCloseTo(6, 6);
+    expect(ind.rentabiliteBrute).toBeCloseTo((12_000 / 220_000) * 100, 6);
     expect(ind.rentabiliteNette).toBeCloseTo(((12_000 - 1200) / 220_000) * 100, 6);
     expect(ind.cashflowMensuel).toBeCloseTo(900, 6);
   });
@@ -53,7 +52,24 @@ describe('computeIndicateurs', () => {
     const a = computeFluxBien(asset(), [revenu(1000, 'Mensuelle')], []);
     const b = computeFluxBien(asset({ valeur_acquisition: 100_000, frais_acquisition: 0 }), [], [charge(100, 'mensuelle')]);
     const total = computeIndicateurs(sommeFlux([a, b]));
-    expect(total.rentabiliteBrute).toBeCloseTo((12_000 / 300_000) * 100, 6);
+    expect(total.rentabiliteBrute).toBeCloseTo((12_000 / 320_000) * 100, 6);
     expect(total.cashflowMensuel).toBeCloseTo(1000 - 100, 6);
+  });
+});
+
+describe('computePrixRevient', () => {
+  it('retient le coût de revient détaillé (immeuble + frais + travaux), comme le simulateur de la fiche', () => {
+    const a = asset({ montant_immeuble: 180_000, frais_notaire: 13_500, frais_agence: 6_500, travaux_renovation: 10_000 });
+    expect(computePrixRevient(a)).toBe(210_000);
+  });
+
+  it('se replie sur valeur_acquisition + frais_acquisition sans coût de revient détaillé', () => {
+    expect(computePrixRevient(asset())).toBe(220_000);
+  });
+
+  it('pondère la base par la quote-part sans changer la rentabilité en %', () => {
+    const plein = computeIndicateurs(computeFluxBien(asset(), [revenu(1000, 'Mensuelle')], []));
+    const moitie = computeIndicateurs(computeFluxBien(asset({ pourcentage_utilisateur: 50 }), [revenu(1000, 'Mensuelle')], []));
+    expect(moitie.rentabiliteBrute).toBeCloseTo(plein.rentabiliteBrute, 6);
   });
 });

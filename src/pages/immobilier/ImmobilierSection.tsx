@@ -21,23 +21,27 @@ const MEUBLE_NATURES = [
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
   const { assets, isLoading, refetch } = useImmobilierAssets();
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  // Biens ouverts mémorisés par identifiant et relus dans `assets` : après une sauvegarde, la fiche
+  // reçoit la version rechargée par refetch() (et non une copie figée au moment du clic).
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
-  const [lmnpAsset, setLmnpAsset] = useState<Asset | null>(null);
+  const [lmnpAssetId, setLmnpAssetId] = useState<string | null>(null);
+  const selectedAsset = selectedAssetId ? assets.find(a => a.id === selectedAssetId) ?? null : null;
+  const lmnpAsset = lmnpAssetId ? assets.find(a => a.id === lmnpAssetId) ?? null : null;
 
   const isMeuble = (asset: Asset) => MEUBLE_NATURES.includes(asset.nature || '');
 
   const handleManageInfo = useCallback((asset: Asset) => {
     if (isMeuble(asset)) {
-      setLmnpAsset(asset);
+      setLmnpAssetId(asset.id ?? null);
     } else {
-      setSelectedAsset(asset);
+      setSelectedAssetId(asset.id ?? null);
     }
   }, []);
 
   const handleDialogClose = useCallback(() => {
-    setSelectedAsset(null);
+    setSelectedAssetId(null);
   }, []);
 
   const handleUpdate = useCallback(() => {
@@ -46,7 +50,7 @@ export const ImmobilierSection = () => {
 
   const handleGestion = useCallback((asset: Asset) => {
     if (isMeuble(asset)) {
-      setLmnpAsset(asset);
+      setLmnpAssetId(asset.id ?? null);
     } else {
       setSelectedAssetForGestion(asset);
       setGestionDialogOpen(true);
@@ -67,13 +71,8 @@ export const ImmobilierSection = () => {
       <div>
         <LMNPDetailView
           asset={lmnpAsset}
-          onBack={() => setLmnpAsset(null)}
-          onUpdate={() => {
-            refetch();
-            // Refresh the asset data
-            const updated = assets.find(a => a.id === lmnpAsset.id);
-            if (updated) setLmnpAsset(updated);
-          }}
+          onBack={() => setLmnpAssetId(null)}
+          onUpdate={handleUpdate}
         />
       </div>
     );
@@ -85,11 +84,7 @@ export const ImmobilierSection = () => {
         <ImmobilierPropertyDetailView
           asset={selectedAsset}
           onBack={handleDialogClose}
-          onUpdate={() => {
-            refetch();
-            const updated = assets.find(a => a.id === selectedAsset.id);
-            if (updated) setSelectedAsset(updated);
-          }}
+          onUpdate={handleUpdate}
         />
       </div>
     );

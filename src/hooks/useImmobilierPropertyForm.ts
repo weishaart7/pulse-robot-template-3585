@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { Asset } from '@/services/assetService';
 import { 
   immobilierPropertySchema, 
@@ -59,7 +60,7 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
       // `data.champ || null` écrasait silencieusement un `0` saisi (cf. docs/immobilier.md §3).
       const numOrNull = (v: number | '' | undefined): number | null => typeof v === 'number' ? v : null;
 
-      const updateData: Record<string, any> = {
+      const updateData: TablesUpdate<'assets'> = {
         typologie_bien: data.typologie_bien || null,
         surface_m2: numOrNull(data.surface_m2),
         // Colonne `date` : date locale formatée, comme Patrimoine (useAssetForm.ts). toISOString()
@@ -115,6 +116,11 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
   };
 };
 
+// Valeur numérique stockée → champ de formulaire : `0` est une valeur saisie et reste affichée, seul
+// `null`/`undefined` devient un champ vide (pendant de `numOrNull` à la sauvegarde).
+const numOrEmpty = (v: number | string | null | undefined): number | '' =>
+  v == null || v === '' ? '' : Number(v);
+
 function getDefaultValues(asset: Asset | null): ImmobilierPropertyFormValues {
   if (!asset) {
     return {
@@ -143,24 +149,25 @@ function getDefaultValues(asset: Asset | null): ImmobilierPropertyFormValues {
 
   return {
     typologie_bien: (asset.typologie_bien ?? undefined) as 'Appartement' | 'Maison' | undefined,
-    surface_m2: asset.surface_m2 ? Number(asset.surface_m2) : '',
+    surface_m2: numOrEmpty(asset.surface_m2),
     date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
-    valeur_estimee: asset.valeur_estimee ? Number(asset.valeur_estimee) : '',
+    valeur_estimee: numOrEmpty(asset.valeur_estimee),
     statut_bien: (asset.statut_bien ?? undefined) as 'Usage personnel' | 'En rénovation' | 'En vente' | undefined,
-    montant_immeuble: asset.montant_immeuble ? Number(asset.montant_immeuble) : '',
-    frais_agence: asset.frais_agence ? Number(asset.frais_agence) : '',
-    frais_notaire: asset.frais_notaire ? Number(asset.frais_notaire) : '',
-    frais_bancaires: asset.frais_bancaires ? Number(asset.frais_bancaires) : '',
-    frais_hypotheque: asset.frais_hypotheque ? Number(asset.frais_hypotheque) : '',
-    travaux_renovation: asset.travaux_renovation ? Number(asset.travaux_renovation) : '',
-    travaux_construction: asset.travaux_construction ? Number(asset.travaux_construction) : '',
-    meubles: asset.meubles ? Number(asset.meubles) : '',
+    montant_immeuble: numOrEmpty(asset.montant_immeuble),
+    frais_agence: numOrEmpty(asset.frais_agence),
+    frais_notaire: numOrEmpty(asset.frais_notaire),
+    frais_bancaires: numOrEmpty(asset.frais_bancaires),
+    frais_hypotheque: numOrEmpty(asset.frais_hypotheque),
+    travaux_renovation: numOrEmpty(asset.travaux_renovation),
+    travaux_construction: numOrEmpty(asset.travaux_construction),
+    meubles: numOrEmpty(asset.meubles),
     financement_actif: asset.financement_actif || false,
-    financement_duree_mois: asset.financement_duree_mois ? Number(asset.financement_duree_mois) : '',
-    financement_apport: asset.financement_apport ? Number(asset.financement_apport) : '',
-    financement_taux_credit: asset.financement_taux_credit ? Number(asset.financement_taux_credit) : '',
-    financement_taux_assurance: asset.financement_taux_assurance ? Number(asset.financement_taux_assurance) : '',
-    type_location: asset.type_location as any,
-    regime_location: asset.regime_location as any,
+    financement_duree_mois: numOrEmpty(asset.financement_duree_mois),
+    financement_apport: numOrEmpty(asset.financement_apport),
+    financement_taux_credit: numOrEmpty(asset.financement_taux_credit),
+    financement_taux_assurance: numOrEmpty(asset.financement_taux_assurance),
+    // Valeurs garanties par les contraintes CHECK de `assets`, comme les unions de l'Asset.
+    type_location: (asset.type_location ?? undefined) as ImmobilierPropertyFormValues['type_location'],
+    regime_location: (asset.regime_location ?? undefined) as ImmobilierPropertyFormValues['regime_location'],
   };
 }
