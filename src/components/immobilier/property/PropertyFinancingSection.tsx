@@ -1,6 +1,6 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,25 +14,22 @@ export const PropertyFinancingSection: React.FC<PropertyFinancingSectionProps> =
   const isFinancementActif = form.watch('financement_actif');
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Financement</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PanelSection title="Financement">
         <FormField
           control={form.control}
           name="financement_actif"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Financement actif</FormLabel>
-              </div>
+            <FormItem className="flex flex-row items-center gap-3 space-y-0 rounded-[2px] border border-border bg-secondary/40 px-4 py-3 md:col-span-2">
               <FormControl>
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
+              <div className="space-y-0.5">
+                <FormLabel className="cursor-pointer">Bien financé par un crédit</FormLabel>
+                <p className="text-[12px] text-muted-foreground">Mensualité et assurance entrent dans le cashflow et les simulateurs.</p>
+              </div>
             </FormItem>
           )}
         />
@@ -123,7 +120,6 @@ export const PropertyFinancingSection: React.FC<PropertyFinancingSectionProps> =
             />
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelSection>
   );
 };

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { LogoSpinner } from '@/components/brand/LogoSpinner';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,22 +101,25 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Ajouter une charge</DialogTitle>
-          <DialogDescription>
+      <DialogContent
+        overlayClassName="bg-black/30 backdrop-blur-[6px]"
+        className="workspace-panel no-scrollbar max-w-lg max-h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]"
+      >
+        <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Ajouter une charge</DialogTitle>
+          <DialogDescription className="text-[12.5px]">
             Enregistrez une charge liée à ce bien immobilier
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          <div className="space-y-1.5">
             <Label htmlFor="nature">Nature de la charge *</Label>
             <Select 
               value={formData.nature} 
               onValueChange={(value) => setFormData({ ...formData, nature: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                 <SelectValue placeholder="Sélectionnez une nature" />
               </SelectTrigger>
               <SelectContent>
@@ -127,26 +132,30 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="montant">Montant (€) *</Label>
-            <Input
-              id="montant"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={formData.montant}
-              onChange={(e) => setFormData({ ...formData, montant: e.target.value })}
-              required
-            />
+          <div className="space-y-1.5">
+            <Label htmlFor="montant">Montant *</Label>
+            <div className="relative">
+              <Input
+                id="montant"
+                className="bg-background border-border shadow-none pr-8 tabular-nums"
+                type="number"
+                step="0.01"
+                placeholder="0"
+                value={formData.montant}
+                onChange={(e) => setFormData({ ...formData, montant: e.target.value })}
+                required
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">€</span>
+            </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="periodicite">Périodicité</Label>
             <Select 
               value={formData.periodicite} 
               onValueChange={(value) => setFormData({ ...formData, periodicite: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -159,13 +168,13 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="debiteur">Débiteur</Label>
             <Select 
               value={formData.debiteur} 
               onValueChange={(value) => setFormData({ ...formData, debiteur: value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -178,17 +187,18 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
             </Select>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="-mx-6 flex justify-end gap-2 border-t border-border px-6 pt-4">
             <Button
               type="button"
               variant="outline"
+              className={panelButtonClass}
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            <Button type="submit" disabled={isSubmitting} className={panelPrimaryButtonClass}>
+              {isSubmitting ? <><LogoSpinner />Enregistrement...</> : "Enregistrer"}
             </Button>
           </div>
         </form>

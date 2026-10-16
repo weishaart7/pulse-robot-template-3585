@@ -1,16 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Chip, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2 } from 'lucide-react';
 import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
-import AnimatedBackground from '@/components/ui/animated-tabs';
 import { RevenuForm } from './RevenuForm';
 import { ChargeForm } from './ChargeForm';
 import { useToast } from '@/hooks/use-toast';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
@@ -31,6 +30,8 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
   const [isLoadingCharges, setIsLoadingCharges] = useState(false);
   const [impactBudget, setImpactBudget] = useState(true);
   const [isUpdatingBudget, setIsUpdatingBudget] = useState(false);
+  // Ligne dont la suppression attend confirmation.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; nom: string; type: 'revenu' | 'charge' } | null>(null);
 
   const fetchRevenus = useCallback(async () => {
     if (!asset?.id) return;
@@ -40,7 +41,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       const data = await assetService.getAssetRevenus(asset.id);
       setRevenus(data);
       // Check if any revenue has impact_budget = true
-      const hasImpact = data.some((r: any) => r.impact_budget === true);
+      const hasImpact = data.some((r) => (r as AssetRevenu & { impact_budget?: boolean }).impact_budget === true);
       setImpactBudget(hasImpact);
     } catch (error) {
       toast({
@@ -61,7 +62,7 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
       const data = await assetService.getAssetCharges(asset.id);
       setCharges(data);
       // Check if any charge has impact_budget = true
-      const hasImpact = data.some((c: any) => c.impact_budget === true);
+      const hasImpact = data.some((c) => (c as AssetCharge & { impact_budget?: boolean }).impact_budget === true);
       if (hasImpact) setImpactBudget(true);
     } catch (error) {
       toast({
@@ -155,204 +156,134 @@ export const ImmobilierGestionDialog = ({ asset, open, onOpenChange }: Immobilie
     }
   };
 
-  const TABS = [
-    { id: 'revenus', label: 'Revenus' },
-    { id: 'charges', label: 'Charges' }
-  ];
+  const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString('fr-FR') : null);
+  const isRevenus = activeTab === 'revenus';
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'revenus':
-        return (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Revenus locatifs</CardTitle>
-                  <CardDescription>
-                    Gérez les revenus générés par ce bien
-                  </CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setRevenuFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un revenu
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoadingRevenus ? (
-                <LoadingSpinner text="Chargement..." />
-              ) : revenus.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-4xl mb-4">💰</div>
-                  <h3 className="text-lg font-semibold mb-2">Aucun revenu pour le moment</h3>
-                  <p className="text-muted-foreground">
-                    Commencez par ajouter les revenus générés par ce bien immobilier.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nature</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead>Périodicité</TableHead>
-                      <TableHead>Date début</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {revenus.map((revenu) => (
-                      <TableRow key={revenu.id}>
-                        <TableCell>{revenu.nature}</TableCell>
-                        <TableCell>{revenu.montant.toLocaleString('fr-FR')} €</TableCell>
-                        <TableCell>{revenu.periodicite}</TableCell>
-                        <TableCell>
-                          {new Date(revenu.date_debut).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => revenu.id && handleDeleteRevenu(revenu.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        );
-      case 'charges':
-        return (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Charges</CardTitle>
-                  <CardDescription>
-                    Gérez les charges liées à ce bien
-                  </CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setChargeFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter une charge
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {isLoadingCharges ? (
-                <LoadingSpinner text="Chargement..." />
-              ) : charges.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-4xl mb-4">📋</div>
-                  <h3 className="text-lg font-semibold mb-2">Aucune charge pour le moment</h3>
-                  <p className="text-muted-foreground">
-                    Commencez par ajouter les charges associées à ce bien immobilier.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nature</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead>Périodicité</TableHead>
-                      <TableHead>Date début</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {charges.map((charge) => (
-                      <TableRow key={charge.id}>
-                        <TableCell>{charge.denomination || charge.type_charge}</TableCell>
-                        <TableCell>{charge.montant.toLocaleString('fr-FR')} {charge.unite}</TableCell>
-                        <TableCell className="capitalize">{charge.periodicite}</TableCell>
-                        <TableCell>
-                          {new Date(charge.date_debut).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => charge.id && handleDeleteCharge(charge.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        );
-      default:
-        return null;
-    }
-  };
+  // Lignes de l'onglet actif, dans un format commun.
+  const lignes = isRevenus
+    ? revenus.map(r => ({ id: r.id, nom: r.nature, montant: `${r.montant.toLocaleString('fr-FR')} €`, periodicite: r.periodicite, debut: fmtDate(r.date_debut) }))
+    : charges.map(c => ({ id: c.id, nom: c.denomination || c.type_charge, montant: `${c.montant.toLocaleString('fr-FR')} ${c.unite}`, periodicite: c.periodicite, debut: fmtDate(c.date_debut) }));
+  const isLoadingTab = isRevenus ? isLoadingRevenus : isLoadingCharges;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle>
-                Gestion de {asset?.denomination || 'ce bien'}
-              </DialogTitle>
-              <div className="flex items-center gap-2 mr-6">
-                <Checkbox
-                  id="impact-budget"
-                  checked={impactBudget}
-                  onCheckedChange={handleToggleImpactBudget}
-                  disabled={isUpdatingBudget || (revenus.length === 0 && charges.length === 0)}
-                />
-                <Label 
-                  htmlFor="impact-budget" 
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Transfert dans budget
-                </Label>
-              </div>
-            </div>
+        <DialogContent
+          overlayClassName="bg-black/30 backdrop-blur-[6px]"
+          className="workspace-panel no-scrollbar max-w-2xl max-h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]"
+        >
+          <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+            <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">
+              Revenus et charges · {asset?.denomination || 'ce bien'}
+            </DialogTitle>
+            <DialogDescription className="text-[12.5px]">
+              Lignes de ce bien, reprises dans les indicateurs Immobilier et, si le transfert est activé, dans le Budget.
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6">
-            <div className="flex justify-start">
-              <div className="rounded-[8px] bg-muted p-[2px]">
-                <AnimatedBackground
-                  defaultValue="revenus"
-                  onValueChange={(value) => setActiveTab(value || 'revenus')}
-                  className="rounded-lg bg-background shadow-sm"
-                  transition={{
-                    ease: "easeInOut",
-                    duration: 0.2,
-                  }}
-                >
-                  {TABS.map((tab) => (
-                    <button
-                      key={tab.id}
-                      data-id={tab.id}
-                      type="button"
-                      className="inline-flex min-w-24 items-center justify-center px-3 py-2 text-sm font-medium text-foreground transition-transform active:scale-[0.98]"
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </AnimatedBackground>
-              </div>
+          {/* Transfert dans le Budget : s'applique à toutes les lignes du bien. */}
+          <div className="flex items-start gap-3 rounded-[2px] border border-border bg-secondary/40 px-4 py-3">
+            <Checkbox
+              id="impact-budget"
+              checked={impactBudget}
+              onCheckedChange={handleToggleImpactBudget}
+              disabled={isUpdatingBudget || (revenus.length === 0 && charges.length === 0)}
+              className="mt-0.5"
+            />
+            <div className="space-y-0.5">
+              <Label htmlFor="impact-budget" className="cursor-pointer">Reporter dans le Budget</Label>
+              <p className="text-[12px] text-muted-foreground">
+                Les revenus et charges de ce bien apparaissent dans Budget → Revenus / Charges, en lecture seule.
+              </p>
             </div>
+          </div>
 
-            {renderContent()}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
+              {([['revenus', 'Revenus', revenus.length], ['charges', 'Charges', charges.length]] as const).map(([id, label, count]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={activeTab === id}
+                  onClick={() => setActiveTab(id)}
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-[2px] border px-4 text-[12.5px] transition-colors ${
+                    activeTab === id
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {label}
+                  <span className={`tabular-nums ${activeTab === id ? 'text-background/70' : 'text-muted-foreground'}`}>{count}</span>
+                </button>
+              ))}
+            </div>
+            <Button
+              type="button"
+              onClick={() => (isRevenus ? setRevenuFormOpen(true) : setChargeFormOpen(true))}
+              className={panelPrimaryButtonClass}
+            >
+              <Plus className="h-4 w-4" />
+              {isRevenus ? 'Ajouter un revenu' : 'Ajouter une charge'}
+            </Button>
+          </div>
+
+          {isLoadingTab ? (
+            <LoadingSpinner text="Chargement..." />
+          ) : lignes.length === 0 ? (
+            <p className="border-y border-border py-6 text-[13px] text-muted-foreground">
+              {isRevenus
+                ? 'Aucun revenu pour le moment : ajoutez les loyers et autres revenus générés par ce bien.'
+                : 'Aucune charge pour le moment : ajoutez la taxe foncière, les frais de gestion, l\'assurance…'}
+            </p>
+          ) : (
+            <ul className="-mx-2 divide-y divide-border border-y border-border">
+              {lignes.map(l => (
+                <li key={l.id} className="flex items-center gap-3 px-2 py-2.5 text-[13px]">
+                  <span className="w-[4.25rem] shrink-0">
+                    <Chip tone={isRevenus ? 'lagon' : 'citron'}>{isRevenus ? 'Revenu' : 'Charge'}</Chip>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-foreground">{l.nom}</p>
+                    {l.debut && <p className="text-[12px] text-muted-foreground">Depuis le {l.debut}</p>}
+                  </div>
+                  <div className="shrink-0 text-right tabular-nums">
+                    <p className="font-medium text-foreground">{l.montant}</p>
+                    <p className="text-[12px] lowercase text-muted-foreground">{l.periodicite}</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Supprimer ${l.nom}`}
+                    onClick={() => l.id && setPendingDelete({ id: l.id, nom: l.nom, type: isRevenus ? 'revenu' : 'charge' })}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="-mx-6 flex justify-end border-t border-border px-6 pt-4">
+            <Button type="button" variant="outline" className={panelButtonClass} onClick={() => onOpenChange(false)}>
+              Fermer
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      <WizardConfirmDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.type === 'revenu' ? 'Supprimer ce revenu ?' : 'Supprimer cette charge ?'}
+        description={pendingDelete ? `« ${pendingDelete.nom} » sera définitivement supprimé${pendingDelete.type === 'revenu' ? '' : 'e'}.` : ''}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        onConfirm={() => {
+          if (pendingDelete?.type === 'revenu') handleDeleteRevenu(pendingDelete.id);
+          else if (pendingDelete) handleDeleteCharge(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {asset && (
         <>

@@ -64,7 +64,7 @@ export const ImmobilierSection = () => {
   // If LMNP detail view is active, show it
   if (lmnpAsset) {
     return (
-      <div className="p-6">
+      <div>
         <LMNPDetailView
           asset={lmnpAsset}
           onBack={() => setLmnpAsset(null)}
@@ -81,7 +81,7 @@ export const ImmobilierSection = () => {
 
   if (selectedAsset) {
     return (
-      <div className="p-6">
+      <div>
         <ImmobilierPropertyDetailView
           asset={selectedAsset}
           onBack={handleDialogClose}

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
@@ -56,11 +56,7 @@ export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Coût de revient</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PanelSection title="Coût de revient">
         {renderNumberField('montant_immeuble', "Prix d'achat du bien (€)", "Prix d'achat du bien")}
         {renderNumberField('frais_agence', "Frais d'agence (€)", "Frais d'agence")}
         {renderNumberField('frais_notaire', 'Frais de notaire (€)', 'Frais de notaire (calculé automatiquement à 7,5%)')}
@@ -69,7 +65,6 @@ export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({
         {renderNumberField('travaux_renovation', 'Travaux de rénovation (€)', 'Travaux de rénovation')}
         {renderNumberField('travaux_construction', 'Travaux de construction (€)', 'Travaux de construction')}
         {showMeublesField && renderNumberField('meubles', 'Meubles (€)', 'Meubles')}
-      </CardContent>
-    </Card>
+      </PanelSection>
   );
 };

@@ -1,20 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Building2, Calculator, Plus, Trash2, Info } from 'lucide-react';
+import { Building2, Plus, Trash2 } from 'lucide-react';
+import { Chip, PanelTitle, SummaryRow, WorkspaceHeader, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { LogoSpinner } from '@/components/brand/LogoSpinner';
+import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
 import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
 import { supabase } from '@/integrations/supabase/client';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 import { RevenuForm } from '../RevenuForm';
 import { ChargeForm } from '../ChargeForm';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import {
   ZONE_TERRAIN_PERCENTAGES,
@@ -52,6 +53,8 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   const [revenus, setRevenus] = useState<AssetRevenu[]>([]);
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [revenuFormOpen, setRevenuFormOpen] = useState(false);
+  // Ligne dont la suppression attend confirmation.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; nom: string; type: 'revenu' | 'charge' } | null>(null);
   const [chargeFormOpen, setChargeFormOpen] = useState(false);
   const [impactBudget, setImpactBudget] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -83,7 +86,8 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     ]);
     setRevenus(rev);
     setCharges(chg);
-    setImpactBudget(rev.some((r: any) => r.impact_budget) || chg.some((c: any) => c.impact_budget));
+    type AvecImpact = { impact_budget?: boolean };
+    setImpactBudget(rev.some((r) => (r as AvecImpact).impact_budget) || chg.some((c) => (c as AvecImpact).impact_budget));
   }, [asset.id]);
 
   useEffect(() => {
@@ -101,7 +105,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     const d = formDataRef.current;
     setIsSaving(true);
     try {
-      const updateData: Record<string, any> = {
+      const updateData: TablesUpdate<'assets'> = {
         montant_immeuble: d.prixAchat || null,
         zone_bien: d.zoneBien || null,
         pourcentage_terrain_force: d.forceTerrainPct ? d.terrainPctCustom : null,
@@ -240,467 +244,332 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     fetchData();
   };
 
+  const numberCls = 'bg-background border-border shadow-none tabular-nums';
+  const ligneRevenus = revenus.map(r => ({ id: r.id, nom: r.nature, montant: `${r.montant?.toLocaleString('fr-FR')} €`, periodicite: r.periodicite, type: 'revenu' as const }));
+  const ligneCharges = charges.map(c => ({ id: c.id, nom: c.denomination || c.type_charge, montant: `${c.montant?.toLocaleString('fr-FR')} ${c.unite}`, periodicite: c.periodicite, type: 'charge' as const }));
+  const amortDeduit = isLMP ? totalAmortissementAnnuel : amortissementDeductible;
+
+  const renderLignes = (lignes: typeof ligneRevenus | typeof ligneCharges, vide: string) =>
+    lignes.length === 0 ? (
+      <p className="border-y border-border py-4 text-[13px] text-muted-foreground">{vide}</p>
+    ) : (
+      <ul className="-mx-2 divide-y divide-border border-y border-border">
+        {lignes.map(l => (
+          <li key={l.id} className="flex items-center gap-3 px-2 py-2 text-[13px]">
+            <span className="w-[4.25rem] shrink-0">
+              <Chip tone={l.type === 'revenu' ? 'lagon' : 'citron'}>{l.type === 'revenu' ? 'Revenu' : 'Charge'}</Chip>
+            </span>
+            <span className="min-w-0 flex-1 truncate font-medium text-foreground">{l.nom}</span>
+            <span className="shrink-0 text-right tabular-nums">
+              <span className="block font-medium text-foreground">{l.montant}</span>
+              <span className="block text-[12px] lowercase text-muted-foreground">{l.periodicite}</span>
+            </span>
+            <button
+              type="button"
+              aria-label={`Supprimer ${l.nom}`}
+              onClick={() => l.id && setPendingDelete({ id: l.id, nom: l.nom, type: l.type })}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    );
+
+  // Fiche d'un bien meublé en « panneau de travail » : barre d'en-tête portant le report au Budget et
+  // les actions, puis à gauche la saisie (bien, zone, amortissement, revenus et charges) et à droite le
+  // résumé fiscal, et enfin le simulateur LMNP / LMP.
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold flex items-center gap-3">
-            <Building2 className="h-6 w-6 text-primary" />
-            {asset.denomination || 'Bien meublé'}
-          </h2>
-          <p className="text-muted-foreground">{asset.nature}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="impact-budget-lmnp"
-              checked={impactBudget}
-              onCheckedChange={handleToggleImpactBudget}
-              disabled={revenus.length === 0 && charges.length === 0}
-            />
-            <Label htmlFor="impact-budget-lmnp" className="text-sm cursor-pointer">
-              Transfert budget
-            </Label>
-          </div>
-          <Button onClick={() => performSave(false)} disabled={isSaving}>
-            {isSaving ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
-        </div>
+    <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+      <WorkspaceHeader
+        icon={<Building2 strokeWidth={1.75} />}
+        trail={['Immobilier', 'Mes biens', asset.denomination || 'Bien meublé']}
+        actions={
+          <>
+            <label htmlFor="impact-budget-lmnp" className="mr-2 hidden cursor-pointer items-center gap-2 text-[12.5px] text-foreground sm:flex">
+              <Checkbox
+                id="impact-budget-lmnp"
+                checked={impactBudget}
+                onCheckedChange={handleToggleImpactBudget}
+                disabled={revenus.length === 0 && charges.length === 0}
+              />
+              Reporter dans le Budget
+            </label>
+            <Button type="button" variant="outline" onClick={onBack} className={panelButtonClass}>Retour</Button>
+            <Button type="button" onClick={() => performSave(false)} disabled={isSaving} className={panelPrimaryButtonClass}>
+              {isSaving ? <><LogoSpinner />Enregistrement...</> : 'Enregistrer'}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="px-8 pt-6 pb-4">
+        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{asset.denomination || 'Bien meublé'}</h1>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{asset.nature}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column: Form */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Informations du bien */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informations du bien</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Prix d'achat du bien (€)</Label>
-                  <Input
-                    type="number"
-                    value={prixAchat || ''}
-                    onChange={(e) => setPrixAchat(parseFloat(e.target.value) || 0)}
-                    placeholder="200 000"
-                  />
+      <div className="grid grid-cols-1 divide-y divide-border border-t border-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">
+        {/* Saisie. */}
+        <div className="min-w-0 divide-y divide-border">
+          <section className="px-8 py-6">
+            <SectionHeader title="Informations du bien" />
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+              {([
+                ["Prix d'achat du bien", prixAchat, setPrixAchat, '200 000'],
+                ['Frais de notaire', fraisNotaire, setFraisNotaire, "7,5 % du prix d'achat"],
+                ['Valeur du mobilier', valeurMobilier, setValeurMobilier, '10 000'],
+                ['Travaux', travaux, setTravaux, '20 000'],
+              ] as const).map(([label, value, setter, placeholder]) => (
+                <div key={label} className="space-y-1.5">
+                  <Label>{label}</Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      value={value || ''}
+                      onChange={(e) => setter(parseFloat(e.target.value) || 0)}
+                      placeholder={placeholder}
+                      className={`${numberCls} pr-8`}
+                    />
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">€</span>
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Frais de notaire (€)</Label>
-                  <Input
-                    type="number"
-                    value={fraisNotaire || ''}
-                    onChange={(e) => setFraisNotaire(parseFloat(e.target.value) || 0)}
-                    placeholder="7,5% du prix d'achat"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Année d'acquisition</Label>
-                  <Input
-                    type="number"
-                    value={anneeAcquisition}
-                    onChange={(e) => setAnneeAcquisition(e.target.value)}
-                    placeholder="2024"
-                    min="1900"
-                    max="2100"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Valeur mobilier (€)</Label>
-                  <Input
-                    type="number"
-                    value={valeurMobilier || ''}
-                    onChange={(e) => setValeurMobilier(parseFloat(e.target.value) || 0)}
-                    placeholder="10 000"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Travaux (€)</Label>
-                  <Input
-                    type="number"
-                    value={travaux || ''}
-                    onChange={(e) => setTravaux(parseFloat(e.target.value) || 0)}
-                    placeholder="20 000"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Type de location</Label>
-                  <Select value={typeLocationLmnp} onValueChange={setTypeLocationLmnp}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="LMNP Classique">LMNP Classique</SelectItem>
-                      <SelectItem value="Tourisme classé">Tourisme classé</SelectItem>
-                      <SelectItem value="Tourisme non classé">Tourisme non classé</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              ))}
+              <div className="space-y-1.5">
+                <Label>Année d'acquisition</Label>
+                <Input
+                  type="number"
+                  value={anneeAcquisition}
+                  onChange={(e) => setAnneeAcquisition(e.target.value)}
+                  placeholder="2024"
+                  min="1900"
+                  max="2100"
+                  className={numberCls}
+                />
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-1.5">
+                <Label>Type de location</Label>
+                <Select value={typeLocationLmnp} onValueChange={setTypeLocationLmnp}>
+                  <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LMNP Classique">LMNP Classique</SelectItem>
+                    <SelectItem value="Tourisme classé">Tourisme classé</SelectItem>
+                    <SelectItem value="Tourisme non classé">Tourisme non classé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </section>
 
-          {/* Zone géographique */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                Zone géographique
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-4 w-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    La zone détermine la part du terrain dans le prix d'achat (non amortissable).
-                  </TooltipContent>
-                </Tooltip>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {Object.entries(ZONE_TERRAIN_PERCENTAGES).map(([zone, pct]) => (
+          <section className="px-8 py-6">
+            <SectionHeader title="Zone géographique" />
+            <p className="-mt-2 mb-4 text-[12.5px] text-muted-foreground">
+              La zone détermine la part du terrain dans le prix d'achat, qui n'est pas amortissable.
+            </p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {Object.entries(ZONE_TERRAIN_PERCENTAGES).map(([zone, pct]) => {
+                const selected = zoneBien === zone && !forceTerrainPct;
+                return (
                   <button
                     key={zone}
                     type="button"
+                    aria-pressed={selected}
                     onClick={() => { setZoneBien(zone); setForceTerrainPct(false); }}
-                    className={`rounded-md border-2 p-4 text-left transition-all ${
-                      zoneBien === zone && !forceTerrainPct
-                        ? 'border-primary bg-primary/5 shadow-md'
-                        : 'border-border hover:border-primary/50'
+                    className={`rounded-[2px] border px-4 py-3 text-left transition-colors ${
+                      selected ? 'border-foreground bg-foreground text-background' : 'border-border hover:bg-secondary'
                     }`}
                   >
-                    <div className="font-medium text-sm">{zone}</div>
-                    <div className="text-2xl font-bold text-primary mt-1">{pct}%</div>
-                    <div className="text-xs text-muted-foreground">Part terrain</div>
+                    <div className={`text-[12.5px] ${selected ? 'text-background/80' : 'text-muted-foreground'}`}>{zone}</div>
+                    <div className="mt-1 text-[20px] font-medium leading-none tabular-nums">{pct} %</div>
+                    <div className={`mt-1 text-[11px] ${selected ? 'text-background/70' : 'text-muted-foreground'}`}>part terrain</div>
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
 
-              <div className="flex items-center gap-3 pt-2">
-                <Switch
-                  checked={forceTerrainPct}
-                  onCheckedChange={(checked) => {
-                    setForceTerrainPct(checked);
-                    if (checked && !terrainPctCustom) {
-                      setTerrainPctCustom(ZONE_TERRAIN_PERCENTAGES[zoneBien] || 15);
-                    }
-                  }}
-                />
-                <Label className="text-sm">Personnaliser le pourcentage terrain</Label>
-                {forceTerrainPct && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      value={terrainPctCustom}
-                      onChange={(e) => setTerrainPctCustom(parseFloat(e.target.value) || 0)}
-                      className="w-20"
-                      min={0}
-                      max={100}
-                    />
-                    <span className="text-sm text-muted-foreground">%</span>
-                  </div>
-                )}
-              </div>
-
-              {prixAchat > 0 && (
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="rounded-lg bg-muted/50 p-3">
-                    <div className="text-xs text-muted-foreground">Valeur terrain (non amortissable)</div>
-                    <div className="text-lg font-semibold">{formatCurrency(prixAchat * terrainPct / 100)}</div>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-3">
-                    <div className="text-xs text-muted-foreground">Valeur bâtiment (amortissable)</div>
-                    <div className="text-lg font-semibold">{formatCurrency(prixAchat * (1 - terrainPct / 100))}</div>
-                  </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Switch
+                checked={forceTerrainPct}
+                onCheckedChange={(checked) => {
+                  setForceTerrainPct(checked);
+                  if (checked && !terrainPctCustom) {
+                    setTerrainPctCustom(ZONE_TERRAIN_PERCENTAGES[zoneBien] || 15);
+                  }
+                }}
+              />
+              <Label className="text-[13px]">Personnaliser la part terrain</Label>
+              {forceTerrainPct && (
+                <div className="relative">
+                  <Input
+                    type="number"
+                    value={terrainPctCustom}
+                    onChange={(e) => setTerrainPctCustom(parseFloat(e.target.value) || 0)}
+                    className={`w-24 pr-7 ${numberCls}`}
+                    min={0}
+                    max={100}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">%</span>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Tableau d'amortissement */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calculator className="h-5 w-5 text-primary" />
-                Tableau d'amortissement LMNP
-              </CardTitle>
-              <CardDescription>
-                Décomposition par composant avec durées d'amortissement réglementaires
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {prixAchat > 0 ? (
-                <div className="rounded-lg border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead>Composant</TableHead>
-                        <TableHead className="text-center">Durée (ans)</TableHead>
-                        <TableHead className="text-center">Quote-part</TableHead>
-                        <TableHead className="text-right">Base amortissable</TableHead>
-                        <TableHead className="text-right">Amort. annuel</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {amortissementLines.map((line, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell className="font-medium">{line.composant}</TableCell>
-                          <TableCell className="text-center">{line.duree}</TableCell>
-                          <TableCell className="text-center">
-                            {line.composant === 'Mobilier' || line.composant === 'Travaux'
-                              ? 'Valeur totale'
-                              : `${line.quotePart}%`}
-                          </TableCell>
-                          <TableCell className="text-right">{formatCurrency(line.base)}</TableCell>
-                          <TableCell className="text-right font-medium text-primary">
-                            {formatCurrency(line.amortissementAnnuel)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      <TableRow className="bg-muted/30 font-bold">
-                        <TableCell colSpan={3}>Total amortissement annuel</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(amortissementLines.reduce((s, l) => s + l.base, 0))}
-                        </TableCell>
-                        <TableCell className="text-right text-primary">
-                          {formatCurrency(totalAmortissementAnnuel)}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Renseignez le prix d'achat pour calculer les amortissements.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            {prixAchat > 0 && (
+              <dl className="mt-4 max-w-md">
+                <SummaryRow label="Terrain"><span className="tabular-nums">{formatCurrency(prixAchat * terrainPct / 100)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">non amortissable</span></SummaryRow>
+                <SummaryRow label="Bâtiment"><span className="tabular-nums">{formatCurrency(prixAchat * (1 - terrainPct / 100))}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">amortissable</span></SummaryRow>
+              </dl>
+            )}
+          </section>
 
-          {/* Revenus */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Revenus locatifs</CardTitle>
-                  <CardDescription>Revenus générés par ce bien</CardDescription>
-                </div>
-                <Button size="sm" onClick={() => setRevenuFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {revenus.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground text-sm">
-                  Aucun revenu enregistré.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nature</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                      <TableHead>Périodicité</TableHead>
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {revenus.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell>{r.nature}</TableCell>
-                        <TableCell className="text-right">{r.montant?.toLocaleString('fr-FR')} €</TableCell>
-                        <TableCell>{r.periodicite}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => r.id && handleDeleteRevenu(r.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+          <section className="px-8 py-6">
+            <SectionHeader title="Tableau d'amortissement" />
+            <p className="-mt-2 mb-4 text-[12.5px] text-muted-foreground">
+              Décomposition par composant, avec les durées d'amortissement réglementaires.
+            </p>
+            {prixAchat > 0 ? (
+              <div className="overflow-x-auto">
+                <div className="min-w-[30rem]">
+                  <div className="grid grid-cols-[minmax(0,1.4fr)_4.5rem_6rem_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 border-b border-border pb-2 text-[12px] text-muted-foreground">
+                    <span>Composant</span>
+                    <span className="text-right">Durée</span>
+                    <span className="text-right">Quote-part</span>
+                    <span className="text-right">Base</span>
+                    <span className="text-right">Annuel</span>
+                  </div>
+                  <ul className="divide-y divide-border border-b border-border">
+                    {amortissementLines.map((line, idx) => (
+                      <li key={idx} className="grid grid-cols-[minmax(0,1.4fr)_4.5rem_6rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-4 py-2 text-[13px] tabular-nums">
+                        <span className="truncate font-medium text-foreground">{line.composant}</span>
+                        <span className="text-right">{line.duree} ans</span>
+                        <span className="text-right text-muted-foreground">
+                          {line.composant === 'Mobilier' || line.composant === 'Travaux' ? 'totale' : `${line.quotePart} %`}
+                        </span>
+                        <span className="text-right">{formatCurrency(line.base)}</span>
+                        <span className="text-right font-medium text-foreground">{formatCurrency(line.amortissementAnnuel)}</span>
+                      </li>
                     ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Charges */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Charges</CardTitle>
-                  <CardDescription>Charges liées à ce bien</CardDescription>
+                  </ul>
+                  <div className="grid grid-cols-[minmax(0,1.4fr)_4.5rem_6rem_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 pt-2.5 text-[13px] font-medium tabular-nums text-foreground">
+                    <span className="col-span-3">Total annuel</span>
+                    <span className="text-right">{formatCurrency(amortissementLines.reduce((s, l) => s + l.base, 0))}</span>
+                    <span className="text-right">{formatCurrency(totalAmortissementAnnuel)}</span>
+                  </div>
                 </div>
-                <Button size="sm" onClick={() => setChargeFormOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter
-                </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              {charges.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground text-sm">
-                  Aucune charge enregistrée.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nature</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
-                      <TableHead>Périodicité</TableHead>
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {charges.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell>{c.denomination || c.type_charge}</TableCell>
-                        <TableCell className="text-right">{c.montant?.toLocaleString('fr-FR')} {c.unite}</TableCell>
-                        <TableCell className="capitalize">{c.periodicite}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => c.id && handleDeleteCharge(c.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+            ) : (
+              <p className="text-[13px] text-muted-foreground">Renseignez le prix d'achat pour calculer les amortissements.</p>
+            )}
+          </section>
+
+          <section className="px-8 py-6">
+            <div className="mb-3.5 flex items-center justify-between gap-3">
+              <SectionHeader title="Revenus locatifs" />
+              <Button type="button" onClick={() => setRevenuFormOpen(true)} className={`-mt-3.5 ${panelButtonClass}`} variant="outline">
+                <Plus className="h-4 w-4" /> Ajouter
+              </Button>
+            </div>
+            {renderLignes(ligneRevenus, 'Aucun revenu enregistré.')}
+          </section>
+
+          <section className="px-8 py-6">
+            <div className="mb-3.5 flex items-center justify-between gap-3">
+              <SectionHeader title="Charges" markClassName="bg-citron" />
+              <Button type="button" onClick={() => setChargeFormOpen(true)} className={`-mt-3.5 ${panelButtonClass}`} variant="outline">
+                <Plus className="h-4 w-4" /> Ajouter
+              </Button>
+            </div>
+            {renderLignes(ligneCharges, 'Aucune charge enregistrée.')}
+          </section>
         </div>
 
-        {/* Right column: Summary */}
-        <div className="space-y-4">
-          <Card className="sticky top-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Résumé fiscal</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                {isMicroBic ? (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Recettes annuelles</span>
-                      <span className="font-medium">{formatCurrency(totalRevenusAnnuel)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Abattement forfaitaire ({(tauxAbattementMicroBic * 100).toFixed(0)}%)</span>
-                      <span className="font-medium text-destructive">-{formatCurrency(abattementMicroBic)}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Régime Micro-BIC : charges et amortissements non déduits, base = recettes − abattement
-                      forfaitaire. Sous réserve du respect du plafond de recettes en vigueur pour cette
-                      catégorie de location — à vérifier manuellement.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Revenus annuels</span>
-                      <span className="font-medium">{formatCurrency(totalRevenusAnnuel)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Charges annuelles</span>
-                      <span className="font-medium text-destructive">-{formatCurrency(totalChargesAnnuel)}</span>
-                    </div>
-                    {interetsCredit > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Intérêts d'emprunt</span>
-                        <span className="font-medium text-destructive">-{formatCurrency(interetsCredit)}</span>
-                      </div>
-                    )}
-                    {assuranceCredit > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Assurance emprunteur</span>
-                        <span className="font-medium text-destructive">-{formatCurrency(assuranceCredit)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Amortissements déduits</span>
-                      <span className="font-medium text-destructive">-{formatCurrency(isLMP ? totalAmortissementAnnuel : amortissementDeductible)}</span>
-                    </div>
-                    {!isLMP && amortissementNonDeductible > 0 && (
-                      <p className="text-xs text-spark">
-                        {formatCurrency(amortissementNonDeductible)} d'amortissement non déduit cette année
-                        (l'amortissement ne peut pas créer ni aggraver un déficit) — à reporter manuellement
-                        l'année prochaine, ce report n'est pas encore automatisé.
-                      </p>
-                    )}
-                  </>
-                )}
+        {/* Résumé fiscal. */}
+        <aside className="px-8 py-6">
+          <div className="lg:sticky lg:top-6">
+            <PanelTitle>Résumé fiscal</PanelTitle>
+            <dl className="mt-3">
+              {isMicroBic ? (
+                <>
+                  <SummaryRow label="Recettes"><span className="tabular-nums">{formatCurrency(totalRevenusAnnuel)}</span></SummaryRow>
+                  <SummaryRow label="Abattement">
+                    <span className="tabular-nums">−{formatCurrency(abattementMicroBic)}</span>
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">{(tauxAbattementMicroBic * 100).toFixed(0)} %</span>
+                  </SummaryRow>
+                </>
+              ) : (
+                <>
+                  <SummaryRow label="Revenus"><span className="tabular-nums">{formatCurrency(totalRevenusAnnuel)}</span></SummaryRow>
+                  <SummaryRow label="Charges"><span className="tabular-nums">−{formatCurrency(totalChargesAnnuel)}</span></SummaryRow>
+                  {interetsCredit > 0 && <SummaryRow label="Intérêts"><span className="tabular-nums">−{formatCurrency(interetsCredit)}</span></SummaryRow>}
+                  {assuranceCredit > 0 && <SummaryRow label="Assurance"><span className="tabular-nums">−{formatCurrency(assuranceCredit)}</span></SummaryRow>}
+                  <SummaryRow label="Amortissements"><span className="tabular-nums">−{formatCurrency(amortDeduit)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">déduits</span></SummaryRow>
+                </>
+              )}
+            </dl>
 
-                <div className="border-t pt-3">
-                  <div className="flex justify-between">
-                    <span className="font-semibold">Résultat fiscal</span>
-                    <span className={`font-bold text-lg ${resultatFiscal <= 0 ? 'text-positive' : 'text-foreground'}`}>
-                      {formatCurrency(resultatFiscal)}
-                    </span>
-                  </div>
-                  {resultatFiscal <= 0 && (
-                    <Badge variant="secondary" className="mt-2 bg-positive/10 text-positive">
-                      {isLMP && !isMicroBic ? 'Déficit imputable sur le revenu global' : 'Déficit reportable'}
-                    </Badge>
-                  )}
-                </div>
+            {isMicroBic ? (
+              <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
+                Régime micro-BIC : charges et amortissements non déduits, base = recettes − abattement forfaitaire. Sous
+                réserve du respect du plafond de recettes en vigueur pour cette catégorie de location, à vérifier manuellement.
+              </p>
+            ) : !isLMP && amortissementNonDeductible > 0 && (
+              <div className="mt-3 rounded-[2px] border border-spark/30 bg-spark/5 px-3 py-2.5 text-[12px] leading-5 text-foreground">
+                {formatCurrency(amortissementNonDeductible)} d'amortissement non déduit cette année (l'amortissement ne peut
+                ni créer ni aggraver un déficit), à reporter manuellement l'année prochaine : ce report n'est pas encore automatisé.
               </div>
+            )}
 
-              <div className="border-t pt-4 space-y-3">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Détails du bien</div>
-                <div className="space-y-2 text-sm">
-                  {typeLocationLmnp && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Type</span>
-                      <Badge variant="outline">{typeLocationLmnp}</Badge>
-                    </div>
-                  )}
-                  {prixAchat > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Prix d'achat</span>
-                      <span>{formatCurrency(prixAchat)}</span>
-                    </div>
-                  )}
-                  {terrainPct > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Part terrain</span>
-                      <span>{terrainPct}%</span>
-                    </div>
-                  )}
-                  {anneeAcquisition && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Acquisition</span>
-                      <span>{anneeAcquisition}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="mt-4 border-t border-border pt-4">
+              <p className="text-[12px] text-muted-foreground">Résultat fiscal</p>
+              <p className={`mt-1.5 text-[24px] font-medium leading-none tracking-[-0.02em] tabular-nums ${resultatFiscal <= 0 ? 'text-positive' : 'text-foreground'}`}>
+                {formatCurrency(resultatFiscal)}
+              </p>
+              {resultatFiscal <= 0 && (
+                <p className="mt-2">
+                  <Chip tone="lagon">{isLMP && !isMicroBic ? 'Déficit imputable sur le revenu global' : 'Déficit reportable'}</Chip>
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 border-t border-border pt-4">
+              <PanelTitle>Le bien</PanelTitle>
+              <dl className="mt-2">
+                {typeLocationLmnp && <SummaryRow label="Type">{typeLocationLmnp}</SummaryRow>}
+                {prixAchat > 0 && <SummaryRow label="Prix d'achat"><span className="tabular-nums">{formatCurrency(prixAchat)}</span></SummaryRow>}
+                {terrainPct > 0 && <SummaryRow label="Part terrain"><span className="tabular-nums">{terrainPct} %</span></SummaryRow>}
+                {anneeAcquisition && <SummaryRow label="Acquisition"><span className="tabular-nums">{anneeAcquisition}</span></SummaryRow>}
+              </dl>
+            </div>
+          </div>
+        </aside>
       </div>
 
       {asset.nature === 'Immeubles locatifs (LMNP)' && (
-        <SimulateurRentabiliteLMNPSection asset={asset} />
+        <div className="border-t border-border">
+          <SimulateurRentabiliteLMNPSection asset={asset} />
+        </div>
       )}
       {asset.nature === 'Immeubles locatifs (LMP)' && (
-        <SimulateurRentabiliteLMPSection asset={asset} />
+        <div className="border-t border-border">
+          <SimulateurRentabiliteLMPSection asset={asset} />
+        </div>
       )}
 
-      {/* Dialogs */}
+      <WizardConfirmDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.type === 'revenu' ? 'Supprimer ce revenu ?' : 'Supprimer cette charge ?'}
+        description={pendingDelete ? `« ${pendingDelete.nom} » sera définitivement supprimé${pendingDelete.type === 'revenu' ? '' : 'e'}.` : ''}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        onConfirm={() => {
+          if (pendingDelete?.type === 'revenu') handleDeleteRevenu(pendingDelete.id);
+          else if (pendingDelete) handleDeleteCharge(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
+
       <RevenuForm
         assetId={asset.id!}
         open={revenuFormOpen}

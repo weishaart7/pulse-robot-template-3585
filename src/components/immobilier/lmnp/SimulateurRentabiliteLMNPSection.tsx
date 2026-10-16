@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelTitle, SummaryRow } from '@/components/layout/workspace-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
@@ -46,95 +46,99 @@ export const SimulateurRentabiliteLMNPSection = ({ asset }: SimulateurRentabilit
   const tmi = (parseFloat(tmiInput) || 0) / 100;
   const result: RentabiliteLMNPResult = computeRentabiliteLMNP(asset, revenus, charges, tmi);
 
+
+  const pctInput = (id: string, label: string, value: string, onChange: (v: string) => void, hint?: string) => (
+    <div className="max-w-[14rem] space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type="number"
+          step="1"
+          min="0"
+          max="100"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="bg-background border-border shadow-none pr-8 tabular-nums"
+        />
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">%</span>
+      </div>
+      {hint && <p className="text-[12px] leading-5 text-muted-foreground">{hint}</p>}
+    </div>
+  );
+
+  const regimeLabel = result.regimeRecommande === 'equivalent'
+    ? 'équivalent'
+    : result.regimeRecommande === 'micro-bic' ? 'micro-BIC' : 'réel';
+
+  // Simulateur en bandeaux de « panneau de travail », comme celui de la location nue : à gauche les
+  // taux saisis et les chiffres du bien, à droite la comparaison micro-BIC / réel.
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Simulateur de rentabilité</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {isLoading ? (
+    <section>
+      <div className="px-8 pt-6 pb-4">
+        <PanelTitle>Simulateur de rentabilité · LMNP</PanelTitle>
+      </div>
+      {isLoading ? (
+        <div className="border-t border-border px-8 py-6">
           <LoadingSpinner text="Chargement des revenus et charges..." />
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Loyers annuels</p>
-                <p className="font-medium">{formatCurrency(result.loyersAnnuels)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Charges annuelles</p>
-                <p className="font-medium">{formatCurrency(result.chargesAnnuelles)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Cashflow net mensuel</p>
-                <p className="font-medium">{formatCurrency(result.cashflowNetMensuel)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Rendement brut</p>
-                <p className="font-medium">{formatPercent(result.rendementBrut)}</p>
-              </div>
-            </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 divide-y divide-border border-t border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:divide-x lg:divide-y-0">
+          <div className="space-y-4 px-8 py-6">
+            {pctInput('tmi-lmnp', "Taux marginal d'imposition", tmiInput, setTmiInput)}
+            <dl className="pt-1">
+              <SummaryRow label="Loyers"><span className="tabular-nums">{formatCurrency(result.loyersAnnuels)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par an</span></SummaryRow>
+              <SummaryRow label="Charges"><span className="tabular-nums">{formatCurrency(result.chargesAnnuelles)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par an</span></SummaryRow>
+              <SummaryRow label="Cashflow net">
+                <span className={`tabular-nums ${result.cashflowNetMensuel >= 0 ? 'text-positive' : 'text-destructive'}`}>{formatCurrency(result.cashflowNetMensuel)}</span>
+                <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par mois</span>
+              </SummaryRow>
+              <SummaryRow label="Rendement brut"><span className="tabular-nums">{formatPercent(result.rendementBrut)}</span></SummaryRow>
+            </dl>
+          </div>
 
-            <div className="max-w-[200px] space-y-2">
-              <Label htmlFor="tmi-lmnp">Taux marginal d'imposition (%)</Label>
-              <Input
-                id="tmi-lmnp"
-                type="number"
-                step="1"
-                min="0"
-                max="100"
-                value={tmiInput}
-                onChange={(e) => setTmiInput(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-semibold">Micro-BIC</h4>
-                <p className="text-sm text-muted-foreground">
-                  Revenu imposable (abattement {(result.microBic.abattementTaux * 100).toFixed(0)} %) : {formatCurrency(result.microBic.revenuImposable)}
-                </p>
+          <div className="min-w-0 px-8 py-6">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+              <div>
+                <h4 className="text-[14px] font-medium text-foreground">Micro-BIC</h4>
+                <dl className="mt-3">
+                  <SummaryRow label="Imposable">
+                    <span className="tabular-nums">{formatCurrency(result.microBic.revenuImposable)}</span>
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">abatt. {(result.microBic.abattementTaux * 100).toFixed(0)} %</span>
+                  </SummaryRow>
+                  <SummaryRow label="Impôt"><span className="tabular-nums">{formatCurrency(result.microBic.impotRevenu)}</span></SummaryRow>
+                  <SummaryRow label="Prél. sociaux"><span className="tabular-nums">{formatCurrency(result.microBic.prelevementsSociaux)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">18,6 %</span></SummaryRow>
+                  <SummaryRow label="Net-net"><span className="tabular-nums">{formatPercent(result.microBic.rendementNetNet)}</span></SummaryRow>
+                </dl>
                 {result.microBic.depassementPlafond && (
-                  <p className="text-sm text-spark">
-                    Dépassement du plafond micro-BIC ({formatCurrency(result.microBic.plafondRecettes)}) — bascule au réel obligatoire.
+                  <p className="mt-2 rounded-[2px] border border-spark/30 bg-spark/5 px-3 py-2 text-[12px] text-foreground">
+                    Plafond micro-BIC dépassé ({formatCurrency(result.microBic.plafondRecettes)}) : bascule au réel obligatoire.
                   </p>
                 )}
-                <p className="text-sm">Impôt sur le revenu : {formatCurrency(result.microBic.impotRevenu)}</p>
-                <p className="text-sm">Prélèvements sociaux (18,6 %) : {formatCurrency(result.microBic.prelevementsSociaux)}</p>
-                <p className="text-sm font-medium">Rendement net-net : {formatPercent(result.microBic.rendementNetNet)}</p>
               </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <h4 className="font-semibold">Régime réel</h4>
-                <p className="text-sm text-muted-foreground">
-                  Charges déductibles (charges + intérêts + assurance) : {formatCurrency(result.reel.chargesDeductibles)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Amortissement déduit : {formatCurrency(result.reel.amortissementDeductible)}
-                  {result.reel.amortissementNonDeductible > 0 && (
-                    <> (dont {formatCurrency(result.reel.amortissementNonDeductible)} non déductible cette année, non reporté)</>
-                  )}
-                </p>
-                <p className="text-sm">Résultat fiscal : {formatCurrency(result.reel.resultatFiscal)}</p>
-                <p className="text-sm">Impôt sur le revenu : {formatCurrency(result.reel.impotRevenu)}</p>
-                <p className="text-sm">Prélèvements sociaux (18,6 %) : {formatCurrency(result.reel.prelevementsSociaux)}</p>
-                <p className="text-sm font-medium">Rendement net-net : {formatPercent(result.reel.rendementNetNet)}</p>
+              <div>
+                <h4 className="text-[14px] font-medium text-foreground">Régime réel</h4>
+                <dl className="mt-3">
+                  <SummaryRow label="Déductible"><span className="tabular-nums">{formatCurrency(result.reel.chargesDeductibles)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">charges, intérêts, ass.</span></SummaryRow>
+                  <SummaryRow label="Amortissement">
+                    <span className="tabular-nums">{formatCurrency(result.reel.amortissementDeductible)}</span>
+                    {result.reel.amortissementNonDeductible > 0 && (
+                      <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">dont {formatCurrency(result.reel.amortissementNonDeductible)} non déductible, non reporté</span>
+                    )}
+                  </SummaryRow>
+                  <SummaryRow label="Résultat"><span className="tabular-nums">{formatCurrency(result.reel.resultatFiscal)}</span></SummaryRow>
+                  <SummaryRow label="Impôt"><span className="tabular-nums">{formatCurrency(result.reel.impotRevenu)}</span></SummaryRow>
+                  <SummaryRow label="Prél. sociaux"><span className="tabular-nums">{formatCurrency(result.reel.prelevementsSociaux)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">18,6 %</span></SummaryRow>
+                  <SummaryRow label="Net-net"><span className="tabular-nums">{formatPercent(result.reel.rendementNetNet)}</span></SummaryRow>
+                </dl>
               </div>
             </div>
-
-            <p className="text-sm">
-              Régime le plus favorable au TMI saisi :{' '}
-              <span className="font-semibold">
-                {result.regimeRecommande === 'equivalent'
-                  ? 'équivalent'
-                  : result.regimeRecommande === 'micro-bic'
-                    ? 'micro-BIC'
-                    : 'réel'}
-              </span>
+            <p className="mt-5 border-t border-border pt-4 text-[13px] text-foreground">
+              Régime le plus favorable au taux saisi : <span className="font-medium">{regimeLabel}</span>
             </p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        </div>
+      )}
+    </section>
   );
 };

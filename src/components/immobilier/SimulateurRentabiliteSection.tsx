@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Chip, PanelTitle, SummaryRow } from '@/components/layout/workspace-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
@@ -63,117 +61,115 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
   const result: RentabiliteResult = computeRentabilite(asset, revenus, charges, tmi, quotePart);
   const regimeReelObligatoireFoyer = loyersBrutsFoyer > SEUIL_MICRO_FONCIER;
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Simulateur de rentabilité</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {isLoading ? (
-          <LoadingSpinner text="Chargement des revenus et charges..." />
-        ) : (
-          <>
-            {regimeReelObligatoireFoyer && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Régime réel obligatoire</AlertTitle>
-                <AlertDescription>
-                  Vos revenus fonciers bruts, tous biens loués nus confondus, s'élèvent à{' '}
-                  {formatCurrency(loyersBrutsFoyer)} et dépassent le seuil du micro-foncier ({formatCurrency(SEUIL_MICRO_FONCIER)}).
-                  Le régime réel s'applique de plein droit sur l'ensemble de vos biens loués nus.
-                </AlertDescription>
-              </Alert>
-            )}
+  const regimeLabel = result.regimeRecommande === 'equivalent'
+    ? 'équivalent'
+    : result.regimeRecommande === 'micro-foncier' ? 'micro-foncier' : 'réel';
 
+  // Simulateur en bandeaux de « panneau de travail » : en-tête, puis à gauche le taux marginal et les
+  // chiffres du bien, à droite la comparaison micro-foncier / réel.
+  return (
+    <section>
+      <div className="px-8 pt-6 pb-4">
+        <PanelTitle>Simulateur de rentabilité</PanelTitle>
+        <p className="mt-1 max-w-3xl text-[12.5px] text-muted-foreground">
+          Vue indicative pour ce bien isolé. Pour l'imputation réelle du déficit et le report pluriannuel, voir la
+          synthèse foncière du foyer dans la Vue d'ensemble.
+        </p>
+        {!isLoading && regimeReelObligatoireFoyer && (
+          <div className="mt-4 flex items-start gap-3 rounded-[2px] border border-spark/30 bg-spark/5 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-spark" strokeWidth={1.75} />
+            <p className="text-[13px] text-foreground">
+              <span className="font-medium">Régime réel obligatoire.</span>{' '}
+              Vos revenus fonciers bruts, tous biens loués nus confondus, s'élèvent à {formatCurrency(loyersBrutsFoyer)} et
+              dépassent le seuil du micro-foncier ({formatCurrency(SEUIL_MICRO_FONCIER)}) : le régime réel s'applique de
+              plein droit sur l'ensemble de vos biens loués nus.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="border-t border-border px-8 py-6">
+          <LoadingSpinner text="Chargement des revenus et charges..." />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 divide-y divide-border border-t border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] lg:divide-x lg:divide-y-0">
+          <div className="px-8 py-6">
+            <div className="max-w-[14rem] space-y-1.5">
+              <Label htmlFor="tmi">Taux marginal d'imposition</Label>
+              <div className="relative">
+                <Input
+                  id="tmi"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="100"
+                  value={tmiInput}
+                  onChange={(e) => setTmiInput(e.target.value)}
+                  className="bg-background border-border shadow-none pr-8 tabular-nums"
+                />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">%</span>
+              </div>
+            </div>
+            <dl className="mt-5">
+              <SummaryRow label="Loyers"><span className="tabular-nums">{formatCurrency(result.loyersAnnuels)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par an</span></SummaryRow>
+              <SummaryRow label="Charges"><span className="tabular-nums">{formatCurrency(result.chargesAnnuelles)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par an</span></SummaryRow>
+              <SummaryRow label="Cashflow net">
+                <span className={`tabular-nums ${result.cashflowNetMensuel >= 0 ? 'text-positive' : 'text-destructive'}`}>{formatCurrency(result.cashflowNetMensuel)}</span>
+                <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">par mois</span>
+              </SummaryRow>
+              <SummaryRow label="Rendement brut"><span className="tabular-nums">{formatPercent(result.rendementBrut)}</span></SummaryRow>
+            </dl>
             {quotePart < 100 && (
-              <p className="text-sm text-muted-foreground">
-                Bien détenu en indivision : montants ci-dessous ramenés à votre quote-part de {quotePart} %.
+              <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
+                Bien détenu en indivision : montants ramenés à votre quote-part de {quotePart} %.
               </p>
             )}
+          </div>
 
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Loyers annuels</p>
-                <p className="font-medium">{formatCurrency(result.loyersAnnuels)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Charges annuelles</p>
-                <p className="font-medium">{formatCurrency(result.chargesAnnuelles)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Cashflow net mensuel</p>
-                <p className="font-medium">{formatCurrency(result.cashflowNetMensuel)}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Rendement brut</p>
-                <p className="font-medium">{formatPercent(result.rendementBrut)}</p>
-              </div>
-            </div>
-
-            <div className="max-w-[200px] space-y-2">
-              <Label htmlFor="tmi">Taux marginal d'imposition (%)</Label>
-              <Input
-                id="tmi"
-                type="number"
-                step="1"
-                min="0"
-                max="100"
-                value={tmiInput}
-                onChange={(e) => setTmiInput(e.target.value)}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold">Micro-foncier</h4>
-                  {result.regimeActif === 'micro-foncier' && <Badge variant="secondary">Régime actif</Badge>}
-                  {regimeReelObligatoireFoyer && <Badge variant="outline">Non applicable</Badge>}
+          <div className="min-w-0 px-8 py-6">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="text-[14px] font-medium text-foreground">Micro-foncier</h4>
+                  {result.regimeActif === 'micro-foncier' && <Chip tone="lagon">Régime actif</Chip>}
+                  {regimeReelObligatoireFoyer && <Chip>Non applicable</Chip>}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Revenu imposable (abattement 30 %) : {formatCurrency(result.microFoncier.revenuImposable)}
-                </p>
-                <p className="text-sm">Impôt sur le revenu : {formatCurrency(result.microFoncier.impotRevenu)}</p>
-                <p className="text-sm">Prélèvements sociaux (17,2 %) : {formatCurrency(result.microFoncier.prelevementsSociaux)}</p>
-                <p className="text-sm font-medium">Rendement net-net : {formatPercent(result.microFoncier.rendementNetNet)}</p>
+                <dl className="mt-3">
+                  <SummaryRow label="Imposable"><span className="tabular-nums">{formatCurrency(result.microFoncier.revenuImposable)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">abatt. 30 %</span></SummaryRow>
+                  <SummaryRow label="Impôt"><span className="tabular-nums">{formatCurrency(result.microFoncier.impotRevenu)}</span></SummaryRow>
+                  <SummaryRow label="Prél. sociaux"><span className="tabular-nums">{formatCurrency(result.microFoncier.prelevementsSociaux)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">17,2 %</span></SummaryRow>
+                  <SummaryRow label="Net-net"><span className="tabular-nums">{formatPercent(result.microFoncier.rendementNetNet)}</span></SummaryRow>
+                </dl>
               </div>
-
-              <div className="rounded-lg border p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold">Régime réel</h4>
-                  {(result.regimeActif === 'reel' || regimeReelObligatoireFoyer) && <Badge variant="secondary">Régime actif</Badge>}
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h4 className="text-[14px] font-medium text-foreground">Régime réel</h4>
+                  {(result.regimeActif === 'reel' || regimeReelObligatoireFoyer) && <Chip tone="lagon">Régime actif</Chip>}
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Charges déductibles (charges + intérêts + assurance) : {formatCurrency(result.reel.chargesDeductibles)}
-                </p>
-                <p className="text-sm">Résultat foncier : {formatCurrency(result.reel.resultatFoncier)}</p>
-                {result.reel.deficitImputableRevenuGlobal > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Déficit imputable sur le revenu global (plafonné à 10 700 €) : {formatCurrency(result.reel.deficitImputableRevenuGlobal)}
-                    {' '}— économie d'impôt potentielle : {formatCurrency(result.reel.economieImpotPotentielle)}
-                  </p>
-                )}
-                <p className="text-sm">Impôt sur le revenu : {formatCurrency(result.reel.impotRevenu)}</p>
-                <p className="text-sm">Prélèvements sociaux (17,2 %) : {formatCurrency(result.reel.prelevementsSociaux)}</p>
-                <p className="text-sm font-medium">Rendement net-net : {formatPercent(result.reel.rendementNetNet)}</p>
+                <dl className="mt-3">
+                  <SummaryRow label="Déductible"><span className="tabular-nums">{formatCurrency(result.reel.chargesDeductibles)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">charges + intérêts + ass.</span></SummaryRow>
+                  <SummaryRow label="Résultat"><span className="tabular-nums">{formatCurrency(result.reel.resultatFoncier)}</span></SummaryRow>
+                  {result.reel.deficitImputableRevenuGlobal > 0 && (
+                    <SummaryRow label="Déficit imput.">
+                      <span className="tabular-nums">{formatCurrency(result.reel.deficitImputableRevenuGlobal)}</span>
+                      <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
+                        plafond 10 700 € · économie {formatCurrency(result.reel.economieImpotPotentielle)}
+                      </span>
+                    </SummaryRow>
+                  )}
+                  <SummaryRow label="Impôt"><span className="tabular-nums">{formatCurrency(result.reel.impotRevenu)}</span></SummaryRow>
+                  <SummaryRow label="Prél. sociaux"><span className="tabular-nums">{formatCurrency(result.reel.prelevementsSociaux)}</span><span className="ml-1.5 text-[12px] font-normal text-muted-foreground">17,2 %</span></SummaryRow>
+                  <SummaryRow label="Net-net"><span className="tabular-nums">{formatPercent(result.reel.rendementNetNet)}</span></SummaryRow>
+                </dl>
               </div>
             </div>
-
-            <p className="text-sm">
-              Régime le plus favorable au TMI saisi :{' '}
-              <span className="font-semibold">
-                {result.regimeRecommande === 'equivalent'
-                  ? 'équivalent'
-                  : result.regimeRecommande === 'micro-foncier'
-                    ? 'micro-foncier'
-                    : 'réel'}
-              </span>
-              {' '}— vue indicative pour ce bien isolé. Pour l'imputation réelle du déficit et le report
-              pluriannuel, voir la synthèse foncière du foyer dans l'onglet Vue d'ensemble.
+            <p className="mt-5 border-t border-border pt-4 text-[13px] text-foreground">
+              Régime le plus favorable au taux saisi : <span className="font-medium">{regimeLabel}</span>
             </p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          </div>
+        </div>
+      )}
+    </section>
   );
 };

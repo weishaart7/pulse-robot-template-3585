@@ -115,8 +115,8 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
 - **Design** — « panneau de travail » commun à Famille, Patrimoine et Budget
   ([design-system.md](design-system.md)) : `ImmobilierSection` porte le cadre (classe `.workspace-panel`,
   barre d'en-tête à fil d'Ariane « Immobilier / onglet », titre 24 px de l'onglet et rappel « n biens
-  transférés depuis Patrimoine », contenu bord à bord sous un filet). Les fiches détail (bien, LMNP), la
-  fenêtre « Revenus et charges » et ses formulaires gardent encore leur ancien habillage.
+  transférés depuis Patrimoine », contenu bord à bord sous un filet). Tous les écrans du module suivent ce
+  gabarit, y compris les fiches détail et les fenêtres.
   - **Vue d'ensemble** (`ImmobilierOverview`) : bandeau calqué sur le Résumé Patrimoine — valeur du
     portefeuille en 34 px, étiquette de plus-value brute (taux et montant, vert / rouge), lignes Biens /
     Cashflow (par mois, crédit compris) / Rentabilité brute / Rentabilité nette ; à droite, **répartition
@@ -147,6 +147,28 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
     dès `lg` s'il y a plusieurs biens) : repère, nombre de lignes, solde annuel ; chaque ligne avec
     étiquette lagon « Revenu » / citron « Charge », nature, montant annualisé signé et rappel « montant ·
     périodicité » ; revenus et charges du bien en pied.
+  - **Fiche d'un bien** (`ImmobilierPropertyDetailView`) : même gabarit que les formulaires d'actif de
+    Patrimoine — barre d'en-tête « Immobilier / Mes biens / bien » portant Annuler (ou Retour) et
+    Enregistrer (formulaire `immobilier-property-form`), titre 24 px et nature ; sections Données générales,
+    Coût de revient, Financement, Location via [PanelSection](src/components/immobilier/property/PanelSection.tsx)
+    (titre à repère, champs sur deux colonnes, filets). Date d'achat saisie avec `SmartDateInput` (comme
+    Famille, dates passées) ; une saisie incomplète reste locale. Case « Bien financé par un crédit » en
+    encadré pleine largeur.
+  - **Simulateurs** (location nue, LMNP, LMP) : bandeaux — taux saisis (suffixe %) et chiffres du bien en
+    lignes libellé / valeur à gauche, comparaison des deux régimes côte à côte à droite (étiquette lagon
+    « Régime actif »), recommandation en pied ; encadrés d'alerte (régime réel obligatoire, plafond
+    micro-BIC dépassé) à angles 2 px.
+  - **Fiche LMNP / LMP** (`LMNPDetailView`) : barre d'en-tête portant « Reporter dans le Budget », Retour et
+    Enregistrer ; à gauche Informations du bien (suffixes €), Zone géographique (tuiles à angles 2 px, la
+    zone choisie en noir ; terrain / bâtiment en lignes libellé / valeur), Tableau d'amortissement (grille
+    filetée), Revenus et Charges (listes à étiquettes lagon / citron, suppression confirmée) ; à droite le
+    Résumé fiscal collant (résultat fiscal en 24 px, étiquette de déficit, rappel du bien) ; simulateur en
+    bandeau bas. Charge utile d'enregistrement typée `TablesUpdate<'assets'>` (plus de `any`).
+  - **Fenêtre « Revenus et charges »** (`ImmobilierGestionDialog`) et formulaires d'ajout
+    (`RevenuForm`, `ChargeForm`) : gabarit des fenêtres de panneau (arrière-plan flouté, en-tête et pied
+    filetés, boutons 32 px, champs à angles 2 px, montant suffixé €). Report au Budget en encadré, onglets
+    segmentés Revenus / Charges avec compteurs, lignes à étiquettes lagon / citron ; **la suppression d'une
+    ligne passe désormais par une confirmation** (`WizardConfirmDialog`), comme dans Budget et Patrimoine.
   - **Synthèse foncière** (`FoncierFoyerSection`) : bandeaux bord à bord — en-tête avec encadré « Régime
     réel obligatoire » (angles 2 px), puis à gauche le taux marginal d'imposition (suffixe %) et les
     résultats du foyer en lignes libellé / valeur (déficit imputable et économie d'impôt si applicables),

@@ -1,17 +1,31 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { CalendarIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState } from 'react';
+import { SmartDateInput } from '@/components/family/SmartDateInput';
+import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
 import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
+
+// Date d'achat saisie comme dans Famille (JJ/MM/AAAA ou calendrier, dates passées). Une saisie
+// incomplète reste locale : le formulaire ne reçoit qu'une date complète et valide, ou rien.
+const AcquisitionDateInput = ({ value, onChange }: { value?: Date; onChange: (value?: Date) => void }) => {
+  const [draft, setDraft] = useState<Date | string>(value ?? '');
+  useEffect(() => {
+    setDraft(current => (current instanceof Date && value && current.getTime() === value.getTime()) ? current : (value ?? (typeof current === 'string' ? current : '')));
+  }, [value]);
+  return (
+    <SmartDateInput
+      value={draft}
+      className="bg-background border-border shadow-none"
+      onChange={(next) => {
+        setDraft(next);
+        onChange(next instanceof Date ? next : undefined);
+      }}
+    />
+  );
+};
 
 interface PropertyGeneralSectionProps {
   form: UseFormReturn<ImmobilierPropertyFormValues>;
@@ -23,11 +37,7 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
   showStatutField = false,
 }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Données générales du bien</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PanelSection title="Données générales">
         <FormField
           control={form.control}
           name="typologie_bien"
@@ -36,7 +46,7 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
               <FormLabel>Typologie du bien</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                     <SelectValue placeholder="Sélectionner une typologie" />
                   </SelectTrigger>
                 </FormControl>
@@ -75,33 +85,9 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
           control={form.control}
           name="date_acquisition"
           render={({ field }) => (
-            <FormItem className="flex flex-col">
+            <FormItem>
               <FormLabel>Date d'achat</FormLabel>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full pl-3 text-left font-normal',
-                        !field.value && 'text-muted-foreground'
-                      )}
-                    >
-                      {field.value ? format(field.value, 'PPP', { locale: fr }) : <span>Sélectionner une date</span>}
-                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                  </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={field.onChange}
-                    initialFocus
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
+              <AcquisitionDateInput value={field.value} onChange={field.onChange} />
               <FormMessage />
             </FormItem>
           )}
@@ -137,7 +123,7 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
                 <FormLabel>Statut</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                       <SelectValue placeholder="Sélectionner un statut" />
                     </SelectTrigger>
                   </FormControl>
@@ -152,7 +138,6 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
             )}
           />
         )}
-      </CardContent>
-    </Card>
+      </PanelSection>
   );
 };

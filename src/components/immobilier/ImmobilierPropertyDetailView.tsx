@@ -1,8 +1,9 @@
 import React from 'react';
+import { Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { ArrowLeft } from 'lucide-react';
+import { LogoSpinner } from '@/components/brand/LogoSpinner';
+import { WorkspaceHeader, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Asset } from '@/services/assetService';
 import { useImmobilierPropertyForm } from '@/hooks/useImmobilierPropertyForm';
 import { PropertyGeneralSection } from './property/PropertyGeneralSection';
@@ -17,6 +18,9 @@ interface ImmobilierPropertyDetailViewProps {
   onUpdate: () => void;
 }
 
+// Fiche d'un bien en « panneau de travail », comme les formulaires d'actif de Patrimoine : barre
+// d'en-tête « Immobilier / Mes biens / bien » portant Retour, Annuler et Enregistrer, titre 24 px,
+// puis les sections du formulaire séparées par des filets, et le simulateur pour la location nue.
 export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailViewProps> = ({
   asset,
   onBack,
@@ -29,61 +33,58 @@ export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailView
   });
 
   const showForm = isResidence || isRentalProperty;
+  const isSubmitting = form.formState.isSubmitting;
+  const nom = asset.denomination || 'Sans dénomination';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
-          </Button>
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">
-              {asset.denomination || 'Sans dénomination'}
-            </h2>
-            <p className="text-muted-foreground">{asset.nature}</p>
-          </div>
-        </div>
+    <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+      <WorkspaceHeader
+        icon={<Building2 strokeWidth={1.75} />}
+        trail={['Immobilier', 'Mes biens', nom]}
+        actions={
+          <>
+            <Button type="button" variant="outline" onClick={onBack} className={panelButtonClass}>
+              {showForm ? 'Annuler' : 'Retour'}
+            </Button>
+            {showForm && (
+              <Button type="submit" form="immobilier-property-form" disabled={isSubmitting} className={panelPrimaryButtonClass}>
+                {isSubmitting ? <><LogoSpinner />Enregistrement...</> : 'Enregistrer'}
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      <div className="px-8 pt-6 pb-4">
+        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{nom}</h1>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{asset.nature}</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Informations du bien</CardTitle>
-          <CardDescription>Gérez les détails de ce bien immobilier</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {showForm ? (
-            <Form {...form}>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <PropertyGeneralSection form={form} showStatutField={isResidence} />
-                <PropertyCostSection form={form} showMeublesField={isRentalProperty} />
-                {isRentalProperty && (
-                  <>
-                    <PropertyFinancingSection form={form} />
-                    <PropertyLocationSection form={form} assetNature={asset.nature} />
-                  </>
-                )}
-                <div className="flex justify-end gap-3">
-                  <Button type="button" variant="outline" onClick={onBack}>
-                    Annuler
-                  </Button>
-                  <Button type="submit">Enregistrer</Button>
-                </div>
-              </form>
-            </Form>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">
-                La gestion des informations pour cette catégorie sera disponible prochainement.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="border-t border-border px-8 py-6">
+        {showForm ? (
+          <Form {...form}>
+            <form id="immobilier-property-form" onSubmit={handleSubmit}>
+              <PropertyGeneralSection form={form} showStatutField={isResidence} />
+              <PropertyCostSection form={form} showMeublesField={isRentalProperty} />
+              {isRentalProperty && (
+                <>
+                  <PropertyFinancingSection form={form} />
+                  <PropertyLocationSection form={form} assetNature={asset.nature} />
+                </>
+              )}
+            </form>
+          </Form>
+        ) : (
+          <p className="max-w-md text-[13px] text-muted-foreground">
+            La gestion des informations pour cette catégorie de bien sera disponible prochainement.
+          </p>
+        )}
+      </div>
 
       {asset.nature === 'Immeubles locatifs (loués nus)' && (
-        <SimulateurRentabiliteSection asset={asset} />
+        <div className="border-t border-border">
+          <SimulateurRentabiliteSection asset={asset} />
+        </div>
       )}
     </div>
   );

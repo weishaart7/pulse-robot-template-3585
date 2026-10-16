@@ -1,6 +1,6 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
@@ -30,11 +30,7 @@ export const PropertyLocationSection: React.FC<PropertyLocationSectionProps> = (
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Type de location</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PanelSection title="Location">
         <FormField
           control={form.control}
           name="type_location"
@@ -43,7 +39,7 @@ export const PropertyLocationSection: React.FC<PropertyLocationSectionProps> = (
               <FormLabel>Type de location</FormLabel>
               <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                     <SelectValue placeholder="Sélectionner un type" />
                   </SelectTrigger>
                 </FormControl>
@@ -71,7 +67,7 @@ export const PropertyLocationSection: React.FC<PropertyLocationSectionProps> = (
                 <FormLabel>Régime fiscal</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? undefined}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                       <SelectValue placeholder="Sélectionner un régime" />
                     </SelectTrigger>
                   </FormControl>
@@ -88,7 +84,6 @@ export const PropertyLocationSection: React.FC<PropertyLocationSectionProps> = (
             )}
           />
         )}
-      </CardContent>
-    </Card>
+      </PanelSection>
   );
 };
