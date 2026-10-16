@@ -24,6 +24,7 @@ import {
   computeResultatReelLMNP,
   computeResultatReelLMP,
 } from '@/lib/immobilier/rentabilite';
+import { dateAcquisitionDepuisAnnee } from '@/lib/immobilier/dateAcquisition';
 import { SimulateurRentabiliteLMNPSection } from './SimulateurRentabiliteLMNPSection';
 import { SimulateurRentabiliteLMPSection } from './SimulateurRentabiliteLMPSection';
 
@@ -94,12 +95,15 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     fetchData();
   }, [fetchData]);
 
-  // Auto-calculate frais de notaire when prixAchat changes (7.5%)
-  useEffect(() => {
-    if (prixAchat > 0) {
-      setFraisNotaire(Math.round(prixAchat * 0.075));
+  // Frais de notaire pré-calculés à 7,5 % uniquement quand l'utilisateur modifie le prix d'achat —
+  // pas au chargement de la fiche, qui écraserait sinon les frais réels enregistrés (et déclencherait
+  // l'auto-sauvegarde sans aucune saisie), cf. docs/immobilier.md §3.
+  const handlePrixAchatChange = (value: number) => {
+    setPrixAchat(value);
+    if (value > 0) {
+      setFraisNotaire(Math.round(value * 0.075));
     }
-  }, [prixAchat]);
+  };
 
   const performSave = useCallback(async (silent: boolean) => {
     const d = formDataRef.current;
@@ -110,9 +114,14 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
         zone_bien: d.zoneBien || null,
         pourcentage_terrain_force: d.forceTerrainPct ? d.terrainPctCustom : null,
         frais_notaire: d.fraisNotaire || null,
-        date_acquisition: d.anneeAcquisition ? `${d.anneeAcquisition}-01-01` : null,
+        // Seule l'année est saisie ici : la date réelle stockée est conservée (cf. dateAcquisition.ts).
+        date_acquisition: dateAcquisitionDepuisAnnee(d.anneeAcquisition, asset.date_acquisition),
         meubles: d.valeurMobilier || null,
+        // Le champ « Travaux » de cette fiche est la somme rénovation + construction (lues partout
+        // additionnées) : la somme est enregistrée dans travaux_renovation et la construction remise à
+        // vide, sinon elle serait recomptée à chaque rechargement.
         travaux_renovation: d.travaux || null,
+        travaux_construction: null,
         type_location_lmnp: d.typeLocationLmnp || null,
       };
 
@@ -132,7 +141,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
     } finally {
       setIsSaving(false);
     }
-  }, [asset.id, toast, onUpdate]);
+  }, [asset.id, asset.date_acquisition, toast, onUpdate]);
 
   // Auto-save with debounce
   useEffect(() => {
@@ -316,7 +325,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
             <SectionHeader title="Informations du bien" />
             <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
               {([
-                ["Prix d'achat du bien", prixAchat, setPrixAchat, '200 000'],
+                ["Prix d'achat du bien", prixAchat, handlePrixAchatChange, '200 000'],
                 ['Frais de notaire', fraisNotaire, setFraisNotaire, "7,5 % du prix d'achat"],
                 ['Valeur du mobilier', valeurMobilier, setValeurMobilier, '10 000'],
                 ['Travaux', travaux, setTravaux, '20 000'],

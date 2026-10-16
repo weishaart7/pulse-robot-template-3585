@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,7 +62,9 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
       const updateData: Record<string, any> = {
         typologie_bien: data.typologie_bien || null,
         surface_m2: numOrNull(data.surface_m2),
-        date_acquisition: data.date_acquisition?.toISOString() || null,
+        // Colonne `date` : date locale formatée, comme Patrimoine (useAssetForm.ts). toISOString()
+        // convertissait en UTC et enregistrait la veille en France (minuit local = 22 h/23 h UTC).
+        date_acquisition: data.date_acquisition ? format(data.date_acquisition, 'yyyy-MM-dd') : null,
         valeur_estimee: numOrNull(data.valeur_estimee),
         statut_bien: data.statut_bien || null,
         montant_immeuble: numOrNull(data.montant_immeuble),
