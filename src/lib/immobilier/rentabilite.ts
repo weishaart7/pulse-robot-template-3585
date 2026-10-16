@@ -8,6 +8,48 @@ export const PLAFOND_DEFICIT_FONCIER = 10_700;
 export const TAUX_ABATTEMENT_MICRO_FONCIER = 0.30;
 export const TAUX_PRELEVEMENTS_SOCIAUX = 0.172;
 
+export interface RepartitionDeficitFoncier {
+  /** Déficit foncier total de l'année (0 si résultat positif). */
+  deficitTotal: number;
+  /** Part du déficit imputable sur le revenu global, plafonnée. */
+  imputableRevenuGlobal: number;
+  /** Part hors intérêts au-delà du plafond, reportable 10 ans sur les revenus fonciers. */
+  reportableHorsInterets: number;
+  /** Intérêts (+ assurance emprunteur) non couverts par les loyers, reportables 10 ans sur les revenus fonciers. */
+  reportableInterets: number;
+}
+
+/**
+ * Répartition d'un déficit foncier (régime réel, CGI art. 156-I-3°, notice 2044,
+ * BOI-RFPI-BASE-30-20-10) : les intérêts d'emprunt (et l'assurance emprunteur)
+ * s'imputent **en priorité** sur les loyers. Seule leur fraction non couverte par
+ * les loyers est un déficit « d'intérêts », jamais imputable sur le revenu global ;
+ * le reste du déficit provient des autres charges et s'impute sur le revenu global
+ * dans la limite du plafond, l'excédent étant reportable.
+ * Ex. loyers 5 000, charges 8 000, intérêts 3 000 → déficit 6 000, entièrement
+ * imputable (les loyers couvrent les intérêts), rien de reporté.
+ */
+export function repartirDeficitFoncier(
+  loyers: number,
+  chargesHorsInterets: number,
+  interets: number,
+  plafond: number,
+): RepartitionDeficitFoncier {
+  const deficitTotal = Math.max(0, chargesHorsInterets + interets - loyers);
+  if (deficitTotal === 0) {
+    return { deficitTotal: 0, imputableRevenuGlobal: 0, reportableHorsInterets: 0, reportableInterets: 0 };
+  }
+  const reportableInterets = Math.min(deficitTotal, Math.max(0, interets - Math.max(0, loyers)));
+  const deficitHorsInterets = deficitTotal - reportableInterets;
+  const imputableRevenuGlobal = Math.min(plafond, deficitHorsInterets);
+  return {
+    deficitTotal,
+    imputableRevenuGlobal,
+    reportableHorsInterets: deficitHorsInterets - imputableRevenuGlobal,
+    reportableInterets,
+  };
+}
+
 export interface AmortissementResult {
   mensualiteCredit: number;
   mensualiteAssurance: number;
@@ -218,14 +260,17 @@ export function computeRentabilite(
     ? rendementNet! - (impotMicro + psMicro) / prixAcquisitionTotal
     : null;
 
-  // Réel — déficit foncier : on isole la part hors intérêts/assurance, seule
-  // imputable sur le revenu global (plafond 10 700 €/an, pas de report du
-  // surplus en V1). Les intérêts + assurance en déficit ne sont reportables que
-  // sur les revenus fonciers des 10 années suivantes : non modélisé, non affiché.
-  const resultatHorsFinancier = loyersAnnuels - chargesAnnuelles;
-  const deficitImputableRevenuGlobal = resultatHorsFinancier < 0
-    ? Math.min(PLAFOND_DEFICIT_FONCIER, Math.abs(resultatHorsFinancier))
-    : 0;
+  // Réel — déficit foncier : intérêts + assurance imputés en priorité sur les
+  // loyers, seul le reste du déficit est imputable sur le revenu global (plafond
+  // 10 700 €/an), cf. repartirDeficitFoncier. Les reports (excédent hors intérêts,
+  // intérêts non couverts) relèvent de la synthèse foncière du foyer, pas de ce
+  // simulateur par bien.
+  const { imputableRevenuGlobal: deficitImputableRevenuGlobal } = repartirDeficitFoncier(
+    loyersAnnuels,
+    chargesAnnuelles,
+    interetsAnnee + assuranceAnnee,
+    PLAFOND_DEFICIT_FONCIER,
+  );
   const economieImpotPotentielle = deficitImputableRevenuGlobal * tmi;
 
   const chargesDeductibles = chargesAnnuelles + interetsAnnee + assuranceAnnee;

@@ -138,17 +138,20 @@ describe('computeFoyerFoncier — déficit imputable sur le revenu global', () =
     expect(result.deficitImputableRevenuGlobal).toBe(PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE);
   });
 
-  it('ne rend jamais les intérêts imputables sur le revenu global : ils sont toujours reportés en totalité si le résultat hors intérêts est déjà négatif', () => {
+  it('impute les intérêts en priorité sur les loyers : le déficit restant est imputable sur le revenu global', () => {
+    // Loyers 5 000 couvrent les intérêts 3 000 ; le déficit (6 000) vient des autres charges.
     const result = computeFoyerFoncier(
       [makeBien({ loyersBruts: 5_000, chargesHorsInterets: 8_000, interetsEtAssuranceEmprunt: 3_000 })],
       [],
       0.3,
     );
-    expect(result.deficitImputableRevenuGlobal).toBe(3_000); // uniquement la part hors intérêts
-    expect(result.nouveauDeficitReportableInterets).toBe(3_000); // intégralité des intérêts, jamais sur le revenu global
+    expect(result.resultatFoncierGlobal).toBe(-6_000);
+    expect(result.deficitImputableRevenuGlobal).toBe(6_000);
+    expect(result.nouveauDeficitReportableInterets).toBe(0);
+    expect(result.nouveauDeficitReportableHorsInterets).toBe(0);
   });
 
-  it('reporte les seuls intérêts quand ils créent à eux seuls le déficit (résultat hors intérêts positif)', () => {
+  it('impute sur le revenu global un déficit dû aux intérêts tant que les loyers couvrent ces intérêts', () => {
     const result = computeFoyerFoncier(
       [makeBien({ loyersBruts: 10_000, chargesHorsInterets: 2_000, interetsEtAssuranceEmprunt: 9_000 })],
       [],
@@ -156,9 +159,32 @@ describe('computeFoyerFoncier — déficit imputable sur le revenu global', () =
     );
     expect(result.resultatAvantInterets).toBe(8_000);
     expect(result.resultatFoncierGlobal).toBe(-1_000);
-    expect(result.deficitImputableRevenuGlobal).toBe(0);
-    expect(result.nouveauDeficitReportableInterets).toBe(1_000);
+    expect(result.deficitImputableRevenuGlobal).toBe(1_000);
+    expect(result.nouveauDeficitReportableInterets).toBe(0);
     expect(result.nouveauDeficitReportableHorsInterets).toBe(0);
+  });
+
+  it('reporte la seule fraction des intérêts qui dépasse les loyers', () => {
+    // Intérêts 4 000 > loyers 2 000 : 2 000 d'intérêts reportés, les 5 000 de charges imputables.
+    const result = computeFoyerFoncier(
+      [makeBien({ loyersBruts: 2_000, chargesHorsInterets: 5_000, interetsEtAssuranceEmprunt: 4_000 })],
+      [],
+      0.3,
+    );
+    expect(result.deficitImputableRevenuGlobal).toBe(5_000);
+    expect(result.nouveauDeficitReportableInterets).toBe(2_000);
+    expect(result.nouveauDeficitReportableHorsInterets).toBe(0);
+  });
+
+  it('cumule plafond et report d’intérêts quand les deux s’appliquent', () => {
+    const result = computeFoyerFoncier(
+      [makeBien({ loyersBruts: 1_000, chargesHorsInterets: 20_000, interetsEtAssuranceEmprunt: 3_000 })],
+      [],
+      0.3,
+    );
+    expect(result.nouveauDeficitReportableInterets).toBe(2_000);
+    expect(result.deficitImputableRevenuGlobal).toBe(PLAFOND_DEFICIT_FONCIER);
+    expect(result.nouveauDeficitReportableHorsInterets).toBe(20_000 - PLAFOND_DEFICIT_FONCIER);
   });
 });
 

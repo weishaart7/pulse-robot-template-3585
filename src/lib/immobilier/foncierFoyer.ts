@@ -5,6 +5,7 @@ import {
   computeLoyersAnnuels,
   computeQuotePart,
   PLAFOND_DEFICIT_FONCIER,
+  repartirDeficitFoncier,
   TAUX_PRELEVEMENTS_SOCIAUX,
 } from './rentabilite';
 
@@ -85,7 +86,7 @@ export interface FoyerFoncierResult {
   eligibleMicroFoncier: boolean;
   /** Inverse d'eligibleMicroFoncier : régime réel obligatoire au-delà du seuil. */
   regimeReelObligatoire: boolean;
-  /** Loyers − charges hors intérêts/assurance emprunt : base du déficit imputable sur le revenu global. */
+  /** Loyers − charges hors intérêts/assurance emprunt (informatif : les intérêts s'imputant d'abord sur les loyers, ce n'est pas la base du déficit imputable, cf. repartirDeficitFoncier). */
   resultatAvantInterets: number;
   /** Résultat foncier réel de l'année (après intérêts + assurance emprunt). */
   resultatFoncierGlobal: number;
@@ -97,7 +98,7 @@ export interface FoyerFoncierResult {
   economieImpotPotentielle: number;
   /** Nouveau déficit hors intérêts généré cette année, au-delà du plafond — à reporter 10 ans sur les revenus fonciers. */
   nouveauDeficitReportableHorsInterets: number;
-  /** Nouveaux intérêts/assurance non couverts par le résultat de l'année — jamais imputables sur le revenu global, à reporter 10 ans sur les revenus fonciers. */
+  /** Intérêts/assurance emprunt non couverts par les loyers de l'année — jamais imputables sur le revenu global, à reporter 10 ans sur les revenus fonciers. */
   nouveauDeficitReportableInterets: number;
   /** Détail de la consommation du stock de déficits reportés des années précédentes (FIFO, dans la fenêtre de 10 ans). */
   consommationDeficitsReportes: ConsommationDeficitReporte[];
@@ -133,23 +134,14 @@ export function computeFoyerFoncier(
   const resultatAvantInterets = loyersBrutsFoyer - chargesHorsInteretsFoyer;
   const resultatFoncierGlobal = resultatAvantInterets - interetsFoyer;
 
-  let deficitImputableRevenuGlobal = 0;
-  let nouveauDeficitReportableHorsInterets = 0;
-  let nouveauDeficitReportableInterets = 0;
-
-  if (resultatAvantInterets < 0) {
-    const deficitHorsInterets = -resultatAvantInterets;
-    deficitImputableRevenuGlobal = Math.min(plafondDeficitApplicable, deficitHorsInterets);
-    nouveauDeficitReportableHorsInterets = deficitHorsInterets - deficitImputableRevenuGlobal;
-    // Les intérêts d'emprunt ne sont jamais imputables sur le revenu global,
-    // quel que soit le signe du résultat hors intérêts : reportés en totalité.
-    nouveauDeficitReportableInterets = interetsFoyer;
-  } else if (resultatFoncierGlobal < 0) {
-    // Résultat positif hors intérêts, mais les intérêts seuls créent un
-    // déficit foncier : jamais imputable sur le revenu global (contrairement
-    // au cas ci-dessus), entièrement reportable sur les revenus fonciers.
-    nouveauDeficitReportableInterets = -resultatFoncierGlobal;
-  }
+  // Intérêts imputés en priorité sur les loyers du foyer : seule leur fraction non
+  // couverte est un déficit d'intérêts (reportable, jamais sur le revenu global) ;
+  // le reste du déficit s'impute sur le revenu global dans la limite du plafond.
+  const {
+    imputableRevenuGlobal: deficitImputableRevenuGlobal,
+    reportableHorsInterets: nouveauDeficitReportableHorsInterets,
+    reportableInterets: nouveauDeficitReportableInterets,
+  } = repartirDeficitFoncier(loyersBrutsFoyer, chargesHorsInteretsFoyer, interetsFoyer, plafondDeficitApplicable);
 
   // Consommation du stock de déficits reportés des années précédentes,
   // uniquement si le résultat foncier de l'année est positif (rien à imputer

@@ -10,6 +10,7 @@ import {
   computeMicroBicLMNP,
   computePrixAcquisitionTotal,
   computeQuotePart,
+  repartirDeficitFoncier,
   computeRentabilite,
   computeRentabiliteLMNP,
   computeRentabiliteLMP,
@@ -197,6 +198,26 @@ describe('computeRentabilite', () => {
     const charges = [makeCharge({ montant: 20_000, periodicite: 'annuelle' })];
     const result = computeRentabilite(asset, revenus, charges, 0.30);
     expect(result.reel.deficitImputableRevenuGlobal).toBe(PLAFOND_DEFICIT_FONCIER);
+  });
+
+  it('impute les intérêts du crédit en priorité sur les loyers dans le déficit imputable', () => {
+    // Prêt démarrant aujourd'hui : intérêts > 0, couverts par les loyers (12 000/an).
+    const asset = makeAsset({
+      financement_actif: true,
+      financement_duree_mois: 240,
+      financement_apport: 0,
+      financement_taux_credit: 3,
+      financement_taux_assurance: 0,
+      date_acquisition: new Date().toISOString().slice(0, 10),
+    });
+    const revenus = [makeRevenu({ montant: 1_000, periodicite: 'Mensuelle' })];
+    const charges = [makeCharge({ montant: 15_000, periodicite: 'annuelle' })];
+    const result = computeRentabilite(asset, revenus, charges, 0.30);
+    const interets = result.amortissement.interetsAnnee;
+    expect(interets).toBeGreaterThan(0);
+    expect(interets).toBeLessThan(12_000);
+    // Déficit total = 15 000 + intérêts − 12 000, entièrement imputable (< plafond).
+    expect(result.reel.deficitImputableRevenuGlobal).toBeCloseTo(3_000 + interets);
   });
 
   it('calcule le régime micro-foncier avec abattement de 30 %', () => {
@@ -407,5 +428,24 @@ describe('computeRentabiliteLMP', () => {
     const resultLMNP = computeRentabiliteLMNP(assetLMNP, revenus, charges, 0.30);
     const resultLMP = computeRentabiliteLMP(assetLMP, revenus, charges, 0.30, 0.40);
     expect(resultLMP.totalAmortissementImmeuble).toBeCloseTo(resultLMNP.totalAmortissementImmeuble);
+  });
+});
+
+describe('repartirDeficitFoncier', () => {
+  it('ne renvoie aucun déficit sur un résultat positif ou nul', () => {
+    expect(repartirDeficitFoncier(10_000, 4_000, 6_000, PLAFOND_DEFICIT_FONCIER)).toEqual({
+      deficitTotal: 0, imputableRevenuGlobal: 0, reportableHorsInterets: 0, reportableInterets: 0,
+    });
+  });
+
+  it('reporte en totalité les intérêts quand il n’y a aucun loyer', () => {
+    const r = repartirDeficitFoncier(0, 2_000, 3_000, PLAFOND_DEFICIT_FONCIER);
+    expect(r).toEqual({ deficitTotal: 5_000, imputableRevenuGlobal: 2_000, reportableHorsInterets: 0, reportableInterets: 3_000 });
+  });
+
+  it('conserve la somme imputable + reports = déficit total', () => {
+    const r = repartirDeficitFoncier(1_000, 30_000, 4_000, PLAFOND_DEFICIT_FONCIER);
+    expect(r.imputableRevenuGlobal + r.reportableHorsInterets + r.reportableInterets).toBe(r.deficitTotal);
+    expect(r.reportableInterets).toBe(3_000);
   });
 });
