@@ -58,14 +58,17 @@ confondus** — seules règles pertinentes pour une déclaration réelle. Moteur
 `foncierFoyer.test.ts`) :
 - Seuil micro-foncier à 15 000 € de loyers bruts foyer (`SEUIL_MICRO_FONCIER`) : au-delà, régime réel
   obligatoire, affiché en bandeau.
-- Sépare les charges hors intérêts (imputables sur le revenu global) des intérêts d'emprunt + assurance
-  emprunteur (jamais imputables sur le revenu global, cf. CGI art. 156-I-3°).
+- Impute les intérêts d'emprunt + assurance emprunteur **en priorité sur les loyers** (CGI art. 156-I-3°,
+  notice 2044) : seule leur fraction non couverte par les loyers est un déficit d'intérêts, jamais
+  imputable sur le revenu global ; le reste du déficit, issu des autres charges, l'est dans la limite du
+  plafond. Règle unique `repartirDeficitFoncier` ([rentabilite.ts](src/lib/immobilier/rentabilite.ts)),
+  partagée avec le simulateur par bien.
 - Plafonne le déficit imputable sur le revenu global à 10 700 €/an, ou 21 400 € si au moins un bien est
   coché « travaux de rénovation énergétique » (sortie des classes E/F/G, dispositif prorogé jusqu'au
   31/12/2027) — case à cocher par bien dans le tableau, non persistée en base (saisie de simulation).
 - Consomme le stock de déficits reportés des années précédentes (FIFO par année d'origine, fenêtre de 10
   ans), et calcule le nouveau déficit reportable généré par l'année en cours (hors intérêts au-delà du
-  plafond, et intérêts en totalité).
+  plafond, et intérêts non couverts par les loyers).
 - Le stock de déficits reportés est **saisi manuellement par l'utilisateur** (ce qu'il a sur sa vraie
   déclaration 2044), table `deficits_fonciers_reportes` (service
   [deficitFoncierService.ts](src/services/deficitFoncierService.ts)) — CRUD direct dans la section, plus un
@@ -100,15 +103,15 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   (résidences : `isResidenceType`), formulaire enrichi financement/location (biens locatifs :
   `isRentalPropertyType`, `RENTAL_PROPERTY_TYPES`, 6 natures), ou vue LMNP dédiée avec amortissement
   (`MEUBLE_NATURES` = LMNP et LMP).
-- Le formulaire générique (`useImmobilierPropertyForm.ts`) écrit directement dans `assets` par
-  `update`, sans passer par `assetService`.
+- Les deux fiches (`useImmobilierPropertyForm.ts`, `LMNPDetailView.tsx`) écrivent dans `assets` via
+  `assetService.updateAsset`, qui contrôle la propriété de l'actif avant écriture (en plus des RLS).
 - La vue LMNP calcule un « résultat fiscal » (revenus − charges − amortissements) affiché en temps
   réel, avec auto-sauvegarde debattue à 1,5 s sur les champs saisis.
 - Le bouton « Transfert dans budget » (checkbox par bien) bascule `impact_budget` sur **toutes** les
-  lignes `asset_revenus`/`asset_charges` du bien d'un coup ; les nouveaux revenus/charges créés
-  pendant que le bien est en mode « transfert actif » héritent du flag via un second appel bulk après
-  création (pas d'insertion directe avec le bon flag dans `ImmobilierGestionDialog`, à la différence de
-  `LMNPDetailView` qui le passe en prop dès la création).
+  lignes `asset_revenus`/`asset_charges` du bien d'un coup (`assetService.setImpactBudget`, contrôle de
+  propriété, erreurs remontées). Les revenus/charges créés ensuite reçoivent l'état courant du bien en
+  prop (`impactBudget`) dès la création, dans `ImmobilierGestionDialog` comme dans `LMNPDetailView` ; le
+  formulaire de revenu laisse l'utilisateur décocher la case pour une ligne donnée.
 
 ## 2. Architecture & décisions
 
@@ -129,7 +132,11 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
     de flux jusque-là écrites dans la boucle d'`ImmobilierOverview`, **sans changement de règle** : loyers et
     charges annualisés / mensualisés selon la périodicité (périodicité inconnue : annuelle pour un revenu,
     exclue pour une charge — convention propre à ces indicateurs, cf. §3), crédit + assurance emprunteur
-    via `computeAmortissement`, le tout × quote-part. La Vue d'ensemble applique `computeIndicateurs` à la
+    via `computeAmortissement`, le tout × quote-part. Rentabilités brute et nette rapportées au **prix de
+    revient** (`computePrixRevient` : `computePrixAcquisitionTotal`, soit immeuble + frais + travaux, comme
+    le simulateur de la fiche ; repli sur `valeur_acquisition + frais_acquisition` quand le coût de revient
+    détaillé est vide) — un bien affiche donc la même rentabilité brute dans « Mes biens » et dans son
+    simulateur (vérifié : 2,79 % / 2,8 % sur le bien loué nu de l'aperçu). La Vue d'ensemble applique `computeIndicateurs` à la
     somme des flux des biens ; « Mes biens » l'applique bien par bien, ce qui garantit que les deux écrans
     concordent (le cashflow du portefeuille est la somme des cashflows par bien ; les rentabilités du
     portefeuille sont des ratios sur les totaux, pas une moyenne des rentabilités par bien).
@@ -178,7 +185,7 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
     et le formulaire d'ajout (suffixe €, bouton noir 32 px).
 
 - **`src/lib/immobilier/` centralise désormais la rentabilité location nue, LMNP et LMP, ainsi que
-  l'agrégation foncière au niveau du foyer — pas encore les KPI de portefeuille.**
+  l'agrégation foncière au niveau du foyer ; les KPI de portefeuille sont dans `portefeuille.ts`.**
   [rentabilite.ts](src/lib/immobilier/rentabilite.ts) réunit en fonctions pures
   testées (`rentabilite.test.ts`) : le calcul micro-foncier/réel **par bien** (location nue),
   `computeQuotePart` (quote-part d'indivision, partagée avec `foncierFoyer.ts`), l'amortissement du
@@ -197,31 +204,21 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   reportés (fourni en entrée par le service `deficitFoncierService.ts` / table `deficits_fonciers_reportes`
   — ce module ne persiste rien lui-même, fonction pure comme le reste de `lib/immobilier/`). Import à sens
   unique `foncierFoyer.ts` → `rentabilite.ts` (jamais l'inverse), pour éviter toute dépendance circulaire.
-  **Dette restante** : `ImmobilierOverview.tsx` (rentabilité,
-  cashflow, plus-value brute de portefeuille) implémente toujours sa propre annualisation inline, non
-  liée à `computeAmortissement` ; `ImmobilierOverview.tsx` a en revanche été aligné sur le Résumé
-  Patrimoine pour la valeur totale et la plus-value (voir §3), sans changer cette annualisation
-  partagée — une **troisième** convention de périodicité coexiste donc pour les KPI de portefeuille (à
-  vérifier avant toute fusion : `rentabilite.ts` suit exactement les deux conventions réellement
-  stockées en base, cf. `annualiserRevenu`/`annualiserCharge`). Le résumé fiscal existant de
+  **Dette restante** : les KPI de portefeuille (Vue d'ensemble, « Mes biens ») passent par
+  [portefeuille.ts](src/lib/immobilier/portefeuille.ts), qui garde sa propre convention de périodicité
+  (périodicité inconnue : annuelle pour un revenu, exclue pour une charge) distincte de
+  `annualiserRevenu`/`annualiserCharge` de `rentabilite.ts` (qui suivent les deux conventions réellement
+  stockées en base) — à vérifier avant toute fusion. Le résumé fiscal existant de
   `LMNPDetailView.tsx` (branche micro-BIC 50 %, sans plafond vérifié, appliquée indifféremment à
   LMNP/LMP) reste lui aussi non partagé avec `computeMicroBicLMNP` des nouveaux simulateurs (barème
   2026 avec plafonds) — choix délibéré pour ne pas toucher à son comportement existant, cf. §3.
-
-- **Aucun fichier de service dédié pour le formulaire propriété.** `useImmobilierPropertyForm.ts` et
-  `LMNPDetailView.tsx` écrivent tous deux directement sur `supabase.from('assets').update(...)`,
-  contournant `assetService.updateAsset` — qui, lui, vérifie explicitement la propriété de l'actif
-  avant d'écrire ([assetService.ts:152-177](src/services/assetService.ts:152-177)). Les deux chemins
-  d'écriture Immobilier n'ont donc pas ce garde-fou applicatif (RLS toujours en place en dernier
-  recours, cf. §3).
 
 - **Routage par nature « bien locatif » unifié — corrigé.** Les trois définitions divergentes de
   « bien locatif » ont été unifiées sur `RENTAL_PROPERTY_TYPES` (6 natures) —
   [immobilierPropertySchema.ts:32-39](src/schemas/immobilierPropertySchema.ts:32-39), source unique
   utilisée par `isRentalPropertyType()` (sections Financement/Location du formulaire) et les deux
-  occurrences du bouton « Gérer » dans
-  [ImmobilierSection.tsx:216](src/components/immobilier/ImmobilierSection.tsx:216)/
-  [:261](src/components/immobilier/ImmobilierSection.tsx:261), qui référencent désormais directement
+  entrées « Revenus et charges » de
+  [MesBiensList.tsx](src/components/immobilier/MesBiensList.tsx), qui référencent directement
   la constante au lieu de listes locales dupliquées ou tronquées (`.slice(0, 4)`). **`ImmobilierOverview.tsx`
   ne s'appuie plus sur cette liste du tout** depuis le fix du cashflow mensuel ci-dessous (§3) — le
   KPI de portefeuille traite désormais tous les biens transférés indifféremment de leur nature.
@@ -231,7 +228,7 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   accès comme les 4 autres natures locatives.
 
 - **Meublé (LMNP/LMP) routé indépendamment, via une troisième liste.** `MEUBLE_NATURES` dans
-  `ImmobilierSection.tsx:16-19` (2 natures) décide si un clic sur une carte ouvre
+  [ImmobilierSection.tsx](src/pages/immobilier/ImmobilierSection.tsx) (2 natures) décide si un clic sur une carte ouvre
   `LMNPDetailView` ou `ImmobilierPropertyDetailView` — logique dupliquée dans `handleManageInfo` et
   `handleGestion` (mêmes deux fonctions, même test `isMeuble`, appelé à 4 endroits du fichier).
 
@@ -244,17 +241,11 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   les mêmes résultats que les simulateurs de rentabilité correspondants. Reste non traité : cotisations sociales SSI et régime
   des plus-values professionnelles pour le LMP, cf. §3/§4.
 
-- **`ImmobilierPropertyDialog.tsx` : code mort.** Composant strictement équivalent à
-  `ImmobilierPropertyDetailView.tsx` (même hook, mêmes sections, dans une `Dialog` au lieu d'une page
-  pleine largeur) mais **jamais importé nulle part** (`grep` sur tout `src/` ne remonte que sa propre
-  définition). `ImmobilierSection.tsx` n'utilise que la vue détail plein écran.
-
-- **Frais de notaire auto-calculés à 7,5 %, dupliqué à l'identique dans deux fichiers.** Le même
-  `useEffect` (`form.watch` sur `montant_immeuble` → `setValue('frais_notaire', montant * 0.075)`)
-  existe à la fois dans [useImmobilierPropertyForm.ts:39-49](src/hooks/useImmobilierPropertyForm.ts:39-49)
-  et dans [PropertyCostSection.tsx:20-30](src/components/immobilier/property/PropertyCostSection.tsx:20-30),
-  sur la même instance de formulaire — deux abonnements indépendants déclenchant le même `setValue` à
-  chaque frappe (sans effet visible autre que la redondance, `setValue` étant idempotent).
+- **Frais de notaire pré-remplis à 7,5 %** par une seule fonction, `estimerFraisNotaire`
+  ([rentabilite.ts](src/lib/immobilier/rentabilite.ts), arrondi à l'euro), utilisée par la fiche d'un bien
+  (abonnement `form.watch` unique dans `useImmobilierPropertyForm.ts`) et par la fiche LMNP/LMP, et
+  seulement quand l'utilisateur modifie le prix. Distinct du forfait légal de 7,5 % des frais
+  d'acquisition pour la plus-value (`regimeFiscalPVI.ts`), qui reste à part.
 
 - **Immobilier ↔ Sociétés : exclusivité restaurée pour les natures automatiques, gap résiduel à la
   création d'une « Parts de SCI ».** `transfert_immobilier` est désormais forcé automatiquement à
@@ -294,8 +285,64 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
 
 ### 🔴 Bloquant
 
-Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifiés par l'audit initial ont
-été corrigés et vérifiés sur cas concret :
+Corrigés (audit du 2026-10-17), sans données à rattraper — **vérifié en base** : aucun bien de nature
+LMNP/LMP à cette date :
+
+- **La fiche LMNP/LMP écrasait les frais de notaire à son ouverture.** Le recalcul à 7,5 % du prix d'achat
+  était un `useEffect` sur `prixAchat`, donc exécuté au chargement ; le changement d'état déclenchait
+  l'auto-sauvegarde sans aucune saisie. Fix : le recalcul n'a lieu que lorsque l'utilisateur modifie le
+  prix d'achat (`handlePrixAchatChange`, [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx)).
+- **La fiche LMNP/LMP ramenait la date d'acquisition au 1er janvier** à chaque sauvegarde (seule l'année
+  est saisie). Fix : `dateAcquisitionDepuisAnnee`
+  ([dateAcquisition.ts](src/lib/immobilier/dateAcquisition.ts), testé) conserve la date stockée si l'année
+  ne change pas, ne remplace que l'année sinon (29 février → 28), et ne se replie sur le 1er janvier
+  qu'en l'absence de date.
+- **La fiche LMNP/LMP doublait les travaux de construction** : le champ « Travaux » (rénovation +
+  construction) était réécrit dans `travaux_renovation` sans vider `travaux_construction`, recompté à
+  chaque rechargement. Fix : la somme est enregistrée dans `travaux_renovation` et `travaux_construction`
+  remis à `null` — sans effet sur les calculs, les deux colonnes étant toujours lues additionnées.
+- **Les intérêts d'emprunt étaient toujours reportés au lieu d'être imputés d'abord sur les loyers**
+  (location nue, synthèse foncière et simulateur par bien). Le déficit imputable sur le revenu global était
+  calculé sur `loyers − charges hors intérêts`, et la totalité des intérêts reportée. Or les intérêts
+  s'imputent en priorité sur les loyers (notice 2044, BOI-RFPI-BASE-30-20-10) : seule leur fraction non
+  couverte est reportable. Fix : `repartirDeficitFoncier` (rentabilite.ts, testé), utilisé par
+  `computeFoyerFoncier` et `computeRentabilite`. **Vérifié sur cas concret** : loyers 5 000 €, charges
+  8 000 €, intérêts 3 000 € → 6 000 € imputables, 0 reporté (avant : 3 000 € imputables, 3 000 € reportés) ;
+  loyers 2 000 €, charges 5 000 €, intérêts 4 000 € → 5 000 € imputables, 2 000 € d'intérêts reportés.
+  Foyer de l’aperçu : un seul bien loué nu, bénéficiaire et sans crédit — chiffres inchangés.
+- **La fiche d'un bien non meublé enregistrait la date d'acquisition à la veille.** `toISOString()`
+  convertissait le minuit local en UTC (22 h/23 h la veille) avant écriture dans une colonne `date`. Fix :
+  `format(date, 'yyyy-MM-dd')`, comme Patrimoine
+  ([useImmobilierPropertyForm.ts](src/hooks/useImmobilierPropertyForm.ts)). **Limite** : les dates déjà
+  enregistrées par cette fiche peuvent être décalées d'un jour, indiscernables automatiquement d'une
+  saisie exacte.
+
+Incohérences corrigées (audit du 2026-10-17) :
+
+- **Deux « rentabilité brute » pour un même bien** : « Mes biens » et la Vue d'ensemble rapportaient les
+  loyers à `valeur_acquisition`, le simulateur au prix de revient. Base unique désormais (`computePrixRevient`,
+  §2) ; libellés de la Vue d'ensemble « loyers / prix de revient » et « après charges / prix de revient ».
+- **Régimes fiscaux et type de location** : `PropertyLocationSection` propose les régimes selon le type de
+  location choisi (Micro-foncier/Réel en location nue, Micro-BIC/BIC en meublé) et non plus selon la nature,
+  vide un régime devenu incompatible au changement de type, et limite la nature « Immeubles locatifs (loués
+  nus) » au type « Location nue ».
+- **Biens retenus par la synthèse foncière** : `assetService.getBiensLocationNue` exige en plus
+  `transfert_immobilier = true` et une nature immobilière hors LMNP/LMP (une SCI rattachée à Sociétés ou un
+  bien meublé marqué « Location nue » n'y entrent plus). Aucune ligne concernée en base.
+- **Un `0` enregistré redevenait vide au chargement** de la fiche : `numOrEmpty` dans
+  `useImmobilierPropertyForm.ts` (seul `null` donne un champ vide), pendant de `numOrNull`.
+- **Fiche périmée après sauvegarde** : `ImmobilierSection.tsx` mémorise l'identifiant du bien ouvert et le
+  relit dans la liste rechargée, au lieu d'une copie figée au clic.
+
+Nettoyage (audit du 2026-10-17) : `ImmobilierPropertyDialog.tsx` (code mort, jamais importé) supprimé ;
+frais de notaire factorisés (`estimerFraisNotaire`) ; écritures des fiches et bascule budget via
+`assetService` (la bascule de la fiche LMNP ignorait les erreurs Supabase et annonçait « Transfert
+activé » même en cas d'échec ; la fenêtre « Revenus et charges » relançait une bascule globale après
+chaque ajout, écrasant le choix fait dans le formulaire) ; Vue d'ensemble chargée en deux requêtes pour
+tout le portefeuille au lieu de deux par bien ; plus d'affichage « Aucun bien immobilier » pendant le
+premier chargement.
+
+Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
 
 - **Les composants du tableau d'amortissement LMNP ne totalisaient que 80 % de la valeur du bâtiment,
   pas 100 % — corrigé.** Les quotes-parts (Aménagements intérieurs 18 %, Étanchéité 7 %, Toiture 8 %,
@@ -439,11 +486,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
 - **`assetService.getAssetCharges`/`getAssetRevenus` sans filtre `user_id` applicatif**, à la
   différence du reste du durcissement « défense en profondeur » de Patrimoine (commit `ea3a695`) —
   couvert par les RLS, qui sont correctes, mais incohérent avec la méthode appliquée ailleurs.
-- **`ImmobilierGestionDialog` ne préremplit pas le choix « Impact sur le budget » du formulaire de
-  création** avec l'état courant du bien (contrairement à `LMNPDetailView`, qui passe `impactBudget`
-  en prop) — la case démarre décochée dans le dialogue de création même si le bien a déjà le transfert
-  budget actif ; corrigé après coup par l'appel bulk du `onSuccess`, donc sans conséquence sur la
-  donnée finale, seulement sur l'affichage transitoire du formulaire.
 - **Plafond de recettes Micro-BIC non vérifié automatiquement.** Depuis le fix du régime Micro-BIC
   (🔴, résolu), le résultat affiché est `recettes − abattement forfaitaire`, mais l'éligibilité réelle
   au régime dépend d'un plafond de recettes annuelles qui varie selon la catégorie de location
@@ -459,13 +501,6 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
-- **Code mort : `ImmobilierPropertyDialog.tsx`** — composant complet, jamais importé, strictement
-  redondant avec `ImmobilierPropertyDetailView.tsx`.
-- **Auto-calcul des frais de notaire (7,5 %) dupliqué à l'identique** dans
-  `useImmobilierPropertyForm.ts` et `PropertyCostSection.tsx`, sur la même instance de formulaire.
-- **`useImmobilierPropertyForm.ts`/`LMNPDetailView.tsx` écrivent directement sur `supabase.from
-  ('assets')`** au lieu de passer par `assetService.updateAsset`, perdant le contrôle de propriété
-  applicatif que ce dernier effectue avant écriture (RLS reste le filet de sécurité).
 - Logique de calcul (amortissement, annualisation) mêlée au JSX plutôt qu'isolée dans un
   `lib/immobilier/`, cf. §2 — classé ici comme point de refactor plutôt que comme bug, faute d'un
   calcul erroné imputable directement à cette structure (les bugs listés en 🔴 auraient été possibles
@@ -547,8 +582,5 @@ Plus aucun bloquant ouvert à ce jour (2026-08-27) — les six points identifié
     Autres immeubles de rapport...) : même en location nue, elles n'ont toujours pas de fiche
     Financement/Location dédiée avec simulateur — seule la nature « Immeubles locatifs (loués nus) »
     déclenche `SimulateurRentabiliteSection`. Elles sont en revanche bien prises en compte par la
-    **synthèse foncière du foyer** (§1), qui filtre sur `type_location === 'Location nue'` toutes natures
-    confondues, pas sur la nature de l'actif.
-- **Manque sans explication dans le code** : aucun commentaire ni TODO n'explique pourquoi
-  `ImmobilierPropertyDialog.tsx` a été laissé en place après son remplacement apparent par
-  `ImmobilierPropertyDetailView.tsx`.
+    **synthèse foncière du foyer** (§1), qui filtre sur `type_location === 'Location nue'` parmi les
+    biens transférés de nature immobilière hors LMNP/LMP.
