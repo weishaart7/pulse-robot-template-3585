@@ -6,7 +6,6 @@ const GROUPES = [
   { id: 'descendants', label: 'Descendants', liens: ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'] },
   { id: 'ascendants', label: 'Ascendants', liens: ['Parent', 'Grand-parent', 'Arrière grand-parent'] },
   { id: 'collateraux', label: 'Collatéraux', liens: ['Frère/Sœur', 'Neveu/Nièce', 'Petit neveu/nièce', 'Oncle/Tante', 'Cousin/Cousine'] },
-  { id: 'allies', label: 'Alliés', liens: ['Beau-parent', 'Beau-frère/Belle-sœur'] },
 ] as const;
 
 export interface GroupeMembres {

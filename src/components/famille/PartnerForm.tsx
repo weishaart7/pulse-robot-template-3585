@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/contexts/AuthContext";
 import { useMaritalStatus } from "@/hooks/useFamilyData";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,7 +13,6 @@ import { Info, User, Briefcase, ShieldCheck } from "lucide-react";
 import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
 import { SmartDateInput } from "@/components/family/SmartDateInput";
 import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
 import { SectionHeader } from "@/components/family/SectionHeader";
@@ -77,8 +75,6 @@ interface PartnerFormProps {
 }
 
 export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const { data: maritalData, loading, saving, setStatutCouple } = useMaritalStatus();
 
@@ -105,8 +101,8 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
   useEffect(() => {
     if (maritalData) {
       form.reset({
-        statutCouple: maritalData.statut_couple as any,
-        civilitePartenaire: maritalData.civilite_conjoint as any,
+        statutCouple: maritalData.statut_couple as FormData['statutCouple'],
+        civilitePartenaire: maritalData.civilite_conjoint as FormData['civilitePartenaire'],
         nomPartenaire: maritalData.nom_conjoint || "",
         nomJeuneFillePartenaire: maritalData.nom_jeune_fille_conjoint || "",
         prenomPartenaire: maritalData.prenom_conjoint || "",

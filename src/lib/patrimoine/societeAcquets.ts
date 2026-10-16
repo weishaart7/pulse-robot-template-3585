@@ -10,6 +10,7 @@
  */
 
 import { getAssetCategory } from '@/constants/assetTypes';
+import type { Json } from '@/integrations/supabase/types';
 
 export type CategorieSocieteAcquets =
   | 'residence_principale'
@@ -35,7 +36,8 @@ export interface PerimetreSocieteAcquets {
   biensExclus: string[];
 }
 
-export interface SocieteAcquetsStockee {
+// Alias de type (et non interface) : assignable à la colonne JSON clauses_contrat.
+export type SocieteAcquetsStockee = {
   enabled?: boolean;
   selectedAssets?: string[];
   excludedAssets?: string[];
@@ -44,7 +46,7 @@ export interface SocieteAcquetsStockee {
     tousAcquets?: boolean;
     categories?: CategorieSocieteAcquets[];
   };
-}
+};
 
 export const lirePerimetre = (stocke?: SocieteAcquetsStockee | null): PerimetreSocieteAcquets => {
   const categories = new Set<CategorieSocieteAcquets>(stocke?.options?.categories ?? []);
@@ -56,6 +58,19 @@ export const lirePerimetre = (stocke?: SocieteAcquetsStockee | null): PerimetreS
     biensExclus: stocke?.excludedAssets ?? [],
   };
 };
+
+const objetJson = (clauses: Json | null | undefined): { [cle: string]: Json | undefined } =>
+  clauses && typeof clauses === 'object' && !Array.isArray(clauses) ? clauses : {};
+
+/** Périmètre lu dans `marital_status.clauses_contrat` (colonne JSON). */
+export const lirePerimetreDesClauses = (clauses: Json | null | undefined): PerimetreSocieteAcquets =>
+  lirePerimetre(objetJson(clauses).societe_acquets as SocieteAcquetsStockee | undefined);
+
+/** `clauses_contrat` avec le périmètre écrit ; les autres clés éventuelles sont conservées. */
+export const clausesAvecPerimetre = (clauses: Json | null | undefined, p: PerimetreSocieteAcquets): Json => ({
+  ...objetJson(clauses),
+  societe_acquets: ecrirePerimetre(p),
+});
 
 export const ecrirePerimetre = (p: PerimetreSocieteAcquets): SocieteAcquetsStockee => ({
   enabled: p.tousAcquets || p.categories.length > 0 || p.biensDesignes.length > 0,

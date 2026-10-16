@@ -9,15 +9,10 @@ import { LogoSpinner } from "@/components/brand/LogoSpinner";
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import ActionHubInput from '@/components/ui/action-hub-input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import NationalitySelect from '@/components/ui/nationality-select';
 import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
-import { useSecureForm } from '@/hooks/useSecureForm';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 import { SectionHeader } from '@/components/family/SectionHeader';
@@ -69,14 +64,6 @@ interface FicheClientFormProps {
 
 export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClientFormProps) {
   const { data, loading, saving, saveData } = useFamilyProfile();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { submitSecureForm } = useSecureForm({ 
-    formName: 'family_profile',
-    enableRateLimit: true,
-    maxAttempts: 5,
-    windowMs: 60000
-  });
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -98,26 +85,15 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
   // Charger les données depuis Supabase
   useEffect(() => {
     if (data) {
-      // Unescape HTML entities that may have been stored by sanitizeTextInput
-      const unescapeHtml = (str: string) =>
-        str
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&quot;/g, '"')
-          .replace(/&#x27;/g, "'")
-          .replace(/&#x2F;/g, '/');
-
-      const rawProfession = data.profession ? unescapeHtml(data.profession) : '';
-
       // Compat. fiches existantes enregistrées avant l'ajout du point ('M' -> 'M.')
       const rawCivilite = data.civility === 'M' ? 'M.' : data.civility;
 
       const formattedData = {
         civilite: (rawCivilite as 'M.' | 'Mme' | 'Mlle' | 'Autre') || undefined,
-        nom: data.nom ? unescapeHtml(data.nom) : '',
-        prenom: data.prenom ? unescapeHtml(data.prenom) : '',
+        nom: data.nom || '',
+        prenom: data.prenom || '',
         dateNaissance: data.date_naissance ? new Date(data.date_naissance) : undefined,
-        profession: rawProfession,
+        profession: data.profession || '',
         nationalite: data.nationalite || '',
         doubleNationalite: !!data.nationalite_2,
         nationalite2: data.nationalite_2 || '',
@@ -132,66 +108,33 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
   }, [data, form]);
 
   const onSubmit = async (formData: FormData) => {
-    try {
-      // Convert string date to Date if needed  
-      let dateNaissance = formData.dateNaissance;
-      if (typeof dateNaissance === 'string') {
-        const [day, month, year] = dateNaissance.split('/');
-        dateNaissance = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      }
+    let dateNaissance = formData.dateNaissance;
+    if (typeof dateNaissance === 'string') {
+      const [day, month, year] = dateNaissance.split('/');
+      dateNaissance = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
 
-      const sanitizedFormData = {
-        civilite: formData.civilite,
-        nom: formData.nom,
-        prenom: formData.prenom,
-        dateNaissance,
+    try {
+      await saveData({
+        civility: formData.civilite,
+        nom: formData.nom.trim(),
+        prenom: formData.prenom.trim(),
+        date_naissance: dateNaissance instanceof Date ? format(dateNaissance, 'yyyy-MM-dd') : undefined,
         profession: formData.profession?.trim() || '',
         nationalite: formData.nationalite,
-        nationalite2: formData.doubleNationalite ? (formData.nationalite2 || '') : '',
-        capaciteJuridique: formData.capaciteJuridique,
-        handicape: formData.handicape,
-        residenceFiscaleEtranger: formData.residenceFiscaleEtranger,
-        mandatProtectionFuture: formData.mandatProtectionFuture,
-        dateMandatProtectionFuture: formData.dateMandatProtectionFuture,
-      };
-
-      const supabaseData = {
-        civility: sanitizedFormData.civilite,
-        nom: sanitizedFormData.nom,
-        prenom: sanitizedFormData.prenom,
-        date_naissance: sanitizedFormData.dateNaissance instanceof Date ? format(sanitizedFormData.dateNaissance, 'yyyy-MM-dd') : undefined,
-        profession: sanitizedFormData.profession,
-        nationalite: sanitizedFormData.nationalite,
-        nationalite_2: sanitizedFormData.nationalite2,
-        capacite_juridique: sanitizedFormData.capaciteJuridique,
-        personne_handicapee: sanitizedFormData.handicape,
-        residence_fiscale_etranger: sanitizedFormData.residenceFiscaleEtranger,
-        mandat_protection_future: sanitizedFormData.mandatProtectionFuture,
-        date_mandat_protection_future: sanitizedFormData.dateMandatProtectionFuture instanceof Date ? format(sanitizedFormData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
-      };
-
-      // false si l'envoi a échoué ou a été bloqué (limite de tentatives) : l'erreur
-      // a déjà été signalée par useSecureForm / useFamilyProfile, on reste sur la fiche.
-      const ok = await submitSecureForm(
-        supabaseData,
-        async (sanitizedData) => {
-          await saveData(sanitizedData);
-        },
-        user?.id
-      );
-      if (!ok) return;
+        nationalite_2: formData.doubleNationalite ? (formData.nationalite2 || '') : '',
+        capacite_juridique: formData.capaciteJuridique,
+        personne_handicapee: formData.handicape,
+        residence_fiscale_etranger: formData.residenceFiscaleEtranger,
+        mandat_protection_future: formData.mandatProtectionFuture,
+        date_mandat_protection_future: formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
+      });
       onSuccess?.();
     } catch (error) {
+      // Notification déjà affichée par useFamilyProfile : on reste sur la fiche.
       if (import.meta.env.DEV) {
         console.error('Erreur lors de la sauvegarde:', error);
       }
-      toast({
-        title: "Erreur",
-        description: error instanceof Error && error.message
-          ? error.message
-          : "Une erreur est survenue lors de la sauvegarde.",
-        variant: "destructive",
-      });
     }
   };
 

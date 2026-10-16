@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 
 export interface FamilyProfile {
   id?: string;
@@ -90,7 +91,8 @@ export interface MaritalStatus {
   date_donation_personne?: string;
   date_donation_conjoint?: string;
   /** Réservé à la clé societe_acquets (qualification de bien, cf. lib/patrimoine/qualification.ts) — le catalogue de clauses de régime a été retiré en V1. */
-  clauses_contrat?: any;
+  // Lu / écrit via lirePerimetreDesClauses / clausesAvecPerimetre (lib/patrimoine/societeAcquets.ts).
+  clauses_contrat?: Json | null;
   // Le droit de partage (2,5% de l'actif net partagé, art. 746 CGI) n'est dû que
   // si un partage est effectivement envisagé entre les héritiers — jamais présumé
   // (cf. transmission/netBreakdown.ts::computeNetPerHeir). Sans effet en cas de

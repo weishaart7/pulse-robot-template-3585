@@ -43,16 +43,20 @@ export function PatrimoineOriginaireSection() {
     const montant = Number(valeur);
     if (!nature || !montant) return;
 
-    await addLigne({
-      epoux,
-      bien_concerne_id: bienConcerneId || null,
-      nature,
-      valeur: montant,
-      bien_professionnel: bienProfessionnel,
-      signe,
-      date_signature: signe && dateSignature instanceof Date ? format(dateSignature, 'yyyy-MM-dd') : null,
-    });
-    resetForm();
+    try {
+      await addLigne({
+        epoux,
+        bien_concerne_id: bienConcerneId || null,
+        nature,
+        valeur: montant,
+        bien_professionnel: bienProfessionnel,
+        signe,
+        date_signature: signe && dateSignature instanceof Date ? format(dateSignature, 'yyyy-MM-dd') : null,
+      });
+      resetForm();
+    } catch {
+      // Échec déjà notifié par le hook : la saisie reste affichée pour être corrigée.
+    }
   };
 
   const assetLabel = (id?: string | null) => assets?.find(a => a.id === id)?.denomination || 'Bien sans nom';
@@ -81,7 +85,7 @@ export function PatrimoineOriginaireSection() {
                   {l.signe ? ' · État descriptif signé' : ' · État descriptif non signé'}
                 </p>
               </div>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => removeLigne(l.id)}>
+              <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => removeLigne(l.id).catch(() => undefined)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>

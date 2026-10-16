@@ -1,20 +1,15 @@
 // Security utilities for input sanitization and validation
 
 /**
- * Enhanced text sanitization to prevent XSS attacks
+ * Normalise une saisie texte (espaces de début et de fin retirés).
+ * Le texte est stocké tel que saisi : pas d'encodage HTML ni de suppression de
+ * motifs, React échappe déjà tout texte à l'affichage. Encoder à l'écriture
+ * stockait « / » en « &#x2F; » (affiché tel quel ailleurs dans l'app) et
+ * cassait la correspondance avec les listes de valeurs (natures de charges…).
  */
 export function sanitizeTextInput(input: string | null | undefined): string {
   if (!input) return '';
-  
-  return input
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\//g, '&#x2F;')
-    .replace(/javascript:/gi, '') // Remove javascript: protocols
-    .replace(/on\w+\s*=/gi, '') // Remove event handlers
-    .replace(/data:/gi, '') // Remove data: URLs
-    .trim();
+  return input.trim();
 }
 
 /**

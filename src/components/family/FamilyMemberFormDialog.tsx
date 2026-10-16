@@ -20,7 +20,7 @@ import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
 import { LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink, verifierCoherenceAscendance } from '@/lib/family/familyLinkRules';
 
-export const membreFamilleSchema = z.object({
+const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
   civilite: z.string().optional(),
   nom: z.string().min(1, 'Le nom est obligatoire'),
@@ -46,9 +46,6 @@ export const membreFamilleSchema = z.object({
   exo_frere_soeur_cohabitation_5_ans: z.boolean().default(false),
   enfant_a_charge: z.boolean().default(false),
   fiscalement_a_charge: z.boolean().default(false),
-  mesure_protection_juridique: z.string().default('Aucune'),
-  mandat_protection_future: z.boolean().default(false),
-  date_mandat_protection_future: z.date().optional(),
   personne_a_charge: z.boolean().default(false),
 }).superRefine((data, ctx) => {
   // « Enfant de » : parent_de en dépend (enfant commun / exclusif) pour la
@@ -71,7 +68,7 @@ export const membreFamilleSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_renoncant_de'], message: 'Veuillez indiquer la succession concernée' });
   }
 });
-export type MembreFamille = z.infer<typeof membreFamilleSchema>;
+type MembreFamille = z.infer<typeof membreFamilleSchema>;
 
 const DEFAULT_VALUES: MembreFamille = {
   lien_familial: '',
@@ -90,8 +87,6 @@ const DEFAULT_VALUES: MembreFamille = {
   exo_frere_soeur_cohabitation_5_ans: false,
   enfant_a_charge: false,
   fiscalement_a_charge: false,
-  mesure_protection_juridique: 'Aucune',
-  mandat_protection_future: false,
   personne_a_charge: false,
 };
 
@@ -138,7 +133,7 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
             variant: "destructive",
           });
         });
-    }, [dialogOpen, editingMember?.id]);
+    }, [dialogOpen, editingMember?.id, toast]);
 
     const memberForm = useForm<MembreFamille>({
       resolver: zodResolver(membreFamilleSchema),
@@ -181,9 +176,6 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           exo_frere_soeur_cohabitation_5_ans: member.exo_frere_soeur_cohabitation_5_ans || false,
           enfant_a_charge: member.enfant_a_charge || false,
           fiscalement_a_charge: member.fiscalement_a_charge || false,
-          mesure_protection_juridique: member.mesure_protection_juridique || 'Aucune',
-          mandat_protection_future: member.mandat_protection_future || false,
-          date_mandat_protection_future: member.date_mandat_protection_future ? new Date(member.date_mandat_protection_future) : undefined,
           personne_a_charge: member.personne_a_charge || false,
         });
         setDialogOpen(true);
@@ -250,9 +242,6 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           exo_frere_soeur_cohabitation_5_ans: data.exo_frere_soeur_cohabitation_5_ans,
           enfant_a_charge: data.enfant_a_charge,
           fiscalement_a_charge: data.fiscalement_a_charge,
-          mesure_protection_juridique: data.mesure_protection_juridique,
-          mandat_protection_future: data.mandat_protection_future,
-          date_mandat_protection_future: data.date_mandat_protection_future ? format(data.date_mandat_protection_future, 'yyyy-MM-dd') : undefined,
           personne_a_charge: data.personne_a_charge,
         };
         if (editingMember) {

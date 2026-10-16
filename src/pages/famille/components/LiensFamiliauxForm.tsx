@@ -246,12 +246,14 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer ce membre de la famille ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {memberToDelete && (
-                <>
-                  Cette action supprimera définitivement{' '}
-                  <strong>{memberToDelete.prenom ? `${memberToDelete.prenom} ` : ''}{memberToDelete.nom}</strong>{' '}
-                  ({memberToDelete.lien_familial}). Cette action est irréversible.
+            <AlertDialogDescription asChild>
+              <div className="text-sm text-muted-foreground">
+                {memberToDelete && (<>
+                  <p>
+                    Cette action supprimera définitivement{' '}
+                    <strong>{memberToDelete.prenom ? `${memberToDelete.prenom} ` : ''}{memberToDelete.nom}</strong>{' '}
+                    ({memberToDelete.lien_familial}). Cette action est irréversible.
+                  </p>
                   {dependentsOf(memberToDelete).length > 0 && (
                     <>
                       <p className="mt-2">
@@ -264,8 +266,8 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
                       </ul>
                     </>
                   )}
-                </>
-              )}
+                </>)}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

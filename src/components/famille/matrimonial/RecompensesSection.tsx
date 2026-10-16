@@ -97,18 +97,22 @@ export function RecompensesSection() {
     const depense = Number(depenseFaite);
     if (!depense || !natureResolue || !connaitValeurs) return;
 
-    await addRecompense({
-      sens,
-      epoux,
-      bien_concerne_id: bienConcerneId || null,
-      depense_faite: depense,
-      valeur_bien_acquisition: connaitValeurs === 'oui' && valeurBienAcquisition ? Number(valeurBienAcquisition) : null,
-      valeur_bien_liquidation: connaitValeurs === 'oui' && valeurBienLiquidation ? Number(valeurBienLiquidation) : null,
-      nature_depense: natureResolue,
-      depense_necessaire: depenseNecessaire,
-      mode_evaluation_conventionnel: modeEvaluation,
-    });
-    resetForm();
+    try {
+      await addRecompense({
+        sens,
+        epoux,
+        bien_concerne_id: bienConcerneId || null,
+        depense_faite: depense,
+        valeur_bien_acquisition: connaitValeurs === 'oui' && valeurBienAcquisition ? Number(valeurBienAcquisition) : null,
+        valeur_bien_liquidation: connaitValeurs === 'oui' && valeurBienLiquidation ? Number(valeurBienLiquidation) : null,
+        nature_depense: natureResolue,
+        depense_necessaire: depenseNecessaire,
+        mode_evaluation_conventionnel: modeEvaluation,
+      });
+      resetForm();
+    } catch {
+      // Échec déjà notifié par le hook : la saisie reste affichée pour être corrigée.
+    }
   };
 
   const assetLabel = (id?: string | null) => assets?.find(a => a.id === id)?.denomination || 'Bien sans nom';
@@ -159,7 +163,7 @@ export function RecompensesSection() {
                   {r.bien_concerne_id && ` · ${assetLabel(r.bien_concerne_id)}`}
                 </p>
               </div>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => removeRecompense(r.id)}>
+              <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => removeRecompense(r.id).catch(() => undefined)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>

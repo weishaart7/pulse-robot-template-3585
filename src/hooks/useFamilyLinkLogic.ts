@@ -138,11 +138,16 @@ export const useFamilyLinkLogic = (
   const getParentOptions = (linkType: string, editingId?: string) => {
     const options: { value: string; label: string; disabled?: boolean }[] = [];
 
-    // For direct descendants (Petit-enfant, Arrière petit-enfant, etc.), 
-    // only show appropriate family members, not the user/spouse
-    const isDescendant = ['Petit-enfant', 'Arrière petit-enfant', 'Petit neveu/nièce', 'Cousin/Cousine', 'Arrière grand-parent'].includes(linkType);
-    
-    if (!isDescendant) {
+    // Liens rattachés à un autre membre et jamais directement au client ou au
+    // conjoint : « Enfant de : client » ferait d'un neveu un enfant (et le
+    // détacherait de sa souche dans le moteur de succession), « Parent de :
+    // client » ferait d'un grand-parent un parent.
+    const rattacheAUnMembre = [
+      'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent',
+      'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine',
+    ].includes(linkType);
+
+    if (!rattacheAUnMembre) {
       // Always add user as default option for direct links
       options.push({ value: 'user', label: userDisplayName });
 

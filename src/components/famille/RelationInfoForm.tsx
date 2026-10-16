@@ -29,7 +29,7 @@ import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
 import { useAssets } from "@/hooks/useAssets";
 import { calculerRequalifications, compositionSocieteAcquets, libellePerimetre, Requalification } from "@/lib/patrimoine/requalification";
 import { appliquerRequalifications } from "@/services/requalificationService";
-import { CATEGORIES_SOCIETE_ACQUETS, ecrirePerimetre, lirePerimetre, PerimetreSocieteAcquets } from "@/lib/patrimoine/societeAcquets";
+import { CATEGORIES_SOCIETE_ACQUETS, clausesAvecPerimetre, lirePerimetreDesClauses, PerimetreSocieteAcquets } from "@/lib/patrimoine/societeAcquets";
 import { RequalificationDialog } from "@/components/famille/matrimonial/RequalificationDialog";
 
 const formSchema = z.object({
@@ -111,7 +111,7 @@ const fmtDate = (d?: Date) => (d ? format(d, "dd/MM/yyyy") : undefined);
 
 export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: Props) {
   const { toast } = useToast();
-  const { data: maritalData, saving, saveData, setDonationDernierVivant } = useMaritalStatus();
+  const { data: maritalData, saving, saveData } = useMaritalStatus();
   const [activeSection, setActiveSection] = useState<Section>('informations-generales');
   const { assets, fetchAssets } = useAssets();
   const [requalifications, setRequalifications] = useState<Requalification[] | null>(null);
@@ -140,9 +140,9 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   useEffect(() => {
     if (maritalData) {
       form.reset({
-        conventionPacs: (maritalData.convention_pacs as any) || 'Régime de la séparation des biens',
+        conventionPacs: (maritalData.convention_pacs as FormData['conventionPacs']) || 'Régime de la séparation des biens',
         datePacs: maritalData.date_pacs ? new Date(maritalData.date_pacs) : undefined,
-        regimeMatrimonial: (maritalData.regime_matrimonial as any) || 'Communauté réduite aux acquêts',
+        regimeMatrimonial: (maritalData.regime_matrimonial as FormData['regimeMatrimonial']) || 'Communauté réduite aux acquêts',
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
         pasDeContrat: maritalData.pas_de_contrat_mariage || false,
@@ -173,39 +173,17 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
   const onSubmit = async (data: FormData) => {
     try {
-      const payload = buildRelationInfoPayload(relationStatus, data) as Record<string, unknown>;
-      const perimetreEnregistre = lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets);
+      const payload = buildRelationInfoPayload(relationStatus, data);
+      const perimetreEnregistre = lirePerimetreDesClauses(maritalData?.clauses_contrat);
       const perimetreEffectif =
         perimetreBrouillon && toRegimeType(data.regimeMatrimonial) === 'separation_societe_acquets' && !data.pasDeContrat
           ? perimetreBrouillon
           : perimetreEnregistre;
       if (perimetreEffectif !== perimetreEnregistre) {
-        payload.clauses_contrat = {
-          ...((maritalData as any)?.clauses_contrat || {}),
-          societe_acquets: ecrirePerimetre(perimetreEffectif),
-        };
+        payload.clauses_contrat = clausesAvecPerimetre(maritalData?.clauses_contrat, perimetreEffectif);
       }
 
-      if (relationStatus === 'Marié(e)') {
-        const {
-          donation_dernier_vivant_personne,
-          date_donation_personne,
-          donation_dernier_vivant_conjoint,
-          date_donation_conjoint,
-          ...rest
-        } = payload;
-        await setDonationDernierVivant(
-          {
-            donation_dernier_vivant_personne: donation_dernier_vivant_personne as boolean,
-            date_donation_personne: date_donation_personne as string | undefined,
-            donation_dernier_vivant_conjoint: donation_dernier_vivant_conjoint as boolean,
-            date_donation_conjoint: date_donation_conjoint as string | undefined,
-          },
-          rest
-        );
-      } else {
-        await saveData(payload as any);
-      }
+      await saveData(payload);
 
       setPerimetreBrouillon(null);
 
@@ -213,7 +191,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
       // les qualifications enregistrées sur les biens peuvent être périmées.
       const changements = calculerRequalifications(
         assets || [],
-        { ...(maritalData as any), statut_couple: relationStatus, ...payload },
+        { ...maritalData, statut_couple: relationStatus, ...payload },
         perimetreEffectif
       );
       if (changements.length > 0) {
@@ -279,7 +257,9 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
   useEffect(() => {
     if (pasDeContrat) {
-      handleRegimeSelect(determinerRegimeLegal(dateMariage?.toISOString()));
+      // Date calendaire (et non toISOString, qui recule d'un jour en heure de Paris :
+      // un mariage du 01/02/1966 serait daté du 31/01 et sous l'ancien régime légal).
+      handleRegimeSelect(determinerRegimeLegal(dateMariage ? format(dateMariage, 'yyyy-MM-dd') : undefined));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pasDeContrat, dateMariage, form]);
@@ -316,13 +296,13 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
     if (!regimeNonEnregistre) setPerimetreBrouillon(null);
   }, [regimeNonEnregistre]);
   const contexteFormulaire = {
-    ...(maritalData as any),
+    ...maritalData,
     regime_matrimonial: regimeMatrimonial,
     date_mariage: dateMariage ? format(dateMariage, 'yyyy-MM-dd') : maritalData?.date_mariage,
   };
   const resumeSocieteAcquets = (() => {
     const perimetre =
-      (regimeNonEnregistre && perimetreBrouillon) || lirePerimetre((maritalData as any)?.clauses_contrat?.societe_acquets);
+      (regimeNonEnregistre && perimetreBrouillon) || lirePerimetreDesClauses(maritalData?.clauses_contrat);
     const { biens, total } = compositionSocieteAcquets(
       assets || [],
       contexteFormulaire,
@@ -699,7 +679,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                 {[
                   { title: "Votre mariage précédent", flag: "mariagePrecedentPersonne" as const, annees: "dureeMariagePrecedentPersonneAnnees" as const, mois: "dureeMariagePrecedentPersonneMois" as const, label: "J'ai été marié(e) précédemment" },
                   { title: "Mariage précédent du conjoint", flag: "mariagePrecedentConjoint" as const, annees: "dureeMariagePrecedentConjointAnnees" as const, mois: "dureeMariagePrecedentConjointMois" as const, label: "Mon conjoint a été marié(e) précédemment" },
-                ].map((cfg, index) => (
+                ].map((cfg) => (
                   <Fragment key={cfg.flag}>
                                     <div className="px-8 py-7">
                     <SectionHeader icon={History} title={cfg.title} />

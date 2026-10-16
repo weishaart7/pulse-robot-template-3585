@@ -10,7 +10,7 @@ import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
 import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
-import { lirePerimetre, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
+import { lirePerimetreDesClauses, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
 import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
@@ -134,15 +134,13 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
         setFamilyMembers(familyLinks || []);
-        const clausesContrat = maritalStatus?.clauses_contrat;
-        const societeAcquets = clausesContrat?.societe_acquets;
         setMaritalContext({
           statutCouple: maritalStatus?.statut_couple,
           regimeMatrimonial: maritalStatus?.regime_matrimonial,
           dateMariage: maritalStatus?.date_mariage,
           conventionPacs: maritalStatus?.convention_pacs,
           datePacs: maritalStatus?.date_pacs,
-          societeAcquets: lirePerimetre(societeAcquets),
+          societeAcquets: lirePerimetreDesClauses(maritalStatus?.clauses_contrat),
           dateJugementSeparationCorps: maritalStatus?.separation_de_corps
             ? maritalStatus?.date_jugement_separation_corps ?? undefined
             : undefined,

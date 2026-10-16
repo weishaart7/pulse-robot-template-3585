@@ -112,17 +112,21 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
     const depense = Number(depenseFaite);
     if (!depense || epouxCreancier === epouxDebiteur || !natureResolue || !connaitValeurs) return;
 
-    await addCreance({
-      epoux_creancier: epouxCreancier,
-      epoux_debiteur: epouxDebiteur,
-      bien_concerne_id: bienConcerneId || null,
-      depense_faite: depense,
-      valeur_bien_avant: connaitValeurs === 'oui' && valeurBienAvant ? Number(valeurBienAvant) : null,
-      valeur_bien_apres: connaitValeurs === 'oui' && valeurBienApres ? Number(valeurBienApres) : null,
-      nature_depense: natureResolue,
-      mode_evaluation_conventionnel: modeEvaluation,
-    });
-    resetForm();
+    try {
+      await addCreance({
+        epoux_creancier: epouxCreancier,
+        epoux_debiteur: epouxDebiteur,
+        bien_concerne_id: bienConcerneId || null,
+        depense_faite: depense,
+        valeur_bien_avant: connaitValeurs === 'oui' && valeurBienAvant ? Number(valeurBienAvant) : null,
+        valeur_bien_apres: connaitValeurs === 'oui' && valeurBienApres ? Number(valeurBienApres) : null,
+        nature_depense: natureResolue,
+        mode_evaluation_conventionnel: modeEvaluation,
+      });
+      resetForm();
+    } catch {
+      // Échec déjà notifié par le hook : la saisie reste affichée pour être corrigée.
+    }
   };
 
   const assetLabel = (id?: string | null) => assets?.find(a => a.id === id)?.denomination || 'Bien sans nom';
@@ -151,7 +155,7 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
                   {c.bien_concerne_id && ` · ${assetLabel(c.bien_concerne_id)}`}
                 </p>
               </div>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => removeCreance(c.id)}>
+              <Button type="button" variant="ghost" size="icon" className="shrink-0 h-7 w-7" onClick={() => removeCreance(c.id).catch(() => undefined)}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>

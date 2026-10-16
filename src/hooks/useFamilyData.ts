@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { compterEnfantsFiscalementACharge } from '@/lib/fiscal';
 import { buildStatutCoupleWrite } from '@/lib/family/maritalStatus';
-import { buildDonationDernierVivantWrite, DonationDernierVivantFields } from '@/lib/family/donationDernierVivant';
 
 // Cache partagé (React Query) : tous les composants qui appellent ces hooks
 // lisent la même copie, et chaque écriture met le cache à jour pour tous —
@@ -179,29 +178,12 @@ export const useMaritalStatus = () => {
   const setStatutCouple = (statutCouple: string | null, extra?: Partial<MaritalStatus>) =>
     saveData(buildStatutCoupleWrite(statutCouple, extra));
 
-  // Point d'écriture unique des 4 colonnes de donation au dernier vivant,
-  // appelé par RelationInfoForm.tsx (onglet Donation) — plutôt qu'un upsert
-  // partiel dupliqué. Relit l'état frais en base juste avant d'écrire
-  // (updates: null) pour ne jamais écraser silencieusement une modification
-  // faite entre-temps ailleurs.
-  const setDonationDernierVivant = async (
-    updates: DonationDernierVivantFields | null,
-    extra?: Partial<MaritalStatus>
-  ) => {
-    const fresh = await withLoadErrorToast(
-      () => familyService.getMaritalStatus(),
-      "Impossible d'enregistrer la situation matrimoniale"
-    );
-    return saveData(buildDonationDernierVivantWrite(updates, fresh, extra));
-  };
-
   return {
     data: query.data ?? null,
     loading: query.isLoading,
     saving,
     saveData,
     setStatutCouple,
-    setDonationDernierVivant,
     refetch: async () => { await query.refetch(); },
   };
 };

@@ -21,7 +21,7 @@ lequel reposent tous les calculs montrés au client.
 | Foyer | `/dashboard/famille` | [FamilleSection.tsx](../src/pages/famille/FamilleSection.tsx) (panneau : bandeau couple / statut / composition + arbre, via [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) `view="arbre"`) |
 | ↳ Fiche client (Foyer actif) | `/dashboard/famille/client` | [ClientPage.tsx](../src/pages/famille/ClientPage.tsx) → [FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx) |
 | ↳ Conjoint (Foyer actif) | `/dashboard/famille/conjoint` | [ConjointPage.tsx](../src/pages/famille/ConjointPage.tsx) → [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx) |
-| Régime matrimonial (5 onglets) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](../src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](../src/components/famille/RelationInfoForm.tsx) |
+| Régime matrimonial (4 à 6 onglets selon le régime) | `/dashboard/famille/situation-matrimoniale` | [SituationMatrimonialePage.tsx](../src/pages/famille/SituationMatrimonialePage.tsx) → [RelationInfoForm.tsx](../src/components/famille/RelationInfoForm.tsx) |
 | Membres | `/dashboard/famille/membres` | [MembresPage.tsx](../src/pages/famille/MembresPage.tsx) → [LiensFamiliauxForm.tsx](../src/pages/famille/components/LiensFamiliauxForm.tsx) `view="membres"` + [FamilyMemberFormDialog.tsx](../src/components/family/FamilyMemberFormDialog.tsx) + [DynamicFamilyForm.tsx](../src/components/family/DynamicFamilyForm.tsx) |
 
 **Tables Supabase** : `family_profiles`, `marital_status`, `family_links` (+ `recompenses`,
@@ -40,7 +40,7 @@ permet de l'alimenter (voir §3).
   profession) avec un lien « Voir la fiche », et une colonne Statut du couple (menu déroulant) + Composition
   (nombre de membres par branche, via `grouperMembres`) — et enfin l'arbre familial pleine largeur (l'arbre
   demande ~960 px, d'où le bandeau plutôt qu'un panneau latéral). Les cartes de l'arbre suivent le gabarit des panneaux : angles de 2 px, filet, fond blanc (couple en noir), initiales en carré coloré selon la branche, libellés de génération en texte 12 px, traits fins couleur filet. Plus de photo de profil ; le détail du
-  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres vit dans un panneau de travail comme Foyer et Régime matrimonial (barre d'en-tête « Famille / Membres » portant le bouton « Ajouter un membre », titre 24 px et rappel) : une section filetée par branche — descendants, ascendants, collatéraux, alliés, autres — via `lib/family/groupesMembres.ts`, sur deux colonnes à partir de `lg`. Chaque branche a une couleur fixe ([groupeTones.ts](../src/components/famille/groupeTones.ts) : descendants lagon, ascendants citron, collatéraux lagon foncé, alliés beige, autres gris), reprise par le repère du titre de section, le carré d'initiales des membres vivants (liste et arbre, via `groupeIdDuLien`) et la pastille du bloc « Composition » du Foyer ; étiquettes en `Chip` (lagon pour les avantages fiscaux) ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
+  régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres vit dans un panneau de travail comme Foyer et Régime matrimonial (barre d'en-tête « Famille / Membres » portant le bouton « Ajouter un membre », titre 24 px et rappel) : une section filetée par branche — descendants, ascendants, collatéraux, autres — via `lib/family/groupesMembres.ts`, sur deux colonnes à partir de `lg`. Chaque branche a une couleur fixe ([groupeTones.ts](../src/components/famille/groupeTones.ts) : descendants lagon, ascendants citron, collatéraux lagon foncé, autres gris), reprise par le repère du titre de section, le carré d'initiales des membres vivants (liste et arbre, via `groupeIdDuLien`) et la pastille du bloc « Composition » du Foyer ; étiquettes en `Chip` (lagon pour les avantages fiscaux) ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
   état vide explicatif sans membre) vit dans la sous-section Membres. Les personnes décédées sont estompées
   (carte à filet pointillé, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
   couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
@@ -50,7 +50,7 @@ permet de l'alimenter (voir §3).
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
   (§3).
-- **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure 5 onglets (`GooeyNav`) dans un panneau de travail unique inspiré de la maquette de référence : barre d'en-tête (fil d'Ariane « Famille / … » + bouton « Enregistrer » noir), colonne principale (titre, rappel, onglets, sections séparées par des filets) et, pour Marié(e) / Pacsé(e), un panneau « Synthèse » à droite (≥ `lg`) qui relit en direct les valeurs du formulaire en lignes libellé / valeur (statut, mariage, lieu, régime, contrat et situation en étiquettes, donations au dernier vivant, mariages précédents ; pour le PACS : date, convention, résidence) — affichage seul, aucun calcul visibles seulement si `statut_couple === 'Marié(e)'`
+- **Régime matrimonial** (titre + rappel « statut depuis année · régime ») structure ses onglets (`GooeyNav` ; Général, Récompenses, Donation, Historique, plus Participation aux acquêts ou Société d'acquêts selon le régime) dans un panneau de travail unique inspiré de la maquette de référence : barre d'en-tête (fil d'Ariane « Famille / … » + bouton « Enregistrer » noir), colonne principale (titre, rappel, onglets, sections séparées par des filets) et, pour Marié(e) / Pacsé(e), un panneau « Synthèse » à droite (≥ `lg`) qui relit en direct les valeurs du formulaire en lignes libellé / valeur (statut, mariage, lieu, régime, contrat et situation en étiquettes, donations au dernier vivant, mariages précédents ; pour le PACS : date, convention, résidence) — affichage seul, aucun calcul visibles seulement si `statut_couple === 'Marié(e)'`
   (vues distinctes pour Pacsé(e)/Concubinage) : régime légal (avec, sous les régimes concernés, la
   désignation des biens de la société d'acquêts — voir §2),
   récompenses/créances, participation aux acquêts, donation au dernier vivant, historique. L'onglet « Informations générales » regroupe en un seul bloc « Mariage & régime » : date et lieu, puis la question « Contrat de mariage » (bascule Avec / Sans contrat). Sans contrat, le régime légal déduit de la date de mariage est affiché en lecture seule ; avec contrat seulement, le sélecteur du régime conventionnel (classé en deux groupes, régimes communautaires puis séparatistes, `CLASSES_REGIMES_MATRIMONIAUX` dans `lib/patrimoine/regimeLegal.ts`) et ses options de qualification apparaissent. La case « Séparation de corps » révèle la date du jugement (`marital_status.date_jugement_separation_corps`, vidée si la case est décochée) et la clause de renonciation aux droits successoraux ; à compter de cette date, les biens acquis sont qualifiés comme sous séparation de biens (art. 302, voir docs/patrimoine.md). Le
@@ -73,9 +73,8 @@ permet de l'alimenter (voir §3).
   points d'écriture uniques plutôt que par une synchronisation entre copies :
   - `statut_couple` : `setStatutCouple()` / `buildStatutCoupleWrite()` dans
     [lib/family/maritalStatus.ts](../src/lib/family/maritalStatus.ts).
-  - Donation au dernier vivant : `setDonationDernierVivant()` dans
-    [lib/family/donationDernierVivant.ts](../src/lib/family/donationDernierVivant.ts), qui relit
-    l'état frais en base avant d'écrire plutôt que de réembarquer une copie locale périmée.
+  - Donation au dernier vivant : les 4 colonnes sont écrites par le seul `RelationInfoForm.tsx`, dans
+    le même upsert que le reste du régime (`buildRelationInfoPayload`).
   - Écriture conditionnelle au statut du couple : `buildRelationInfoPayload()` /
     [lib/family/relationInfoPayload.ts](../src/lib/family/relationInfoPayload.ts) — un couple
     Pacsé(e)/Concubinage n'écrase plus les colonnes du régime matrimonial avec les valeurs par
@@ -102,7 +101,10 @@ permet de l'alimenter (voir §3).
   centralise désormais la saisie JJ/MM/AAAA pour tous les champs date du module (naissance, décès,
   mariage, PACS, donations, mandat). Avant son introduction, chaque formulaire faisait son propre
   `toISOString().split('T')[0]`, ce qui produisait un décalage d'un jour en fuseau français.
-  Les dates futures sont refusées au clavier comme au calendrier (voir §3).
+  Les dates futures sont refusées au clavier comme au calendrier (voir §3). Une date passée à un
+  calcul se transmet en `yyyy-MM-dd` (`format` de date-fns), jamais via `toISOString()` : c'est
+  notamment le cas du régime légal déduit de la date de mariage (`determinerRegimeLegal`), où un
+  mariage du 01/02/1966 tombait sinon le 31/01 et sous l'ancien régime légal.
   Le calendrier est le panneau commun de l'app ([date-picker-panel.tsx](../src/components/ui/date-picker-panel.tsx), voir design-system.md) à trois vues : jours (semaine du lundi, libellés français), mois (grille 3×4) et années (pages de 20 ans) ; un clic sur le mois ou l'année de l'en-tête y saute directement, puis on redescend année → mois → jour. Bornes ici : 1900 à aujourd'hui. Le panneau se ferme dès qu'un jour est choisi.
 
 - **Rattachement des enfants et branche familiale obligatoires.** Le schéma zod de
@@ -113,6 +115,12 @@ permet de l'alimenter (voir §3).
   affichée, jamais enregistrée) ; un membre existant sans branche est signalé en erreur dès
   l'ouverture en modification. `buildFamilyGraph.ts` relie un enfant sans rattachement au seul
   client, aligné sur le moteur (seul `both_parents` fait un enfant commun).
+  Le client et le conjoint ne sont proposés en rattachement que pour les liens directs (Enfant,
+  Parent, Frère/Sœur, Oncle/Tante) : Grand-parent, Arrière grand-parent, Petit-enfant, Arrière
+  petit-enfant, Neveu/Nièce, Petit neveu/nièce et Cousin/Cousine ne se rattachent qu'à un autre
+  membre (`useFamilyLinkLogic.ts::getParentOptions`). Un neveu rattaché au client serait sinon
+  détaché de sa souche par le moteur de succession, un grand-parent rattaché au client en ferait
+  un parent.
 
 - **Cohérence de l'ascendance (R1-R5).** `verifierCoherenceAscendance()` et
   `rattachementsComplets()` ([lib/family/familyLinkRules.ts](../src/lib/family/familyLinkRules.ts))
@@ -168,8 +176,12 @@ permet de l'alimenter (voir §3).
 
 - **Notifications d'enregistrement.** Les hooks de `useFamilyData.ts` sont la seule source des
   notifications de succès et d'erreur d'écriture ; les formulaires n'en émettent plus (évite les
-  doubles toasts) et restent ouverts en cas d'échec. `FicheClientForm.tsx` ne ferme la fiche que si
-  `submitSecureForm` renvoie `true` (échec ou limite de tentatives = on reste sur la fiche).
+  doubles toasts) et restent ouverts en cas d'échec. `FicheClientForm.tsx` enregistre directement
+  via `useFamilyProfile().saveData` (plus de `useSecureForm`, qui ajoutait une seconde notification
+  au message technique brut, ni d'encodage HTML des textes) et ne ferme la fiche qu'en cas de
+  succès. Toute écriture déclenchée depuis l'écran (statut du couple, ajout / suppression d'une
+  récompense, créance ou ligne de patrimoine originaire / final) intercepte l'échec après la
+  notification du hook : pas d'erreur non interceptée en console.
 
 - **Âge.** [lib/family/age.ts](../src/lib/family/age.ts) (`ageEnAnnees`, `formatAgeCourt`) est le
   seul calcul d'âge du module (différence calendaire).
@@ -177,13 +189,17 @@ permet de l'alimenter (voir §3).
 - **Affichage de l'arbre et du formulaire membre.** [FamilyTreeCards.tsx](../src/components/famille/FamilyTreeCards.tsx)
   dispose l'arbre en deux branches centrées sur le couple : famille du client à gauche, famille du
   conjoint à droite, descendance (enfants, petits-enfants…) centrée dessous. Le côté se déduit du
-  lien (`Parent` selon `enfant_de`, `Beau-parent` et `Beau-frère/Belle-sœur` côté conjoint, les
+  lien (`Parent` selon `enfant_de`, les
   autres héritent du nœud auquel ils sont reliés) ; dans chaque branche, les liens directs sont
   au plus près de l'axe. Traits généalogiques : parents reliés entre eux, un trait descend de leur
   milieu vers une barre d'où partent les enfants ; un enfant rattaché à un seul parent rejoint la
   fratrie de ce parent. Cartes : couple en encre, autres en taupe, défunts détourés ; pastille
   braise pour « À charge » ou « Handicap ». Sur téléphone, le défilement s'ouvre centré sur le
   couple. Purement visuel : `buildFamilyGraph` et les liens lus par la succession ne changent pas.
+  Générations (`GENERATION_BY_RELATION`) : neveux et nièces sur la ligne des enfants,
+  petits-neveux sur celle des petits-enfants. Les liens d'alliance (beaux-parents,
+  beaux-frères/belles-sœurs) n'existent pas : ils n'étaient pas saisissables et ont été retirés
+  de l'arbre et des groupes de membres.
   Chaque ligne de l'arbre est libellée d'après
   les liens qu'elle contient (ex. « Parents / Oncles et tantes », « Vous / Frères et sœurs »). Le
   tableau affiche le nom complet en une colonne. Le formulaire membre est découpé en blocs
@@ -288,7 +304,10 @@ permet de l'alimenter (voir §3).
   [SocieteAcquetsSection.tsx](../src/components/famille/matrimonial/SocieteAcquetsSection.tsx)
   (monté dans la section « Régime matrimonial » de `RelationInfoForm.tsx`, réutilise
   `AssetSelectionModal.tsx`), et stockées avec le même format qu'avant dans
-  `marital_status.clauses_contrat.societe_acquets`. L'ancienne option « extension de la communauté
+  `marital_status.clauses_contrat.societe_acquets`. La colonne est typée comme en base (`Json`) ;
+  on la lit et l'écrit uniquement via `lirePerimetreDesClauses()` / `clausesAvecPerimetre()`
+  ([lib/patrimoine/societeAcquets.ts](../src/lib/patrimoine/societeAcquets.ts)), qui conservent les
+  autres clés éventuelles. L'ancienne option « extension de la communauté
   aux biens propres par nature » a été supprimée (UI et moteur) : la stipulation contraire de
   l'art. 1526 ne concerne que la communauté universelle et n'est pas utilisée en pratique ; un bien
   propre par nature (art. 1404) reste toujours propre en régime communautaire. La clé
@@ -468,13 +487,14 @@ conservées, aucune migration, valeurs existantes non affectées grâce à l'ups
 `adresse_conjoint`, `code_postal_conjoint`, `ville_conjoint`, `pays_conjoint`, retirées de
 `PartnerForm.tsx`) ; `marital_status.imposition_distincte` (+ homologue implicite PACS, retirée de
 `RelationInfoForm.tsx`, voir 🟠 ci-dessus) ; sur `family_links` : `mesure_protection_juridique`,
-`mandat_protection_future` (+ date), retirées de `DynamicFamilyForm.tsx` (ces deux derniers champs
+`mandat_protection_future` (+ date), retirées de `DynamicFamilyForm.tsx` puis du schéma et de
+l'écriture de `FamilyMemberFormDialog.tsx` (valeurs en base laissées intactes ; ces deux derniers champs
 restent saisissables côté client/conjoint sur `family_profiles`/`marital_status`, seule la
 duplication sur les autres membres de la famille a été retirée).
 
 ## 4. Périmètre V1 / différé
 
-- **V1 — en place** : identité client/conjoint, statut du couple, régime matrimonial (5 onglets,
+- **V1 — en place** : identité client/conjoint, statut du couple, régime matrimonial (onglets selon le régime,
   sans le catalogue de clauses du contrat retiré le 2026-09-22 — voir §2), désignation des biens de
   la société d'acquêts, récompenses/créances, participation aux
   acquêts, donation au dernier vivant, créances entre partenaires de PACS (art. 515-7 dernier al.,

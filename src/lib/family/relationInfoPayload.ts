@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import type { MaritalStatus } from '@/services/familyService';
 
 // Construit le payload d'enregistrement de RelationInfoForm.tsx en ne gardant
 // que les champs réellement affichés à l'écran pour le statut courant (Option
@@ -37,7 +38,7 @@ const formatDate = (d?: Date): string | undefined => (d instanceof Date ? format
 export const buildRelationInfoPayload = (
   relationStatus: string,
   data: RelationInfoFormValues
-): Record<string, unknown> => {
+): MaritalStatus => {
   // Communs aux deux statuts en couple (affichés dans les deux blocs JSX),
   // absents en Concubinage (aucun champ affiché).
   const commonPayload =

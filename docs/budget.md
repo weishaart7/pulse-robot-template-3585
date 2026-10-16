@@ -163,7 +163,8 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
 - **Deux hooks partagés extraits par le commit `8274980`** pour factoriser `RevenusForm`/`ChargesForm` :
   [useBudgetEntryDialogState.ts](src/hooks/useBudgetEntryDialogState.ts) (état d'ouverture du dialogue,
   bascule création/édition) et [useBudgetEntryForm.ts](src/hooks/useBudgetEntryForm.ts) (React Hook Form +
-  Zod, sanitation via `sanitizeTextInput`/`sanitizeNumericInput`, intégration `useSecureForm` avec
+  Zod, normalisation via `sanitizeTextInput` (espaces retirés, texte stocké tel que saisi, sans
+  encodage HTML : React échappe à l'affichage) / `sanitizeNumericInput`, intégration `useSecureForm` avec
   rate-limiting applicatif — 10 tentatives / 60 s). Seuls les champs réellement distincts (nom du champ
   `beneficiaire` vs `debiteur`, catégories, `revenu_disponible`) restent dans chaque formulaire.
 

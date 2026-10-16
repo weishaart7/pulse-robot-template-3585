@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { lirePerimetre } from '@/lib/patrimoine/societeAcquets';
+import { lirePerimetreDesClauses } from '@/lib/patrimoine/societeAcquets';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -92,7 +92,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
     clauseRemploi: asset.clause_remploi,
     natureActif: asset.nature,
     assetId: asset.id,
-    societeAcquets: lirePerimetre((maritalStatus as any)?.clauses_contrat?.societe_acquets),
+    societeAcquets: lirePerimetreDesClauses(maritalStatus?.clauses_contrat),
     valeurAcquisition: asset.valeur_acquisition,
     fraisAcquisition: asset.frais_acquisition,
     apportFondsPropres: asset.financement_mixte_apport_propre,

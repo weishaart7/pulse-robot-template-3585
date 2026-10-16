@@ -18,16 +18,14 @@ interface FamilyTreeCardsProps {
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 // Libellé d'une ligne d'après les liens réellement présents (une même
-// génération mêle par ex. parents et oncles/tantes, ou petits-enfants et
+// génération mêle par ex. parents et oncles/tantes, ou enfants et
 // neveux/nièces), plutôt qu'un nom de génération qui ne décrit qu'une partie.
 const RELATION_PLURALS: Record<string, string> = {
   'Arrière grand-parent': 'Arrière-grands-parents',
   'Grand-parent': 'Grands-parents',
   'Parent': 'Parents',
-  'Beau-parent': 'Beaux-parents',
   'Oncle/Tante': 'Oncles et tantes',
   'Frère/Sœur': 'Frères et sœurs',
-  'Beau-frère/Belle-sœur': 'Beaux-frères et belles-sœurs',
   'Cousin/Cousine': 'Cousins',
   'Tierce personne': 'Tiers',
   'Enfant': 'Enfants',
@@ -57,8 +55,6 @@ type Side = 'user' | 'spouse' | 'center';
 
 // Côté imposé par la nature du lien ; les autres héritent du nœud auquel ils sont reliés.
 const FIXED_SIDE: Record<string, Side> = {
-  'Beau-parent': 'spouse',
-  'Beau-frère/Belle-sœur': 'spouse',
   'Enfant': 'center',
   'Petit-enfant': 'center',
   'Arrière petit-enfant': 'center',
@@ -89,8 +85,8 @@ function assignSides(graph: FamilyGraph): Map<string, Side> {
 
 // Plus le rang est petit, plus la carte est proche de l'axe central du couple.
 const PROXIMITY: Record<string, number> = {
-  'Parent': 0, 'Beau-parent': 0, 'Grand-parent': 0, 'Arrière grand-parent': 0,
-  'Frère/Sœur': 1, 'Beau-frère/Belle-sœur': 1, 'Oncle/Tante': 1,
+  'Parent': 0, 'Grand-parent': 0, 'Arrière grand-parent': 0,
+  'Frère/Sœur': 1, 'Oncle/Tante': 1,
   'Cousin/Cousine': 2, 'Neveu/Nièce': 1, 'Petit neveu/nièce': 1, 'Tierce personne': 3,
 };
 const proximity = (n: FamilyGraphNode) => (n.isMain || n.isSpouse ? -1 : PROXIMITY[n.relation] ?? 2);

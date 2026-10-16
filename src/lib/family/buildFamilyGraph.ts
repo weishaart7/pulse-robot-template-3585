@@ -30,15 +30,13 @@ const GENERATION_BY_RELATION: Record<string, number> = {
   'Grand-parent': -2,
   'Arrière grand-parent': -3,
   'Parent': -1,
-  'Beau-parent': -1,
   'Oncle/Tante': -1, // même génération que les parents
   'Frère/Sœur': 0,
-  'Beau-frère/Belle-sœur': 0,
   'Cousin/Cousine': 0, // même génération que la fratrie
   'Enfant': 1,
-  'Neveu/Nièce': 2, // même génération que les petits-enfants
+  'Neveu/Nièce': 1, // même génération que les enfants
   'Petit-enfant': 2,
-  'Petit neveu/nièce': 3,
+  'Petit neveu/nièce': 2, // même génération que les petits-enfants
   'Arrière petit-enfant': 3,
 };
 

@@ -25,7 +25,6 @@ import {
 
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
-// Repères de couleur de la composition (touches lagon / citron du hero de la landing).
 const STATUTS = ['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve'];
 
 // Bloc d'une personne du foyer dans le panneau latéral : titre + lien vers la fiche, puis
@@ -72,10 +71,14 @@ const FamilleSection = () => {
   const [pendingStatut, setPendingStatut] = useState<{ statut: string; children: FamilyLink[] } | null>(null);
 
   const applyStatut = async (statut: string) => {
-    if (statut === 'Célibataire') {
-      await setStatutCouple('Célibataire', { parent_isole: false });
-    } else {
-      await setStatutCouple(statut);
+    try {
+      if (statut === 'Célibataire') {
+        await setStatutCouple('Célibataire', { parent_isole: false });
+      } else {
+        await setStatutCouple(statut);
+      }
+    } catch {
+      // Échec déjà notifié par useMaritalStatus : le menu garde le statut enregistré.
     }
   };
 

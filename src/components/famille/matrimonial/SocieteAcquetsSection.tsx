@@ -11,8 +11,8 @@ import { SectionHeader } from '@/components/family/SectionHeader';
 import {
   CATEGORIES_SOCIETE_ACQUETS,
   CategorieSocieteAcquets,
-  ecrirePerimetre,
-  lirePerimetre,
+  clausesAvecPerimetre,
+  lirePerimetreDesClauses,
   PerimetreSocieteAcquets,
 } from '@/lib/patrimoine/societeAcquets';
 import { calculerRequalifications, compositionSocieteAcquets, ContexteMatrimonialLot, Requalification } from '@/lib/patrimoine/requalification';
@@ -57,15 +57,15 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
   const [enAttente, setEnAttente] = useState<{ perimetre: PerimetreSocieteAcquets; changements: Requalification[] } | null>(null);
   const [application, setApplication] = useState(false);
 
-  const clausesContrat = (maritalData as any)?.clauses_contrat || {};
+  const clausesContrat = maritalData?.clauses_contrat;
   // Périmètre local, mis à jour immédiatement : des clics rapprochés partaient
   // sinon de l'état serveur pas encore rafraîchi et s'écrasaient entre eux.
-  const [perimetre, setPerimetre] = useState<PerimetreSocieteAcquets>(() => lirePerimetre(clausesContrat.societe_acquets));
-  const stockeServeur = JSON.stringify(clausesContrat.societe_acquets ?? null);
+  const [perimetre, setPerimetre] = useState<PerimetreSocieteAcquets>(() => lirePerimetreDesClauses(clausesContrat));
+  const stockeServeur = JSON.stringify(lirePerimetreDesClauses(clausesContrat));
   const ecrituresEnCours = useRef(0);
   useEffect(() => {
     if (ecrituresEnCours.current > 0) return;
-    setPerimetre(lirePerimetre(clausesContrat.societe_acquets));
+    setPerimetre(lirePerimetreDesClauses(clausesContrat));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stockeServeur]);
   // Écritures sérialisées : chacune part de la précédente.
@@ -76,10 +76,10 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
     ecrituresEnCours.current += 1;
     const ecriture = fileEcriture.current
       .catch(() => undefined)
-      .then(() => saveData({ clauses_contrat: { ...clausesContrat, societe_acquets: ecrirePerimetre(p) } } as any, { silent: true }))
+      .then(() => saveData({ clauses_contrat: clausesAvecPerimetre(clausesContrat, p) }, { silent: true }))
       .catch((error) => {
         // Échec (déjà notifié par useMaritalStatus) : on revient à l'état enregistré.
-        setPerimetre(lirePerimetre(clausesContrat.societe_acquets));
+        setPerimetre(lirePerimetreDesClauses(clausesContrat));
         throw error;
       })
       .finally(() => {
@@ -89,7 +89,7 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
     return ecriture;
   };
 
-  const contexte = { ...(maritalData as any) };
+  const contexte: ContexteMatrimonialLot = { ...maritalData };
   const perimetreAffiche = brouillon ? brouillon.perimetre ?? perimetre : perimetre;
   const composition = compositionSocieteAcquets(assets, brouillon?.contexte ?? contexte, perimetreAffiche);
   const euros = (v: number) =>
@@ -279,7 +279,7 @@ export const SocieteAcquetsSection: React.FC<SocieteAcquetsSectionProps> = ({
         onCancel={() => {
           setEnAttente(null);
           // Rien n'a été enregistré : l'affichage revient au périmètre enregistré.
-          setPerimetre(lirePerimetre(clausesContrat.societe_acquets));
+          setPerimetre(lirePerimetreDesClauses(clausesContrat));
         }}
         onConfirm={appliquer}
       />
