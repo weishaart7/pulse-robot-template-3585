@@ -67,11 +67,68 @@ charges uniquement, `reporter_budget = true` uniquement).
 
 ## 2. Architecture & décisions
 
-**Charte graphique** — design system du simulateur ([design-system.md](design-system.md)) :
-encre (identité, revenus), braise `#ff4704` (charges, endettement, solde négatif), violet `#0447ff`
-(solde excédentaire, courbe de solde), via `src/lib/palette.ts`. Cartes `rounded-card` avec pastille
-d'icône ronde, KPI du Résumé en `StatCard` (barre de couleur + badge rond), bouton d'ajout et sélecteur
-Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune logique de calcul modifiée.
+**Charte graphique** — palette des panneaux de travail, celle de Famille ([design-system.md](design-system.md)) :
+lagon (`#55b4bd`, foncé `#16707a`) pour les revenus et le solde positif, citron (`#d9fd86`, déclinaisons
+`#a8c44a` / `#4a5a10`) pour les charges, encre et gris chauds en complément, rouge `NEGATIVE` réservé au
+déficit et au dépassement du plafond HCSF. Couleurs par catégorie fixées dans `REVENUS_COLORS` /
+`CHARGES_COLORS` (`BudgetResume.tsx`) ; part disponible en piste neutre `#e9e5e0`.
+
+**Cadre** (`BudgetSection`) : « panneau de travail » commun à Famille et Patrimoine
+(`components/layout/workspace-panel.tsx`, classe `.workspace-panel`) — barre d'en-tête à fil d'Ariane
+« Budget / onglet » portant la bascule Mensuel / Annuel (segmentée, 32 px, angles 2 px), titre 24 px de
+l'onglet et rappel, puis le contenu bord à bord sous un filet, pour les trois onglets.
+
+**Couleurs par catégorie** : `src/components/budget/budgetColors.ts`, partagé par le Résumé et les
+listes — palette, `colorForRevenu` / `colorForCharge`, et `categorieRevenu` / `categorieCharge`
+(rattachement d'une nature à sa catégorie, repli « Revenus du patrimoine » / « Logement & Habitation »
+comme dans les répartitions).
+
+**Revenus / Charges** (`BudgetRevenus`, `BudgetCharges` → `BudgetList`, une seule nature de ligne par
+appel via `kind`) :
+  1. **Bandeau de synthèse** (1 / 1,5) : total des lignes actives en 34 px, étiquette du nombre de lignes
+     actives (lagon pour les revenus, citron pour les charges) et des inactives hors total ; lignes
+     Récurrents / Ponctuels / Via les actifs (lignes `immobilier` et `emprunt`) ; à droite, composition
+     par catégorie (barre + légende sur deux colonnes).
+  2. **Lignes**, sur le modèle de la liste des membres de Famille : barre d'outils (nombre de lignes et
+     de catégories, bouton « Nouveau revenu » / « Nouvelle charge », pilule encre inchangée), encadré des
+     charges d'actif en % exclues (angles 2 px) pour les charges, puis **une section par catégorie, empilées
+     en colonnes filetées** (maçonnerie CSS : 2 colonnes dès `lg`, 3 dès `2xl`, sans vide sous les
+     sections courtes) (repère coloré, nombre de lignes, sous-total et part), catégories et lignes
+     triées par montant décroissant. Chaque ligne : carré d'initiales teinté de la couleur de la
+     catégorie, libellé, rappel « nature · bénéficiaire/débiteur · échéance » (seules les dates utiles :
+     date d'un ponctuel, fin prévue, début encore à venir), montant de la période avec « périodicité ·
+     part » dessous, menu ⋯ Modifier / Supprimer (menu d'actions commun du design system, « Supprimer » en variante `destructive`). Un clic sur la ligne ouvre la modification ; la
+     suppression passe par une confirmation (`WizardConfirmDialog`). Lignes d'actif / d'emprunt :
+     étiquette lagon « Immobilier » / « Emprunt », non cliquables, sans menu (infobulle « Modifier
+     depuis… »). Lignes inactives grisées, carré à filet, étiquette « Inactive », sans part.
+
+**Fenêtres d'ajout / modification** (`RevenusForm`, `ChargesForm` → `BudgetEntryDialog`, partagé ; la
+saisie et la validation restent dans `useBudgetEntryForm`, charge utile envoyée inchangée) : gabarit des
+fenêtres de panneau de travail, comme l'ajout d'un membre de Famille — classe `.workspace-panel`, coins
+4 px, arrière-plan flouté à 6 px (`overlayClassName` de `DialogContent`), en-tête fileté (titre 16 px + rappel), pied fileté (`panelButtonClass` « Annuler »,
+`panelPrimaryButtonClass` « Ajouter » / « Enregistrer » avec `LogoSpinner`). Quatre sections à repère
+coloré de la catégorie choisie : **Nature** (catégorie, nature, libellé, bénéficiaire / débiteur, sur
+deux colonnes), **Montant** (périodicité en bascule segmentée, montant avec suffixe €, libellé adapté
+« par mois / trimestre / semestre / an », équivalence « soit X € par mois · Y € par an » ou rappel du
+traitement d'un ponctuel), **Calendrier** (début — « Date » pour un ponctuel —, fin masquée pour un
+ponctuel, jour fixe, rappel de la règle sans date de début ; dates saisies comme dans Famille avec
+`SmartDateInput` — JJ/MM/AAAA au clavier ou calendrier, dates futures admises via `maxDate={null}` ;
+une saisie incomplète reste locale et n'est jamais envoyée), **Note** (commentaire).
+
+**Résumé** (`BudgetResume`), calqué sur le Résumé Patrimoine : bandeaux bord à bord en colonnes
+filetées, lignes `SummaryRow`, titres `PanelTitle`, pas de cartes.
+  1. **Bandeau haut** (1 / 1,5) : solde de la période en 34 px (lagon foncé, rouge si déficit), étiquette
+     « x % des revenus restent disponibles », lignes Revenus / Charges / Solde annuel ; à droite
+     **« Où vont les revenus »** — barre de composition (charges par catégorie puis part disponible en
+     piste neutre `#e9e5e0`, sur la base du plus grand des deux totaux) et légende sur deux colonnes
+     (montant, part).
+  2. **Bandeau détail** (3 colonnes) : charges par catégorie, revenus par catégorie — chaque catégorie
+     rappelle les libellés de ses lignes (3 max, puis « +n »), son montant et sa part — et
+     **Endettement (HCSF)** : taux d'effort avec jauge 0–50 % et repère au plafond `TAUX_EFFORT_MAX`
+     (rouge au-delà), crédits, revenus pondérés, capacité, nombre de ponctuels, rappel de pondération.
+  3. **Évolution mensuelle** : bandeau affiché seulement si les 12 mois diffèrent (ponctuel, ligne qui
+     démarre ou s'arrête dans l'année) ; omis sinon.
+Purement visuel : aucune logique de calcul modifiée.
 
 - **`src/lib/budget/periodicite.ts` : point d'entrée unique de la conversion de périodicité.** Il n'y a
   aucune règle réglementaire à isoler, mais la conversion était recopiée en quatre variantes divergentes
@@ -89,7 +146,7 @@ Mensuel/Annuel en pilule encre, donuts sur `SERIES`. Purement visuel : aucune lo
   `BudgetResume` (KPI, donuts, graphique mensuel), `BudgetList` et `Dashboard.tsx` consomment tous ce
   module ; tests dans `periodicite.test.ts`.
 
-- **Graphique « Évolution mensuelle » (`SeasonalityChart`)** : une ligne récurrente est lissée
+- **Graphique « Évolution mensuelle » (`SeasonalityChart`)** — masqué quand les 12 mois sont identiques : une ligne récurrente est lissée
   (annuel / 12) sur chaque mois de l'année civile où elle est active, `date_debut`/`date_fin` comprises au
   mois près ; un ponctuel tombe en entier sur le mois de sa `date_debut` (janvier sans date).
 

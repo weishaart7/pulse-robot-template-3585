@@ -1,5 +1,5 @@
 // Point d'entrée unique pour la conversion de périodicité et le filtre « ligne active » du Budget,
-// partagé par BudgetList.tsx, BudgetResume.tsx (KPI, donuts, graphique mensuel) et Dashboard.tsx
+// partagé par BudgetList.tsx, BudgetResume.tsx (synthèse, répartitions, graphique mensuel) et Dashboard.tsx
 // (cf. docs/budget.md). Accepte les deux graphies (masculine côté revenus/charges, féminine côté
 // asset_revenus/asset_charges) et ignore la casse.
 

@@ -1,70 +1,89 @@
-import { ASH, EGGSHELL, EMBER, EMBER_SOFT, GRAPHITE, INK, SERIES, VIOLET } from '@/lib/palette';
+import { ASH, INK, NEGATIVE, STONE } from '@/lib/palette';
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Line, ReferenceLine } from 'recharts';
+import { ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Line, ReferenceLine, ResponsiveContainer, Tooltip } from 'recharts';
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { Revenu, Charge } from '@/services/budgetService';
 import { REVENUS_CATEGORIES, CHARGES_CATEGORIES } from '@/constants/budgetCategories';
-import { SlidingNumber } from '@/components/ui/sliding-number';
-import { TrendingUp, TrendingDown, Wallet, Percent, Landmark, PieChart as PieIcon, BarChart3 } from 'lucide-react';
 import { DisplayMode } from '@/pages/budget/BudgetSection';
+import { PanelTitle, SummaryRow } from '@/components/layout/workspace-panel';
 import { toAnnual, isActiveOn, isPonctuel, parseLocalDate } from '@/lib/budget/periodicite';
-import { computeEndettement } from '@/lib/budget/endettement';
+import { computeEndettement, TAUX_EFFORT_MAX } from '@/lib/budget/endettement';
+import { CITRON_MID, DISPONIBLE, LAGON, LAGON_INK, categorieCharge, categorieRevenu, colorForCharge, colorForRevenu } from '@/components/budget/budgetColors';
 
 interface BudgetResumeProps {
   displayMode: DisplayMode;
 }
 
-// Palette Famille (teal identité / lime accent / rose pour les charges),
-// même triptyque que PatrimoineResume.tsx — cf. docs/budget.md.
-const TEAL = INK;
-const LIME = VIOLET;
-const LIME_ICON = EGGSHELL;
-const PINK = EMBER;
+// Résumé en « panneau de travail », sur le modèle du Résumé Patrimoine : bandeaux bord à bord
+// découpés en colonnes filetées, lignes libellé / valeur, pas de cartes. Encre pour les revenus,
+// braise pour les charges et l'endettement, violet pour un solde excédentaire
+// (cf. docs/budget.md, docs/design-system.md).
 
-const StatCard = ({ label, subtitle, icon: Icon, badgeBg, iconColor, barColor, delay, children }: {
-  label: string;
-  subtitle: string;
-  icon: React.ElementType;
-  badgeBg: string;
-  iconColor: string;
-  barColor: string;
-  delay: string;
-  children: React.ReactNode;
-}) => (
-  <div
-    className="group relative rounded-2xl border border-border/60 bg-card overflow-hidden shadow-sm transition-all duration-500 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5 animate-fade-in"
-    style={{ animationDelay: delay }}
-  >
-    <div className="h-[3px] opacity-80 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: barColor }} />
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-[13px] font-medium text-muted-foreground tracking-wide">{label}</p>
-        <div
-          className="h-10 w-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
-          style={{ backgroundColor: badgeBg }}
-        >
-          <Icon className="h-[18px] w-[18px]" style={{ color: iconColor }} strokeWidth={1.5} />
-        </div>
-      </div>
-      <div className="text-[28px] font-bold text-foreground tracking-tight leading-none flex items-center gap-1">
-        {children}
-      </div>
-      <p className="text-[11px] text-muted-foreground/70 mt-2">{subtitle}</p>
+
+const Swatch = ({ color }: { color: string }) => (
+  <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: color }} />
+);
+
+const fmtPct = (n: number) => `${n.toFixed(1).replace('.', ',')} %`;
+
+interface CategoryRow {
+  categorie: string;
+  total: number;
+  count: number;
+}
+
+// Libellés des lignes rattachées à chaque catégorie (même rattachement que les totaux).
+const libellesParCategorie = (lines: (Revenu | Charge)[], categorieOf: (nature: string) => string): Record<string, string[]> => {
+  const out: Record<string, string[]> = {};
+  lines.forEach(line => { (out[categorieOf(line.nature)] ??= []).push(line.libelle || line.nature); });
+  return out;
+};
+
+// Colonne « par catégorie » : une ligne par catégorie, libellés des lignes en rappel, montant et part.
+const CategoryColumn = ({ title, rows, total, colorFor, libelles, formatCurrency, emptyLabel }: {
+  title: string;
+  rows: CategoryRow[];
+  total: number;
+  colorFor: (categorie: string) => string;
+  libelles: Record<string, string[]>;
+  formatCurrency: (amount: number) => string;
+  emptyLabel: string;
+}) => {
+  const sorted = [...rows].sort((a, b) => b.total - a.total);
+  return (
+    <div className="px-8 py-6">
+      <PanelTitle action={<span className="text-[13px] font-medium tabular-nums text-foreground">{formatCurrency(total)}</span>}>
+        {title}
+      </PanelTitle>
+      {sorted.length === 0 ? (
+        <p className="mt-3 text-[13px] text-muted-foreground">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-border">
+          {sorted.map(row => {
+            const noms = libelles[row.categorie] ?? [];
+            return (
+              <li key={row.categorie} className="flex items-start justify-between gap-4 py-2.5">
+                <div className="flex min-w-0 items-start gap-2">
+                  <span className="mt-[5px]"><Swatch color={colorFor(row.categorie)} /></span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] text-foreground">{row.categorie}</p>
+                    <p className="truncate text-[12px] text-muted-foreground">
+                      {noms.slice(0, 3).join(', ')}{noms.length > 3 ? ` +${noms.length - 3}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right tabular-nums">
+                  <p className="text-[13px] font-medium text-foreground">{formatCurrency(row.total)}</p>
+                  <p className="text-[12px] text-muted-foreground">{fmtPct(total > 0 ? (row.total / total) * 100 : 0)}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
-  </div>
-);
-
-const CardTitleWithIcon = ({ icon: Icon, color, children }: { icon: React.ElementType; color: string; children: React.ReactNode }) => (
-  <CardTitle className="flex items-center gap-2.5">
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full" style={{ backgroundColor: `${color}1a` }}>
-      <Icon className="h-4 w-4" style={{ color }} />
-    </span>
-    {children}
-  </CardTitle>
-);
-
-const CARD_CLASS = 'border border-border shadow-sm rounded-2xl';
+  );
+};
 
 export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const { revenus, loading: revenusLoading } = useRevenus();
@@ -101,18 +120,12 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
 
   if (revenusLoading || chargesLoading) {
     return (
-      <div className="space-y-6">
-        <Card className={CARD_CLASS}>
-          <CardHeader>
-            <CardTitleWithIcon icon={Wallet} color={TEAL}>Résumé du Budget</CardTitleWithIcon>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">Chargement des données...</p>
-          </CardContent>
-        </Card>
+      <div className="px-8 py-6">
+        <p className="text-sm text-muted-foreground">Chargement des données…</p>
       </div>
     );
   }
+
 
   // Taux d'effort et capacité d'endettement au sens HCSF, sur revenus pondérés (src/lib/budget/endettement.ts).
   // Le Solde, lui, reste calculé sur 100 % des revenus.
@@ -197,175 +210,137 @@ export const BudgetResume = ({ displayMode }: BudgetResumeProps) => {
   const totalRevenusCat = revenusParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   const totalChargesCat = chargesParCategorie.reduce((sum, cat) => sum + cat.total, 0);
   
-  // Revenus : famille encre / violet ; charges : série complète (lib/palette.ts).
-  const REVENUS_COLORS: Record<string, string> = {
-    'Revenus du travail': SERIES[0],
-    'Revenus du patrimoine': SERIES[1],
-    'Retraites, pensions & rentes': SERIES[3],
-    'Aides sociales & allocations': SERIES[4],
-    'Indemnités & remboursements': SERIES[7],
-    'Autres revenus': SERIES[8]
-  };
+  const getColorForRevenu = colorForRevenu;
+  const getColorForCharge = colorForCharge;
 
-  const CHARGES_COLORS: Record<string, string> = {
-    'Emprunts & Crédits': SERIES[2],
-    'Logement & Habitation': SERIES[0],
-    'Transports & Mobilité': SERIES[1],
-    'Alimentation & Vie courante': SERIES[3],
-    'Santé & Bien-être': SERIES[5],
-    'Famille, Enfants & Éducation': SERIES[4],
-    'Impôts, Cotisations & Assurances': SERIES[6],
-    'Épargne & Investissements': SERIES[8],
-    'Loisirs, Culture & Numérique': SERIES[9],
-    'Solidarité, Pensions & Divers': SERIES[7]
-  };
+  const tauxPlafond = TAUX_EFFORT_MAX * 100;
+  const tauxDepasse = tauxEndettement > tauxPlafond;
+  // Jauge du taux d'effort sur une échelle 0–50 %, repère au plafond HCSF.
+  const JAUGE_MAX = 50;
+  const nbPonctuels = [...activeRevenus, ...activeCharges].filter(l => isPonctuel(l.periodicite)).length;
+  const partDisponible = displayRevenus > 0 ? (soldePeriode / displayRevenus) * 100 : 0;
 
-  const getColorForRevenu = (categorie: string) => REVENUS_COLORS[categorie] || ASH;
-  const getColorForCharge = (categorie: string) => CHARGES_COLORS[categorie] || EMBER;
+  // Barre « où vont les revenus » : charges par catégorie puis part disponible, sur la base du plus
+  // grand des deux totaux (un déficit remplit la barre de charges, sans part disponible).
+  const allocationBase = Math.max(totalRevenusCat, totalChargesCat);
+  const allocation = [
+    ...[...chargesParCategorie].sort((a, b) => b.total - a.total)
+      .map(c => ({ name: c.categorie, value: c.total, color: getColorForCharge(c.categorie) })),
+    ...(totalRevenusCat > totalChargesCat
+      ? [{ name: 'Disponible', value: totalRevenusCat - totalChargesCat, color: DISPONIBLE }]
+      : []),
+  ].map(s => ({ ...s, pct: allocationBase > 0 ? (s.value / allocationBase) * 100 : 0 }));
+
+  const libellesCharges = libellesParCategorie(activeCharges, categorieCharge);
+  const libellesRevenus = libellesParCategorie(activeRevenus, categorieRevenu);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          label={`Solde ${periodLabel}`}
-          subtitle="Revenus - Dépenses"
-          icon={soldePeriode >= 0 ? TrendingUp : TrendingDown}
-          badgeBg={soldePeriode >= 0 ? LIME : `${PINK}1a`}
-          iconColor={soldePeriode >= 0 ? LIME_ICON : PINK}
-          barColor={soldePeriode >= 0 ? LIME : PINK}
-          delay="0ms"
-        >
-          {soldePeriode >= 0 ? '+' : ''}
-          <SlidingNumber value={soldePeriode} />
-          <span className="ml-1">€</span>
-        </StatCard>
+    <div>
+      {/* En-tête : solde et ses composantes, puis destination des revenus. */}
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
+        <div className="px-8 py-6">
+          <p className="text-[12px] text-muted-foreground">Solde {periodLabel}</p>
+          <p
+            className="mt-2 text-[34px] font-medium leading-none tracking-[-0.03em] tabular-nums"
+            style={{ color: soldePeriode >= 0 ? LAGON_INK : NEGATIVE }}
+          >
+            {soldePeriode >= 0 ? '+' : '−'}{formatCurrency(Math.abs(soldePeriode))}
+          </p>
+          {displayRevenus > 0 && (
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
+              <span className={`inline-flex h-6 items-center rounded-[2px] px-2 font-medium tabular-nums ${soldePeriode >= 0 ? 'bg-lagon-soft text-lagon-ink' : 'bg-destructive/10 text-destructive'}`}>
+                {fmtPct(partDisponible)}
+              </span>
+              <span className="text-muted-foreground">des revenus {soldePeriode >= 0 ? 'restent disponibles' : 'en déficit'}</span>
+            </p>
+          )}
+          <dl className="mt-5">
+            <SummaryRow label="Revenus"><span className="tabular-nums">{formatCurrency(displayRevenus)}</span></SummaryRow>
+            <SummaryRow label="Charges"><span className="tabular-nums">{formatCurrency(displayCharges)}</span></SummaryRow>
+            <SummaryRow label="Solde annuel">
+              <span className="tabular-nums">{formatCurrency(Math.round(totalRevenusAnnuel - totalChargesAnnuel))}</span>
+            </SummaryRow>
+          </dl>
+        </div>
 
-        <StatCard
-          label="Taux d'effort (HCSF)"
-          subtitle={`${displayMensualitesCredits.toLocaleString('fr-FR')} € / ${displayRevenusPonderes.toLocaleString('fr-FR')} € pondérés · loyers à 70 %, revenus non pérennes exclus`}
-          icon={Percent}
-          badgeBg={`${PINK}1a`}
-          iconColor={PINK}
-          barColor={PINK}
-          delay="60ms"
-        >
-          <SlidingNumber value={parseFloat(tauxEndettement.toFixed(1))} />
-          <span>%</span>
-        </StatCard>
-
-        <StatCard
-          label="Capacité d'endettement"
-          subtitle="35 % des revenus pondérés, moins les crédits en cours"
-          icon={Landmark}
-          badgeBg={`${TEAL}1a`}
-          iconColor={TEAL}
-          barColor={TEAL}
-          delay="120ms"
-        >
-          <SlidingNumber value={capaciteEndettement} />
-          <span className="ml-1">€</span>
-        </StatCard>
+        <div className="px-8 py-6">
+          <PanelTitle>Où vont les revenus</PanelTitle>
+          {allocationBase === 0 ? (
+            <p className="mt-3 text-[13px] text-muted-foreground">Aucun revenu ni charge actif.</p>
+          ) : (
+            <>
+              <div className="mt-4 flex h-2.5 w-full gap-[2px] overflow-hidden rounded-[1px]">
+                {allocation.map(s => (
+                  <div key={s.name} title={`${s.name} · ${fmtPct(s.pct)}`} className="h-full" style={{ width: `${s.pct}%`, backgroundColor: s.color }} />
+                ))}
+              </div>
+              <ul className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+                {allocation.map(s => (
+                  <li key={s.name} className="flex items-baseline justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2 text-[13px] text-foreground">
+                      <Swatch color={s.color} />
+                      <span className="truncate">{s.name}</span>
+                    </span>
+                    <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
+                      <span className="text-[13px] font-medium text-foreground">{formatCurrency(s.value)}</span>
+                      <span className="w-11 text-right text-[12px] text-muted-foreground">{fmtPct(s.pct)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Répartition par catégories */}
-      <div className="grid gap-6 md:grid-cols-2 mt-6">
-        {/* Répartition des revenus par catégories */}
-        <Card className={CARD_CLASS}>
-          <CardHeader>
-            <CardTitleWithIcon icon={PieIcon} color={TEAL}>Répartition des revenus par catégories</CardTitleWithIcon>
-            <CardDescription>Distribution des revenus selon leur nature</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {revenusParCategorie.length > 0 ? (
-              <div className="relative h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={revenusParCategorie.map(cat => ({ name: cat.categorie, value: cat.total }))}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={85}
-                      paddingAngle={2}
-                      dataKey="value"
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    >
-                      {revenusParCategorie.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={getColorForRevenu(entry.categorie)} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', color: 'black' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-foreground">{formatCurrency(totalRevenusCat)}</div>
-                    <div className="text-xs text-muted-foreground">Total revenus</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">Aucun revenu pour le moment</div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Répartition des charges par catégories */}
-        <Card className={CARD_CLASS}>
-          <CardHeader>
-            <CardTitleWithIcon icon={PieIcon} color={PINK}>Répartition des charges par catégories</CardTitleWithIcon>
-            <CardDescription>Distribution des charges selon leur nature</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {chargesParCategorie.length > 0 ? (
-              <div className="relative h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chargesParCategorie.map(cat => ({ name: cat.categorie, value: cat.total }))}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={70}
-                      outerRadius={85}
-                      paddingAngle={2}
-                      dataKey="value"
-                      stroke="hsl(var(--background))"
-                      strokeWidth={2}
-                    >
-                      {chargesParCategorie.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={getColorForCharge(entry.categorie)} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '12px', color: 'black' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ paddingBottom: '36px' }}>
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-foreground">{formatCurrency(totalChargesCat)}</div>
-                    <div className="text-xs text-muted-foreground">Total charges</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-8">Aucune charge pour le moment</div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Détail : charges et revenus par catégorie, endettement au sens HCSF. */}
+      <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <CategoryColumn
+          title="Charges par catégorie"
+          rows={chargesParCategorie}
+          total={totalChargesCat}
+          colorFor={getColorForCharge}
+          libelles={libellesCharges}
+          formatCurrency={formatCurrency}
+          emptyLabel="Aucune charge pour le moment."
+        />
+        <CategoryColumn
+          title="Revenus par catégorie"
+          rows={revenusParCategorie}
+          total={totalRevenusCat}
+          colorFor={getColorForRevenu}
+          libelles={libellesRevenus}
+          formatCurrency={formatCurrency}
+          emptyLabel="Aucun revenu pour le moment."
+        />
+        <div className="px-8 py-6">
+          <PanelTitle>Endettement (HCSF)</PanelTitle>
+          <div className="mt-4 flex items-baseline justify-between gap-3">
+            <p className="text-[24px] font-medium leading-none tracking-[-0.02em] tabular-nums" style={{ color: tauxDepasse ? NEGATIVE : undefined }}>
+              {fmtPct(tauxEndettement)}
+            </p>
+            <p className="text-[12px] text-muted-foreground">taux d'effort · max {tauxPlafond} %</p>
+          </div>
+          <div className="relative mt-3 h-1.5 bg-secondary">
+            <div className="h-full" style={{ width: `${Math.min(tauxEndettement / JAUGE_MAX, 1) * 100}%`, backgroundColor: tauxDepasse ? NEGATIVE : LAGON }} />
+            <div className="absolute -top-1 h-3.5 w-px bg-foreground/50" style={{ left: `${tauxPlafond / JAUGE_MAX * 100}%` }} />
+          </div>
+          <dl className="mt-5">
+            <SummaryRow label="Crédits"><span className="tabular-nums">{formatCurrency(displayMensualitesCredits)}</span></SummaryRow>
+            <SummaryRow label="Rev. pondérés"><span className="tabular-nums">{formatCurrency(displayRevenusPonderes)}</span></SummaryRow>
+            <SummaryRow label="Capacité">
+              <span className="tabular-nums">{formatCurrency(capaciteEndettement)}</span>
+              <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">de mensualités</span>
+            </SummaryRow>
+            <SummaryRow label="Ponctuels"><span className="tabular-nums">{nbPonctuels}</span></SummaryRow>
+          </dl>
+          <p className="mt-3 text-[12px] leading-5 text-muted-foreground">
+            Loyers retenus à 70 %, revenus non pérennes exclus.
+          </p>
+        </div>
       </div>
 
-      {/* Saisonnalité - Évolution mensuelle */}
-      <Card className={`mt-6 ${CARD_CLASS}`}>
-        <CardHeader>
-          <CardTitleWithIcon icon={BarChart3} color={TEAL}>Évolution mensuelle</CardTitleWithIcon>
-          <CardDescription>Comparaison revenus et charges sur 12 mois</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SeasonalityChart revenus={revenus} charges={charges} formatCurrency={formatCurrency} />
-        </CardContent>
-      </Card>
+      <SeasonalityChart revenus={revenus} charges={charges} formatCurrency={formatCurrency} />
     </div>
   );
 };
@@ -422,105 +397,73 @@ const SeasonalityChart = ({ revenus, charges, formatCurrency }: SeasonalityChart
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revenus, charges, currentYear]);
 
-  const hasData = revenus.length > 0 || charges.length > 0;
 
-  if (!hasData) {
-    return <div className="text-center text-muted-foreground py-8">Aucune donnée à afficher</div>;
-  }
+  // Sans ponctuel ni ligne qui démarre ou s'arrête dans l'année, les 12 mois sont identiques :
+  // le graphique n'apprend rien, le bandeau est omis.
+  const isFlat = monthlyData.every(m => m.revenus === monthlyData[0].revenus && m.charges === monthlyData[0].charges);
+  if ((revenus.length === 0 && charges.length === 0) || isFlat) return null;
 
   return (
-    <div className="h-80 relative">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={monthlyData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }} barGap={4} barCategoryGap="20%">
-          <defs>
-            <linearGradient id="revenusGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={INK} stopOpacity={1} />
-              <stop offset="100%" stopColor={GRAPHITE} stopOpacity={0.85} />
-            </linearGradient>
-            <linearGradient id="chargesGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={EMBER} stopOpacity={1} />
-              <stop offset="100%" stopColor={EMBER_SOFT} stopOpacity={0.85} />
-            </linearGradient>
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.1"/>
-            </filter>
-          </defs>
-          <CartesianGrid strokeDasharray="0" stroke="hsl(var(--border))" strokeOpacity={0.4} vertical={false} />
-          <XAxis 
-            dataKey="month" 
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 500 }}
-            axisLine={false}
-            tickLine={false}
-            dy={8}
-          />
-          <YAxis 
-            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-            tickFormatter={(value) => `${(value / 1000).toFixed(0)}k€`}
-            width={45}
-          />
-          <Tooltip 
-            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3, radius: 4 }}
-            formatter={(value: number, name: string) => [
-              formatCurrency(value),
-              name === 'revenus' ? 'Revenus' : name === 'charges' ? 'Charges' : 'Solde'
-            ]}
-            contentStyle={{
-              backgroundColor: 'hsl(var(--popover))',
-              border: 'none',
-              borderRadius: '12px',
-              boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
-              padding: '12px 16px',
-            }}
-            labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: '8px', fontSize: '13px' }}
-            itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px', padding: '2px 0' }}
-          />
-          <Legend 
-            formatter={(value) => (
-              <span className="text-xs font-medium text-muted-foreground">
-                {value === 'revenus' ? 'Revenus' : value === 'charges' ? 'Charges' : 'Solde'}
-              </span>
-            )}
-            wrapperStyle={{ paddingTop: '20px' }}
-            iconType="circle"
-            iconSize={8}
-          />
-          <ReferenceLine y={0} stroke="hsl(var(--border))" strokeDasharray="3 3" />
-          <Bar 
-            dataKey="revenus" 
-            fill="url(#revenusGradient)"
-            radius={[6, 6, 0, 0]}
-            name="revenus"
-            filter="url(#shadow)"
-            animationBegin={0}
-            animationDuration={800}
-            animationEasing="ease-out"
-          />
-          <Bar 
-            dataKey="charges" 
-            fill="url(#chargesGradient)"
-            radius={[6, 6, 0, 0]}
-            name="charges"
-            filter="url(#shadow)"
-            animationBegin={200}
-            animationDuration={800}
-            animationEasing="ease-out"
-          />
-          <Line
-            type="monotone"
-            dataKey="solde"
-            stroke={VIOLET}
-            strokeWidth={2.5}
-            dot={{ fill: VIOLET, strokeWidth: 0, r: 4 }}
-            activeDot={{ r: 6, fill: VIOLET, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
-            name="solde"
-            animationBegin={400}
-            animationDuration={1000}
-            animationEasing="ease-out"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+    <div className="px-8 py-6">
+      <PanelTitle
+        action={
+          <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+            <span className="flex items-center gap-1.5"><Swatch color={LAGON_INK} />Revenus</span>
+            <span className="flex items-center gap-1.5"><Swatch color={CITRON_MID} />Charges</span>
+            <span className="flex items-center gap-1.5"><Swatch color={INK} />Solde</span>
+          </div>
+        }
+      >
+        Évolution mensuelle {currentYear}
+      </PanelTitle>
+      <div className="mt-4 h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={monthlyData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barGap={3} barCategoryGap="28%">
+            <CartesianGrid stroke={STONE} vertical={false} />
+            <XAxis
+              dataKey="month"
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              dy={6}
+            />
+            <YAxis
+              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(value) => `${(value / 1000).toFixed(0)}k€`}
+              width={40}
+            />
+            <Tooltip
+              cursor={{ fill: 'hsl(var(--secondary))' }}
+              formatter={(value: number, name: string) => [
+                formatCurrency(value),
+                name === 'revenus' ? 'Revenus' : name === 'charges' ? 'Charges' : 'Solde'
+              ]}
+              contentStyle={{
+                backgroundColor: 'hsl(var(--popover))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '2px',
+                padding: '8px 10px',
+              }}
+              labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 500, marginBottom: '4px', fontSize: '12px' }}
+              itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px', padding: '1px 0' }}
+            />
+            <ReferenceLine y={0} stroke={ASH} />
+            <Bar dataKey="revenus" fill={LAGON_INK} radius={[1, 1, 0, 0]} name="revenus" />
+            <Bar dataKey="charges" fill={CITRON_MID} radius={[1, 1, 0, 0]} name="charges" />
+            <Line
+              type="monotone"
+              dataKey="solde"
+              stroke={INK}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: INK, stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+              name="solde"
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 };
