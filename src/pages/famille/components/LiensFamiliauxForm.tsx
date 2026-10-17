@@ -27,9 +27,9 @@ import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/componen
 import { cn } from '@/lib/utils';
 import { formatAgeCourt } from '@/lib/family/age';
 import { getInitials } from '@/lib/family/initials';
-import { grouperMembres } from '@/lib/family/groupesMembres';
+import { grouperMembres, type GroupeMembres } from '@/lib/family/groupesMembres';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Chip, WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { Chip, WorkspaceHeader, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { getGroupeTone } from '@/components/famille/groupeTones';
 
@@ -42,6 +42,20 @@ interface LiensFamiliauxFormProps {
   // « arbre » : arbre familial du Foyer ; « membres » : tableau de la sous-section Membres.
   // Le dialogue d'ajout/modification est commun aux deux vues.
   view: 'arbre' | 'membres';
+}
+
+// Répartit les groupes sur deux colonnes en équilibrant le nombre de membres (ordre conservé dans
+// chaque colonne) : Descendants et Collatéraux, souvent courts, se partagent une colonne face aux
+// Ascendants.
+function repartirEnColonnes(groupes: GroupeMembres[]): [GroupeMembres[], GroupeMembres[]] {
+  const colonnes: [GroupeMembres[], GroupeMembres[]] = [[], []];
+  const hauteurs = [0, 0];
+  for (const groupe of groupes) {
+    const cible = hauteurs[0] <= hauteurs[1] ? 0 : 1;
+    colonnes[cible].push(groupe);
+    hauteurs[cible] += groupe.membres.length + 2; // + en-tête de section
+  }
+  return colonnes;
 }
 
 export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
@@ -83,6 +97,110 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
   if (loading) {
     return <LoadingSpinner text="Chargement des données..." />;
   }
+  const groupes = grouperMembres(familyLinks);
+  const colonnes = repartirEnColonnes(groupes);
+
+  // Le trait de fin de liste disparaît quand une autre famille suit : le séparateur de section suffit.
+  const renderGroupe = (groupe: GroupeMembres) => (
+      <section key={groupe.id} className="px-8 py-5 [&:not(:last-child)>ul]:border-b-0">
+        <div className="flex items-baseline justify-between">
+          <SectionHeader title={groupe.label} markClassName={getGroupeTone(groupe.id).mark} />
+          <span className="text-[12px] tabular-nums text-muted-foreground">{groupe.membres.length}</span>
+        </div>
+        <ul className="-mx-2 border-b border-border">
+        {groupe.membres.map(member => (
+          <li
+            key={member.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => dialogRef.current?.openForEdit(member)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                dialogRef.current?.openForEdit(member);
+              }
+            }}
+            className={cn(
+              "flex items-center gap-3 border-t border-border px-2 py-2 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/40",
+              member.est_decede && "text-muted-foreground"
+            )}
+          >
+            <span className={cn(
+              "flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] text-[11.5px] font-semibold",
+              member.est_decede ? "border border-border text-muted-foreground" : getGroupeTone(groupe.id).avatar
+            )}>
+              {getInitials(member.prenom, member.nom)}
+            </span>
+    
+            <div className="min-w-0 flex-1">
+              <p className={cn("text-sm font-medium truncate", !member.est_decede && "text-foreground")}>
+                {[member.prenom, member.nom].filter(Boolean).join(' ')}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">
+                  {member.lien_familial}
+                  {member.lien_familial === 'Enfant' && member.parent_de === 'spouse' && ' · beau-fils/belle-fille'}
+                </span>
+                {member.handicap && <FamilyTag>Handicap</FamilyTag>}
+                {member.enfant_a_charge && member.fiscalement_a_charge ? <FamilyTag accent>À charge civil + fiscal</FamilyTag> : <>
+                  {member.enfant_a_charge && <FamilyTag accent>À charge civil</FamilyTag>}
+                  {member.fiscalement_a_charge && <FamilyTag accent>À charge fiscal</FamilyTag>}
+                </>}
+                {member.enfant_adopte && member.enfant_adopte !== 'Non' && <FamilyTag>{member.enfant_adopte}</FamilyTag>}
+                {member.enfant_renoncant && <FamilyTag>Renonçant</FamilyTag>}
+                {member.exoneration_succession && <FamilyTag accent>Exonération</FamilyTag>}
+              </div>
+            </div>
+    
+            <div className="shrink-0 text-right">
+              {member.date_naissance ? (
+                <>
+                  <p className={cn("text-sm tabular-nums", !member.est_decede && "text-foreground")}>
+                    {format(new Date(member.date_naissance), 'dd/MM/yyyy')}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {member.est_decede
+                      ? (member.date_deces ? `† ${new Date(member.date_deces).getFullYear()}` : 'Décédé(e)')
+                      : formatAgeCourt(member.date_naissance)}
+                  </p>
+                </>
+              ) : (
+                <span className="text-sm text-muted-foreground">{member.est_decede ? 'Décédé(e)' : '—'}</span>
+              )}
+            </div>
+    
+            <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 rounded-[2px] shadow-none"
+                    disabled={saving}
+                    aria-label="Ouvrir le menu"
+                  >
+                    <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => dialogRef.current?.openForEdit(member)}>
+                    <Pencil />
+                    Modifier
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={() => setMemberToDelete(member)}>
+                    <Trash2 />
+                    Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </li>
+        ))}
+        </ul>
+      </section>
+  );
+
   return <div className={cn(view === 'arbre' && 'space-y-6')}>
       {/* Arbre seul : le cadre, le titre et l'accès aux membres sont portés par la page Foyer. */}
       {view === 'arbre' && <div>
@@ -103,10 +221,10 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
           actions={
                 <button
                   onClick={() => dialogRef.current?.openForAdd()}
-                  className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
+                  className={`inline-flex items-center gap-2 whitespace-nowrap transition-colors ${panelPrimaryButtonClass} pl-1`}
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-                    <Plus className="h-4 w-4 text-background" />
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-citron">
+                    <Plus className="h-3.5 w-3.5 text-citron-ink" strokeWidth={2.25} />
                   </span>
                   Ajouter un membre
                 </button>
@@ -130,107 +248,21 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 border-t border-border lg:grid-cols-2 divide-y divide-border lg:divide-y-0 lg:[&>*:nth-child(odd)]:border-r lg:[&>*:nth-child(n+3)]:border-t lg:[&>*]:border-border">
-            {grouperMembres(familyLinks).map(groupe => (
-              <section key={groupe.id} className="px-8 py-5">
-                <div className="flex items-baseline justify-between">
-                  <SectionHeader title={groupe.label} markClassName={getGroupeTone(groupe.id).mark} />
-                  <span className="text-[12px] tabular-nums text-muted-foreground">{groupe.membres.length}</span>
+          <>
+            {/* Mobile : groupes dans l'ordre. */}
+            <div className="divide-y divide-border border-t border-border lg:hidden">
+              {groupes.map(renderGroupe)}
+            </div>
+            {/* Desktop : deux colonnes indépendantes, les groupes courts s'empilent sans laisser de blanc
+                face à un groupe long. */}
+            <div className="hidden border-t border-border lg:grid lg:grid-cols-2">
+              {colonnes.map((colonne, index) => (
+                <div key={index} className={cn('divide-y divide-border', index === 0 && 'border-r border-border')}>
+                  {colonne.map(renderGroupe)}
                 </div>
-                <ul className="-mx-2 border-b border-border">
-                {groupe.membres.map(member => (
-                  <li
-                    key={member.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => dialogRef.current?.openForEdit(member)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        dialogRef.current?.openForEdit(member);
-                      }
-                    }}
-                    className={cn(
-                      "flex items-center gap-3 border-t border-border px-2 py-2 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:bg-muted/40",
-                      member.est_decede && "text-muted-foreground"
-                    )}
-                  >
-                    <span className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] text-[11.5px] font-semibold",
-                      member.est_decede ? "border border-border text-muted-foreground" : getGroupeTone(groupe.id).avatar
-                    )}>
-                      {getInitials(member.prenom, member.nom)}
-                    </span>
-
-                    <div className="min-w-0 flex-1">
-                      <p className={cn("text-sm font-medium truncate", !member.est_decede && "text-foreground")}>
-                        {[member.prenom, member.nom].filter(Boolean).join(' ')}
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground">
-                          {member.lien_familial}
-                          {member.lien_familial === 'Enfant' && member.parent_de === 'spouse' && ' · beau-fils/belle-fille'}
-                        </span>
-                        {member.handicap && <FamilyTag>Handicap</FamilyTag>}
-                        {member.enfant_a_charge && member.fiscalement_a_charge ? <FamilyTag accent>À charge civil + fiscal</FamilyTag> : <>
-                          {member.enfant_a_charge && <FamilyTag accent>À charge civil</FamilyTag>}
-                          {member.fiscalement_a_charge && <FamilyTag accent>À charge fiscal</FamilyTag>}
-                        </>}
-                        {member.enfant_adopte && member.enfant_adopte !== 'Non' && <FamilyTag>{member.enfant_adopte}</FamilyTag>}
-                        {member.enfant_renoncant && <FamilyTag>Renonçant</FamilyTag>}
-                        {member.exoneration_succession && <FamilyTag accent>Exonération</FamilyTag>}
-                      </div>
-                    </div>
-
-                    <div className="shrink-0 text-right">
-                      {member.date_naissance ? (
-                        <>
-                          <p className={cn("text-sm tabular-nums", !member.est_decede && "text-foreground")}>
-                            {format(new Date(member.date_naissance), 'dd/MM/yyyy')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {member.est_decede
-                              ? (member.date_deces ? `† ${new Date(member.date_deces).getFullYear()}` : 'Décédé(e)')
-                              : formatAgeCourt(member.date_naissance)}
-                          </p>
-                        </>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">{member.est_decede ? 'Décédé(e)' : '—'}</span>
-                      )}
-                    </div>
-
-                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 rounded-[2px] shadow-none"
-                            disabled={saving}
-                            aria-label="Ouvrir le menu"
-                          >
-                            <MoreHorizontal size={16} strokeWidth={2} aria-hidden="true" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => dialogRef.current?.openForEdit(member)}>
-                            <Pencil />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem variant="destructive" onClick={() => setMemberToDelete(member)}>
-                            <Trash2 />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </li>
-                ))}
-                </ul>
-              </section>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </div>}
 
