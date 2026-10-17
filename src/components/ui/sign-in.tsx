@@ -62,13 +62,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
       <div className="relative z-10 w-full max-w-[440px] rounded-[18px] bg-white p-8 shadow-[0_8px_40px_rgba(13,27,30,0.10)] sm:p-10">
         <div className="flex w-full flex-col items-center gap-6 text-center">
-            <Link to="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-              <span
-                aria-hidden
-                className="h-6 w-6 rounded-full"
-                style={{ background: 'linear-gradient(180deg, #4a7ff2 0%, #c98ab5 100%)' }}
-              />
-              <span className="text-lg font-medium" style={{ color: '#0d1b1e' }}>Aurevia</span>
+            <Link to="/" className="transition-opacity hover:opacity-80">
+              <img src="/brand/aurevia-logo-complet.png" alt="Aurevia — Le patrimoine réinventé." className="h-16 w-auto" />
             </Link>
 
             <div className="flex flex-col gap-2">

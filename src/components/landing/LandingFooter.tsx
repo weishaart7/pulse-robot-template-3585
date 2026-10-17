@@ -19,19 +19,7 @@ export function LandingFooter() {
       <div id="a-propos" className="mx-auto w-full max-w-[1200px] px-6 pt-12">
         <div className="grid gap-10 pb-10 sm:grid-cols-2 lg:grid-cols-6">
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2 text-[var(--lp-ink)]">
-              <span
-                aria-hidden
-                className="h-5 w-5 rounded-full"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #4a7ff2 0%, #c98ab5 100%)",
-                }}
-              />
-              <span className="font-mono text-sm uppercase tracking-widest">
-                Aurevia
-              </span>
-            </div>
+            <img src="/brand/aurevia-logo-complet.png" alt="Aurevia — Le patrimoine réinventé." className="h-12 w-auto" />
             <p className="mt-4 max-w-xs text-sm text-[var(--lp-smoke)]">
               Un outil de gestion de patrimoine pensé pour comprendre avant de
               décider.
