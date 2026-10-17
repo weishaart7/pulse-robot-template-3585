@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
@@ -64,7 +63,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearchValue(""); }} modal={false}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -83,34 +82,39 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           <ChevronDown className="h-4 w-4 opacity-60 -me-0.5" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
-        <Command>
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-              placeholder="Rechercher..."
+      <PopoverContent
+        align="start"
+        sideOffset={4}
+        className="overflow-hidden rounded-[2px] border border-border p-0 shadow-[0_6px_24px_rgba(13,27,30,0.08)]"
+        style={{ width: 'var(--radix-popover-trigger-width)' }}
+      >
+        <Command shouldFilter={false} className="rounded-none">
+          <div className="flex h-9 items-center gap-2 border-b border-border px-3">
+            <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <input
+              autoFocus
+              placeholder="Rechercher…"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
-              className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="h-full w-full bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
-          <CommandList className="max-h-60">
-            <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
-            <CommandGroup>
+          <CommandList className="max-h-72 py-1">
+            <CommandEmpty className="px-3 py-4 text-center text-[13px] text-muted-foreground">Aucun résultat.</CommandEmpty>
+            <CommandGroup className="p-0">
               {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
                   onSelect={() => handleSelect(option.value)}
-                  className="cursor-pointer"
+                  className={cn(
+                    'mx-1 flex cursor-pointer items-center justify-between gap-2 rounded-[1px] px-2 py-1.5 text-[13px] leading-5',
+                    'data-[selected=true]:bg-secondary data-[selected=true]:text-foreground',
+                    value === option.value && 'font-medium'
+                  )}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
+                  <span className="min-w-0">{option.label}</span>
+                  {value === option.value && <Check className="h-3.5 w-3.5 shrink-0" />}
                 </CommandItem>
               ))}
             </CommandGroup>
