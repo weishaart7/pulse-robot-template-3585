@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { Asset, assetService } from '@/services/assetService';
 import type { Emprunt } from '@/services/passifService';
+import { RevenusDistribuesInput } from '@/components/immobilier/parts/RevenusDistribuesInput';
 import { SimulationReventeSection } from '@/components/immobilier/revente/SimulationReventeSection';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getFractionDemembrement } from '@/lib/patrimoine/demembrementFraction';
@@ -201,7 +202,14 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
             title="Revenus et fiscalité"
             description="Montants perçus par le foyer sur cette ligne de parts. Le revenu imposable, lui, figure sur l'attestation fiscale annuelle du gestionnaire."
           >
-            {numberField('Revenus distribués (12 derniers mois)', revenus12m, setRevenus12m)}
+            <div className="space-y-1.5">
+              <Label>Revenus distribués (12 derniers mois)</Label>
+              <RevenusDistribuesInput
+                value={numOrNull(revenus12m) ?? undefined}
+                onChange={(m) => setRevenus12m(toInput(m))}
+                valeurEstimee={numOrNull(valeurEstimee) ?? undefined}
+              />
+            </div>
             <div className="space-y-1.5">
               <Label>Régime fiscal</Label>
               <Select value={regimeFiscal || undefined} onValueChange={setRegimeFiscal}>

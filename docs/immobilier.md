@@ -286,7 +286,11 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   `PARTS_FONCIERES_NATURES` (SCPI, groupements fonciers, GFA/GAF/GFV/GFR, sociétés d'épargne
   forestière) — « Parts de SCI » reste sur Sociétés. Saisie (via `assetService.updateAsset`) des champs
   déjà captés par Patrimoine : gestionnaire, date, prix et frais d'acquisition, valeur estimée, revenus
-  distribués sur 12 mois, régime fiscal. Indicateurs : taux de distribution (revenus ÷ prix
+  distribués sur 12 mois, régime fiscal. Les revenus distribués se saisissent en % (par défaut) ou en €
+  ([RevenusDistribuesInput.tsx](src/components/immobilier/parts/RevenusDistribuesInput.tsx), partagé avec
+  le formulaire Patrimoine) : le taux porte sur la **valeur estimée actuelle** et est converti en euros —
+  seul le montant `revenus_distribues_12m` est stocké ; € imposé tant que la valeur estimée est vide.
+  Indicateurs : taux de distribution (revenus ÷ prix
   d'acquisition), rendement actuel (revenus ÷ valeur estimée), plus-value latente pondérée comme la Vue
   d'ensemble (quote-part × fraction de démembrement, frais non pondérés par la fraction) ; rappel du
   régime d'exonération successorale pour les natures rurales. **Imposition indicative, aucun impôt

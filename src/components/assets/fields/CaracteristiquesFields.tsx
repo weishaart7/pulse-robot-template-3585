@@ -7,6 +7,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
+import { RevenusDistribuesInput } from '@/components/immobilier/parts/RevenusDistribuesInput';
 import { AssetFormValues, SITUATION_PARTICULIERE_OPTIONS } from '@/schemas/assetSchema';
 import {
   getAssetCategory,
@@ -154,16 +155,11 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           <FormField control={form.control} name="revenus_distribues_12m" render={({ field }) => (
             <FormItem>
               <FormLabel>Revenus distribués (12 derniers mois)</FormLabel>
-              <FormControl>
-                <Input
-                  className="bg-background border-border shadow-none"
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                />
-              </FormControl>
+              <RevenusDistribuesInput
+                value={field.value ?? undefined}
+                onChange={field.onChange}
+                valeurEstimee={form.watch('valeur_estimee')}
+              />
               <FormMessage />
             </FormItem>
           )} />
