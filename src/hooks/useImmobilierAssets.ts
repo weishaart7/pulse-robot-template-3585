@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Asset } from '@/services/assetService';
+import { passifService, type Emprunt } from '@/services/passifService';
 import { ASSET_CATEGORIES } from '@/constants/assetTypes';
 
 const IMMOBILIER_NATURES = ASSET_CATEGORIES['actifs immobiliers'] as readonly string[];
 
 export const useImmobilierAssets = () => {
   const [assets, setAssets] = useState<Asset[]>([]);
+  // Emprunts Patrimoine reliés aux biens : source qui fait foi pour leurs crédits (lib/immobilier/credit.ts).
+  const [emprunts, setEmprunts] = useState<Emprunt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -32,7 +35,10 @@ export const useImmobilierAssets = () => {
 
       // Cast sûr : les colonnes resserrées en union dans Asset sont garanties par
       // une contrainte CHECK en base (cf. assetService.ts).
-      setAssets((data || []) as Asset[]);
+      const biens = (data || []) as Asset[];
+      const ids = biens.map((b) => b.id).filter((id): id is string => !!id);
+      setEmprunts(await passifService.getEmpruntsByAssetIds(ids));
+      setAssets(biens);
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error fetching immobilier assets:', error);
       toast({
@@ -51,6 +57,7 @@ export const useImmobilierAssets = () => {
 
   return {
     assets,
+    emprunts,
     isLoading,
     refetch: fetchImmobilierAssets
   };

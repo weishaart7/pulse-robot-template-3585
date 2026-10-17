@@ -5,6 +5,8 @@ import { Form } from '@/components/ui/form';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { WorkspaceHeader, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Asset } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
+import { ProjectionBienSection } from './projection/ProjectionBienSection';
 import { useImmobilierPropertyForm } from '@/hooks/useImmobilierPropertyForm';
 import { PropertyGeneralSection } from './property/PropertyGeneralSection';
 import { PropertyCostSection } from './property/PropertyCostSection';
@@ -14,6 +16,8 @@ import { SimulateurRentabiliteSection } from './SimulateurRentabiliteSection';
 
 interface ImmobilierPropertyDetailViewProps {
   asset: Asset;
+  /** Emprunts Patrimoine des biens d'Immobilier (ceux reliés à ce bien font foi pour son crédit). */
+  emprunts?: Emprunt[];
   onBack: () => void;
   onUpdate: () => void;
 }
@@ -23,9 +27,11 @@ interface ImmobilierPropertyDetailViewProps {
 // puis les sections du formulaire séparées par des filets, et le simulateur pour la location nue.
 export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailViewProps> = ({
   asset,
+  emprunts = [],
   onBack,
   onUpdate,
 }) => {
+  const empruntsRelies = emprunts.filter((e) => e.asset_id === asset.id);
   const { form, isResidence, isRentalProperty, handleSubmit } = useImmobilierPropertyForm({
     asset,
     onSuccess: onUpdate,
@@ -68,7 +74,7 @@ export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailView
               <PropertyCostSection form={form} showMeublesField={isRentalProperty} />
               {isRentalProperty && (
                 <>
-                  <PropertyFinancingSection form={form} />
+                  <PropertyFinancingSection form={form} empruntsRelies={empruntsRelies} />
                   <PropertyLocationSection form={form} assetNature={asset.nature} />
                 </>
               )}
@@ -83,7 +89,13 @@ export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailView
 
       {asset.nature === 'Immeubles locatifs (loués nus)' && (
         <div className="border-t border-border">
-          <SimulateurRentabiliteSection asset={asset} />
+          <SimulateurRentabiliteSection asset={asset} emprunts={emprunts} />
+        </div>
+      )}
+
+      {showForm && (
+        <div className="border-t border-border px-8 py-6">
+          <ProjectionBienSection asset={asset} emprunts={emprunts} />
         </div>
       )}
     </div>

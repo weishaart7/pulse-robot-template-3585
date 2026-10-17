@@ -11,11 +11,13 @@ import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/
 import { computeQuotePart } from '@/lib/immobilier/rentabilite';
 import { computeFluxBien, computeIndicateurs, type IndicateursFlux } from '@/lib/immobilier/portefeuille';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import type { Emprunt } from '@/services/passifService';
 import { RENTAL_PROPERTY_TYPES } from '@/schemas/immobilierPropertySchema';
 import { CITRON_MID, GREY, LAGON, LAGON_INK, CITRON_INK } from '@/components/budget/budgetColors';
 
 interface MesBiensListProps {
   assets: Asset[];
+  emprunts?: Emprunt[];
   isMeuble: (asset: Asset) => boolean;
   onOpen: (asset: Asset) => void;
   onGestion: (asset: Asset) => void;
@@ -48,7 +50,7 @@ const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto_2rem] md:grid-cols-[minmax(
 // Liste des biens en « panneau de travail », sur le modèle des membres de Famille : une section par
 // famille de biens, une ligne par bien avec valeur, rentabilité brute et cashflow mensuel (mêmes
 // formules et pondération quote-part que la Vue d'ensemble, lib/immobilier/portefeuille.ts).
-export const MesBiensList = ({ assets, isMeuble, onOpen, onGestion }: MesBiensListProps) => {
+export const MesBiensList = ({ assets, emprunts = [], isMeuble, onOpen, onGestion }: MesBiensListProps) => {
   const [revenus, setRevenus] = useState<AssetRevenu[]>([]);
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,11 +84,11 @@ export const MesBiensList = ({ assets, isMeuble, onOpen, onGestion }: MesBiensLi
       if (!asset.id) continue;
       const r = revenus.filter(x => x.asset_id === asset.id);
       const c = charges.filter(x => x.asset_id === asset.id);
-      const flux = computeFluxBien(asset, r, c);
+      const flux = computeFluxBien(asset, r, c, emprunts);
       map.set(asset.id, { ...computeIndicateurs(flux), aDesFlux: r.length > 0 || c.length > 0 || flux.loyerAnnuel > 0 || flux.creditMensuel > 0 });
     }
     return map;
-  }, [assets, revenus, charges]);
+  }, [assets, revenus, charges, emprunts]);
 
   const groupes = GROUPES
     .map(g => {

@@ -5,13 +5,44 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
+import type { Emprunt } from '@/services/passifService';
+import { formatCurrency } from '@/lib/patrimoine/utils';
 
 interface PropertyFinancingSectionProps {
   form: UseFormReturn<ImmobilierPropertyFormValues>;
+  /** Emprunts Patrimoine reliés au bien : s'il y en a, ils font foi et les champs ci-dessous sont ignorés. */
+  empruntsRelies?: Emprunt[];
 }
 
-export const PropertyFinancingSection: React.FC<PropertyFinancingSectionProps> = ({ form }) => {
+export const PropertyFinancingSection: React.FC<PropertyFinancingSectionProps> = ({ form, empruntsRelies = [] }) => {
   const isFinancementActif = form.watch('financement_actif');
+
+  // Crédit saisi dans Patrimoine (Passifs) et relié au bien : source unique, reprise par le cashflow,
+  // les simulateurs, la synthèse foncière et la projection (lib/immobilier/credit.ts).
+  if (empruntsRelies.length > 0) {
+    return (
+      <PanelSection
+        title="Financement"
+        grid={false}
+        description="Crédit repris de Patrimoine → Passifs, qui fait foi : à modifier là-bas. Les champs de financement de cette fiche sont ignorés."
+      >
+        <ul className="-mx-2 divide-y divide-border border-y border-border">
+          {empruntsRelies.map((e) => (
+            <li key={e.id} className="grid grid-cols-1 gap-1 px-2 py-2.5 text-[13px] md:grid-cols-[minmax(0,1fr)_auto]">
+              <span className="font-medium text-foreground">{e.libelle || e.nature}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {e.capital_restant_du != null ? `${formatCurrency(e.capital_restant_du)} restant dû` : 'Capital restant dû non renseigné'}
+                {e.taux_interet != null && ` · ${e.taux_interet.toLocaleString('fr-FR')} %`}
+                {e.mensualite != null && ` · ${formatCurrency(e.mensualite)} / mois`}
+                {e.duree_restante != null && ` · ${e.duree_restante} mois`}
+                {e.mode_amortissement === 'In fine' && ' · in fine'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </PanelSection>
+    );
+  }
 
   return (
     <PanelSection title="Financement">

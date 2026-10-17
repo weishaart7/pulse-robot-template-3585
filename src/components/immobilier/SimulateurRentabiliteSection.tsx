@@ -4,6 +4,7 @@ import { Chip, PanelTitle, SummaryRow } from '@/components/layout/workspace-pane
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
 import { computeLoyersAnnuels, computeQuotePart, computeRentabilite, type RentabiliteResult } from '@/lib/immobilier/rentabilite';
 import { SEUIL_MICRO_FONCIER } from '@/lib/immobilier/foncierFoyer';
 import { formatCurrency } from '@/lib/patrimoine/utils';
@@ -11,6 +12,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SimulateurRentabiliteSectionProps {
   asset: Asset;
+  emprunts?: Emprunt[];
 }
 
 const formatPercent = (value: number | null): string => {
@@ -18,7 +20,7 @@ const formatPercent = (value: number | null): string => {
   return `${(value * 100).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
 };
 
-export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSectionProps) => {
+export const SimulateurRentabiliteSection = ({ asset, emprunts = [] }: SimulateurRentabiliteSectionProps) => {
   const [revenus, setRevenus] = useState<AssetRevenu[]>([]);
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [loyersBrutsFoyer, setLoyersBrutsFoyer] = useState(0);
@@ -58,7 +60,7 @@ export const SimulateurRentabiliteSection = ({ asset }: SimulateurRentabiliteSec
 
   const tmi = (parseFloat(tmiInput) || 0) / 100;
   const quotePart = computeQuotePart(asset);
-  const result: RentabiliteResult = computeRentabilite(asset, revenus, charges, tmi, quotePart);
+  const result: RentabiliteResult = computeRentabilite(asset, revenus, charges, tmi, quotePart, emprunts);
   const regimeReelObligatoireFoyer = loyersBrutsFoyer > SEUIL_MICRO_FONCIER;
 
   const regimeLabel = result.regimeRecommande === 'equivalent'

@@ -1,7 +1,8 @@
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
 import {
-  computeAmortissement,
   computeChargesAnnuelles,
+  creditAnnuelBien,
   computeLoyersAnnuels,
   computeQuotePart,
   PLAFOND_DEFICIT_FONCIER,
@@ -53,6 +54,9 @@ export interface BienFoncierInput {
   loyersBruts: number;
   chargesHorsInterets: number;
   interetsEtAssuranceEmprunt: number;
+  /** Part (en %) appliquée aux intérêts ; par défaut la quote-part du bien. 100 quand les intérêts sont
+   * déjà ramenés à la part du foyer dans l'emprunt (emprunt Patrimoine relié). */
+  partCredit?: number;
   /** Le bien fait l'objet de travaux de rénovation énergétique le faisant sortir des classes E/F/G. */
   travauxRenovationEnergetique?: boolean;
 }
@@ -65,15 +69,20 @@ export function buildBienFoncierInput(
   revenus: AssetRevenu[],
   charges: AssetCharge[],
   travauxRenovationEnergetique = false,
+  emprunts: Emprunt[] = [],
 ): BienFoncierInput {
-  const amortissement = computeAmortissement(asset);
+  // Emprunt Patrimoine relié : intérêts déjà à la part du foyer (partCredit 100) ; sinon champs
+  // Financement à 100 %, pondérés ensuite par la quote-part dans computeFoyerFoncier.
+  const relie = emprunts.some((e) => e.asset_id === asset.id);
+  const credit = creditAnnuelBien(asset, emprunts, 1, true);
   return {
     assetId: asset.id,
     denomination: asset.denomination,
     quotePart: computeQuotePart(asset),
     loyersBruts: computeLoyersAnnuels(revenus),
     chargesHorsInterets: computeChargesAnnuelles(charges),
-    interetsEtAssuranceEmprunt: amortissement.interetsAnnee + amortissement.assuranceAnnee,
+    interetsEtAssuranceEmprunt: credit.interetsAnnee + credit.assuranceAnnee,
+    partCredit: relie ? 100 : undefined,
     travauxRenovationEnergetique,
   };
 }
@@ -123,7 +132,7 @@ export function computeFoyerFoncier(
 ): FoyerFoncierResult {
   const loyersBrutsFoyer = biens.reduce((s, b) => s + b.loyersBruts * (b.quotePart / 100), 0);
   const chargesHorsInteretsFoyer = biens.reduce((s, b) => s + b.chargesHorsInterets * (b.quotePart / 100), 0);
-  const interetsFoyer = biens.reduce((s, b) => s + b.interetsEtAssuranceEmprunt * (b.quotePart / 100), 0);
+  const interetsFoyer = biens.reduce((s, b) => s + b.interetsEtAssuranceEmprunt * ((b.partCredit ?? b.quotePart) / 100), 0);
 
   const eligibleMicroFoncier = loyersBrutsFoyer <= SEUIL_MICRO_FONCIER;
 

@@ -111,6 +111,19 @@ export const passifService = {
     return data || [];
   },
 
+  /** Emprunts reliés à plusieurs biens, en une requête (`IN`) — crédits des biens d'Immobilier. */
+  async getEmpruntsByAssetIds(assetIds: string[]): Promise<Emprunt[]> {
+    if (assetIds.length === 0) return [];
+    const { data, error } = await supabase
+      .from('emprunts')
+      .select('*')
+      .in('asset_id', assetIds)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
   // Passifs methods
   async getPassifs(): Promise<Passif[]> {
     const { data, error } = await supabase

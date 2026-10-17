@@ -1,5 +1,6 @@
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
-import { computeAmortissement, computePrixAcquisitionTotal, computeQuotePart } from '@/lib/immobilier/rentabilite';
+import { computePrixAcquisitionTotal, computeQuotePart, creditAnnuelBien } from '@/lib/immobilier/rentabilite';
+import type { Emprunt } from '@/services/passifService';
 import { isPartsFoncieres } from '@/lib/immobilier/partsFoncieres';
 
 // Flux d'un bien pour les indicateurs de portefeuille (Vue d'ensemble, Mes biens), extraits tels
@@ -50,7 +51,13 @@ export interface FluxBien {
 }
 
 /** Flux d'un bien, pondérés par la quote-part d'indivision du foyer (100 % si non renseignée). */
-export const computeFluxBien = (asset: Asset, revenus: AssetRevenu[], charges: AssetCharge[]): FluxBien => {
+export const computeFluxBien = (
+  asset: Asset,
+  revenus: AssetRevenu[],
+  charges: AssetCharge[],
+  /** Emprunts Patrimoine : ceux reliés au bien font foi (pondérés par la part du foyer dans l'emprunt). */
+  emprunts: Emprunt[] = [],
+): FluxBien => {
   const quotePart = computeQuotePart(asset) / 100;
   const prixRevient = computePrixRevient(asset) * quotePart;
 
@@ -80,8 +87,8 @@ export const computeFluxBien = (asset: Asset, revenus: AssetRevenu[], charges: A
     chargesMensuelles += divisor ? montant / divisor : 0;
   }
 
-  const credit = computeAmortissement(asset);
-  const creditMensuel = (credit.mensualiteCredit + credit.mensualiteAssurance) * quotePart;
+  const credit = creditAnnuelBien(asset, emprunts, quotePart, true);
+  const creditMensuel = credit.mensualiteCredit + credit.mensualiteAssurance;
 
   return {
     prixRevient,

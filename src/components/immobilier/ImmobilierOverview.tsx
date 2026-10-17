@@ -11,9 +11,15 @@ import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useF
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getFractionDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import type { Emprunt } from '@/services/passifService';
+import { HYPOTHESES_PAR_DEFAUT, horizonProjection, sommeProjections, type HypothesesProjection } from '@/lib/immobilier/projection';
+import { preparerProjectionBien, projeterPreparation, type PreparationProjection } from '@/lib/immobilier/projectionBien';
+import { ProjectionPanel } from '@/components/immobilier/projection/ProjectionPanel';
 
 interface ImmobilierOverviewProps {
   assets: Asset[];
+  /** Emprunts Patrimoine des biens (ceux reliés à un bien font foi pour son crédit). */
+  emprunts?: Emprunt[];
 }
 
 interface AssetMetrics {
@@ -31,7 +37,7 @@ interface AssetMetrics {
 // Couleurs de la répartition par bien : palette des panneaux de travail (lagon / citron / gris).
 const BIEN_COLORS = [LAGON_INK, LAGON, CITRON_MID, LAGON_MID, CITRON_INK, LAGON_DEEP, GREY, GREY_LIGHT];
 
-export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }) => {
+export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets, emprunts = [] }) => {
   const [metrics, setMetrics] = useState<AssetMetrics>({
     nombreBiens: 0,
     valeurTotaleBiens: 0,
@@ -43,6 +49,9 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
     parBien: [],
   });
   const [loading, setLoading] = useState(true);
+  // Projection du portefeuille : une préparation par bien (flux, crédits, valeur), hypothèses locales.
+  const [preparations, setPreparations] = useState<PreparationProjection[]>([]);
+  const [hypotheses, setHypotheses] = useState<HypothesesProjection>(HYPOTHESES_PAR_DEFAUT);
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
   const { data: familyProfile } = useFamilyProfile();
   const { data: maritalStatus } = useMaritalStatus();
@@ -80,6 +89,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
         ]);
 
         const fluxBiens: FluxBien[] = [];
+        const preparationsBiens: PreparationProjection[] = [];
         let totalValeurActuelle = 0;
         let totalCoutAcquisition = 0;
         const parBien: AssetMetrics['parBien'] = [];
@@ -130,11 +140,10 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           // nature locative (cf. RENTAL_PROPERTY_TYPES), notamment via le formulaire générique
           // d'actif (AssetForm.tsx, onglet "Charges") qui n'est pas restreint par nature. Mêmes
           // formules que les indicateurs par bien de « Mes biens » (lib/immobilier/portefeuille.ts).
-          fluxBiens.push(computeFluxBien(
-            asset,
-            tousRevenus.filter((r) => r.asset_id === asset.id),
-            toutesCharges.filter((c) => c.asset_id === asset.id),
-          ));
+          const revenusBien = tousRevenus.filter((r) => r.asset_id === asset.id);
+          const chargesBien = toutesCharges.filter((c) => c.asset_id === asset.id);
+          fluxBiens.push(computeFluxBien(asset, revenusBien, chargesBien, emprunts));
+          preparationsBiens.push(preparerProjectionBien({ asset, revenus: revenusBien, charges: chargesBien, emprunts, fraction }));
         }
 
         // Calcul des métriques
@@ -145,6 +154,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
           ? (plusValueBrute / totalCoutAcquisition) * 100
           : 0;
 
+        setPreparations(preparationsBiens);
         setMetrics({
           nombreBiens: assets.length,
           valeurTotaleBiens: totalValeurActuelle,
@@ -165,7 +175,15 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
     };
 
     calculateMetrics();
-  }, [assets, assetDemembrements, demembrementCtx]);
+  }, [assets, emprunts, assetDemembrements, demembrementCtx]);
+
+  const projection = useMemo(() => {
+    const horizon = horizonProjection(preparations.flatMap((p) => p.credits));
+    return {
+      periodes: sommeProjections(preparations.map((p) => projeterPreparation(p, hypotheses, horizon))),
+      avertissements: preparations.flatMap((p) => p.avertissements),
+    };
+  }, [preparations, hypotheses]);
 
   const formatPercent = (value: number) =>
     `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
@@ -189,6 +207,7 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
   // En-tête du portefeuille, sur le modèle du Résumé Patrimoine : valeur et plus-value, indicateurs en
   // lignes libellé / valeur, puis répartition de la valeur par bien.
   return (
+    <>
     <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
       <div className="px-8 py-6">
         <p className="text-[12px] text-muted-foreground">Valeur du portefeuille</p>
@@ -259,5 +278,17 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets }
         )}
       </div>
     </div>
+
+    {projection.periodes.length > 0 && (
+      <div className="border-b border-border px-8 py-6">
+        <ProjectionPanel
+          periodes={projection.periodes}
+          hypotheses={hypotheses}
+          onHypothesesChange={setHypotheses}
+          avertissements={projection.avertissements}
+        />
+      </div>
+    )}
+    </>
   );
 };

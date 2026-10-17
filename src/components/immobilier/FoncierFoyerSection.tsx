@@ -24,6 +24,7 @@ import {
   type TypeDeficitFoncierReporte,
 } from '@/lib/immobilier/foncierFoyer';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import type { Emprunt } from '@/services/passifService';
 
 const ANNEE_COURANTE = new Date().getFullYear();
 
@@ -32,7 +33,7 @@ const formatPercent = (value: number | null): string => {
   return `${(value * 100).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
 };
 
-export const FoncierFoyerSection = () => {
+export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] }) => {
   const { toast } = useToast();
   const [biensNus, setBiensNus] = useState<Asset[]>([]);
   const [revenusParBien, setRevenusParBien] = useState<Record<string, AssetRevenu[]>>({});
@@ -96,9 +97,10 @@ export const FoncierFoyerSection = () => {
           revenusParBien[asset.id!] || [],
           chargesParBien[asset.id!] || [],
           !!renovationEnergetique[asset.id!],
+          emprunts,
         ),
       ),
-    [biensNus, revenusParBien, chargesParBien, renovationEnergetique],
+    [biensNus, revenusParBien, chargesParBien, renovationEnergetique, emprunts],
   );
 
   const result: FoyerFoncierResult = useMemo(

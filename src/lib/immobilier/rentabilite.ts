@@ -1,5 +1,7 @@
 import { differenceInCalendarMonths } from 'date-fns';
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
+import { creditsDuBien, syntheseCredits, type CreditBien } from './credit';
 
 // Simulateur de rentabilité locative — location nue (micro-foncier / réel) et
 // LMNP (micro-BIC / réel). LMP et projection pluriannuelle hors périmètre.
@@ -232,6 +234,50 @@ export function computeAmortissement(asset: Asset, aujourdhui: Date = new Date()
   return { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee, capitalEmprunte };
 }
 
+/** Crédits du bien (credit.ts) : emprunts Patrimoine reliés s'il y en a, sinon champs Financement. */
+export function creditsBien(asset: Asset, emprunts: Emprunt[] = []): CreditBien[] {
+  return creditsDuBien(
+    asset,
+    emprunts,
+    computeQuotePart(asset),
+    Math.max(0, computePrixAcquisitionTotal(asset) - (asset.financement_apport || 0)),
+  );
+}
+
+/**
+ * Crédit des 12 prochains mois d'un bien, dans le format historique de computeAmortissement.
+ * - Emprunts Patrimoine reliés au bien (source qui fait foi) : chaque emprunt pondéré par la part du
+ *   foyer (`pondererEmprunts`), ou à 100 % pour les simulateurs LMNP/LMP qui ne pondèrent rien ;
+ *   `capitalEmprunte` = capital restant dû aujourd'hui.
+ * - Sinon, champs Financement (computeAmortissement) multipliés par `facteurFinancement`.
+ */
+export function creditAnnuelBien(
+  asset: Asset,
+  emprunts: Emprunt[],
+  facteurFinancement: number,
+  pondererEmprunts: boolean,
+  aujourdhui: Date = new Date(),
+): AmortissementResult {
+  if (emprunts.some((e) => e.asset_id === asset.id)) {
+    const s = syntheseCredits(creditsBien(asset, emprunts), aujourdhui, pondererEmprunts);
+    return {
+      mensualiteCredit: s.mensualiteCredit,
+      mensualiteAssurance: s.mensualiteAssurance,
+      interetsAnnee: s.interetsAnnee,
+      assuranceAnnee: s.assuranceAnnee,
+      capitalEmprunte: s.capitalRestantDu,
+    };
+  }
+  const brut = computeAmortissement(asset, aujourdhui);
+  return {
+    mensualiteCredit: brut.mensualiteCredit * facteurFinancement,
+    mensualiteAssurance: brut.mensualiteAssurance * facteurFinancement,
+    interetsAnnee: brut.interetsAnnee * facteurFinancement,
+    assuranceAnnee: brut.assuranceAnnee * facteurFinancement,
+    capitalEmprunte: brut.capitalEmprunte * facteurFinancement,
+  };
+}
+
 export function computeRentabilite(
   asset: Asset,
   revenus: AssetRevenu[],
@@ -239,19 +285,14 @@ export function computeRentabilite(
   tmi: number,
   /** Quote-part du foyer dans le bien (indivision) ; défaut 100 % (pleine propriété). */
   quotePart: number = 100,
+  /** Emprunts Patrimoine (ceux reliés au bien remplacent les champs Financement). */
+  emprunts: Emprunt[] = [],
 ): RentabiliteResult {
   const facteur = quotePart / 100;
   const prixAcquisitionTotal = computePrixAcquisitionTotal(asset) * facteur;
   const loyersAnnuels = computeLoyersAnnuels(revenus) * facteur;
   const chargesAnnuelles = computeChargesAnnuelles(charges) * facteur;
-  const amortissementBrut = computeAmortissement(asset);
-  const amortissement: AmortissementResult = {
-    mensualiteCredit: amortissementBrut.mensualiteCredit * facteur,
-    mensualiteAssurance: amortissementBrut.mensualiteAssurance * facteur,
-    interetsAnnee: amortissementBrut.interetsAnnee * facteur,
-    assuranceAnnee: amortissementBrut.assuranceAnnee * facteur,
-    capitalEmprunte: amortissementBrut.capitalEmprunte * facteur,
-  };
+  const amortissement = creditAnnuelBien(asset, emprunts, facteur, true);
   const { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee } = amortissement;
 
   const cashflowNetMensuel =
@@ -508,11 +549,13 @@ export function computeRentabiliteLMNP(
   revenus: AssetRevenu[],
   charges: AssetCharge[],
   tmi: number,
+  emprunts: Emprunt[] = [],
 ): RentabiliteLMNPResult {
   const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
   const loyersAnnuels = computeLoyersAnnuels(revenus);
   const chargesAnnuelles = computeChargesAnnuelles(charges);
-  const amortissementCredit = computeAmortissement(asset);
+  // LMNP/LMP : aucune pondération par quote-part dans ces simulateurs (convention existante).
+  const amortissementCredit = creditAnnuelBien(asset, emprunts, 1, false);
   const { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee } = amortissementCredit;
 
   const terrainPct = asset.pourcentage_terrain_force
@@ -661,11 +704,13 @@ export function computeRentabiliteLMP(
   charges: AssetCharge[],
   tmi: number,
   tauxCotisationsSociales: number,
+  emprunts: Emprunt[] = [],
 ): RentabiliteLMPResult {
   const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
   const loyersAnnuels = computeLoyersAnnuels(revenus);
   const chargesAnnuelles = computeChargesAnnuelles(charges);
-  const amortissementCredit = computeAmortissement(asset);
+  // LMNP/LMP : aucune pondération par quote-part dans ces simulateurs (convention existante).
+  const amortissementCredit = creditAnnuelBien(asset, emprunts, 1, false);
   const { mensualiteCredit, mensualiteAssurance, interetsAnnee, assuranceAnnee } = amortissementCredit;
 
   const terrainPct = asset.pourcentage_terrain_force

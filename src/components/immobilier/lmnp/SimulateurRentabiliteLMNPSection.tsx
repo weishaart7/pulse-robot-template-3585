@@ -3,12 +3,14 @@ import { PanelTitle, SummaryRow } from '@/components/layout/workspace-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { assetService, type Asset, type AssetCharge, type AssetRevenu } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
 import { computeRentabiliteLMNP, type RentabiliteLMNPResult } from '@/lib/immobilier/rentabilite';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SimulateurRentabiliteLMNPSectionProps {
   asset: Asset;
+  emprunts?: Emprunt[];
 }
 
 const formatPercent = (value: number | null): string => {
@@ -16,7 +18,7 @@ const formatPercent = (value: number | null): string => {
   return `${(value * 100).toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`;
 };
 
-export const SimulateurRentabiliteLMNPSection = ({ asset }: SimulateurRentabiliteLMNPSectionProps) => {
+export const SimulateurRentabiliteLMNPSection = ({ asset, emprunts = [] }: SimulateurRentabiliteLMNPSectionProps) => {
   const [revenus, setRevenus] = useState<AssetRevenu[]>([]);
   const [charges, setCharges] = useState<AssetCharge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +46,7 @@ export const SimulateurRentabiliteLMNPSection = ({ asset }: SimulateurRentabilit
   }, [asset.id]);
 
   const tmi = (parseFloat(tmiInput) || 0) / 100;
-  const result: RentabiliteLMNPResult = computeRentabiliteLMNP(asset, revenus, charges, tmi);
+  const result: RentabiliteLMNPResult = computeRentabiliteLMNP(asset, revenus, charges, tmi, emprunts);
 
 
   const pctInput = (id: string, label: string, value: string, onChange: (v: string) => void, hint?: string) => (

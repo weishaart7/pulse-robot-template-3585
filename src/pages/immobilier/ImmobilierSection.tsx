@@ -22,7 +22,7 @@ const MEUBLE_NATURES = [
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
-  const { assets, isLoading, refetch } = useImmobilierAssets();
+  const { assets, emprunts, isLoading, refetch } = useImmobilierAssets();
   // Biens ouverts mémorisés par identifiant et relus dans `assets` : après une sauvegarde, la fiche
   // reçoit la version rechargée par refetch() (et non une copie figée au moment du clic).
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -73,6 +73,7 @@ export const ImmobilierSection = () => {
       <div>
         <LMNPDetailView
           asset={lmnpAsset}
+          emprunts={emprunts}
           onBack={() => setLmnpAssetId(null)}
           onUpdate={handleUpdate}
         />
@@ -93,6 +94,7 @@ export const ImmobilierSection = () => {
       <div>
         <ImmobilierPropertyDetailView
           asset={selectedAsset}
+          emprunts={emprunts}
           onBack={handleDialogClose}
           onUpdate={handleUpdate}
         />
@@ -109,14 +111,14 @@ export const ImmobilierSection = () => {
           ? <div className="px-8 py-6"><LoadingSpinner text="Chargement des biens..." /></div>
           : (
             <>
-              <ImmobilierOverview assets={assets} />
-              <FoncierFoyerSection />
+              <ImmobilierOverview assets={assets} emprunts={emprunts} />
+              <FoncierFoyerSection emprunts={emprunts} />
             </>
           );
       case 'valorisation':
         return isLoading
           ? <div className="px-8 py-6"><LoadingSpinner text="Chargement des biens..." /></div>
-          : <MesBiensList assets={assets} isMeuble={isMeuble} onOpen={handleManageInfo} onGestion={handleGestion} />;
+          : <MesBiensList assets={assets} emprunts={emprunts} isMeuble={isMeuble} onOpen={handleManageInfo} onGestion={handleGestion} />;
       case 'revenus':
         return isLoading
           ? <div className="px-8 py-6"><LoadingSpinner text="Chargement..." /></div>

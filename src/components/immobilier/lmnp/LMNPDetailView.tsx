@@ -10,6 +10,8 @@ import { SectionHeader } from '@/components/family/SectionHeader';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
 import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
+import { ProjectionBienSection } from '../projection/ProjectionBienSection';
 import { useToast } from '@/hooks/use-toast';
 import { RevenuForm } from '../RevenuForm';
 import { ChargeForm } from '../ChargeForm';
@@ -17,7 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import {
   ZONE_TERRAIN_PERCENTAGES,
-  computeAmortissement as computeAmortissementCredit,
+  creditAnnuelBien,
   computeAmortissementImmeubleLMNP as computeAmortissement,
   computeResultatReelLMNP,
   computeResultatReelLMP,
@@ -29,11 +31,13 @@ import { SimulateurRentabiliteLMPSection } from './SimulateurRentabiliteLMPSecti
 
 interface LMNPDetailViewProps {
   asset: Asset;
+  /** Emprunts Patrimoine des biens d'Immobilier (ceux reliés à ce bien font foi pour son crédit). */
+  emprunts?: Emprunt[];
   onBack: () => void;
   onUpdate: () => void;
 }
 
-export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, onUpdate }) => {
+export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts = [], onBack, onUpdate }) => {
   const { toast } = useToast();
 
   // Form state
@@ -201,7 +205,8 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
   // Intérêts d'emprunt + assurance emprunteur : déductibles au régime réel (LMNP comme LMP), comme
   // dans les simulateurs de rentabilité (même moteur, rentabilite.ts). Ils viennent des champs de
   // financement enregistrés sur l'actif (pas de l'état de saisie en cours).
-  const { interetsAnnee: interetsCredit, assuranceAnnee: assuranceCredit } = computeAmortissementCredit(asset);
+  // Emprunt Patrimoine relié s'il existe, sinon champs Financement ; à 100 % comme les simulateurs LMNP/LMP.
+  const { interetsAnnee: interetsCredit, assuranceAnnee: assuranceCredit } = creditAnnuelBien(asset, emprunts, 1, false);
   const chargesDeductiblesReel = totalChargesAnnuel + interetsCredit + assuranceCredit;
 
   const { amortissementDeductible, amortissementNonDeductible, resultatFiscal: resultatFiscalReelLMNP } =
@@ -549,14 +554,19 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, onBack, o
 
       {asset.nature === 'Immeubles locatifs (LMNP)' && (
         <div className="border-t border-border">
-          <SimulateurRentabiliteLMNPSection asset={asset} />
+          <SimulateurRentabiliteLMNPSection asset={asset} emprunts={emprunts} />
         </div>
       )}
       {asset.nature === 'Immeubles locatifs (LMP)' && (
         <div className="border-t border-border">
-          <SimulateurRentabiliteLMPSection asset={asset} />
+          <SimulateurRentabiliteLMPSection asset={asset} emprunts={emprunts} />
         </div>
       )}
+
+      {/* Projection sur les données enregistrées (revenus, charges, crédit), pas sur la saisie en cours. */}
+      <div className="border-t border-border px-8 py-6">
+        <ProjectionBienSection asset={asset} emprunts={emprunts} />
+      </div>
 
       <WizardConfirmDialog
         open={pendingDelete !== null}

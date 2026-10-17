@@ -495,6 +495,13 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Simulateurs LMNP/LMP sans quote-part** : `computeRentabiliteLMNP`/`LMP` et le résumé fiscal de
+  `LMNPDetailView` ne pondèrent ni loyers, ni charges, ni crédit par la quote-part du foyer (convention
+  existante, conservée pour le crédit issu d'un emprunt Patrimoine, compté à 100 %), contrairement au
+  simulateur location nue et aux indicateurs de portefeuille.
+- **Projection de la fiche non rafraîchie** après l'ajout d'un revenu ou d'une charge depuis la fiche
+  LMNP/LMP ou la fenêtre « Revenus et charges » : elle relit ses données à l'ouverture de la fiche.
+
 - **Groupement forestier classé en GFA/GFV** : au 2026-10-17, une ligne de parts d'un groupement
   forestier d'investissement est saisie en nature « Parts de GFA, GAF, GFV et GFR » avec le régime
   fiscal « Dividendes ». Son régime d'exonération successorale (forestier) est correct ; son régime
@@ -585,20 +592,33 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
     fiscale) n'est pas saisi : il faudrait une colonne dédiée pour l'ajouter au seuil de 15 000 € et aux
     déficits du foyer. Aucun impôt n'est donc calculé pour ces parts ; l'IFI n'est pas chiffré non plus
     (seuils d'exonération GFA et numérotation de l'art. 976 CGI non vérifiés sur source officielle).
-  - **Financement (`financement_*`) : consommé partout où un résultat ou un cashflow est calculé.** Les 5
-    champs `financement_actif`/`financement_duree_mois`/`financement_apport`/`financement_taux_credit`/
-    `financement_taux_assurance`, saisissables via
-    [PropertyFinancingSection.tsx](src/components/immobilier/property/PropertyFinancingSection.tsx) et
-    persistés par `useImmobilierPropertyForm.ts:69-73`, alimentent `computeAmortissement()` dans
-    [rentabilite.ts](src/lib/immobilier/rentabilite.ts) (mensualité de crédit et d'assurance, intérêts et
-    assurance de l'année en cours ; tout à 0 pour un bien non financé ou un prêt soldé). Il est utilisé
-    par les trois simulateurs de rentabilité, par le résumé fiscal de `LMNPDetailView.tsx` (intérêts et
-    assurance déduits au réel, LMNP comme LMP) et par le KPI « Cashflow mensuel » de la Vue d'ensemble
-    (`ImmobilierOverview.tsx` : revenus − charges − mensualités de crédit et d'assurance, tous biens
-    transférés, pondérés par la quote-part du foyer). Il n'existe pas de colonne
-    « date de démarrage du crédit » en base : `computeAmortissement()` utilise `date_acquisition` comme
-    proxy, ce qui devient imprécis en cas de refinancement (cas non traité, documenté en commentaire
-    dans le code).
+  - **Crédit d'un bien : l'emprunt Patrimoine relié fait foi** (décision du 2026-10-17). Moteur
+    [credit.ts](src/lib/immobilier/credit.ts) (testé) : un emprunt de Patrimoine → Passifs dont
+    `asset_id` pointe sur le bien remplace les champs « Financement » de la fiche. Échéancier bâti depuis
+    le capital restant dû saisi, à la date de dernière modification de l'emprunt (`updated_at`, seule
+    date de référence, comme le Budget), le taux, et la mensualité (prioritaire) ou à défaut la durée
+    restante ; prêt in fine : intérêts seuls puis capital à la dernière échéance. Sans mensualité ni
+    durée (ou mensualité ≤ intérêts) : échéancier incomplet, signalé, capital restant dû maintenu
+    constant. Part du foyer = celle de l'emprunt (`partFoyerEmprunt`, règle du Budget), repli sur la
+    quote-part du bien si l'emprunt n'est pas qualifié ou est porté par une société. L'assurance
+    emprunteur n'est pas connue pour un emprunt Patrimoine (0). **Repli** : sans emprunt relié, les champs
+    `financement_*` (crédit supposé démarré à `date_acquisition`, `computeAmortissement`) restent utilisés.
+    Point d'entrée unique `creditAnnuelBien` (rentabilite.ts), consommé par le cashflow de la Vue
+    d'ensemble et de « Mes biens », les trois simulateurs, la synthèse foncière (intérêts déjà à la part
+    du foyer, `partCredit`) et le résumé fiscal LMNP/LMP. La section Financement de la fiche affiche
+    l'emprunt relié (lecture seule, renvoi vers Patrimoine) à la place de ses champs. Les emprunts sont
+    chargés une fois avec les biens (`useImmobilierAssets`, `passifService.getEmpruntsByAssetIds`).
+  - **Projection pluriannuelle** ([projection.ts](src/lib/immobilier/projection.ts),
+    [projectionBien.ts](src/lib/immobilier/projectionBien.ts), testés ;
+    [ProjectionPanel.tsx](src/components/immobilier/projection/ProjectionPanel.tsx)) dans la fiche des
+    résidences et biens locatifs, la fiche LMNP/LMP et la Vue d'ensemble (somme des biens). Périodes de
+    12 mois à partir du mois prochain, jusqu'à la fin du crédit le plus long, bornées à 10–30 ans : loyers
+    et charges de l'année (computeFluxBien, quote-part) revalorisés selon des hypothèses saisies sur
+    l'écran (0 % par défaut, **non persistées**), remboursements et assurance, cashflow **avant impôt**,
+    capital restant dû, valeur (valeur estimée × quote-part × fraction de démembrement actuelle, supposée
+    constante) et valeur nette. Graphique à une seule échelle (cashflow ou valeur nette, au choix) et
+    tableau complet. La projection de la fiche LMNP/LMP porte sur les données enregistrées, pas sur la
+    saisie en cours. Hors périmètre : impôt année par année, revente.
   - **Distinction LMNP/LMP** dans le calcul lui-même : les nouveaux simulateurs de rentabilité
     distinguent désormais les deux statuts (plafonnement de l'amortissement et PS à 18,6 % en LMNP ;
     pas de plafonnement, déficit imputable sans limite et cotisations sociales en saisie libre en LMP,
