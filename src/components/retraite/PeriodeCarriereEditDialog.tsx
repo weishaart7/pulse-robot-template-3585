@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,9 +62,12 @@ export function PeriodeCarriereEditDialog({ open, periode, onSave, onCancel }: P
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Modifier la période</DialogTitle>
+      <DialogContent
+        overlayClassName="bg-black/30 backdrop-blur-[6px]"
+        className="workspace-panel max-w-lg rounded-[4px] sm:rounded-[4px]"
+      >
+        <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Modifier la période</DialogTitle>
           <DialogDescription>
             Cette modification n'est appliquée qu'au clic sur "Enregistrer" ci-dessous — elle est ensuite
             sauvegardée automatiquement, sans action supplémentaire.
@@ -155,11 +159,11 @@ export function PeriodeCarriereEditDialog({ open, periode, onSave, onCancel }: P
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+        <DialogFooter className="-mx-6 -mb-6 border-t border-border px-6 py-4">
+          <Button variant="outline" className={panelButtonClass} onClick={onCancel}>
             Annuler
           </Button>
-          <Button onClick={() => onSave(brouillon)} disabled={!peutEnregistrer}>
+          <Button className={panelPrimaryButtonClass} onClick={() => onSave(brouillon)} disabled={!peutEnregistrer}>
             Enregistrer
           </Button>
         </DialogFooter>

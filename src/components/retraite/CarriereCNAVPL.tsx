@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -142,15 +142,15 @@ export const CarriereCNAVPL = ({
   }, [pensionFinale, onResultChange]);
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">Carrière CNAVPL</CardTitle>
-        <CardDescription className="text-xs">
+    <PanelCard>
+      <PanelCardHeader>
+        <PanelCardTitle>Carrière CNAVPL</PanelCardTitle>
+        <PanelCardDescription>
           À cocher si une partie de votre carrière relève de la CNAVPL (professions libérales non
           réglementées)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-5 pt-0 space-y-4">
+        </PanelCardDescription>
+      </PanelCardHeader>
+      <PanelCardContent>
         <div className="flex items-center space-x-2">
           <Checkbox
             id="has-cnavpl"
@@ -173,7 +173,6 @@ export const CarriereCNAVPL = ({
                   placeholder="Ex: 10000"
                   value={pointsCNAVPL}
                   onChange={(e) => onPointsCNAVPLChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
               </div>
 
@@ -185,7 +184,6 @@ export const CarriereCNAVPL = ({
                   step="0.0001"
                   value={valeurPointCNAVPL}
                   onChange={(e) => onValeurPointCNAVPLChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
                   Pré-remplie avec la valeur 2026 (0,6599 €), modifiable.
@@ -200,14 +198,13 @@ export const CarriereCNAVPL = ({
                   placeholder="Ex: 40"
                   value={trimestresCNAVPL}
                   onChange={(e) => onTrimestresCNAVPLChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
               </div>
             </div>
 
-            <div className="p-3 bg-muted/50 rounded-lg">
+            <div className={`${panelInsetClass}`}>
               <div className="text-xs text-muted-foreground mb-1">Pension CNAVPL</div>
-              <div className="text-lg font-semibold text-primary">
+              <div className={`${panelFigureClass}`}>
                 {formatEuro2(pensionFinale)} / an
               </div>
               <p className="text-xs text-muted-foreground mt-1">
@@ -238,7 +235,7 @@ export const CarriereCNAVPL = ({
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

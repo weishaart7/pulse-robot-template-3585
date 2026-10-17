@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
+import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -90,34 +91,32 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
   const totalEpargne = totalPer + totalAssuranceVie + (parseFloat(autresEpargnes) || 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <SaveStatusIndicator status={saveStatus} />
-      </div>
-
-      <Card className="border border-border">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0 p-5">
+    <div>
+      <PanelCard>
+        <PanelCardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Épargne retraite</CardTitle>
-            <CardDescription className="text-xs">
+            <PanelCardTitle>Épargne retraite</PanelCardTitle>
+            <PanelCardDescription>
               Actifs PER et assurance-vie déjà déclarés dans le module Patrimoine
-            </CardDescription>
+            </PanelCardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => navigate('/dashboard/patrimoine')}
-          >
-            <ExternalLink className="h-4 w-4" />
-            Voir/ajouter dans Patrimoine
-          </Button>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+          <div className="flex items-center gap-3">
+            <SaveStatusIndicator status={saveStatus} />
+            <Button
+              variant="outline"
+              className={`gap-2 ${panelButtonClass}`}
+              onClick={() => navigate('/dashboard/patrimoine')}
+            >
+              <ExternalLink className="h-4 w-4" />
+              Voir/ajouter dans Patrimoine
+            </Button>
+          </div>
+        </PanelCardHeader>
+        <PanelCardContent>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs">PER (Plan Épargne Retraite)</Label>
-              <div className="text-xl font-semibold text-primary">
+              <div className="text-[20px] font-medium tabular-nums text-foreground">
                 {formatCurrency(totalPer)}
               </div>
               {loadingAssets ? (
@@ -140,7 +139,7 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
 
             <div className="space-y-1.5">
               <Label className="text-xs">Assurance vie</Label>
-              <div className="text-xl font-semibold text-primary">
+              <div className="text-[20px] font-medium tabular-nums text-foreground">
                 {formatCurrency(totalAssuranceVie)}
               </div>
               {loadingAssets ? (
@@ -171,22 +170,22 @@ export const EpargneRetraite = ({ personne = 'utilisateur' }: EpargneRetraitePro
               value={autresEpargnes}
               onChange={(e) => setAutresEpargnes(e.target.value)}
               onBlur={saveNow}
-             className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
+             />
             <p className="text-xs text-muted-foreground">
               Comptes épargne, placements divers, etc.
             </p>
           </div>
 
           {totalEpargne > 0 && (
-            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+            <div className={`${panelInsetClass} mt-4`}>
               <Label className="text-xs">Total épargne retraite</Label>
-              <div className="text-lg font-semibold text-primary">
+              <div className={`${panelFigureClass}`}>
                 {formatCurrency(totalEpargne)}
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };

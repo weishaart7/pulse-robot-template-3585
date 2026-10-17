@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -91,25 +91,25 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
   const sortieRente = sortiePERRente(annuiteDepuisCapital(perAuDepart, rendement('central'), horizonCentral), ageDepart, tmiRetraite);
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">Écart de revenu à la retraite</CardTitle>
-        <CardDescription className="text-xs">
+    <PanelCard>
+      <PanelCardHeader>
+        <PanelCardTitle>Écart de revenu à la retraite</PanelCardTitle>
+        <PanelCardDescription>
           Foyer retraité à partir du {dateDepart.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} — montants en euros
           constants
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-5 pt-0 space-y-5">
-        <div className="grid gap-3 md:grid-cols-4">
-          <div className="p-3 border rounded-lg">
+        </PanelCardDescription>
+      </PanelCardHeader>
+      <PanelCardContent className="space-y-5">
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border md:grid-cols-4 md:divide-x md:divide-y-0">
+          <div className="py-2.5 md:px-4 md:first:pl-0">
             <div className="text-xs text-muted-foreground">Revenu net des pensions</div>
-            <div className="text-lg font-semibold">{formatEuro0(netMensuel)} / mois</div>
+            <div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{formatEuro0(netMensuel)} / mois</div>
           </div>
-          <div className="p-3 border rounded-lg">
+          <div className="py-2.5 md:px-4 md:first:pl-0">
             <div className="text-xs text-muted-foreground">Revenus d'actifs (bruts)</div>
-            <div className="text-lg font-semibold">{formatEuro0(revenusActifsMensuels)} / mois</div>
+            <div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{formatEuro0(revenusActifsMensuels)} / mois</div>
           </div>
-          <div className="p-3 border rounded-lg space-y-1">
+          <div className="py-2.5 md:px-4 md:first:pl-0 space-y-1">
             <Label htmlFor="budget-retraite" className="text-xs text-muted-foreground">
               Budget cible
             </Label>
@@ -125,9 +125,9 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
               Calculé : {formatEuro0(budgetCalcule)} / mois (charges actuelles hors crédits terminés)
             </div>
           </div>
-          <div className="p-3 border rounded-lg">
+          <div className="py-2.5 md:px-4 md:first:pl-0">
             <div className="text-xs text-muted-foreground">{ecartMensuel >= 0 ? 'Excédent' : 'Déficit'}</div>
-            <div className={`text-lg font-semibold ${ecartMensuel >= 0 ? 'text-positive' : 'text-destructive'}`}>
+            <div className={`text-[18px] font-medium tabular-nums tracking-[-0.01em] ${ecartMensuel >= 0 ? 'text-positive' : 'text-destructive'}`}>
               {ecartMensuel >= 0 ? '+' : '−'}
               {formatEuro0(Math.abs(ecartMensuel))} / mois
             </div>
@@ -135,7 +135,7 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-semibold">Épargne retraite et couverture du déficit</p>
+          <p className="text-[13px] font-medium">Épargne retraite et couverture du déficit</p>
           <p className="text-xs text-muted-foreground">
             Encours du foyer : PER {formatEuro0(encoursPER)} · assurance-vie {formatEuro0(encoursAssuranceVie)}.
           </p>
@@ -202,9 +202,9 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
               Épargne complémentaire recommandée (scénario central) :{' '}
               {analyse.capitalManquantCentral > 0 ? (
                 <>
-                  <span className="font-semibold">{formatEuro0(analyse.capitalManquantCentral)}</span> à constituer d'ici
+                  <span className="font-medium">{formatEuro0(analyse.capitalManquantCentral)}</span> à constituer d'ici
                   le départ, soit environ{' '}
-                  <span className="font-semibold">{formatEuro0(analyse.versementAnnuelComplementaire)} / an</span> de
+                  <span className="font-medium">{formatEuro0(analyse.versementAnnuelComplementaire)} / an</span> de
                   versements supplémentaires.
                 </>
               ) : (
@@ -216,7 +216,7 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
 
         {perAuDepart > 0 && (
           <div className="space-y-1">
-            <p className="text-sm font-semibold">Sortie du PER (scénario central)</p>
+            <p className="text-[13px] font-medium">Sortie du PER (scénario central)</p>
             <p className="text-xs">
               En capital : {formatEuro0(sortieCapital.net)} nets sur {formatEuro0(sortieCapital.brut)} (impôt{' '}
               {formatEuro0(sortieCapital.impot)}, prélèvements sociaux {formatEuro0(sortieCapital.prelevementsSociaux)}).
@@ -245,7 +245,7 @@ export const EcartRevenuRetraite = ({ hasConjoint, nomUtilisateur, nomConjoint }
             enregistrées.
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

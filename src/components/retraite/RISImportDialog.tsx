@@ -8,6 +8,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PeriodeCarriere, RegimeDetecte } from '@/lib/retraite/parseRIS';
@@ -60,9 +61,12 @@ export function RISImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Vérifier les régimes détectés</DialogTitle>
+      <DialogContent
+        overlayClassName="bg-black/30 backdrop-blur-[6px]"
+        className="workspace-panel max-w-2xl rounded-[4px] sm:rounded-[4px]"
+      >
+        <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Vérifier les régimes détectés</DialogTitle>
           <DialogDescription>
             Vérifiez et corrigez si besoin les valeurs extraites du relevé avant de les appliquer. Rien n'est enregistré tant que vous n'avez pas cliqué sur "Valider".
           </DialogDescription>
@@ -70,7 +74,7 @@ export function RISImportDialog({
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           {regimesEdites.map((regime, index) => (
-            <div key={index} className="border rounded-lg p-4 space-y-3">
+            <div key={index} className="rounded-[2px] border border-border p-4 space-y-3">
               <div className="space-y-1">
                 <Label htmlFor={`regime-nom-${index}`}>Nom du régime</Label>
                 <Input
@@ -136,7 +140,7 @@ export function RISImportDialog({
           ))}
 
           {detailCarriere.length > 0 && (
-            <div className="border rounded-lg p-4 space-y-3">
+            <div className="rounded-[2px] border border-border p-4 space-y-3">
               <div className="space-y-1">
                 <Label className="text-sm font-semibold">
                   Détail de carrière ({detailCarriere.length} période{detailCarriere.length > 1 ? 's' : ''} détectée{detailCarriere.length > 1 ? 's' : ''})
@@ -182,11 +186,12 @@ export function RISImportDialog({
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
+        <DialogFooter className="-mx-6 -mb-6 border-t border-border px-6 py-4">
+          <Button variant="outline" className={panelButtonClass} onClick={onCancel}>
             Annuler
           </Button>
           <Button
+            className={panelPrimaryButtonClass}
             onClick={() =>
               onValidate(regimesEdites, detailCarriere, samValeur === '' ? null : parseFloat(samValeur))
             }

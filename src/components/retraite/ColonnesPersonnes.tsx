@@ -14,11 +14,20 @@ interface ColonnesPersonnesProps {
   render: (personne: Personne) => React.ReactNode;
 }
 
+// Repères carrés lagon (client) / citron (conjoint), comme la Composition du Foyer (Famille).
+const EnTetePersonne = ({ nom, role, markClassName }: { nom: string; role: string; markClassName: string }) => (
+  <div className="flex h-11 items-center gap-2 border-b border-border bg-secondary/40 px-8 text-[13px]">
+    <span aria-hidden className={`h-2.5 w-2.5 rounded-[2px] ${markClassName}`} />
+    <span className="font-medium text-foreground">{nom}</span>
+    <span className="text-muted-foreground">· {role}</span>
+  </div>
+);
+
 /**
  * Deux colonnes indépendantes (utilisateur / conjoint) pour un onglet du
- * module Retraite. Sans conjoint identifié dans Famille (marié, pacsé ou
- * concubin — cf. checkIsInCouple), affiche une seule colonne, strictement
- * identique à l'écran utilisateur seul d'avant cette fonctionnalité.
+ * module Retraite, séparées par un filet (panneau de travail). Sans conjoint
+ * identifié dans Famille (marié, pacsé ou concubin — cf. checkIsInCouple),
+ * affiche une seule colonne pleine largeur.
  *
  * Empilé en dessous de `xl` (1280px) plutôt que `lg` (1024px) : Carriere.tsx/
  * Trimestres.tsx utilisent déjà des grilles internes `md:grid-cols-2/3`
@@ -36,13 +45,13 @@ export const ColonnesPersonnes = ({
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">{nomUtilisateur}</h3>
+    <div className="grid grid-cols-1 xl:grid-cols-2 xl:divide-x xl:divide-border">
+      <div className="min-w-0">
+        <EnTetePersonne nom={nomUtilisateur} role="Client" markClassName="bg-lagon" />
         {render('utilisateur')}
       </div>
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">{nomConjoint}</h3>
+      <div className="min-w-0 border-t border-border xl:border-t-0">
+        <EnTetePersonne nom={nomConjoint} role="Conjoint" markClassName="bg-citron" />
         {render('conjoint')}
       </div>
     </div>

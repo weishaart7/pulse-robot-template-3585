@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
+import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -88,7 +89,7 @@ const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseReve
   if (loading) return null;
 
   return (
-    <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+    <div className={`${panelInsetClass} space-y-3`}>
       <div>
         <Label className="text-xs">Hypothèse de revenu futur</Label>
         <p className="text-xs text-muted-foreground mt-0.5">
@@ -97,29 +98,30 @@ const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseReve
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant={mode === 'derniere_annee_connue' ? 'default' : 'outline'}
-          size="sm"
-          disabled={valeurCalculee === null}
-          onClick={() => setMode('derniere_annee_connue')}
-        >
-          Dernière année connue
-        </Button>
-        <Button
-          type="button"
-          variant={mode === 'revenu_moyen_projete' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setMode('revenu_moyen_projete')}
-        >
-          Revenu moyen projeté
-        </Button>
+      {/* Bascule segmentée, comme Mensuel / Annuel du Budget. */}
+      <div className="inline-flex h-8 items-center rounded-[2px] border border-border bg-background p-0.5">
+        {([
+          { id: 'derniere_annee_connue', label: 'Dernière année connue', disabled: valeurCalculee === null },
+          { id: 'revenu_moyen_projete', label: 'Revenu moyen projeté', disabled: false },
+        ] as const).map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={mode === option.id}
+            disabled={option.disabled}
+            onClick={() => setMode(option.id)}
+            className={`h-full rounded-[1px] px-3 text-[12.5px] font-medium transition-colors disabled:opacity-40 ${
+              mode === option.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       {mode === 'derniere_annee_connue' ? (
         valeurCalculee !== null ? (
-          <p className="text-sm font-semibold text-primary">{formatEuro0Hypothese(valeurCalculee)} / an</p>
+          <p className="text-[13px] font-medium tabular-nums text-foreground">{formatEuro0Hypothese(valeurCalculee)} / an</p>
         ) : (
           <p className="text-xs text-muted-foreground">
             Non calculable : aucune année du relevé de carrière n'a de trimestre validé.
@@ -137,7 +139,6 @@ const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseReve
             value={valeurManuelle}
             onChange={(e) => setValeurManuelle(e.target.value)}
             onBlur={saveNow}
-            className="bg-background border-transparent shadow-none rounded-[5px] focus-visible:border-ring"
           />
         </div>
       )}
@@ -733,28 +734,27 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const aDesRegimesSupplementaires = hasFonctionPublique || hasCNAVPL;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
-        <SaveStatusIndicator status={saveStatus} />
-      </div>
-      <Card className="border border-border">
-        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 space-y-0 p-5">
+    <div>
+      <PanelCard>
+        <PanelCardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Informations de carrière</CardTitle>
-            <CardDescription className="text-xs">
+            <PanelCardTitle>Informations de carrière</PanelCardTitle>
+            <PanelCardDescription>
               Renseignez les éléments de votre carrière pour calculer votre pension
-            </CardDescription>
+            </PanelCardDescription>
           </div>
+          <div className="flex items-center gap-3">
+          <SaveStatusIndicator status={saveStatus} />
           <Button
             variant="outline"
-            size="sm"
-            className="gap-2"
+            className={`gap-2 ${panelButtonClass}`}
             onClick={handleImportClick}
             disabled={risImporting}
           >
             <Upload className="h-4 w-4" />
             {risImporting ? 'Lecture en cours...' : 'Importer mon relevé de carrière (RIS)'}
           </Button>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -762,8 +762,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             className="hidden"
             onChange={handleFileSelected}
           />
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+        </PanelCardHeader>
+        <PanelCardContent>
           <div className="grid gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="salaire-moyen" className="text-xs">Salaire annuel moyen (€)</Label>
@@ -774,20 +774,20 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 value={salaireAnnuelMoyen}
                 onChange={(e) => setSalaireAnnuelMoyen(e.target.value)}
                 onBlur={saveNow}
-               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
+               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Gestion des trimestres</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Gestion des trimestres</PanelCardTitle>
+          <PanelCardDescription>
             Suivez vos trimestres validés et calculez l'âge du taux plein
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="trimestres-valides" className="text-xs">Trimestres validés</Label>
@@ -798,7 +798,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 value={trimestresValides}
                 onChange={(e) => setTrimestresValides(e.target.value)}
                 onBlur={saveNow}
-               className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"/>
+               />
             </div>
 
             <div className="space-y-1.5">
@@ -808,7 +808,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 type="number"
                 value={trimestresRequis}
                 disabled
-                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring bg-muted"
+                className="bg-muted"
               />
               <p className="text-xs text-muted-foreground">
                 Valeur fixée selon votre date de naissance
@@ -838,9 +838,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           </div>
 
           <div className="space-y-3">
-            <div className="p-3 bg-muted/50 rounded-lg">
+            <div className={`${panelInsetClass}`}>
               <Label className="text-xs">Âge du taux plein</Label>
-              <div className="text-sm font-semibold text-primary mt-1">
+              <div className="text-[13px] font-medium text-foreground mt-1">
                 {ageTauxPlein}
               </div>
               {dateNaissanceDetail && (
@@ -858,9 +858,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             </div>
 
             {trimestresValides && (
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="text-center p-3 border rounded-lg">
-                  <div className="text-xl font-bold text-primary">
+              <div className="grid grid-cols-3 divide-x divide-border border-y border-border">
+                <div className="px-4 py-2.5 first:pl-0">
+                  <div className="text-[20px] font-medium tabular-nums text-foreground">
                     {trimestresValides}
                   </div>
                   <div className="text-xs text-muted-foreground">
@@ -868,8 +868,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   </div>
                 </div>
 
-                <div className="text-center p-3 border rounded-lg">
-                  <div className="text-xl font-bold">
+                <div className="px-4 py-2.5 first:pl-0">
+                  <div className="text-[20px] font-medium tabular-nums">
                     {trimestresRequis}
                   </div>
                   <div className="text-xs text-muted-foreground">
@@ -877,8 +877,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   </div>
                 </div>
 
-                <div className="text-center p-3 border rounded-lg">
-                  <div className={`text-xl font-bold ${
+                <div className="px-4 py-2.5 first:pl-0">
+                  <div className={`text-[20px] font-medium tabular-nums ${
                     parseInt(trimestresValides) >= trimestresRequis
                       ? 'text-positive'
                       : 'text-spark'
@@ -892,21 +892,21 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Calculs de pension</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Calculs de pension</PanelCardTitle>
+          <PanelCardDescription>
             Estimation de votre pension de retraite de base
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-3">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs">Pension de base brute</Label>
-              <div className="text-xl font-semibold text-primary">
+              <div className="text-[20px] font-medium tabular-nums text-foreground">
                 {pensionBaseBrute.toLocaleString('fr-FR', {
                   style: 'currency',
                   currency: 'EUR',
@@ -921,7 +921,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
 
             <div className="space-y-1.5">
               <Label className="text-xs">Décote / Surcote</Label>
-              <div className={`text-xl font-semibold ${
+              <div className={`text-[20px] font-medium tabular-nums ${
                 decoteSurcote + surcoteTotalePct < 0 ? 'text-destructive' :
                 decoteSurcote + surcoteTotalePct > 0 ? 'text-positive' : 'text-muted-foreground'
               }`}>
@@ -948,7 +948,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               placeholder="Ex: 600"
               value={autresPensionsMensuelles}
               onChange={(e) => setAutresPensionsMensuelles(e.target.value)}
-              className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+              className="max-w-xs"
             />
             <p className="text-xs text-muted-foreground">
               Pensions personnelles brutes d'autres régimes non modélisés par cet outil (étranger,
@@ -983,7 +983,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   placeholder="Âge (ex. 62)"
                   value={ageDepartAnticipeConfirme}
                   onChange={(e) => setAgeDepartAnticipeConfirme(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-[160px]"
+                  className="max-w-[160px]"
                 />
               )}
             </div>
@@ -995,9 +995,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           </div>
 
           {pensionBaseBrute > 0 && (
-            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+            <div className={`${panelInsetClass} mt-3`}>
               <Label className="text-xs">Pension ajustée (avec décote/surcote/MICO/majoration enfants)</Label>
-              <div className="text-lg font-semibold text-primary">
+              <div className={`${panelFigureClass}`}>
                 {pensionBaseAjustee.toLocaleString('fr-FR', {
                   style: 'currency',
                   currency: 'EUR',
@@ -1031,14 +1031,14 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           )}
 
           {(pensionBaseBrute > 0 || regimesPoints.length > 0 || aDesRegimesSupplementaires) && (
-            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+            <div className={`${panelInsetClass} mt-3`}>
               <Label className="text-xs">
                 Total consolidé{aDesRegimesSupplementaires ? ' tous régimes' : ''} (pension de base
                 ajustée + pensions complémentaires
                 {hasFonctionPublique ? ' + fonction publique + RAFP' : ''}
                 {hasCNAVPL ? ' + CNAVPL' : ''})
               </Label>
-              <div className="text-lg font-semibold text-primary">
+              <div className={`${panelFigureClass}`}>
                 {formatEuro2(pensionTotaleConsolidee)} / an
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1074,23 +1074,23 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Régimes de retraite complémentaire (points)</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Régimes de retraite complémentaire (points)</PanelCardTitle>
+          <PanelCardDescription>
             Régimes par points détectés lors de l'import de votre relevé de carrière (RIS)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
           {regimesPoints.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               Aucun régime à points enregistré. Importez votre relevé de carrière pour les détecter automatiquement.
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className="divide-y divide-border border-y border-border">
               {regimesPoints.map((regime, index) => {
                 const pensionAnnuelle = estRegimeAgircArrco(regime.nom)
                   ? undefined
@@ -1098,10 +1098,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 return (
                   <div
                     key={`${regime.nom}-${index}`}
-                    className="flex items-center justify-between gap-4 p-3 border rounded-lg"
+                    className="flex items-center justify-between gap-4 py-2.5"
                   >
                     <div className="space-y-0.5">
-                      <div className="text-sm font-semibold">{regime.nom}</div>
+                      <div className="text-[13px] font-medium">{regime.nom}</div>
                       <div className="text-xs text-muted-foreground">
                         {regime.points?.toLocaleString('fr-FR')} points
                         {regime.valeurPoint !== undefined && (
@@ -1149,9 +1149,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           )}
 
           {detailAgircArrco && (
-            <div className="mt-3 p-3 bg-muted/50 rounded-lg space-y-1">
+            <div className={`${panelInsetClass} mt-3  space-y-1`}>
               <Label className="text-xs">Agirc-Arrco au départ du {dateEffetScenario.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}</Label>
-              <div className="text-lg font-semibold text-primary">
+              <div className={`${panelFigureClass}`}>
                 {formatEuro2(detailAgircArrco.pensionAnnuelle)} / an
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1187,7 +1187,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 placeholder="Ex: 85000"
                 value={salaireBrutAnnuel}
                 onChange={(e) => setSalaireBrutAnnuel(e.target.value)}
-                className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+                className="max-w-xs"
               />
               {salaireComplementaire?.estPlafonne && (
                 <p className="text-xs text-spark">
@@ -1202,17 +1202,17 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Détail de carrière</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Détail de carrière</PanelCardTitle>
+          <PanelCardDescription>
             Employeur / activité détectés lors de l'import de votre relevé de carrière (RIS)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-3">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-3">
           {trimestresValides && detailCarriere.length > 0 && (
             Math.abs(ecartCoherenceTrimestres) <= SEUIL_ECART_COHERENCE_TRIMESTRES ? (
               <div className="flex items-center gap-2 text-xs text-positive">
@@ -1221,7 +1221,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 {trimValidesRegimeGeneral} trimestres validés au RIS)
               </div>
             ) : (
-              <div className="flex items-start gap-2 text-xs text-spark p-2.5 border border-spark/20 rounded-lg bg-spark/10">
+              <div className="flex items-start gap-2 text-xs text-spark p-2.5 border border-spark/20 rounded-[2px] bg-spark/10">
                 <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
                   Écart détecté entre le RIS importé ({trimValidesRegimeGeneral} trimestres) et la carrière saisie
@@ -1239,20 +1239,20 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           ) : (
             <Collapsible open={detailCarriereOuvert} onOpenChange={setDetailCarriereOuvert}>
               <CollapsibleTrigger asChild>
-                <Button type="button" variant="outline" size="sm" className="gap-2">
+                <Button type="button" variant="outline" className={`gap-2 ${panelButtonClass}`}>
                   <ChevronDown className={`h-4 w-4 transition-transform ${detailCarriereOuvert ? 'rotate-180' : ''}`} />
                   {detailCarriereOuvert ? 'Masquer' : 'Afficher'} le détail ({detailCarriere.length} période
                   {detailCarriere.length > 1 ? 's' : ''})
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2 pt-3">
+              <CollapsibleContent className="mt-3 divide-y divide-border border-y border-border">
                 {detailCarriere.map((periode, index) => (
                   <div
                     key={`${periode.employeur}-${periode.dateDebut}-${index}`}
-                    className="flex items-center justify-between gap-4 p-3 border rounded-lg"
+                    className="flex items-center justify-between gap-4 py-2.5"
                   >
                     <div className="space-y-0.5">
-                      <div className="text-sm font-semibold">{periode.employeur}</div>
+                      <div className="text-[13px] font-medium">{periode.employeur}</div>
                       <div className="text-xs text-muted-foreground">
                         {LIBELLE_TYPE_ACTIVITE[periode.typeActivite]} · {formatDateFr(periode.dateDebut)} →{' '}
                         {formatDateFr(periode.dateFin)}
@@ -1287,8 +1287,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               </CollapsibleContent>
             </Collapsible>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
       <CarriereFonctionPublique
         trimestresRequis={trimestresRequis}

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { THEME_INK } from '@/lib/theme';
 import { useModuleSubNav } from '@/hooks/useModuleSubNav';
-import { Synthese } from '@/components/retraite/Synthese';
+import { Synthese, BoutonExportPDF } from '@/components/retraite/Synthese';
+import { WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { Calculator } from 'lucide-react';
 import { Carriere } from '@/components/retraite/Carriere';
 import { EpargneRetraite } from '@/components/retraite/EpargneRetraite';
 import { EcartRevenuRetraite } from '@/components/retraite/EcartRevenuRetraite';
@@ -61,13 +62,13 @@ export const RetraiteSection = () => {
         );
       case 'epargne':
         return (
-          <div className="space-y-6">
+          <>
             <EcartRevenuRetraite {...colonnesProps} />
             <ColonnesPersonnes
               {...colonnesProps}
               render={(personne) => <EpargneRetraite personne={personne} />}
             />
-          </div>
+          </>
         );
       case 'optimisation':
         return (
@@ -81,16 +82,37 @@ export const RetraiteSection = () => {
     }
   };
 
+  const tabLabel = TABS.find((t) => t.id === activeTab)?.label ?? 'Synthèse';
+  const summary = hasConjoint
+    ? `${nomUtilisateur} et ${nomConjoint} · barèmes ${MILLESIME_COURANT.annee}, montants bruts en euros constants`
+    : `${nomUtilisateur} · barèmes ${MILLESIME_COURANT.annee}, montants bruts en euros constants`;
+
+  // Cadre « panneau de travail », sur le modèle de Famille, Patrimoine et Immobilier : barre
+  // d'en-tête (fil d'Ariane + export PDF en Synthèse), titre 24 px et rappel, contenu bord à bord.
   return (
-    <div className="p-6">
+    <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+      <WorkspaceHeader
+        icon={<Calculator strokeWidth={1.75} />}
+        trail={['Retraite', tabLabel]}
+        actions={activeTab === 'synthese' ? <BoutonExportPDF {...colonnesProps} /> : undefined}
+      />
+
+      <div className="px-8 pt-6 pb-4">
+        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{tabLabel}</h1>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{summary}</p>
+      </div>
+
       {baremePerime(new Date()) && (
-        <p className="mb-4 rounded-lg border border-destructive/40 p-3 text-xs text-destructive">
+        <p className="mx-8 mb-4 rounded-[2px] border border-destructive/40 p-3 text-[12.5px] text-destructive">
           Barèmes retraite {MILLESIME_COURANT.annee} (MICO, minimum garanti, points RAFP/CNAVPL, PASS) :
           une revalorisation est intervenue depuis. Les montants affichés reposent sur des valeurs
           probablement dépassées — mettre à jour src/lib/retraite/params-retraite.json.
         </p>
       )}
-      {renderContent()}
+
+      <div className="border-t border-border">
+        {renderContent()}
+      </div>
     </div>
   );
 };

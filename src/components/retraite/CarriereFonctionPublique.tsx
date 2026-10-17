@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -249,15 +249,15 @@ export const CarriereFonctionPublique = ({
   }, [pensionFinale, rafpAnnuelle, onResultChange]);
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="p-5">
-        <CardTitle className="text-[15px] font-semibold tracking-tight">Carrière fonction publique</CardTitle>
-        <CardDescription className="text-xs">
+    <PanelCard>
+      <PanelCardHeader>
+        <PanelCardTitle>Carrière fonction publique</PanelCardTitle>
+        <PanelCardDescription>
           À cocher si une partie de votre carrière a été effectuée dans la fonction publique
           (polypensionné)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-5 pt-0 space-y-4">
+        </PanelCardDescription>
+      </PanelCardHeader>
+      <PanelCardContent>
         <div className="flex items-center space-x-2">
           <Checkbox
             id="has-fonction-publique"
@@ -280,7 +280,6 @@ export const CarriereFonctionPublique = ({
                   placeholder="Ex: 36000"
                   value={traitementIndiciaireBrut}
                   onChange={(e) => onTraitementIndiciaireBrutChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
                   Dernier indice détenu depuis au moins 6 mois avant cessation, en équivalent annuel
@@ -298,7 +297,6 @@ export const CarriereFonctionPublique = ({
                   placeholder="Ex: 60"
                   value={trimestresLiquidables}
                   onChange={(e) => onTrimestresLiquidablesChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
               </div>
 
@@ -310,7 +308,6 @@ export const CarriereFonctionPublique = ({
                   placeholder="Ex: 4200"
                   value={pointsRAFP}
                   onChange={(e) => onPointsRAFPChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
                   Visible sur le compte individuel RAFP officiel (
@@ -318,7 +315,7 @@ export const CarriereFonctionPublique = ({
                     href="https://www.rafp.fr"
                     target="_blank"
                     rel="noreferrer"
-                    className="text-primary underline"
+                    className="font-medium text-lagon-ink underline-offset-4 hover:underline"
                   >
                     rafp.fr
                   </a>
@@ -337,7 +334,7 @@ export const CarriereFonctionPublique = ({
               >
                 <SelectTrigger
                   id="regime-affiliation-fp"
-                  className="bg-muted border-transparent shadow-none rounded-[5px] max-w-xs"
+                  className="max-w-xs"
                 >
                   <SelectValue placeholder="Non renseigné" />
                 </SelectTrigger>
@@ -363,7 +360,6 @@ export const CarriereFonctionPublique = ({
                   placeholder="Ex: 1200"
                   value={moyenneAnnuelleNBI}
                   onChange={(e) => onMoyenneAnnuelleNBIChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
                   Moyenne annuelle des sommes perçues au titre de la NBI, déjà revalorisée
@@ -380,7 +376,6 @@ export const CarriereFonctionPublique = ({
                   placeholder="Ex: 20"
                   value={trimestresLiquidablesNBI}
                   onChange={(e) => onTrimestresLiquidablesNBIChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                 />
                 <p className="text-xs text-muted-foreground">
                   Trimestres liquidables pendant lesquels la NBI a été effectivement perçue (pas
@@ -415,7 +410,7 @@ export const CarriereFonctionPublique = ({
                   placeholder="Ex: 2014"
                   value={anneeOuvertureDroits}
                   onChange={(e) => onAnneeOuvertureDroitsChange(e.target.value)}
-                  className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring max-w-xs"
+                  className="max-w-xs"
                 />
                 <p className="text-xs text-muted-foreground">
                   Année où l'agent a réuni la condition d'âge/durée ouvrant droit à pension —
@@ -446,7 +441,6 @@ export const CarriereFonctionPublique = ({
                       placeholder="Ex: 57"
                       value={ageDepartAnticipe}
                       onChange={(e) => onAgeDepartAnticipeChange(e.target.value)}
-                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -457,7 +451,6 @@ export const CarriereFonctionPublique = ({
                       placeholder="Ex: 62"
                       value={ageAnnulationDecote}
                       onChange={(e) => onAgeAnnulationDecoteChange(e.target.value)}
-                      className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                     />
                   </div>
                   <p className="text-xs text-muted-foreground md:col-span-2">
@@ -470,9 +463,9 @@ export const CarriereFonctionPublique = ({
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              <div className="p-3 bg-muted/50 rounded-lg">
+              <div className={`${panelInsetClass}`}>
                 <div className="text-xs text-muted-foreground mb-1">Pension fonction publique</div>
-                <div className="text-lg font-semibold text-primary">
+                <div className={`${panelFigureClass}`}>
                   {formatEuro2(pensionFinale)} / an
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -526,11 +519,11 @@ export const CarriereFonctionPublique = ({
                 )}
               </div>
 
-              <div className="p-3 bg-muted/50 rounded-lg">
+              <div className={`${panelInsetClass}`}>
                 <div className="text-xs text-muted-foreground mb-1">RAFP</div>
                 {rafp.forme === 'capital' ? (
                   <>
-                    <div className="text-lg font-semibold text-primary">{formatEuro2(rafp.capital)} en capital</div>
+                    <div className={`${panelFigureClass}`}>{formatEuro2(rafp.capital)} en capital</div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Moins de 5 125 points : versement unique (coefficient de conversion{' '}
                       {rafp.coefficientConversion.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}, majoration{' '}
@@ -539,7 +532,7 @@ export const CarriereFonctionPublique = ({
                   </>
                 ) : (
                   <>
-                    <div className="text-lg font-semibold text-primary">{formatEuro2(rafpAnnuelle)} / an</div>
+                    <div className={`${panelFigureClass}`}>{formatEuro2(rafpAnnuelle)} / an</div>
                     {rafp.coefficientMajoration > 1 && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Coefficient de majoration pour âge : {rafp.coefficientMajoration.toLocaleString('fr-FR')}
@@ -551,7 +544,7 @@ export const CarriereFonctionPublique = ({
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

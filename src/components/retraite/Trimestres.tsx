@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -47,6 +47,7 @@ import { calculerPartsFiscales } from '@/lib/fiscalite';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { MILLESIME_COURANT, PARAMETRES_ESPERANCE_VIE, PARAMETRES_EPARGNE_RETRAITE } from '@/lib/retraite/parametres';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { LAGON_INK } from '@/components/budget/budgetColors';
 
 // Format ISO ("YYYY-MM-DD") d'une date UTC-midnight, pour la valeur d'un
 // <input type="date"> — .toISOString() ne décale pas ce cas puisque
@@ -197,36 +198,36 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <Card className="border border-border">
-          <CardContent className="p-0"><LoadingSpinner /></CardContent>
-        </Card>
+      <div>
+        <PanelCard>
+          <PanelCardContent><LoadingSpinner /></PanelCardContent>
+        </PanelCard>
       </div>
     );
   }
 
   if (!dateNaissance || ageActuel === null || dateNaissanceDetail === undefined) {
     return (
-      <div className="space-y-6">
-        <Card className="border border-border">
-          <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold tracking-tight">Simulation d'âge de départ</CardTitle>
-            <CardDescription className="text-xs">
+      <div>
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Simulation d'âge de départ</PanelCardTitle>
+            <PanelCardDescription>
               Simulez l'impact de votre âge de départ sur votre pension
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+            </PanelCardDescription>
+          </PanelCardHeader>
+          <PanelCardContent>
             <p className="text-xs text-muted-foreground">
               Votre date de naissance n'est pas renseignée. Elle est nécessaire pour déterminer le
               nombre de trimestres requis pour votre génération et calculer la décote ou la surcote
               selon votre âge de départ simulé. Renseignez-la dans{' '}
-              <Link to="/dashboard/famille" className="text-primary underline">
+              <Link to="/dashboard/famille" className="font-medium text-lagon-ink underline-offset-4 hover:underline">
                 votre fiche famille
               </Link>{' '}
               (cliquez sur votre profil pour l'éditer), puis revenez sur cette page.
             </p>
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       </div>
     );
   }
@@ -421,21 +422,21 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const salaireProgressive = salaireComplementaire ? salaireComplementaire.salaireAnnuel * (quotiteProgressive / 100) : 0;
 
   return (
-    <div className="space-y-6">
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Simulation de départ à la retraite</CardTitle>
-          <CardDescription className="text-xs">
+    <div>
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Simulation de départ à la retraite</PanelCardTitle>
+          <PanelCardDescription>
             Simulation indicative, ne remplace pas un relevé officiel de l'Assurance retraite.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label htmlFor="date-liquidation" className="text-xs font-medium">
                 Date de liquidation envisagée
               </label>
-              <span className="text-sm font-semibold text-primary">
+              <span className="text-[13px] font-medium text-foreground">
                 {resultatSelection.ageAffiche} ans
               </span>
             </div>
@@ -473,9 +474,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             )}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="text-center p-3 border rounded-lg">
-              <div className="text-xl font-bold text-primary">
+          <div className="grid grid-cols-3 divide-x divide-border border-y border-border">
+            <div className="px-4 py-2.5 first:pl-0">
+              <div className="text-[20px] font-medium tabular-nums text-foreground">
                 {resultatSelection.trimestresValidesProjetes}
               </div>
               <div className="text-xs text-muted-foreground">Trimestres validés projetés</div>
@@ -486,14 +487,14 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               )}
             </div>
 
-            <div className="text-center p-3 border rounded-lg">
-              <div className="text-xl font-bold">{resultatSelection.trimestresRequis}</div>
+            <div className="px-4 py-2.5 first:pl-0">
+              <div className="text-[20px] font-medium tabular-nums">{resultatSelection.trimestresRequis}</div>
               <div className="text-xs text-muted-foreground">Trimestres requis</div>
             </div>
 
-            <div className="text-center p-3 border rounded-lg">
+            <div className="px-4 py-2.5 first:pl-0">
               <div
-                className={`text-xl font-bold ${
+                className={`text-[20px] font-medium tabular-nums ${
                   decoteOuSurcoteSelection < 0
                     ? 'text-destructive'
                     : decoteOuSurcoteSelection > 0
@@ -508,11 +509,11 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
             </div>
           </div>
 
-          <div className="p-3 bg-muted/50 rounded-lg">
+          <div className={`${panelInsetClass}`}>
             <div className="text-xs text-muted-foreground mb-1">
               Pension totale consolidée à {resultatSelection.ageAffiche} ans (base + complémentaire)
             </div>
-            <div className="text-lg font-semibold text-primary">
+            <div className={`${panelFigureClass}`}>
               {formatEuro2(resultatSelection.pensionTotale)} / an
             </div>
             <p className="text-xs text-muted-foreground">Brut, en euros constants {MILLESIME_COURANT.annee}.</p>
@@ -542,45 +543,45 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Quand partir ?</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Quand partir ?</PanelCardTitle>
+          <PanelCardDescription>
             Pensions cumulées jusqu'à {formatAge(decision.ageReference)} (espérance de vie INSEE{' '}
             {PARAMETRES_ESPERANCE_VIE.annee}
             {sexe ? (sexe === 'femme' ? ', femmes' : ', hommes') : ', moyenne hommes-femmes'}), selon la date de départ
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
           {!decision.meilleure ? (
             <p className="text-xs text-muted-foreground">Aucune date de départ calculable.</p>
           ) : (
             <>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="p-3 border rounded-lg">
+              <div className="grid grid-cols-1 divide-y divide-border border-y border-border md:grid-cols-3 md:divide-x md:divide-y-0">
+                <div className="py-2.5 md:px-4 md:first:pl-0">
                   <div className="text-xs text-muted-foreground">Meilleur cumul</div>
-                  <div className="text-lg font-semibold text-primary">
+                  <div className={`${panelFigureClass}`}>
                     {formatDate(decision.meilleure.simulation.dateEffet)} ({formatAge(decision.meilleure.simulation.ageDepartAnnees)})
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {formatEuro0(decision.meilleure.cumul)} cumulés · {formatEuro0(decision.meilleure.simulation.pensionTotale)} / an
                   </div>
                 </div>
-                <div className="p-3 border rounded-lg">
+                <div className="py-2.5 md:px-4 md:first:pl-0">
                   <div className="text-xs text-muted-foreground">Premier départ possible</div>
-                  <div className="text-lg font-semibold">
+                  <div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">
                     {formatDate(decision.lignes[0].simulation.dateEffet)} ({formatAge(decision.lignes[0].simulation.ageDepartAnnees)})
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {formatEuro0(decision.lignes[0].cumul)} cumulés · {formatEuro0(decision.lignes[0].simulation.pensionTotale)} / an
                   </div>
                 </div>
-                <div className="p-3 border rounded-lg">
+                <div className="py-2.5 md:px-4 md:first:pl-0">
                   <div className="text-xs text-muted-foreground">Taux plein</div>
-                  <div className="text-lg font-semibold">
+                  <div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">
                     {decision.premiereDateTauxPlein ? formatDate(decision.premiereDateTauxPlein) : 'non atteint avant 70 ans'}
                   </div>
                 </div>
@@ -607,7 +608,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                       formatter={(v: number) => [formatEuro0(v), 'Pensions cumulées']}
                       labelFormatter={(v: number) => `Départ à ${formatAge(v)}`}
                     />
-                    <Line type="monotone" dataKey="cumul" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                    <Line type="monotone" dataKey="cumul" stroke={LAGON_INK} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -642,7 +643,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                     .map((l) => (
                       <TableRow
                         key={l.simulation.dateEffet.toISOString()}
-                        className={l === decision.meilleure ? 'bg-muted/50' : undefined}
+                        className={l === decision.meilleure ? 'bg-lagon-soft/60' : undefined}
                       >
                         <TableCell>
                           {formatDate(l.simulation.dateEffet)} ({formatAge(l.simulation.ageDepartAnnees)})
@@ -691,18 +692,18 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Rachat de trimestres</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Rachat de trimestres</PanelCardTitle>
+          <PanelCardDescription>
             Simulation indicative du coût et de la rentabilité d'un versement pour la retraite (rachat de
             trimestres), à l'âge de départ simulé ci-dessus.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
           <div className="space-y-1.5">
             <Label className="text-xs">Régime</Label>
             <RadioGroup
@@ -741,7 +742,6 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                     placeholder="Ex: 32000"
                     value={revenuMoyen3Ans}
                     onChange={(e) => setRevenuMoyen3Ans(e.target.value)}
-                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -753,7 +753,6 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                     max={TRIMESTRES_RACHAT_MAX}
                     value={nombreTrimestresRachat}
                     onChange={(e) => setNombreTrimestresRachat(e.target.value)}
-                    className="bg-muted border-transparent shadow-none rounded-[5px] focus-visible:bg-background focus-visible:border-ring"
                   />
                 </div>
               </div>
@@ -785,11 +784,11 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                   Rachat non disponible au-delà de 66 ans (votre âge actuel : {ageActuelConfirme} ans).
                 </p>
               ) : (
-                <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                <div className={`${panelInsetClass} space-y-2`}>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
                       <div className="text-xs text-muted-foreground">Coût total du rachat</div>
-                      <div className="text-lg font-semibold text-primary">
+                      <div className={`${panelFigureClass}`}>
                         {coutTotalRachat !== undefined ? formatEuro2(coutTotalRachat) : '—'}
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -800,7 +799,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                       <div className="text-xs text-muted-foreground">
                         Nouvelle pension de base à {resultatSelection.ageAffiche} ans
                       </div>
-                      <div className="text-lg font-semibold text-primary">
+                      <div className={`${panelFigureClass}`}>
                         {formatEuro2(pensionBaseAvecRachat)} / an
                       </div>
                       <p className="text-xs text-muted-foreground">
@@ -811,14 +810,14 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
 
                   {gainPensionAnnuelRachat > 0 ? (
                     <p className="text-xs">
-                      Gain de pension : <span className="font-semibold text-positive">
+                      Gain de pension : <span className="font-medium text-positive">
                         +{formatEuro2(gainPensionAnnuelRachat)} / an
                       </span>
                       {gainComplementairesRachat > 0 && (
                         <> dont {formatEuro2(gainComplementairesRachat)} d'abattement Agirc-Arrco supprimé</>
                       )}
                       {pointMortRachat !== undefined && coutTotalRachat !== undefined && (
-                        <> — point mort : <span className="font-semibold">{pointMortRachat.toFixed(1)} ans</span> (brut, sans fiscalité)</>
+                        <> — point mort : <span className="font-medium">{pointMortRachat.toFixed(1)} ans</span> (brut, sans fiscalité)</>
                       )}
                     </p>
                   ) : (
@@ -830,7 +829,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
 
                   {coutTotalRachat !== undefined && coutTotalRachat > 0 && (
                     <div className="pt-2 mt-2 border-t space-y-1">
-                      <p className="text-xs font-semibold">Et si ce montant allait sur un PER ?</p>
+                      <p className="text-xs font-medium">Et si ce montant allait sur un PER ?</p>
                       <div className="flex items-center gap-2">
                         <Label htmlFor="tmi-actuelle" className="text-xs">Taux marginal d'imposition actuel (%)</Label>
                         <Input
@@ -872,17 +871,17 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Comparatif par âge de départ</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Comparatif par âge de départ</PanelCardTitle>
+          <PanelCardDescription>
             Pension totale estimée pour chaque âge de départ possible, jusqu'à 70 ans
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -911,7 +910,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                 return (
                   <TableRow
                     key={age}
-                    className={age === resultatSelection.ageAffiche ? 'bg-muted/50' : undefined}
+                    className={age === resultatSelection.ageAffiche ? 'bg-lagon-soft/60' : undefined}
                   >
                     <TableCell className="font-medium">
                       {age} ans
@@ -935,7 +934,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                       {decoteOuSurcoteLigne.toFixed(2)}%
                     </TableCell>
                     <TableCell>{formatEuro2(resultat.pensionBaseValue)}</TableCell>
-                    <TableCell className="font-semibold">
+                    <TableCell className="font-medium">
                       {formatEuro2(resultat.pensionTotale)}
                     </TableCell>
                   </TableRow>
@@ -943,23 +942,23 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               })}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Retraite anticipée pour carrière longue</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Retraite anticipée pour carrière longue</PanelCardTitle>
+          <PanelCardDescription>
             Conditions de la circulaire Cnav n° 2026-29 (pensions prenant effet à compter du 01/09/2026)
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-3">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-3">
           {carriereLongue.options.length === 0 ? (
             <p className="text-xs text-muted-foreground">Génération hors barème de la carrière longue.</p>
           ) : (
             <>
               {carriereLongue.premiereDateEligible ? (
-                <p className="text-sm font-semibold text-positive">
+                <p className="text-[13px] font-medium text-positive">
                   Départ anticipé possible dès le {formatDate(carriereLongue.premiereDateEligible)}, à taux plein.
                 </p>
               ) : (
@@ -1002,17 +1001,17 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </p>
             </>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Retraite progressive</CardTitle>
-          <CardDescription className="text-xs">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Retraite progressive</PanelCardTitle>
+          <PanelCardDescription>
             Dès 60 ans avec 150 trimestres tous régimes et un temps partiel de 40 à 80 %
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-3">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-3">
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="date-retraite-progressive" className="text-xs">Début de la retraite progressive</Label>
@@ -1049,8 +1048,8 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               .
             </p>
           ) : (
-            <div className="p-3 bg-muted/50 rounded-lg space-y-1">
-              <div className="text-lg font-semibold text-primary">
+            <div className={`${panelInsetClass} space-y-1`}>
+              <div className={`${panelFigureClass}`}>
                 {formatEuro2((fractionProgressive * progressive.pensionTotale + salaireProgressive) / 12)} / mois brut
               </div>
               <p className="text-xs text-muted-foreground">
@@ -1065,15 +1064,15 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="border border-border">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold tracking-tight">Cumul emploi-retraite</CardTitle>
-          <CardDescription className="text-xs">Règles applicables à la date de liquidation simulée ci-dessus</CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-2 text-xs text-muted-foreground">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Cumul emploi-retraite</PanelCardTitle>
+          <PanelCardDescription>Règles applicables à la date de liquidation simulée ci-dessus</PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-2 text-xs text-muted-foreground">
           {dateLiquidationEffet.getTime() < Date.UTC(2027, 0, 1) ? (
             <>
               <p>
@@ -1095,8 +1094,8 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               non chiffrés ici.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };
