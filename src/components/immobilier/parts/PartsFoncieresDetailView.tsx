@@ -252,15 +252,15 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
                 {fmtPct(indicateurs.tauxDistribution) && (
                   <>
                     <span className="tabular-nums">{fmtPct(indicateurs.tauxDistribution)}</span>
-                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">revenus / prix d'acquisition</span>
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">revenus / valeur estimée</span>
                   </>
                 )}
               </SummaryRow>
               <SummaryRow label="Rendement">
-                {fmtPct(indicateurs.rendementActuel) && (
+                {fmtPct(indicateurs.rendementPrixAcquisition) && (
                   <>
-                    <span className="tabular-nums">{fmtPct(indicateurs.rendementActuel)}</span>
-                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">revenus / valeur estimée</span>
+                    <span className="tabular-nums">{fmtPct(indicateurs.rendementPrixAcquisition)}</span>
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">revenus / prix d'acquisition</span>
                   </>
                 )}
               </SummaryRow>

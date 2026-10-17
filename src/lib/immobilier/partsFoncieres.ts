@@ -15,10 +15,10 @@ export const isPartsFoncieres = (nature: string | null | undefined): boolean =>
 export const REGIME_FORFAIT_FORESTIER = 'Revenus forestiers (forfait cadastral)';
 
 export interface IndicateursParts {
-  /** Revenus distribués sur 12 mois ÷ prix d'acquisition (null si l'un des deux manque). */
+  /** Revenus distribués sur 12 mois ÷ valeur estimée — base du % saisi (null si l'un des deux manque). */
   tauxDistribution: number | null;
-  /** Revenus distribués sur 12 mois ÷ valeur estimée (null si l'un des deux manque). */
-  rendementActuel: number | null;
+  /** Revenus distribués sur 12 mois ÷ prix d'acquisition (null si l'un des deux manque). */
+  rendementPrixAcquisition: number | null;
   /** Valeur estimée − coût d'acquisition, pondérés comme la Vue d'ensemble (null si non calculable). */
   plusValueLatente: number | null;
   /** Plus-value latente ÷ coût d'acquisition pondéré. */
@@ -40,11 +40,11 @@ export function computeIndicateursParts(
   const prix = asset.valeur_acquisition || 0;
   const valeur = asset.valeur_estimee || 0;
 
-  const tauxDistribution = revenus != null && prix > 0 ? revenus / prix : null;
-  const rendementActuel = revenus != null && valeur > 0 ? revenus / valeur : null;
+  const tauxDistribution = revenus != null && valeur > 0 ? revenus / valeur : null;
+  const rendementPrixAcquisition = revenus != null && prix > 0 ? revenus / prix : null;
 
   if (fraction === null || prix <= 0 || valeur <= 0) {
-    return { tauxDistribution, rendementActuel, plusValueLatente: null, tauxPlusValue: null };
+    return { tauxDistribution, rendementPrixAcquisition, plusValueLatente: null, tauxPlusValue: null };
   }
   const quotePart = computeQuotePart(asset) / 100;
   const valeurPonderee = valeur * fraction * quotePart;
@@ -52,7 +52,7 @@ export function computeIndicateursParts(
   const plusValueLatente = valeurPonderee - coutPondere;
   return {
     tauxDistribution,
-    rendementActuel,
+    rendementPrixAcquisition,
     plusValueLatente,
     tauxPlusValue: coutPondere > 0 ? plusValueLatente / coutPondere : null,
   };

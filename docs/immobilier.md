@@ -290,8 +290,8 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   ([RevenusDistribuesInput.tsx](src/components/immobilier/parts/RevenusDistribuesInput.tsx), partagé avec
   le formulaire Patrimoine) : le taux porte sur la **valeur estimée actuelle** et est converti en euros —
   seul le montant `revenus_distribues_12m` est stocké ; € imposé tant que la valeur estimée est vide.
-  Indicateurs : taux de distribution (revenus ÷ prix
-  d'acquisition), rendement actuel (revenus ÷ valeur estimée), plus-value latente pondérée comme la Vue
+  Indicateurs : taux de distribution (revenus ÷ valeur
+  estimée, même base que le % saisi), rendement sur prix d'acquisition (revenus ÷ prix d'acquisition), plus-value latente pondérée comme la Vue
   d'ensemble (quote-part × fraction de démembrement, frais non pondérés par la fraction) ; rappel du
   régime d'exonération successorale pour les natures rurales. **Imposition indicative, aucun impôt
   calculé** — le revenu imposable n'est pas le revenu distribué mais la quote-part du résultat de la

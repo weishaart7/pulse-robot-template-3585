@@ -17,10 +17,10 @@ const parts = (overrides = {}) => ({
 });
 
 describe('computeIndicateursParts', () => {
-  it('calcule taux de distribution, rendement actuel et plus-value latente', () => {
+  it('calcule taux de distribution (sur valeur estimée), rendement sur prix d’acquisition et plus-value latente', () => {
     const r = computeIndicateursParts(parts(), 1);
-    expect(r.tauxDistribution).toBeCloseTo(0.045);
-    expect(r.rendementActuel).toBeCloseTo(0.05);
+    expect(r.tauxDistribution).toBeCloseTo(0.05);
+    expect(r.rendementPrixAcquisition).toBeCloseTo(0.045);
     expect(r.plusValueLatente).toBe(-10_000);
     expect(r.tauxPlusValue).toBeCloseTo(-0.1);
   });
@@ -28,7 +28,7 @@ describe('computeIndicateursParts', () => {
   it('ne calcule aucun taux sans revenus distribués renseignés', () => {
     const r = computeIndicateursParts(parts({ revenus_distribues_12m: undefined }), 1);
     expect(r.tauxDistribution).toBeNull();
-    expect(r.rendementActuel).toBeNull();
+    expect(r.rendementPrixAcquisition).toBeNull();
     expect(r.plusValueLatente).toBe(-10_000);
   });
 
