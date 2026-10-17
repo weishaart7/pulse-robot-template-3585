@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PanelTitle, SummaryRow, Chip } from '@/components/layout/workspace-panel';
 import { CITRON_INK, CITRON_MID, GREY, GREY_LIGHT, LAGON, LAGON_DEEP, LAGON_INK, LAGON_MID } from '@/components/budget/budgetColors';
 import { useSocietes } from '@/hooks/useSocietes';
-import { useSocietesIFI, useSocietesTransmission } from '@/hooks/useSocietesIntegration';
+import { useSocietesIFI, useSocietesTransmission, getSocieteTypeLabel } from '@/hooks/useSocietesIntegration';
 import { societeBilanService, SocieteBilan } from '@/services/societeExtendedService';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
@@ -89,7 +89,7 @@ export const SocietesSynthese = () => {
   const parType: Record<string, number> = {};
   const parRegime: Record<string, number> = {};
   societes.forEach(s => {
-    const t = s.type_societe || 'Non défini';
+    const t = s.type_societe ? getSocieteTypeLabel(s.type_societe) : 'Non défini';
     parType[t] = (parType[t] || 0) + (s.valeur_estimee || 0);
     const r = s.regime_fiscal || 'Non défini';
     parRegime[r] = (parRegime[r] || 0) + (s.valeur_estimee || 0);

@@ -15,6 +15,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { AlertTriangle, Building2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getSocieteTypeLabel } from '@/hooks/useSocietesIntegration';
 import { Societe } from '@/services/societeService';
 import { SocieteParticipation } from '@/services/societeParticipationService';
 import { buildSocieteParticipationGraph, SocieteParticipationGraphNode } from '@/lib/societes/buildSocieteParticipationGraph';
@@ -56,7 +57,7 @@ const SocieteNode = ({ data }: { data: SocieteNodeData }) => {
         <span className="truncate text-[13px] font-medium">{data.denomination}</span>
         {data.depasse100 && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
       </div>
-      <div className="text-xs text-muted-foreground mt-1">{data.typeSociete?.toUpperCase()}</div>
+      <div className="text-xs text-muted-foreground mt-1">{data.typeSociete ? getSocieteTypeLabel(data.typeSociete) : ''}</div>
       {data.depasse100 && (
         <div className="text-xs text-destructive mt-1">
           {data.pourcentageEntrantDirect.toFixed(1)}% détenu au total
