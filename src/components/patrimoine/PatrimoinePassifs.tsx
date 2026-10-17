@@ -1,11 +1,12 @@
-import { PatrimoinePanel, addButtonClass } from './PatrimoinePanel';
+import { PatrimoinePanel } from './PatrimoinePanel';
+import { AddButton } from '@/components/layout/workspace-panel';
 import { Chip } from '@/components/layout/workspace-panel';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { cn } from '@/lib/utils';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PassifEmpruntForm } from './PassifEmpruntForm';
-import { Plus, MoreHorizontal, Pencil, Trash2, Landmark, Receipt } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Landmark, Receipt } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { useAssets } from '@/hooks/useAssets';
 import { PassifDetailsDialog } from './PassifDetailsDialog';
@@ -64,12 +65,7 @@ export const PatrimoinePassifs = () => {
         ? 'Aucun passif renseigné'
         : `${nbEmprunts} emprunt${nbEmprunts > 1 ? 's' : ''} · ${nbDettes} dette${nbDettes > 1 ? 's' : ''}`}
       actions={
-        <button onClick={() => setShowForm(true)} className={addButtonClass}>
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-            <Plus className="h-4 w-4 text-background" />
-          </span>
-          Ajouter un passif/emprunt
-        </button>
+        <AddButton onClick={() => setShowForm(true)}>Ajouter un passif/emprunt</AddButton>
       }
     >
       <div className="space-y-6">

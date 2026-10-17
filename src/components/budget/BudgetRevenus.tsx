@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { AddButton } from '@/components/layout/workspace-panel';
 import { useRevenus } from '@/hooks/useBudget';
 import { useBudgetEntryDialogState } from '@/hooks/useBudgetEntryDialogState';
 import { RevenusForm } from '@/components/budget/RevenusForm';
@@ -50,15 +50,7 @@ export const BudgetRevenus = ({ displayMode }: BudgetRevenusProps) => {
         loading={revenusLoading}
         displayMode={displayMode}
         action={
-          <button
-            onClick={handleAddRevenu}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
-          >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-              <Plus className="h-4 w-4 text-background" />
-            </span>
-            Nouveau revenu
-          </button>
+          <AddButton onClick={handleAddRevenu}>Nouveau revenu</AddButton>
         }
       />
     </>

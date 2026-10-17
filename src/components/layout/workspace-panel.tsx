@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Briques du « panneau de travail » (pages Foyer, Régime matrimonial) : barre d'en-tête
@@ -64,5 +65,22 @@ export const panelButtonClass =
   'h-8 rounded-[2px] border border-border bg-background px-3 text-[12.5px] font-medium text-foreground shadow-none hover:bg-secondary';
 export const panelPrimaryButtonClass =
   'h-8 rounded-[2px] bg-foreground px-3.5 text-[12.5px] font-medium text-background shadow-none hover:bg-foreground/90';
+
+/** Bouton d'ajout des panneaux (« Ajouter un membre », « Ajouter un actif »…) : bouton principal
+ *  des panneaux, « + » sur carré citron. */
+export function AddButton({ children, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      className={cn('inline-flex items-center gap-2 whitespace-nowrap transition-colors', panelPrimaryButtonClass, 'pl-1', className)}
+      {...props}
+    >
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-citron">
+        <Plus className="h-3.5 w-3.5 text-citron-ink" strokeWidth={2.25} />
+      </span>
+      {children}
+    </button>
+  );
+}
 
 export const PanelDivider = () => <div className="my-5 h-px bg-border" />;

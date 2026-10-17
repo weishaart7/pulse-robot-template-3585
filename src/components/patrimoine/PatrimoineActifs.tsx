@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { PatrimoinePanel, addButtonClass } from './PatrimoinePanel';
+import { PatrimoinePanel } from './PatrimoinePanel';
+import { AddButton } from '@/components/layout/workspace-panel';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { PatrimoineTreeView } from './PatrimoineTreeView';
 import { AssetForm } from '@/components/assets/AssetForm';
 import { AssetCreationWizard } from '@/components/assets/wizard/AssetCreationWizard';
-import { Plus, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAssets } from '@/hooks/useAssets';
 import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { assetIndivisaireService } from '@/services/assetIndivisaireService';
@@ -184,12 +185,7 @@ export const PatrimoineActifs = () => {
               className="w-full bg-transparent text-foreground placeholder:text-muted-foreground outline-none"
             />
           </label>
-          <button onClick={() => setShowAssetForm(true)} className={addButtonClass}>
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-              <Plus className="h-4 w-4 text-background" />
-            </span>
-            Ajouter un actif
-          </button>
+          <AddButton onClick={() => setShowAssetForm(true)}>Ajouter un actif</AddButton>
         </>
       }
     >

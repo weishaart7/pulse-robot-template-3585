@@ -1,4 +1,5 @@
-import { Plus, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { AddButton } from '@/components/layout/workspace-panel';
 import { useCharges } from '@/hooks/useBudget';
 import { useBudgetEntryDialogState } from '@/hooks/useBudgetEntryDialogState';
 import { ChargesForm } from '@/components/budget/ChargesForm';
@@ -68,15 +69,7 @@ export const BudgetCharges = ({ displayMode }: BudgetChargesProps) => {
         loading={chargesLoading}
         displayMode={displayMode}
         action={
-          <button
-            onClick={handleAddCharge}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors"
-          >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background/15">
-              <Plus className="h-4 w-4 text-background" />
-            </span>
-            Nouvelle charge
-          </button>
+          <AddButton onClick={handleAddCharge}>Nouvelle charge</AddButton>
         }
         notice={chargesNotice}
       />

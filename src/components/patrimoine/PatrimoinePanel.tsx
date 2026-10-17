@@ -49,10 +49,6 @@ export function PatrimoinePanel({ trail, title, summary, actions, bare, children
   );
 }
 
-/** Bouton d'ajout des onglets (même habillage que « Ajouter un membre »). */
-export const addButtonClass =
-  'inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-foreground hover:bg-foreground/85 text-background shadow-whisper pl-1 pr-4 py-1 text-sm font-medium transition-colors';
-
 /** Bouton « Retour » de la barre d'en-tête (vues de détail). */
 export function BackButton({ onClick, label = 'Retour' }: { onClick: () => void; label?: string }) {
   return (

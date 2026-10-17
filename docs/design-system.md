@@ -132,6 +132,9 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
   plus foncé que le smoke, filets marqués, bordure des champs plus marquée, `text-xs` relevé à 13 px et
   `text-sm` à 14 px, libellés de champs homogènes (13 px 500 encre), saisie en 14 px ; synthèse en 14 px,
   étiquettes sur fond pierre `#e9e5e0` 13 px.
+  Boutons d'ajout (« Ajouter un actif / passif / membre », « Nouveau revenu / Nouvelle charge ») : composant commun
+  `AddButton` (`components/layout/workspace-panel.tsx`) — bouton principal des panneaux (32 px, angles 2 px), « + » sur
+  carré citron 24 px.
   Navigation entre onglets : `GooeyNav` (`components/ui/gooey-nav.tsx`, adapté de rare-ui « gooey-nav » sans
   Next.js) — barre pierre claire `#f1eeea` d'où l'onglet actif (fond lagon doux `#e3f3f4`, texte lagon foncé `#16707a`, sans contour) se détache de 12 px avec
   un « col » visqueux qui s'étire puis se rompt (ressort court 0,38 s, léger rebond ; couleurs en fondu 200-300 ms ;

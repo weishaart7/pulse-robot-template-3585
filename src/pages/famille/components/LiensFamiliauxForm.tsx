@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Trash2, Pencil, MoreHorizontal, Plus, Users } from 'lucide-react';
+import { Trash2, Pencil, MoreHorizontal, Users } from 'lucide-react';
 import { FamilyTreeCards } from '@/components/famille/FamilyTreeCards';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,7 +29,7 @@ import { formatAgeCourt } from '@/lib/family/age';
 import { getInitials } from '@/lib/family/initials';
 import { grouperMembres, type GroupeMembres } from '@/lib/family/groupesMembres';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Chip, WorkspaceHeader, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { AddButton, Chip, WorkspaceHeader } from '@/components/layout/workspace-panel';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { getGroupeTone } from '@/components/famille/groupeTones';
 
@@ -219,15 +219,7 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
           icon={<Users strokeWidth={1.75} />}
           trail={['Famille', 'Membres']}
           actions={
-                <button
-                  onClick={() => dialogRef.current?.openForAdd()}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap transition-colors ${panelPrimaryButtonClass} pl-1`}
-                >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-citron">
-                    <Plus className="h-3.5 w-3.5 text-citron-ink" strokeWidth={2.25} />
-                  </span>
-                  Ajouter un membre
-                </button>
+                <AddButton onClick={() => dialogRef.current?.openForAdd()}>Ajouter un membre</AddButton>
           }
         />
 
