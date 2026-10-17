@@ -50,7 +50,7 @@ const CHIP_TONES = {
 
 export function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: keyof typeof CHIP_TONES }) {
   return (
-    <span className={cn('inline-flex h-6 items-center rounded-[2px] px-2 text-[12px] font-medium', CHIP_TONES[tone])}>
+    <span className={cn('inline-flex h-6 items-center whitespace-nowrap rounded-[2px] px-2 text-[12px] font-medium', CHIP_TONES[tone])}>
       {children}
     </span>
   );
