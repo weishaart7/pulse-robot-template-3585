@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { AddButton } from '@/components/layout/workspace-panel';
 import { societeService, type Societe } from '@/services/societeService';
 import { passifService, type Emprunt } from '@/services/passifService';
 import { assetService, type Asset } from '@/services/assetService';
@@ -92,29 +91,30 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
 
   if (loading) {
     return (
-      <LoadingSpinner text="Chargement des sociétés..." />
+      <div className="px-8 py-6"><LoadingSpinner text="Chargement des sociétés..." /></div>
     );
   }
 
   const impactCount = societeToDelete ? impactedParticipationsCount(societeToDelete.id) : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap justify-between items-center gap-3">
-        <h3 className="text-lg font-semibold">Mes sociétés</h3>
-        <div className="flex flex-wrap items-center gap-3">
+    <div>
+      {/* Barre d'outils filetée : rappel et actions (participations, ajout). */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-8 py-3">
+        <p className="text-[12.5px] text-muted-foreground">
+          Graphe de détention : cliquez sur une société pour ouvrir sa fiche.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
           <SocieteParticipationsDialog
             societes={societes}
             participations={participations}
             onChanged={refetchParticipations}
           />
-          <Button onClick={onAdd} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter une société
-          </Button>
+          <AddButton onClick={onAdd}>Ajouter une société</AddButton>
         </div>
       </div>
 
+      <div className="px-8 py-6">
       <SocieteParticipationsGraph
         societes={societes}
         participations={participations}
@@ -124,6 +124,7 @@ export const SocietesMesSocietes = ({ onEdit, onAdd }: SocietesMesSocietesProps)
           if (societe) setSocieteToDelete(societe);
         }}
       />
+      </div>
 
       <AlertDialog open={!!societeToDelete} onOpenChange={open => { if (!open) setSocieteToDelete(null); }}>
         <AlertDialogContent>

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { Chip } from '@/components/layout/workspace-panel';
 import { Calculator, Scale, Check } from 'lucide-react';
 import { isHoldingAnimatrice } from '@/hooks/useSocietesIntegration';
 import { computeImpotSocietes } from '@/lib/societes/impotSocietes';
@@ -62,30 +62,28 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
   }, [formData.valeur_estimee, formData.pourcentage_ifi, formData.valeur_ifi, formData.pourcentage_utilisateur, formData.pourcentage_conjoint, isIFIExempt]);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Calculator className="h-5 w-5 text-primary" />
-          Impact fiscal
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PanelCard>
+      <PanelCardHeader>
+        <PanelCardTitle>Impact fiscal
+        </PanelCardTitle>
+      </PanelCardHeader>
+      <PanelCardContent>
         {/* IFI Section */}
-        <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+        <div className="p-4 rounded-[2px] bg-secondary/50 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Scale className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">IFI (Impôt sur la Fortune Immobilière)</span>
             </div>
             {isIFIExempt ? (
-              <Badge variant="outline" className="bg-positive/10 text-positive border-positive/30">
+              <Chip tone="lagon">
                 <Check className="h-3 w-3 mr-1" />
                 Exonéré
-              </Badge>
+              </Chip>
             ) : (
-              <Badge variant="outline">
+              <Chip>
                 Taxable
-              </Badge>
+              </Chip>
             )}
           </div>
           <div className="grid grid-cols-2 gap-4 text-sm">
@@ -107,7 +105,7 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
 
         {/* IS Estimate Section */}
         {formData.regime_fiscal === 'Impôt sur les sociétés' && (
-          <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+          <div className="p-4 rounded-[2px] bg-secondary/50 space-y-3">
             <div className="flex items-center gap-2">
               <Calculator className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">IS (Impôt sur les Sociétés)</span>
@@ -133,7 +131,7 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
         )}
 
         {formData.regime_fiscal === 'Impôt sur le revenu' && (
-          <div className="p-4 bg-muted/30 rounded-lg">
+          <div className="p-4 rounded-[2px] bg-secondary/50">
             <div className="flex items-center gap-2 mb-2">
               <Calculator className="h-4 w-4 text-muted-foreground" />
               <span className="font-medium text-sm">IR (Impôt sur le Revenu)</span>
@@ -143,7 +141,7 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
             </p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

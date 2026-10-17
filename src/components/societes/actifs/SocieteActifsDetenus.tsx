@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Home, Briefcase } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
@@ -25,38 +25,38 @@ export const SocieteActifsDetenus: React.FC<Props> = ({ societeId }) => {
   const autres = actifs.filter(a => !immo.includes(a));
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Home className="h-4 w-4" />Biens immobiliers détenus</CardTitle></CardHeader>
-        <CardContent>
+    <div>
+      <PanelCard>
+        <PanelCardHeader><PanelCardTitle>Biens immobiliers détenus</PanelCardTitle></PanelCardHeader>
+        <PanelCardContent>
           {immo.length === 0 ? <p className="text-sm text-muted-foreground">Aucun bien immobilier rattaché à cette société.</p> : (
-            <div className="space-y-2">
+            <div className="divide-y divide-border border-y border-border empty:hidden">
               {immo.map(a => (
-                <div key={a.id} className="flex justify-between p-3 rounded-[5px] bg-muted/40 text-sm">
+                <div key={a.id} className="flex justify-between py-2.5 text-sm">
                   <span>{a.denomination || a.nature} {a.typologie_bien ? `(${a.typologie_bien})` : ''}</span>
                   <span className="font-medium">{(a.valeur_estimee || 0).toLocaleString('fr-FR')} €</span>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Briefcase className="h-4 w-4" />Autres actifs détenus</CardTitle></CardHeader>
-        <CardContent>
+      <PanelCard>
+        <PanelCardHeader><PanelCardTitle>Autres actifs détenus</PanelCardTitle></PanelCardHeader>
+        <PanelCardContent>
           {autres.length === 0 ? <p className="text-sm text-muted-foreground">Aucun autre actif.</p> : (
-            <div className="space-y-2">
+            <div className="divide-y divide-border border-y border-border empty:hidden">
               {autres.map(a => (
-                <div key={a.id} className="flex justify-between p-3 rounded-[5px] bg-muted/40 text-sm">
+                <div key={a.id} className="flex justify-between py-2.5 text-sm">
                   <span>{a.denomination || a.nature}</span>
                   <span className="font-medium">{(a.valeur_estimee || 0).toLocaleString('fr-FR')} €</span>
                 </div>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };

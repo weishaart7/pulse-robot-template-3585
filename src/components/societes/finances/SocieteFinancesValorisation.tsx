@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { LAGON_INK } from '@/components/budget/budgetColors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Plus, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useSocieteValorisations } from '@/hooks/useSocieteValorisations';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -70,23 +72,21 @@ export const SocieteFinancesValorisation: React.FC<SocieteFinancesValorisationPr
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <PanelCard>
+      <PanelCardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Valorisation
-          </CardTitle>
+          <PanelCardTitle>Valorisation
+          </PanelCardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={!societeId}>
-                <Plus className="h-4 w-4 mr-1" />
+              <Button variant="outline" className={`gap-1.5 ${panelButtonClass}`} disabled={!societeId}>
+                <Plus className="h-3.5 w-3.5" />
                 Ajouter
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nouvelle valorisation</DialogTitle>
+            <DialogContent overlayClassName="bg-black/30 backdrop-blur-[6px]" className="workspace-panel rounded-[4px] sm:rounded-[4px]">
+              <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+                <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Nouvelle valorisation</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div className="space-y-2">
@@ -130,32 +130,32 @@ export const SocieteFinancesValorisation: React.FC<SocieteFinancesValorisationPr
                     onChange={(e) => setNewValorisation({ ...newValorisation, commentaire: e.target.value })}
                   />
                 </div>
-                <Button onClick={handleSubmit} className="w-full">
+                <Button onClick={handleSubmit} className={`w-full ${panelPrimaryButtonClass}`}>
                   Enregistrer
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-      <CardContent>
+      </PanelCardHeader>
+      <PanelCardContent>
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-4 sm:divide-x sm:divide-y-0 mb-6">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Valeur actuelle</p>
-            <p className="text-sm font-semibold">{formatCurrency(valeurEstimee)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(valeurEstimee)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Valeur / titre</p>
-            <p className="text-sm font-semibold">{formatCurrency(valeurParTitre)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(valeurParTitre)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Nb. titres</p>
-            <p className="text-sm font-semibold">{nombreTitres || '-'}</p>
+            <p className="text-[13px] font-medium tabular-nums">{nombreTitres || '-'}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Évolution</p>
-            <p className={`text-sm font-semibold flex items-center justify-center gap-1 ${
+            <p className={`text-[13px] font-medium tabular-nums flex items-center gap-1 ${
               stats.evolutionPourcent !== null 
                 ? stats.evolutionPourcent >= 0 ? 'text-positive' : 'text-destructive'
                 : ''
@@ -196,9 +196,9 @@ export const SocieteFinancesValorisation: React.FC<SocieteFinancesValorisationPr
                 <Line 
                   type="monotone" 
                   dataKey="valeur" 
-                  stroke="hsl(var(--primary))" 
+                  stroke={LAGON_INK} 
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
+                  dot={{ fill: LAGON_INK }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -211,14 +211,14 @@ export const SocieteFinancesValorisation: React.FC<SocieteFinancesValorisationPr
             <p className="text-sm font-medium text-muted-foreground">Historique</p>
             <div className="space-y-1">
               {valorisations.slice(0, 5).map((v) => (
-                <div key={v.id} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg text-sm">
+                <div key={v.id} className="flex items-center justify-between py-2 text-sm">
                   <div className="flex items-center gap-3">
                     <span className="text-muted-foreground">
                       {format(new Date(v.date_valorisation), 'dd/MM/yyyy')}
                     </span>
                     <span className="font-medium">{formatCurrency(v.valeur)}</span>
                     {v.methode_valorisation && (
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                      <span className="rounded-[2px] bg-[#e9e5e0] px-2 py-0.5 text-xs">
                         {METHODES_VALORISATION.find(m => m.value === v.methode_valorisation)?.label || v.methode_valorisation}
                       </span>
                     )}
@@ -242,7 +242,7 @@ export const SocieteFinancesValorisation: React.FC<SocieteFinancesValorisationPr
             Enregistrez d'abord la société pour ajouter des valorisations
           </p>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

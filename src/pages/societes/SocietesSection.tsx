@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SegmentedTabs } from '@/components/ui/segmented-tabs';
-import { THEME_INK } from '@/lib/theme';
+import { GooeyNav } from '@/components/ui/gooey-nav';
+import { WorkspaceHeader, panelButtonClass } from '@/components/layout/workspace-panel';
 import { useModuleSubNav } from '@/hooks/useModuleSubNav';
 import { SocietesSynthese } from '@/components/societes/SocietesSynthese';
 import { SocietesMesSocietes } from '@/components/societes/SocietesMesSocietes';
@@ -14,7 +14,7 @@ import { SocieteFinances } from '@/components/societes/finances/SocieteFinances'
 import { societeService } from '@/services/societeService';
 import { assetService } from '@/services/assetService';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
 import { type SocieteFormData, societeToFormData, formDataToSociete } from '@/lib/societes/formMapping';
 
@@ -154,44 +154,44 @@ export const SocietesSection = () => {
     }
   };
 
-  // Full-page form mode
+  const nomSociete = editingMode === 'edit' ? formData?.denomination || 'Société' : 'Nouvelle société';
+
+  // Fiche société en « panneau de travail » (comme les fiches de bien Immobilier) : barre d'en-tête
+  // à fil d'Ariane portant le retour, titre 24 px, onglets de la fiche, contenu bord à bord.
   if (editingMode === 'edit' || editingMode === 'create') {
     return (
-      <div className="p-6">
-        <div className="mb-6">
-          <Button 
-            variant="ghost" 
-            onClick={handleCancel}
-            className="mb-4 -ml-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour aux sociétés
-          </Button>
+      <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+        <WorkspaceHeader
+          icon={<Briefcase strokeWidth={1.75} />}
+          trail={['Sociétés', 'Mes sociétés', nomSociete]}
+          actions={
+            <Button type="button" variant="outline" onClick={handleCancel} className={`gap-1.5 ${panelButtonClass}`}>
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Retour aux sociétés
+            </Button>
+          }
+        />
 
-          <div className="mb-8 flex justify-start">
-            <SegmentedTabs tabs={FORM_TABS} value={formTab} onValueChange={setFormTab} />
-          </div>
-
-          <h1 className="text-[34px] font-bold" style={{ color: THEME_INK, letterSpacing: '-0.02em' }}>
-            {editingMode === 'edit' ? 'Modifier la société' : 'Nouvelle société'}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+        <div className="px-8 pt-6 pb-1">
+          <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{nomSociete}</h1>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">
             {editingMode === 'edit'
               ? 'Modifiez les informations de votre société'
               : 'Ajoutez une nouvelle société à votre patrimoine'}
           </p>
         </div>
-        
+
+        <div className="px-8 pt-5 pb-4">
+          <GooeyNav aria-label="Onglets de la fiche société" items={FORM_TABS} value={formTab} onValueChange={setFormTab} />
+        </div>
+
+        <div className="border-t border-border">
         {loading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Chargement...</p>
-          </div>
+          <p className="px-8 py-6 text-[13px] text-muted-foreground">Chargement…</p>
         ) : (
           <>
             {formTab === 'synthese' && (
-              <div className="text-center py-12 text-muted-foreground">
-                Synthèse de la société (à venir)
-              </div>
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">Synthèse de la société (à venir)</p>
             )}
             {formTab === 'informations' && (
               <SocieteForm
@@ -242,31 +242,49 @@ export const SocietesSection = () => {
               />
             )}
             {formTab === 'finances' && !formData && (
-              <div className="text-center py-12 text-muted-foreground">
-                Chargement...
-              </div>
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">Chargement…</p>
             )}
             {formTab === 'bilans' && editingSocieteId && (
               <SocietesBilans />
             )}
             {formTab === 'bilans' && !editingSocieteId && (
-              <p className="text-sm text-muted-foreground">Enregistrez d'abord la société pour saisir ses bilans.</p>
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour saisir ses bilans.</p>
             )}
             {formTab === 'actifs' && editingSocieteId && (
               <SocieteActifsDetenus societeId={editingSocieteId} />
             )}
             {formTab === 'actifs' && !editingSocieteId && (
-              <p className="text-sm text-muted-foreground">Enregistrez d'abord la société pour voir ses actifs détenus.</p>
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour voir ses actifs détenus.</p>
             )}
           </>
         )}
+        </div>
       </div>
     );
   }
 
+  const tabLabel = TABS.find((t) => t.id === activeTab)?.label ?? 'Synthèse';
+  const SUMMARIES: Record<string, string> = {
+    synthese: 'Valeur, comptes et alertes des sociétés du foyer',
+    mes_societes: 'Sociétés détenues et participations entre elles',
+    gouvernance: 'Associés, dividendes, pacte et comptes courants d\'une société',
+    strategies: 'Simulations IS / IR, rémunération / dividendes et holding',
+    transmission: 'Pacte Dutreil, OBO et donation de parts',
+  };
+
+  // Cadre « panneau de travail », sur le modèle de Famille, Patrimoine et Immobilier.
   return (
-    <div className="p-6">
-      {renderContent()}
+    <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
+      <WorkspaceHeader icon={<Briefcase strokeWidth={1.75} />} trail={['Sociétés', tabLabel]} />
+
+      <div className="px-8 pt-6 pb-4">
+        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{tabLabel}</h1>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{SUMMARIES[activeTab]}</p>
+      </div>
+
+      <div className="border-t border-border">
+        {renderContent()}
+      </div>
     </div>
   );
 };

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { BarChart3, TrendingUp, Wallet, PiggyBank, Building2, Calendar } from 'lucide-react';
+import { TrendingUp, Wallet, PiggyBank, Building2, Calendar } from 'lucide-react';
 
 interface SocieteFormData {
   chiffre_affaires?: number;
@@ -70,14 +70,12 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-primary" />
-          Données comptables
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <PanelCard>
+      <PanelCardHeader>
+        <PanelCardTitle>Données comptables
+        </PanelCardTitle>
+      </PanelCardHeader>
+      <PanelCardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Chiffre d'affaires */}
           <div className="space-y-2">
@@ -215,27 +213,27 @@ export const SocieteFinancesComptables: React.FC<SocieteFinancesComptablesProps>
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-4 border-t">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-4 sm:divide-x sm:divide-y-0 mt-6 pt-4 border-t">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">CA Annuel</p>
-            <p className="text-sm font-semibold">{formatCurrency(formData.chiffre_affaires)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(formData.chiffre_affaires)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Résultat</p>
             <p className={`text-sm font-semibold ${(formData.resultat_net || 0) >= 0 ? 'text-positive' : 'text-destructive'}`}>
               {formatCurrency(formData.resultat_net)}
             </p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Trésorerie</p>
-            <p className="text-sm font-semibold">{formatCurrency(formData.tresorerie_disponible)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(formData.tresorerie_disponible)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">CCA</p>
-            <p className="text-sm font-semibold">{formatCurrency(formData.compte_courant_associes)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(formData.compte_courant_associes)}</p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

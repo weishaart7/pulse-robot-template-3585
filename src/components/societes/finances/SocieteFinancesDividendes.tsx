@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { LAGON } from '@/components/budget/budgetColors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Banknote, Plus, Trash2, Percent } from 'lucide-react';
+import { Plus, Trash2, Percent } from 'lucide-react';
 import { useSocieteDividendes } from '@/hooks/useSocieteDividendes';
 import { format } from 'date-fns';
 
@@ -80,23 +82,21 @@ export const SocieteFinancesDividendes: React.FC<SocieteFinancesDividendesProps>
   const yearOptions = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <PanelCard>
+      <PanelCardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Banknote className="h-5 w-5 text-primary" />
-            Dividendes
-          </CardTitle>
+          <PanelCardTitle>Dividendes
+          </PanelCardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={!societeId}>
-                <Plus className="h-4 w-4 mr-1" />
+              <Button variant="outline" className={`gap-1.5 ${panelButtonClass}`} disabled={!societeId}>
+                <Plus className="h-3.5 w-3.5" />
                 Ajouter
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Nouveau dividende</DialogTitle>
+            <DialogContent overlayClassName="bg-black/30 backdrop-blur-[6px]" className="workspace-panel rounded-[4px] sm:rounded-[4px]">
+              <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+                <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Nouveau dividende</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div className="space-y-2">
@@ -157,35 +157,35 @@ export const SocieteFinancesDividendes: React.FC<SocieteFinancesDividendesProps>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={handleSubmit} className="w-full">
+                <Button onClick={handleSubmit} className={`w-full ${panelPrimaryButtonClass}`}>
                   Enregistrer
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-      <CardContent>
+      </PanelCardHeader>
+      <PanelCardContent>
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-4 sm:divide-x sm:divide-y-0 mb-6">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Total distribué</p>
-            <p className="text-sm font-semibold">{formatCurrency(stats.totalBrut)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(stats.totalBrut)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Moyenne / an</p>
-            <p className="text-sm font-semibold">{formatCurrency(stats.moyenneBrut)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(stats.moyenneBrut)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Nb. distributions</p>
-            <p className="text-sm font-semibold">{stats.nombreDistributions}</p>
+            <p className="text-[13px] font-medium tabular-nums">{stats.nombreDistributions}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
               <Percent className="h-3 w-3" />
               Rendement moy.
             </p>
-            <p className="text-sm font-semibold">
+            <p className="text-[13px] font-medium tabular-nums">
               {rendementMoyen !== null ? `${rendementMoyen.toFixed(1)}%` : '-'}
             </p>
           </div>
@@ -207,7 +207,7 @@ export const SocieteFinancesDividendes: React.FC<SocieteFinancesDividendesProps>
                 />
                 <Bar 
                   dataKey="montant" 
-                  fill="hsl(var(--primary))" 
+                  fill={LAGON} 
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -221,12 +221,12 @@ export const SocieteFinancesDividendes: React.FC<SocieteFinancesDividendesProps>
             <p className="text-sm font-medium text-muted-foreground">Historique</p>
             <div className="space-y-1">
               {dividendes.slice(0, 5).map((d) => (
-                <div key={d.id} className="flex items-center justify-between py-2 px-3 bg-muted/30 rounded-lg text-sm">
+                <div key={d.id} className="flex items-center justify-between py-2 text-sm">
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{d.exercice_annee}</span>
                     <span>{formatCurrency(d.montant_brut)}</span>
                     {d.beneficiaire && (
-                      <span className="text-xs bg-muted px-2 py-0.5 rounded">
+                      <span className="rounded-[2px] bg-[#e9e5e0] px-2 py-0.5 text-xs">
                         {BENEFICIAIRES.find(b => b.value === d.beneficiaire)?.label || d.beneficiaire}
                       </span>
                     )}
@@ -250,7 +250,7 @@ export const SocieteFinancesDividendes: React.FC<SocieteFinancesDividendesProps>
             Enregistrez d'abord la société pour ajouter des dividendes
           </p>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

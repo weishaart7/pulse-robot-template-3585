@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { actualiserEmprunt } from '@/lib/credit/contrat';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Landmark, Plus, Link2, Unlink, Info } from 'lucide-react';
+import { Link2, Unlink, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Emprunt } from '@/services/passifService';
@@ -106,26 +107,24 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
   const totalMensualites = linkedEmprunts.reduce((sum, e) => sum + (e.mensualite || 0), 0);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <PanelCard>
+      <PanelCardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Landmark className="h-5 w-5 text-primary" />
-            Emprunts liés
-          </CardTitle>
+          <PanelCardTitle>Emprunts liés
+          </PanelCardTitle>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={!societeId || availableEmprunts.length === 0}>
-                <Link2 className="h-4 w-4 mr-1" />
+              <Button variant="outline" className={`gap-1.5 ${panelButtonClass}`} disabled={!societeId || availableEmprunts.length === 0}>
+                <Link2 className="h-3.5 w-3.5" />
                 Lier un emprunt
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Lier un emprunt existant</DialogTitle>
+            <DialogContent overlayClassName="bg-black/30 backdrop-blur-[6px]" className="workspace-panel rounded-[4px] sm:rounded-[4px]">
+              <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+                <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Lier un emprunt existant</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
-                <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-start gap-2 p-3 rounded-[2px] bg-secondary/50">
                   <Info className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <p className="text-sm text-muted-foreground">
                     Sélectionnez un emprunt existant de votre patrimoine pour l'associer à cette société.
@@ -143,24 +142,24 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
                     ))}
                   </SelectContent>
                 </Select>
-                <Button onClick={linkEmprunt} className="w-full" disabled={!selectedEmpruntId}>
+                <Button onClick={linkEmprunt} className={`w-full ${panelPrimaryButtonClass}`} disabled={!selectedEmpruntId}>
                   Lier à cette société
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
         </div>
-      </CardHeader>
-      <CardContent>
+      </PanelCardHeader>
+      <PanelCardContent>
         {/* Summary KPIs */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 mb-4">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Capital restant dû</p>
-            <p className="text-sm font-semibold">{formatCurrency(totalCapitalRestant)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(totalCapitalRestant)}</p>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
+          <div className="px-4 py-2.5 first:pl-0">
             <p className="text-xs text-muted-foreground">Mensualités totales</p>
-            <p className="text-sm font-semibold">{formatCurrency(totalMensualites)}</p>
+            <p className="text-[13px] font-medium tabular-nums">{formatCurrency(totalMensualites)}</p>
           </div>
         </div>
 
@@ -168,7 +167,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
         {linkedEmprunts.length > 0 ? (
           <div className="space-y-2">
             {linkedEmprunts.map((e) => (
-              <div key={e.id} className="flex items-center justify-between py-3 px-3 bg-muted/30 rounded-lg">
+              <div key={e.id} className="flex items-center justify-between py-2.5">
                 <div className="space-y-1">
                   <p className="font-medium text-sm">{e.libelle}</p>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -196,7 +195,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
             }
           </p>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

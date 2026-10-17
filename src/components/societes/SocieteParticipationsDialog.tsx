@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -84,14 +85,14 @@ export const SocieteParticipationsDialog = ({ societes, participations, onChange
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
-          <Network className="h-4 w-4" />
+        <Button variant="outline" className={`gap-2 ${panelButtonClass}`}>
+          <Network className="h-3.5 w-3.5" />
           Gérer les participations
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Gérer les participations société → société</DialogTitle>
+      <DialogContent overlayClassName="bg-black/30 backdrop-blur-[6px]" className="workspace-panel max-w-2xl rounded-[4px] sm:rounded-[4px]">
+        <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Gérer les participations société → société</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -126,19 +127,19 @@ export const SocieteParticipationsDialog = ({ societes, participations, onChange
               />
             </div>
           </div>
-          <Button onClick={handleCreate} disabled={saving} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
+          <Button onClick={handleCreate} disabled={saving} className={`gap-2 ${panelPrimaryButtonClass}`}>
+            <Plus className="h-3.5 w-3.5" />
             Ajouter le lien
           </Button>
 
-          <div className="border-t border-border/60 pt-4">
-            <h4 className="text-sm font-medium mb-2">Liens existants</h4>
+          <div className="border-t border-border pt-4">
+            <h4 className="mb-2 text-[13px] font-medium">Liens existants</h4>
             {participations.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucun lien de participation enregistré.</p>
             ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="max-h-64 divide-y divide-border overflow-y-auto border-y border-border">
                 {participations.map(p => (
-                  <div key={p.id} className="flex items-center justify-between p-3 rounded-[5px] bg-muted/40 text-sm">
+                  <div key={p.id} className="flex items-center justify-between py-2 text-[13px]">
                     <span>
                       <strong>{denomination(p.societe_mere_id)}</strong> détient{' '}
                       <strong>{p.pourcentage}%</strong> de <strong>{denomination(p.societe_fille_id)}</strong>

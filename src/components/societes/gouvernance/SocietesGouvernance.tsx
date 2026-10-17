@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { AddButton, panelButtonClass, panelPrimaryButtonClass, Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { useSocietes } from '@/hooks/useSocietes';
 import { useSocieteAssocies, useSocietePacte, useSocieteCCA } from '@/hooks/useSocieteExtended';
 import {
@@ -15,7 +15,7 @@ import {
   societeCCAService, SocieteCCA,
 } from '@/services/societeExtendedService';
 import { useSocieteDividendes } from '@/hooks/useSocieteDividendes';
-import { Building2, Plus, Trash2, FileSignature, Wallet, Users, Coins, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const NATURES = ['Pleine propriété', 'Nue-propriété', 'Usufruit'];
@@ -96,9 +96,8 @@ export const SocietesGouvernance: React.FC = () => {
 
   if (societes.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="text-muted-foreground">Aucune société enregistrée.</p>
+      <div className="px-8 py-7">
+        <p className="max-w-md text-[13px] text-muted-foreground">Aucune société enregistrée.</p>
       </div>
     );
   }
@@ -106,8 +105,9 @@ export const SocietesGouvernance: React.FC = () => {
   const p = pacteDraft || pacte || { existe: false };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div>
+      {/* Choix de la société : bandeau fileté en tête du panneau. */}
+      <div className="flex items-center gap-4 border-b border-border px-8 py-4">
         <Label>Société</Label>
         <Select value={societeId || undefined} onValueChange={setSocieteId}>
           <SelectTrigger className="w-80"><SelectValue placeholder="Sélectionner une société" /></SelectTrigger>
@@ -117,25 +117,23 @@ export const SocietesGouvernance: React.FC = () => {
         </Select>
       </div>
 
-      {!societeId && <p className="text-muted-foreground text-sm">Sélectionnez une société pour gérer sa gouvernance.</p>}
+      {!societeId && <p className="px-8 py-6 text-[13px] text-muted-foreground">Sélectionnez une société pour gérer sa gouvernance.</p>}
 
       {societeId && (
         <>
           {/* Cap Table */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2"><Users className="h-4 w-4" />Table de capitalisation</CardTitle>
+          <PanelCard>
+            <PanelCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+              <PanelCardTitle>Table de capitalisation</PanelCardTitle>
               <div className="flex items-center gap-3">
-                <Badge variant={Math.abs(totalPct - 100) < 0.01 ? 'default' : 'destructive'}>Total : {totalPct.toFixed(2)}%</Badge>
-                <Button size="sm" onClick={() => setEditingAssoc({ nature_detention: 'Pleine propriété', detention_directe: true })}>
-                  <Plus className="h-4 w-4 mr-2" />Ajouter
-                </Button>
+                <Chip tone={Math.abs(totalPct - 100) < 0.01 ? 'lagon' : 'alerte'}>Total : {totalPct.toFixed(2)} %</Chip>
+                <AddButton onClick={() => setEditingAssoc({ nature_detention: 'Pleine propriété', detention_directe: true })}>Ajouter</AddButton>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            </PanelCardHeader>
+            <PanelCardContent>
+              <div className="divide-y divide-border border-border [&:has(>div)]:border-y">
                 {associes.map(a => (
-                  <div key={a.id} className="flex items-center justify-between p-3 rounded-[5px] bg-muted/40">
+                  <div key={a.id} className="flex items-center justify-between py-2.5">
                     <div className="grid grid-cols-5 gap-4 flex-1 text-sm">
                       <div><span className="text-muted-foreground">Associé</span><br />{a.nom_libre || 'Lié famille'}</div>
                       <div><span className="text-muted-foreground">Titres</span><br />{a.nombre_titres ?? '-'}</div>
@@ -144,7 +142,7 @@ export const SocietesGouvernance: React.FC = () => {
                       <div><span className="text-muted-foreground">Détention</span><br />{a.detention_directe ? 'Directe' : 'Via holding'}</div>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditingAssoc(a)}>Modifier</Button>
+                      <Button size="sm" variant="ghost" className="h-8 rounded-[2px] text-[12.5px]" onClick={() => setEditingAssoc(a)}>Modifier</Button>
                       <Button size="sm" variant="ghost" onClick={async () => { await societeAssocieService.delete(a.id); refetchAssocies(); }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -155,7 +153,7 @@ export const SocietesGouvernance: React.FC = () => {
               </div>
 
               {editingAssoc && (
-                <div className="mt-4 p-4 border border-border/60 rounded-[5px] space-y-3">
+                <div className="mt-4 rounded-[2px] border border-border p-4 space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div><Label>Nom de l'associé</Label><Input value={editingAssoc.nom_libre || ''} onChange={e => setEditingAssoc({ ...editingAssoc, nom_libre: e.target.value })} /></div>
                     <div><Label>Nombre de titres</Label><Input type="number" value={editingAssoc.nombre_titres ?? ''} onChange={e => setEditingAssoc({ ...editingAssoc, nombre_titres: e.target.value ? Number(e.target.value) : null })} /></div>
@@ -173,38 +171,38 @@ export const SocietesGouvernance: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={saveAssoc}>Enregistrer</Button>
-                    <Button variant="ghost" onClick={() => setEditingAssoc(null)}>Annuler</Button>
+                    <Button className={panelPrimaryButtonClass} onClick={saveAssoc}>Enregistrer</Button>
+                    <Button variant="outline" className={panelButtonClass} onClick={() => setEditingAssoc(null)}>Annuler</Button>
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Dividendes par associé */}
-          <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Coins className="h-4 w-4" />Dividendes versés (agrégat par bénéficiaire)</CardTitle></CardHeader>
-            <CardContent>
+          <PanelCard>
+            <PanelCardHeader><PanelCardTitle>Dividendes versés (agrégat par bénéficiaire)</PanelCardTitle></PanelCardHeader>
+            <PanelCardContent>
               {Object.keys(dividendesParAssocie).length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun dividende. Ajoutez-en dans la fiche société (onglet Finances).</p>
               ) : (
                 <div className="space-y-2">
                   {Object.entries(dividendesParAssocie).map(([k, v]) => (
-                    <div key={k} className="flex justify-between p-3 rounded-[5px] bg-muted/40 text-sm">
+                    <div key={k} className="flex justify-between py-2.5 text-sm">
                       <span>{k}</span><span className="font-medium">{v.toLocaleString('fr-FR')} €</span>
                     </div>
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Pacte d'associés */}
-          <Card>
-            <CardHeader><CardTitle className="text-base flex items-center gap-2"><FileSignature className="h-4 w-4" />Pacte d'associés</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
+          <PanelCard>
+            <PanelCardHeader><PanelCardTitle>Pacte d'associés</PanelCardTitle></PanelCardHeader>
+            <PanelCardContent>
               {pacteAncien && (
-                <div className="flex items-center gap-2 p-3 rounded-[5px] bg-destructive/10 text-destructive text-sm">
+                <div className="mx-8 mt-6 flex items-center gap-2 rounded-[2px] bg-destructive/10 p-3 text-[13px] text-destructive">
                   <AlertTriangle className="h-4 w-4" />Le pacte a plus de 7 ans, pensez à le revoir.
                 </div>
               )}
@@ -230,23 +228,23 @@ export const SocietesGouvernance: React.FC = () => {
                   <div className="col-span-2"><Label>Commentaire</Label><Textarea value={p.commentaire || ''} onChange={e => setPacteDraft({ ...p, commentaire: e.target.value })} /></div>
                 </div>
               )}
-              <Button onClick={savePacte}>Enregistrer</Button>
-            </CardContent>
-          </Card>
+              <Button className={panelPrimaryButtonClass} onClick={savePacte}>Enregistrer</Button>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* CCA */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2"><Wallet className="h-4 w-4" />Comptes courants d'associés</CardTitle>
+          <PanelCard>
+            <PanelCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+              <PanelCardTitle>Comptes courants d'associés</PanelCardTitle>
               <div className="flex items-center gap-3">
-                <Badge variant="secondary">Total : {totalCCA.toLocaleString('fr-FR')} €</Badge>
-                <Button size="sm" onClick={() => setEditingCCA({ solde: 0 })}><Plus className="h-4 w-4 mr-2" />Ajouter</Button>
+                <Chip>Total : {totalCCA.toLocaleString('fr-FR')} €</Chip>
+                <AddButton onClick={() => setEditingCCA({ solde: 0 })}>Ajouter</AddButton>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
+            </PanelCardHeader>
+            <PanelCardContent>
+              <div className="divide-y divide-border border-border [&:has(>div)]:border-y">
                 {cca.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-3 rounded-[5px] bg-muted/40">
+                  <div key={c.id} className="flex items-center justify-between py-2.5">
                     <div className="grid grid-cols-4 gap-4 flex-1 text-sm">
                       <div><span className="text-muted-foreground">Associé</span><br />{c.associe_libelle || '-'}</div>
                       <div><span className="text-muted-foreground">Solde</span><br />{(Number(c.solde) || 0).toLocaleString('fr-FR')} €</div>
@@ -254,7 +252,7 @@ export const SocietesGouvernance: React.FC = () => {
                       <div><span className="text-muted-foreground">Échéance</span><br />{c.date_remboursement || '-'}</div>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditingCCA(c)}>Modifier</Button>
+                      <Button size="sm" variant="ghost" className="h-8 rounded-[2px] text-[12.5px]" onClick={() => setEditingCCA(c)}>Modifier</Button>
                       <Button size="sm" variant="ghost" onClick={async () => { await societeCCAService.delete(c.id); refetchCCA(); }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -264,7 +262,7 @@ export const SocietesGouvernance: React.FC = () => {
                 {cca.length === 0 && !editingCCA && <p className="text-sm text-muted-foreground">Aucun compte courant.</p>}
               </div>
               {editingCCA && (
-                <div className="mt-4 p-4 border border-border/60 rounded-[5px] space-y-3">
+                <div className="mt-4 rounded-[2px] border border-border p-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>Associé</Label><Input value={editingCCA.associe_libelle || ''} onChange={e => setEditingCCA({ ...editingCCA, associe_libelle: e.target.value })} /></div>
                     <div><Label>Solde (€)</Label><Input type="number" value={editingCCA.solde ?? ''} onChange={e => setEditingCCA({ ...editingCCA, solde: e.target.value ? Number(e.target.value) : 0 })} /></div>
@@ -272,13 +270,13 @@ export const SocietesGouvernance: React.FC = () => {
                     <div><Label>Date de remboursement</Label><Input type="date" value={editingCCA.date_remboursement || ''} onChange={e => setEditingCCA({ ...editingCCA, date_remboursement: e.target.value })} /></div>
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={saveCCA}>Enregistrer</Button>
-                    <Button variant="ghost" onClick={() => setEditingCCA(null)}>Annuler</Button>
+                    <Button className={panelPrimaryButtonClass} onClick={saveCCA}>Enregistrer</Button>
+                    <Button variant="outline" className={panelButtonClass} onClick={() => setEditingCCA(null)}>Annuler</Button>
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         </>
       )}
     </div>

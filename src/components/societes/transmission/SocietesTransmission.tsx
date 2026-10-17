@@ -1,16 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle, PanelCardDescription } from '@/components/layout/panel-section';
+import { panelPrimaryButtonClass, Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useSocietes } from '@/hooks/useSocietes';
 import { useSocieteDutreil } from '@/hooks/useSocieteExtended';
 import { societeDutreilService } from '@/services/societeExtendedService';
-import { Gift, Handshake, ArrowRightLeft, Building2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getPartSuccessorale, BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { evaluerEligibiliteDutreil, TYPE_ENGAGEMENT_COLLECTIF_OPTIONS } from '@/lib/patrimoine/dutreil';
@@ -106,16 +106,16 @@ export const SocietesTransmission: React.FC = () => {
 
   if (societes.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="text-muted-foreground">Aucune société enregistrée.</p>
+      <div className="px-8 py-7">
+        <p className="max-w-md text-[13px] text-muted-foreground">Aucune société enregistrée.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div>
+      {/* Choix de la société : bandeau fileté en tête du panneau. */}
+      <div className="flex items-center gap-4 border-b border-border px-8 py-4">
         <Label>Société</Label>
         <Select value={societeId || undefined} onValueChange={setSocieteId}>
           <SelectTrigger className="w-80"><SelectValue placeholder="Sélectionner une société" /></SelectTrigger>
@@ -128,19 +128,19 @@ export const SocietesTransmission: React.FC = () => {
       {societeId && (
         <>
           {societePart.error && d.valeur_parts_transmises == null && (
-            <div className="flex items-center gap-2 p-3 rounded-[5px] bg-destructive/10 text-destructive text-sm">
+            <div className="mx-8 mt-6 flex items-center gap-2 rounded-[2px] bg-destructive/10 p-3 text-[13px] text-destructive">
               <AlertTriangle className="h-4 w-4 flex-shrink-0" />
               {societePart.error} Vous pouvez saisir manuellement une valeur des parts transmises ci-dessous en attendant, ou qualifier la société dans l'onglet "Mes sociétés".
             </div>
           )}
 
           {/* Pacte Dutreil */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Handshake className="h-4 w-4" />Pacte Dutreil — Abattement 75%</CardTitle>
-              <CardDescription>Conditions d'éligibilité et calcul de l'économie fiscale</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Pacte Dutreil — Abattement 75%</PanelCardTitle>
+              <PanelCardDescription>Conditions d'éligibilité et calcul de l'économie fiscale</PanelCardDescription>
+            </PanelCardHeader>
+            <PanelCardContent>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Engagement collectif de conservation</Label>
@@ -174,9 +174,9 @@ export const SocietesTransmission: React.FC = () => {
               </div>
 
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">{eligibilite.engagementCollectif ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Engagement collectif en cours au jour de la transmission (signé, réputé acquis ou post mortem)</div>
-                <div className="flex items-center gap-2">{eligibilite.fonctionDirection ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Fonction de direction renseignée</div>
-                <div className="flex items-center gap-2">{eligibilite.partBiensNonAffectes ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <XCircle className="h-4 w-4 text-destructive" />}Part de biens non affectés à l'activité renseignée</div>
+                <div className="flex items-center gap-2">{eligibilite.engagementCollectif ? <CheckCircle2 className="h-4 w-4 text-positive" /> : <XCircle className="h-4 w-4 text-destructive" />}Engagement collectif en cours au jour de la transmission (signé, réputé acquis ou post mortem)</div>
+                <div className="flex items-center gap-2">{eligibilite.fonctionDirection ? <CheckCircle2 className="h-4 w-4 text-positive" /> : <XCircle className="h-4 w-4 text-destructive" />}Fonction de direction renseignée</div>
+                <div className="flex items-center gap-2">{eligibilite.partBiensNonAffectes ? <CheckCircle2 className="h-4 w-4 text-positive" /> : <XCircle className="h-4 w-4 text-destructive" />}Part de biens non affectés à l'activité renseignée</div>
                 <label className="flex items-start gap-2 cursor-pointer">
                   <Checkbox checked={confirmationActivite} onCheckedChange={v => setConfirmationActivite(v === true)} className="mt-0.5" />
                   <span>
@@ -185,29 +185,29 @@ export const SocietesTransmission: React.FC = () => {
                     et 20 % des droits de vote.
                   </span>
                 </label>
-                <Badge variant={eligible ? 'default' : 'secondary'}>{eligible ? 'Éligibilité validée' : 'Éligibilité incomplète'}</Badge>
+                <Chip tone={eligible ? 'lagon' : 'neutral'}>{eligible ? 'Éligibilité validée' : 'Éligibilité incomplète'}</Chip>
                 <p className="text-xs text-muted-foreground">
                   Seule une éligibilité validée et enregistrée ouvre l'exonération de 75 % dans le calcul de la succession.
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 pt-3 border-t border-border/60">
-                <div className="p-3 rounded-[5px] bg-muted/40"><div className="text-xs text-muted-foreground">Donation classique</div><div className="text-lg font-semibold">{dmtgClassique.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
-                <div className="p-3 rounded-[5px] bg-muted/40"><div className="text-xs text-muted-foreground">Avec Dutreil (75% exonéré)</div><div className="text-lg font-semibold">{dmtgDutreil.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
-                <div className="p-3 rounded-[5px] bg-primary/10"><div className="text-xs text-muted-foreground">Économie</div><div className="text-lg font-semibold text-primary">{economie.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
+              <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0 pt-3 border-t border-border/60">
+                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Donation classique</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{dmtgClassique.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
+                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Avec Dutreil (75% exonéré)</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{dmtgDutreil.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
+                <div className="py-2.5 sm:px-4 sm:first:pl-0 sm:bg-lagon-soft/60"><div className="text-xs text-muted-foreground">Économie</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em] text-lagon-ink">{economie.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
               </div>
 
-              <Button onClick={saveDutreil}>Enregistrer</Button>
-            </CardContent>
-          </Card>
+              <Button className={panelPrimaryButtonClass} onClick={saveDutreil}>Enregistrer</Button>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* OBO */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><ArrowRightLeft className="h-4 w-4" />OBO (Owner Buy-Out)</CardTitle>
-              <CardDescription>Simulation de structure de financement</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>OBO (Owner Buy-Out)</PanelCardTitle>
+              <PanelCardDescription>Simulation de structure de financement</PanelCardDescription>
+            </PanelCardHeader>
+            <PanelCardContent>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Valorisation cible (€)</Label><Input type="number" value={valeurOBO} onChange={e => setValeurOBO(Number(e.target.value) || 0)} /></div>
                 <div><Label>Apport en fonds propres (€)</Label><Input type="number" value={apport} onChange={e => setApport(Number(e.target.value) || 0)} /></div>
@@ -215,22 +215,22 @@ export const SocietesTransmission: React.FC = () => {
                 <div><Label>Taux d'emprunt (%)</Label><Input type="number" step="0.1" value={tauxDette} onChange={e => setTauxDette(Number(e.target.value) || 0)} /></div>
                 <div><Label>EBITDA annuel récurrent (€)</Label><Input type="number" value={ebitda} onChange={e => setEbitda(Number(e.target.value) || 0)} /></div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 rounded-[5px] bg-muted/40"><div className="text-xs text-muted-foreground">Levier</div><div className="text-lg font-semibold">{(valeurOBO > 0 ? (dette / valeurOBO * 100).toFixed(1) : 0)}%</div></div>
-                <div className="p-3 rounded-[5px] bg-muted/40"><div className="text-xs text-muted-foreground">Intérêts annuels</div><div className="text-lg font-semibold">{interetsAnnuels.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
-                <div className="p-3 rounded-[5px] bg-muted/40"><div className="text-xs text-muted-foreground">Couverture EBITDA / intérêts</div><div className="text-lg font-semibold">{couvertureDette.toFixed(1)}x</div></div>
+              <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Levier</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{(valeurOBO > 0 ? (dette / valeurOBO * 100).toFixed(1) : 0)}%</div></div>
+                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Intérêts annuels</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{interetsAnnuels.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
+                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Couverture EBITDA / intérêts</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{couvertureDette.toFixed(1)}x</div></div>
               </div>
-              {(apport + dette !== valeurOBO) && <Badge variant="destructive">Financement déséquilibré ({(apport + dette).toLocaleString('fr-FR')} € vs {valeurOBO.toLocaleString('fr-FR')} €)</Badge>}
-            </CardContent>
-          </Card>
+              {(apport + dette !== valeurOBO) && <Chip tone="alerte">Financement déséquilibré ({(apport + dette).toLocaleString('fr-FR')} € vs {valeurOBO.toLocaleString('fr-FR')} €)</Chip>}
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Donation de parts */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2"><Gift className="h-4 w-4" />Donation de parts</CardTitle>
-              <CardDescription>Données disponibles pour le module Transmission</CardDescription>
-            </CardHeader>
-            <CardContent>
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Donation de parts</PanelCardTitle>
+              <PanelCardDescription>Données disponibles pour le module Transmission</PanelCardDescription>
+            </PanelCardHeader>
+            <PanelCardContent>
               <p className="text-sm text-muted-foreground mb-2">
                 La valeur des parts ({(societe?.valeur_estimee || 0).toLocaleString('fr-FR')} €) est exploitable depuis le module
                 {' '}<strong>Transmission</strong>{' '}pour calculer les droits de mutation à titre gratuit.
@@ -238,8 +238,8 @@ export const SocietesTransmission: React.FC = () => {
               <Button variant="outline" asChild>
                 <a href="/transmission">Ouvrir Transmission →</a>
               </Button>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         </>
       )}
     </div>

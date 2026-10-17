@@ -4,8 +4,8 @@ import { SocieteFinancesValorisation } from './SocieteFinancesValorisation';
 import { SocieteFinancesDividendes } from './SocieteFinancesDividendes';
 import { SocieteFinancesEmprunts } from './SocieteFinancesEmprunts';
 import { SocieteFinancesImpactFiscal } from './SocieteFinancesImpactFiscal';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Save } from 'lucide-react';
 
 interface SocieteFormData {
@@ -64,9 +64,8 @@ export const SocieteFinances: React.FC<SocieteFinancesProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-280px)]">
-      <ScrollArea className="flex-1">
-        <div className="space-y-6 pr-4">
+    <div>
+      <div>
           <SocieteFinancesComptables
             formData={formData}
             onFieldChange={handleFieldChange}
@@ -90,13 +89,12 @@ export const SocieteFinances: React.FC<SocieteFinancesProps> = ({
           <SocieteFinancesImpactFiscal
             formData={formData}
           />
-        </div>
-      </ScrollArea>
+      </div>
 
       {onSave && (
-        <div className="pt-4 border-t mt-4">
-          <Button onClick={onSave} disabled={isSaving} className="w-full sm:w-auto">
-            <Save className="h-4 w-4 mr-2" />
+        <div className="flex justify-end px-8 py-4">
+          <Button onClick={onSave} disabled={isSaving} className={`gap-2 ${panelPrimaryButtonClass}`}>
+            <Save className="h-3.5 w-3.5" />
             {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
           </Button>
         </div>

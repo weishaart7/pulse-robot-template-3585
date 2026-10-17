@@ -33,8 +33,8 @@ interface SocieteNodeData extends SocieteParticipationGraphNode {
 const SocieteNode = ({ data }: { data: SocieteNodeData }) => {
   return (
     <div
-      className={`group relative px-4 py-3 rounded-[5px] border-2 min-w-[160px] text-center shadow-sm cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md bg-background ${
-        data.depasse100 ? 'border-destructive' : 'border-primary/40'
+      className={`group relative min-w-[160px] cursor-pointer rounded-[2px] border bg-background px-4 py-3 text-center transition-colors hover:bg-secondary/60 ${
+        data.depasse100 ? 'border-destructive' : 'border-border border-t-[3px] border-t-lagon'
       }`}
     >
       {/* Sans ces handles, @xyflow/react ne peut pas calculer l'ancrage des arêtes sur
@@ -46,14 +46,14 @@ const SocieteNode = ({ data }: { data: SocieteNodeData }) => {
       <Button
         variant="ghost"
         size="sm"
-        className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-background border opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-[2px] bg-background border opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={e => { e.stopPropagation(); data.onDelete(data.id); }}
       >
         <Trash2 className="h-3 w-3" />
       </Button>
       <div className="flex items-center justify-center gap-1.5">
-        <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
-        <span className="font-medium text-sm truncate">{data.denomination}</span>
+        <Building2 className="h-3.5 w-3.5 text-lagon-ink shrink-0" />
+        <span className="truncate text-[13px] font-medium">{data.denomination}</span>
         {data.depasse100 && <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />}
       </div>
       <div className="text-xs text-muted-foreground mt-1">{data.typeSociete?.toUpperCase()}</div>
@@ -127,16 +127,14 @@ export const SocieteParticipationsGraph = ({ societes, participations, onSelectS
 
   if (societes.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Aucune société enregistrée</h3>
-        <p className="text-muted-foreground">Commencez par ajouter votre première société pour suivre vos participations.</p>
-      </div>
+      <p className="max-w-md text-[13px] text-muted-foreground">
+        Aucune société enregistrée : ajoutez votre première société pour suivre vos participations.
+      </p>
     );
   }
 
   return (
-    <div className="w-full h-[600px] bg-background rounded-[5px] border">
+    <div className="h-[600px] w-full rounded-[2px] border border-border bg-background">
       <ReactFlow
         nodes={nodes}
         edges={edges}

@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Building2 } from 'lucide-react';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { Building2 } from 'lucide-react';
 import { sireneService, type SireneData } from '@/services/sireneService';
 import { toast } from 'sonner';
 import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
@@ -373,20 +374,17 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Search Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Rechercher une entreprise
-          </CardTitle>
-          <CardDescription>
+    <form onSubmit={handleSubmit}>
+      {/* Recherche SIRENE */}
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Rechercher une entreprise</PanelCardTitle>
+          <PanelCardDescription>
             Recherchez par SIREN (9 chiffres) ou par dénomination sociale
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
+          </PanelCardDescription>
+        </PanelCardHeader>
+        <PanelCardContent>
+          <div className="flex max-w-3xl gap-2">
             <Input
               placeholder="SIREN ou dénomination sociale"
               value={searchQuery}
@@ -395,6 +393,8 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
             />
             <Button
               type="button"
+              variant="outline"
+              className={`${panelButtonClass} h-9`}
               onClick={handleSearch}
               disabled={isSearching}
             >
@@ -403,34 +403,34 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
 
           {searchResults.length > 0 && (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="max-h-64 max-w-3xl divide-y divide-border overflow-y-auto border-y border-border">
               {searchResults.map((result, index) => (
-                <Card
+                <button
+                  type="button"
                   key={index}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  className="flex w-full items-start gap-3 px-2 py-2.5 text-left transition-colors hover:bg-secondary/60"
                   onClick={() => fillFormWithSireneData(result)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Building2 className="h-5 w-5 mt-0.5 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium">{result.denomination}</p>
-                        <p className="text-sm text-muted-foreground">SIRET: {result.siret}</p>
-                        {result.adresse && (
-                          <p className="text-sm text-muted-foreground">
-                            {result.adresse}, {result.codePostal} {result.commune}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium">{result.denomination}</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      SIRET : {result.siret}
+                      {result.adresse && <> · {result.adresse}, {result.codePostal} {result.commune}</>}
+                    </p>
+                  </div>
+                </button>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-      <div className="grid gap-4">
+        </PanelCardContent>
+      </PanelCard>
+
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Identité et détention</PanelCardTitle>
+        </PanelCardHeader>
+      <div className="grid max-w-3xl gap-4">
         <div>
           <Label htmlFor="denomination">Dénomination sociale *</Label>
           <Input
@@ -808,12 +808,13 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </Label>
         </div>
       </div>
+      </PanelCard>
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+      <div className="flex justify-end gap-2 px-8 py-4">
+        <Button type="button" variant="outline" className={panelButtonClass} onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit">
+        <Button type="submit" className={panelPrimaryButtonClass}>
           {initialData ? 'Modifier' : 'Ajouter'}
         </Button>
       </div>

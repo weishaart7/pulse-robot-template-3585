@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { LAGON_INK, CITRON_MID, GREY } from '@/components/budget/budgetColors';
+import { AddButton, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSocietes } from '@/hooks/useSocietes';
 import { useSocieteBilans } from '@/hooks/useSocieteExtended';
 import { societeBilanService, SocieteBilan } from '@/services/societeExtendedService';
-import { Building2, Plus, Trash2, TrendingUp } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -19,9 +21,8 @@ export const SocietesBilans: React.FC = () => {
 
   if (societes.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Building2 className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-        <p className="text-muted-foreground">Aucune société. Ajoutez-en pour suivre vos bilans.</p>
+      <div className="px-8 py-7">
+        <p className="max-w-md text-[13px] text-muted-foreground">Aucune société. Ajoutez-en pour suivre vos bilans.</p>
       </div>
     );
   }
@@ -55,8 +56,9 @@ export const SocietesBilans: React.FC = () => {
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
+    <div>
+      {/* Choix de la société : bandeau fileté en tête du panneau. */}
+      <div className="flex items-center gap-4 border-b border-border px-8 py-4">
         <Label>Société</Label>
         <Select value={societeId || undefined} onValueChange={setSocieteId}>
           <SelectTrigger className="w-80"><SelectValue placeholder="Sélectionner une société" /></SelectTrigger>
@@ -69,35 +71,33 @@ export const SocietesBilans: React.FC = () => {
       {societeId && (
         <>
           {bilans.length >= 2 && (
-            <Card>
-              <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Évolution</CardTitle></CardHeader>
-              <CardContent className="h-64">
+            <PanelCard>
+              <PanelCardHeader><PanelCardTitle>Évolution</PanelCardTitle></PanelCardHeader>
+              <PanelCardContent className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
                     <XAxis dataKey="annee" />
                     <YAxis />
                     <Tooltip />
-                    <Line type="monotone" dataKey="CA" stroke="hsl(var(--primary))" strokeWidth={1.5} />
-                    <Line type="monotone" dataKey="Résultat" stroke="hsl(var(--ring))" strokeWidth={1.5} />
-                    <Line type="monotone" dataKey="Trésorerie" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} />
+                    <Line type="monotone" dataKey="CA" stroke={LAGON_INK} strokeWidth={1.5} />
+                    <Line type="monotone" dataKey="Résultat" stroke={CITRON_MID} strokeWidth={1.5} />
+                    <Line type="monotone" dataKey="Trésorerie" stroke={GREY} strokeWidth={1.5} />
                   </LineChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+              </PanelCardContent>
+            </PanelCard>
           )}
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Historique des bilans</CardTitle>
-              <Button size="sm" onClick={() => setEditing({ exercice_annee: new Date().getFullYear() - 1 })}>
-                <Plus className="h-4 w-4 mr-2" />Ajouter
-              </Button>
-            </CardHeader>
-            <CardContent>
+          <PanelCard>
+            <PanelCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+              <PanelCardTitle>Historique des bilans</PanelCardTitle>
+              <AddButton onClick={() => setEditing({ exercice_annee: new Date().getFullYear() - 1 })}>Ajouter</AddButton>
+            </PanelCardHeader>
+            <PanelCardContent>
               {bilans.length === 0 && !editing && <p className="text-sm text-muted-foreground">Aucun bilan saisi.</p>}
-              <div className="space-y-2">
+              <div className="divide-y divide-border border-y border-border empty:hidden">
                 {bilans.map(b => (
-                  <div key={b.id} className="flex items-center justify-between p-3 rounded-[5px] bg-muted/40">
+                  <div key={b.id} className="flex items-center justify-between py-2.5">
                     <div className="grid grid-cols-5 gap-4 flex-1 text-sm">
                       <div><span className="text-muted-foreground">Année</span><br />{b.exercice_annee}</div>
                       <div><span className="text-muted-foreground">CA</span><br />{(Number(b.chiffre_affaires) || 0).toLocaleString('fr-FR')} €</div>
@@ -106,7 +106,7 @@ export const SocietesBilans: React.FC = () => {
                       <div><span className="text-muted-foreground">Capitaux propres</span><br />{(Number(b.capitaux_propres) || 0).toLocaleString('fr-FR')} €</div>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setEditing(b)}>Modifier</Button>
+                      <Button size="sm" variant="ghost" className="h-8 rounded-[2px] text-[12.5px]" onClick={() => setEditing(b)}>Modifier</Button>
                       <Button size="sm" variant="ghost" onClick={async () => { await societeBilanService.delete(b.id); refetch(); }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -116,7 +116,7 @@ export const SocietesBilans: React.FC = () => {
               </div>
 
               {editing && (
-                <div className="mt-4 p-4 border border-border/60 rounded-[5px] space-y-3">
+                <div className="mt-4 rounded-[2px] border border-border p-4 space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div><Label>Année</Label><Input type="number" value={editing.exercice_annee || ''} onChange={e => setEditing({ ...editing, exercice_annee: Number(e.target.value) })} /></div>
                     <div><Label>Date de clôture</Label><Input type="date" value={editing.date_cloture || ''} onChange={e => setEditing({ ...editing, date_cloture: e.target.value })} /></div>
@@ -127,13 +127,13 @@ export const SocietesBilans: React.FC = () => {
                     <div><Label>Dettes financières</Label><Input type="number" value={editing.dettes_financieres ?? ''} onChange={e => setEditing({ ...editing, dettes_financieres: e.target.value ? Number(e.target.value) : null })} /></div>
                   </div>
                   <div className="flex gap-2">
-                    <Button onClick={handleSave}>Enregistrer</Button>
-                    <Button variant="ghost" onClick={() => setEditing(null)}>Annuler</Button>
+                    <Button className={panelPrimaryButtonClass} onClick={handleSave}>Enregistrer</Button>
+                    <Button variant="outline" className={panelButtonClass} onClick={() => setEditing(null)}>Annuler</Button>
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         </>
       )}
     </div>
