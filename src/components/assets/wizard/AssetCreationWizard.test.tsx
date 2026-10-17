@@ -51,15 +51,15 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     const user = userEvent.setup();
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
-    expect(screen.getByText(/Étape 1\/\d+ — Le bien/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Le bien' })).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
-    expect(screen.getByText(/Étape 1\/\d+ — Le bien/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Le bien' })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
 
-    expect(await screen.findByText(/Étape 2\/\d+ — Origine et propriété/)).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Origine et propriété' })).toBeInTheDocument();
     expect(screen.getByText('Détenteur')).toBeInTheDocument();
   });
 
@@ -71,15 +71,15 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
 
     const etapes = [
       { label: 'Origine et propriété', champs: ["Date d'acquisition", 'Détenteur', 'Qualification du bien'] },
-      { label: 'Prix', champs: ["Valeur d'achat / réception (€)", "Frais d'acquisition (€)"] },
-      { label: 'Droits et valeur', champs: ['Mode de détention', 'Valeur actuelle estimée (€)'] },
+      { label: 'Prix', champs: ["Valeur d'achat / réception", "Frais d'acquisition"] },
+      { label: 'Droits et valeur', champs: ['Mode de détention', 'Valeur actuelle estimée'] },
     ];
     for (const { label, champs } of etapes) {
       await user.click(screen.getByRole('button', { name: 'Suivant' }));
-      expect(await screen.findByText(new RegExp(`Étape \\d+/\\d+ — ${label}$`))).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { name: label })).toBeInTheDocument();
       champs.forEach((champ) => expect(screen.getByText(champ)).toBeInTheDocument());
       if (label === 'Origine et propriété') {
-        expect(screen.queryByText("Valeur d'achat / réception (€)")).not.toBeInTheDocument();
+        expect(screen.queryByText("Valeur d'achat / réception")).not.toBeInTheDocument();
       }
     }
   });

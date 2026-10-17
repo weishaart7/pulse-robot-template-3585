@@ -1,5 +1,5 @@
 import React from 'react';
-import { panelPrimaryButtonClass, panelLinkClass } from '@/components/layout/workspace-panel';
+import { panelLinkClass } from '@/components/layout/workspace-panel';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { AssetFormValues, getOrigineActifLabel } from '@/schemas/assetSchema';
@@ -20,8 +20,6 @@ interface WizardStepRecapProps {
   demembrements: DemembrementDraft[];
   indivisaires: IndivisaireDraft[];
   onEditStep: (stepId: WizardStepId) => void;
-  onValidate: () => void;
-  isSubmitting: boolean;
 }
 
 const formatIndivisaire = (indivisaire: IndivisaireDraft, familyMembers: FamilyMember[]): string => {
@@ -66,22 +64,24 @@ const PARTICULARITES_RECAP_FIELDS: { key: keyof AssetFormValues; label: string }
 ];
 
 const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div className="flex justify-between gap-4 py-1.5 text-[13px]">
+  // Libellé à gauche, valeur juste à côté (comme les synthèses des panneaux) : lecture en ligne
+  // plutôt qu'en deux colonnes écartées sur toute la largeur.
+  <div className="grid max-w-2xl grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 sm:grid-cols-[220px_1fr] py-1.5 text-[13px]">
     <span className="text-muted-foreground">{label}</span>
-    <span className="font-medium text-foreground text-right">{value}</span>
+    <span className="font-medium text-foreground">{value}</span>
   </div>
 );
 
 const RecapSection: React.FC<{ title: string; onEdit: () => void; children: React.ReactNode }> = ({ title, onEdit, children }) => (
-  <div className="rounded-[2px] border border-border p-4 space-y-1">
-    <div className="flex items-center justify-between mb-2">
+  <section className="py-4 first:pt-0">
+    <div className="mb-2 flex max-w-2xl items-center justify-between">
       <p className="text-[13.5px] font-medium tracking-[-0.01em] text-foreground">{title}</p>
       <Button type="button" variant="link" size="sm" className={`h-auto p-0 ${panelLinkClass}`} onClick={onEdit}>
         Modifier
       </Button>
     </div>
     {children}
-  </div>
+  </section>
 );
 
 const computeImpactMensuel = (charge: AssetCharge): number | null => {
@@ -105,9 +105,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
   familyMembers,
   demembrements,
   indivisaires,
-  onEditStep,
-  onValidate,
-  isSubmitting
+  onEditStep
 }) => {
   const values = form.watch();
 
@@ -121,7 +119,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
     .filter(({ value }) => value !== undefined && value !== null && value !== '');
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-border">
       <RecapSection title="Le bien" onEdit={() => onEditStep('quoi')}>
         <Row label="Nature" value={values.nature || '—'} />
         {values.denomination && <Row label="Dénomination" value={values.denomination} />}
@@ -187,11 +185,6 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       <PlusValueBlock form={form} />
       <ValorisationDemembreeBlock form={form} familyData={familyData} familyMembers={familyMembers} demembrements={demembrements} />
 
-      <div className="flex justify-end pt-2">
-        <Button type="button" onClick={onValidate} disabled={isSubmitting} className={panelPrimaryButtonClass}>
-          {isSubmitting ? 'Création en cours...' : 'Valider et créer l\'actif'}
-        </Button>
-      </div>
     </div>
   );
 };

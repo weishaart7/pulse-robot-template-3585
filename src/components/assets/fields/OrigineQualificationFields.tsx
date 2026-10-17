@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { panelLinkClass } from '@/components/layout/workspace-panel';
-import { FileText } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DateInput } from '@/components/ui/date-input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
 import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory } from '@/constants/assetTypes';
@@ -128,10 +128,10 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>Valeur d'achat / réception (€)</FormLabel>
+                <FormLabel>Valeur d'achat / réception</FormLabel>
                 <FieldHelp>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FieldHelp>
                 <FormControl>
-                  <Input className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                  <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -139,10 +139,10 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 
             <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>Frais d'acquisition (€)</FormLabel>
+                <FormLabel>Frais d'acquisition</FormLabel>
                 <FieldHelp>Notaire, agence, droits d'enregistrement, etc.</FieldHelp>
                 <FormControl>
-                  <Input className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                  <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,14 +156,14 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           control={form.control}
           name="clause_entree_communaute"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="flex items-center leading-none">
                 <FormLabel>{inverseSensClause ? "Clause d'exclusion de communauté" : "Clause d'entrée en communauté"}</FormLabel>
                 <FieldHelp>
                   {inverseSensClause
@@ -181,14 +181,14 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           control={form.control}
           name="clause_remploi"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="flex items-center leading-none">
                 <FormLabel>Clause de remploi actée</FormLabel>
                 <FieldHelp>
                   Ce bien a été acheté avec des fonds propres réemployés, ou reçu en échange d'un bien propre : il reste propre malgré l'acquisition pendant l'union.
@@ -202,12 +202,12 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
       {showPrixSection && showFinancementMixte && (
         <FormField control={form.control} name="financement_mixte_apport_propre" render={({ field }) => (
           <FormItem>
-            <FormLabel>Financement mixte : contribution en fonds propres (€)</FormLabel>
+            <FormLabel>Financement mixte : contribution en fonds propres</FormLabel>
             <FieldHelp>
               Montant financé par des fonds propres, à comparer au prix d'acquisition total renseigné ci-dessus. Si cette contribution couvre au moins la moitié du prix : bien propre (art. 1436), récompense due à la communauté pour le solde. Sinon : bien commun, récompense due à l'époux apporteur. Sans effet si la clause de remploi ci-dessus est cochée.
             </FieldHelp>
             <FormControl>
-              <Input className="bg-background border-border shadow-none" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+              <EuroInput className="bg-background border-border shadow-none" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -219,14 +219,14 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           control={form.control}
           name="est_propre_par_nature"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="flex items-center leading-none">
                 <FormLabel>Bien propre par nature (art. 1404)</FormLabel>
                 <FieldHelp>
                   Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle).
@@ -269,12 +269,14 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
             : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
         </FieldHelp>
         {watchedQualificationAuto !== false && !showQualificationOverride ? (
-          <div className="flex items-start gap-3 rounded-[2px] border border-border p-4 bg-secondary/50">
-            <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
-            <div className="space-y-1 flex-1">
-              <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
+          <div className="border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">
+            <div className="space-y-1">
+              <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                {watchedQualificationBien || 'Non calculable'}
+                <span className="text-[11.5px] font-normal text-lagon-ink">calculée</span>
+              </p>
               {qualificationRaison && (
-                <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
+                <p className="text-[12.5px] leading-snug text-muted-foreground">{qualificationRaison}</p>
               )}
               <Button
                 type="button"

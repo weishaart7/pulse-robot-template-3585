@@ -1,5 +1,4 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { AssetFormValues } from '@/schemas/assetSchema';
 import { MaritalContext } from '@/hooks/useAssetForm';
@@ -34,13 +33,12 @@ export const WizardStepPrix: React.FC<WizardStepPrixProps> = ({ form, maritalCon
       <OrigineFields form={form} maritalContext={maritalContext} section="prix" />
 
       {qualificationDependDuPrix && (
-        <div className="flex items-start gap-3 rounded-[2px] border border-border p-4 bg-secondary/50">
-          <FileText className="h-4 w-4 text-muted-foreground mt-0.5" strokeWidth={1.5} />
-          <div className="space-y-1 flex-1">
-            <p className="text-xs text-muted-foreground">Qualification du bien</p>
-            <p className="text-sm font-semibold text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
+        <div className="max-w-2xl border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">
+          <div className="space-y-1">
+            <p className="text-[12px] text-lagon-ink">Qualification du bien</p>
+            <p className="text-sm font-medium text-foreground">{watchedQualificationBien || 'Non calculable'}</p>
             {qualificationRaison && (
-              <p className="text-xs text-muted-foreground italic">{qualificationRaison}</p>
+              <p className="text-[12.5px] leading-snug text-muted-foreground">{qualificationRaison}</p>
             )}
           </div>
         </div>

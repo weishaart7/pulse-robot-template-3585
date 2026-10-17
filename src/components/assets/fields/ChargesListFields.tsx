@@ -10,15 +10,23 @@ interface ChargesListFieldsProps {
   onAdd: () => void;
   onEdit: (charge: AssetCharge) => void;
   onDelete: (chargeId: string) => void;
+  /** Titre de section « Charges » (masqué quand la page le porte déjà, ex. étape du wizard). */
+  showTitle?: boolean;
 }
 
 // Reprend à l'identique la liste des charges de l'onglet "Charges" de
 // AssetForm.tsx : réutilisable telle quelle dans l'étape "Charges" du
 // wizard de création (la modale ChargeForm reste pilotée par l'appelant).
-export const ChargesListFields: React.FC<ChargesListFieldsProps> = ({ charges, onAdd, onEdit, onDelete }) => (
+export const ChargesListFields: React.FC<ChargesListFieldsProps> = ({ charges, onAdd, onEdit, onDelete, showTitle = true }) => (
   <div>
-    <div className="flex items-baseline justify-between">
-      <SectionHeader title="Charges" />
+    <div className={showTitle ? 'flex items-baseline justify-between' : 'flex items-center justify-between pb-3'}>
+      {showTitle ? (
+        <SectionHeader title="Charges" />
+      ) : (
+        <p className="text-[13px] text-muted-foreground">
+          {charges.length === 0 ? 'Aucune charge pour l\'instant' : `${charges.length} charge${charges.length > 1 ? 's' : ''}`}
+        </p>
+      )}
       <Button type="button" variant="outline" onClick={onAdd} className={`${panelButtonClass} gap-1.5`}>
         <Plus className="h-3.5 w-3.5" />
         Ajouter une charge
@@ -46,10 +54,10 @@ export const ChargesListFields: React.FC<ChargesListFieldsProps> = ({ charges, o
           </li>
         ))}
       </ul>
-    ) : (
+    ) : showTitle ? (
       <p className="border-t border-border py-3 text-[13px] text-muted-foreground">
         Aucune charge associée à cet actif
       </p>
-    )}
+    ) : null}
   </div>
 );

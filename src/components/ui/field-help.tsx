@@ -26,7 +26,7 @@ const FieldHelp = ({ children, className, contentClassName, side = "top" }: Fiel
           type="button"
           aria-label="Aide"
           className={cn(
-            "ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-muted-foreground/40 align-middle text-[10px] font-medium leading-none text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+            "!my-0 ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-muted-foreground/40 align-middle text-[10px] font-medium leading-none text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
             className
           )}
           onMouseEnter={() => setOpen(true)}

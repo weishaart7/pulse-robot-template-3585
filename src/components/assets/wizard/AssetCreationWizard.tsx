@@ -17,6 +17,17 @@ import { WizardStepParticularites } from './WizardStepParticularites';
 import { WizardStepCharges } from './WizardStepCharges';
 import { WizardStepRecap } from './WizardStepRecap';
 
+// Phrase d'introduction de chaque étape, sous son titre.
+const STEP_INTROS: Record<string, string> = {
+  quoi: 'Ce que vous possédez et comment vous l\'appelez.',
+  origine: 'D\'où vient le bien et à qui il appartient — la qualification en découle.',
+  prix: 'Ce que le bien a coûté à l\'acquisition.',
+  droitsvaleur: 'Les droits détenus (pleine propriété, usufruit…) et la valeur actuelle.',
+  particularites: 'Situations spécifiques utiles au conseil.',
+  charges: 'Facultatif : dépenses récurrentes liées au bien, à ajouter maintenant ou plus tard.',
+  recapitulatif: 'Vérifiez avant de créer l\'actif : rien n\'est enregistré avant validation.',
+};
+
 interface AssetCreationWizardProps {
   onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<void>;
   onCancel: () => void;
@@ -157,7 +168,6 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             onAdd={() => setShowChargeForm(true)}
             onEdit={handleChargeEdit}
             onDelete={handleChargeDelete}
-            onSkip={() => { goNext(); }}
           />
         );
       case 'recapitulatif':
@@ -170,8 +180,6 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             demembrements={demembrements}
             indivisaires={indivisaires}
             onEditStep={goToStep}
-            onValidate={handleValidate}
-            isSubmitting={isLoading}
           />
         );
       default:
@@ -185,7 +193,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
         title="Ajouter un actif"
         aside={
           <p className="text-[12.5px] text-muted-foreground">
-            Étape {currentStepIndex + 1}/{totalSteps} — {currentStep.label}
+            Étape {currentStepIndex + 1} sur {totalSteps}
           </p>
         }
         actions={
@@ -194,28 +202,54 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
           </Button>
         }
       >
-        <div className="flex gap-1">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              title={step.label}
-              className={`h-1 flex-1 rounded-[1px] transition-colors ${index <= currentStepIndex ? 'bg-foreground' : 'bg-border'}`}
-            />
-          ))}
-        </div>
+        {/* Étapes nommées : celles déjà atteintes sont cliquables pour y revenir. */}
+        <ol className="flex gap-1">
+          {steps.map((step, index) => {
+            const atteinte = index <= maxStepIndexReached;
+            const courante = index === currentStepIndex;
+            return (
+              <li key={step.id} className="min-w-0 flex-1">
+                <button
+                  type="button"
+                  disabled={!atteinte}
+                  onClick={() => goToStep(step.id)}
+                  aria-current={courante ? 'step' : undefined}
+                  className="group w-full text-left disabled:cursor-default"
+                >
+                  <span className={`block h-1 rounded-[1px] transition-colors ${index <= currentStepIndex ? 'bg-foreground' : atteinte ? 'bg-foreground/35' : 'bg-border'}`} />
+                  <span className={`mt-2 hidden truncate text-[11.5px] md:block ${courante ? 'font-medium text-foreground' : atteinte ? 'text-muted-foreground group-hover:text-foreground' : 'text-muted-foreground/60'}`}>
+                    {step.label}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
 
         <Form {...form}>
           <div className="mt-8">
+            <h2 className="text-[16px] font-medium tracking-[-0.01em] text-foreground">{currentStep.label}</h2>
+            {STEP_INTROS[currentStep.id] && (
+              <p className="mt-1 text-[12.5px] text-muted-foreground">{STEP_INTROS[currentStep.id]}</p>
+            )}
+          </div>
+
+          <div className="mt-6">
             {renderStep()}
           </div>
 
-          <div className="mt-8 flex justify-end gap-2 border-t border-border pt-5">
+          {/* Pied collé en bas de l'écran sur les étapes longues : les boutons restent accessibles. */}
+          <div className="sticky bottom-0 z-10 -mx-8 mt-8 flex justify-end gap-2 border-t border-border bg-background px-8 py-4">
             {!isFirstStep && (
               <Button type="button" variant="outline" onClick={goPrevious} className={panelButtonClass}>
                 Précédent
               </Button>
             )}
-            {!isLastStep && (
+            {isLastStep ? (
+              <Button type="button" onClick={handleValidate} disabled={isLoading} className={panelPrimaryButtonClass}>
+                {isLoading ? 'Création…' : "Valider et créer l'actif"}
+              </Button>
+            ) : (
               <Button type="button" onClick={goNext} className={panelPrimaryButtonClass}>
                 Suivant
               </Button>

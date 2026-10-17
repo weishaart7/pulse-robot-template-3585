@@ -85,7 +85,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
 
   return (
     <>
-      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 col-span-full">
+      <FormItem className="flex flex-row items-center space-x-3 space-y-0 col-span-full">
         <FormControl>
           <Checkbox
             checked={watchedDetenteur === 'Indivision'}
@@ -98,7 +98,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             }}
           />
         </FormControl>
-        <div className="space-y-1 leading-none">
+        <div className="flex items-center leading-none">
           <FormLabel>Ce bien est détenu en indivision avec un tiers (hors couple)</FormLabel>
           <FieldHelp>
             Dans ce cas, la qualification du bien est directement "Indivision", quel que soit le régime matrimonial ou l'origine du bien.

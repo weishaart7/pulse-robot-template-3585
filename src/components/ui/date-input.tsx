@@ -136,13 +136,14 @@ export const DateInput: React.FC<DateInputProps> = ({
         <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="absolute right-0 top-0 h-full rounded-l-none border-l-0"
+              className="absolute right-0.5 top-1/2 h-8 w-8 -translate-y-1/2 rounded-[2px] text-muted-foreground shadow-none hover:bg-muted hover:text-foreground"
               disabled={disabled}
               type="button"
+              aria-label="Choisir une date"
             >
-              <CalendarIcon className="h-4 w-4" />
+              <CalendarIcon className="h-4 w-4" strokeWidth={1.75} />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">

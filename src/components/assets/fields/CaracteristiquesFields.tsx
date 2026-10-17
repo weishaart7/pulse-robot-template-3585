@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { DateInput } from '@/components/ui/date-input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { RevenusDistribuesInput } from '@/components/immobilier/parts/RevenusDistribuesInput';
@@ -272,14 +273,14 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="bien_etranger"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 bg-secondary/50">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
                   checked={field.value}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="flex items-center leading-none">
                 <FormLabel className="flex items-center gap-2">
                   <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                   Bien situé à l'étranger
@@ -304,7 +305,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="transfert_immobilier"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -314,7 +315,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   }}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="flex items-center leading-none">
                 <FormLabel>Transfert dans Immobilier</FormLabel>
                 <FieldHelp>
                   Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
@@ -331,7 +332,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="transfert_societe"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
                 <Checkbox
                   checked={field.value}
@@ -341,7 +342,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   }}
                 />
               </FormControl>
-              <div className="space-y-1 leading-none">
+              <div className="flex items-center leading-none">
                 <FormLabel>Transfert dans Sociétés</FormLabel>
                 <FieldHelp>
                   Une fiche société sera créée automatiquement dans la section "Sociétés" → "Mes sociétés"
@@ -517,7 +518,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           <FormField control={form.control} name="valeur_assuree" render={({ field }) => (
             <FormItem>
               <FormLabel>
-                Valeur assurée (€)
+                Valeur assurée
                 <FieldHelp>
                   Évaluation figurant dans le contrat d'assurance vol ou incendie en cours, conclu depuis moins de 10 ans.
                   Pour les droits de succession, la valeur retenue ne peut être inférieure à 60 % de ce montant
@@ -525,7 +526,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 </FieldHelp>
               </FormLabel>
               <FormControl>
-                <Input
+                <EuroInput
                   className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
@@ -624,9 +625,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           {(showCapitalGaranti || showCapitalGarantiVM) && (
             <FormField control={form.control} name="capital_garanti" render={({ field }) => (
               <FormItem>
-                <FormLabel>Capital garanti (€)</FormLabel>
+                <FormLabel>Capital garanti</FormLabel>
                 <FormControl>
-                  <Input
+                  <EuroInput
                     className="bg-background border-border shadow-none"
                     type="number"
                     step="0.01"
@@ -679,9 +680,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="abondement_employeur" render={({ field }) => (
             <FormItem>
-              <FormLabel>Abondement employeur (€)</FormLabel>
+              <FormLabel>Abondement employeur</FormLabel>
               <FormControl>
-                <Input
+                <EuroInput
                   className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
@@ -746,14 +747,14 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             control={form.control}
             name="cto_multi_actifs"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4">
+              <FormItem className="flex flex-row items-center space-x-3 space-y-0">
                 <FormControl>
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
                   />
                 </FormControl>
-                <div className="space-y-1 leading-none">
+                <div className="flex items-center leading-none">
                   <FormLabel>Ce compte-titres détient d'autres actifs que des actions/obligations</FormLabel>
                 </div>
               </FormItem>
@@ -821,9 +822,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
       {showPlafondVerse && (
         <FormField control={form.control} name="plafond_verse" render={({ field }) => (
           <FormItem>
-            <FormLabel>Montant versé (€)</FormLabel>
+            <FormLabel>Montant versé</FormLabel>
             <FormControl>
-              <Input
+              <EuroInput
                 className="bg-background border-border shadow-none"
                 type="number"
                 step="0.01"
@@ -876,9 +877,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="montant_engage" render={({ field }) => (
             <FormItem>
-              <FormLabel>Montant engagé (€)</FormLabel>
+              <FormLabel>Montant engagé</FormLabel>
               <FormControl>
-                <Input
+                <EuroInput
                   className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
@@ -893,9 +894,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
 
           <FormField control={form.control} name="montant_appele" render={({ field }) => (
             <FormItem>
-              <FormLabel>Montant appelé (€)</FormLabel>
+              <FormLabel>Montant appelé</FormLabel>
               <FormControl>
-                <Input
+                <EuroInput
                   className="bg-background border-border shadow-none"
                   type="number"
                   step="0.01"
@@ -928,7 +929,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             <FormField control={form.control} name="prix_exercice" render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Prix d'exercice (€)
+                  Prix d'exercice
                   <FieldHelp>
                     Succession : options non levées au décès, exerçables par les héritiers dans les 6 mois. Leur prise en
                     compte dans l'actif taxable est discutée (exclusion, ou valeur intrinsèque : cours moins prix
@@ -936,7 +937,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   </FieldHelp>
                 </FormLabel>
                 <FormControl>
-                  <Input
+                  <EuroInput
                     className="bg-background border-border shadow-none"
                     type="number"
                     step="0.01"
@@ -1015,7 +1016,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                 De 0 (aucun attachement) à 10 (attachement très fort)
               </FieldHelp>
               <FormControl>
-                <div className="space-y-2">
+                <div className="max-w-md space-y-2 pt-1">
                   <Slider
                     min={0}
                     max={10}

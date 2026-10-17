@@ -191,13 +191,13 @@
 /* Gabarit compact : champs et bouton calendrier de 36 px. */
 .workspace-panel input:not([type="checkbox"]):not([type="radio"]),
 .workspace-panel button[role="combobox"] { height: 36px; }
-.workspace-panel button[aria-haspopup="dialog"]:not([role="combobox"]) { height: 36px; width: 36px; }
+.workspace-panel button[aria-label="Ouvrir le calendrier"] { height: 36px; width: 36px; }
 /* Champs à angles quasi droits (2 px), comme la barre d'onglets : saisies, menus déroulants
    et bouton calendrier des dates. */
 .workspace-panel input:not([type="checkbox"]):not([type="radio"]),
 .workspace-panel textarea,
 .workspace-panel button[role="combobox"],
-.workspace-panel button[aria-haspopup="dialog"] { border-radius: 2px; }
+.workspace-panel button[aria-label="Ouvrir le calendrier"] { border-radius: 2px; }
 /* Arbre familial : surtitres des cartes et des générations un cran plus grands et plus foncés. */
 .workspace-panel .ds-eyebrow { color: hsl(var(--muted-foreground)); }
 .workspace-panel .\!text-\[10px\] { font-size: 11px !important; }
