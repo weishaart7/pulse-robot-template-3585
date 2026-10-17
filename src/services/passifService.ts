@@ -91,7 +91,8 @@ export const passifService = {
       .single();
     
     if (error) throw error;
-    return data;
+    // Même actualisation qu'à la lecture : sans elle, une mensualité non saisie s'affiche à 0.
+    return actualiserEmprunt(data as Emprunt);
   },
 
   async updateEmprunt(id: string, emprunt: Partial<Emprunt>): Promise<Emprunt> {
@@ -103,7 +104,7 @@ export const passifService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return actualiserEmprunt(data as Emprunt);
   },
 
   async deleteEmprunt(id: string): Promise<void> {

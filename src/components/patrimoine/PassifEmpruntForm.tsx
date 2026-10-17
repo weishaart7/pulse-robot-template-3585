@@ -35,6 +35,42 @@ type NumberFieldName = 'capital_restant_du' | 'duree_restante' | 'taux_interet' 
   | 'taeg' | 'cout_total_credit' | 'quotite_assuree_utilisateur' | 'quotite_assuree_conjoint' | 'capital_garanti_deces'
   | 'capital_initial' | 'duree_totale_mois' | 'differe_mois' | 'assurance_valeur' | 'frais_dossier' | 'frais_garantie';
 
+// Champ numérique saisi comme texte : accepte la virgule comme le point et peut rester vide. Le texte
+// tapé est conservé tel quel (« 3, » en cours de saisie) ; le formulaire reçoit un nombre, ou null
+// quand le champ est vide (undefined ferait revenir react-hook-form à la valeur par défaut).
+type ChampNombreProps = Omit<React.ComponentProps<typeof EuroInput>, 'value' | 'onChange'> & {
+  value: number | null | undefined;
+  onChange: (v: number | null) => void;
+  integer?: boolean;
+};
+
+const ChampNombre = React.forwardRef<HTMLInputElement, ChampNombreProps>(({ value, onChange, integer, ...props }, ref) => {
+  const [texte, setTexte] = React.useState(value == null ? '' : String(value).replace('.', ','));
+  // Valeur changée de l'extérieur (réinitialisation, valeur calculée) : on resynchronise le texte.
+  React.useEffect(() => {
+    const courant = texte.trim() === '' ? null : Number(texte.replace(',', '.'));
+    if ((value ?? null) !== courant) setTexte(value == null ? '' : String(value).replace('.', ','));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  return (
+    <EuroInput
+      ref={ref}
+      {...props}
+      type="text"
+      inputMode={integer ? 'numeric' : 'decimal'}
+      value={texte}
+      onChange={(e) => {
+        const brut = e.target.value.replace(/\s/g, '');
+        if (!(integer ? /^\d*$/ : /^\d*[.,]?\d*$/).test(brut)) return;
+        setTexte(brut);
+        const n = Number(brut.replace(',', '.'));
+        onChange(brut === '' || brut === ',' || brut === '.' ? null : n);
+      }}
+    />
+  );
+});
+ChampNombre.displayName = 'ChampNombre';
+
 // Valeur calculée affichée à la place d'un champ (contrat complet).
 const CalculatedValue = ({ label, value }: { label: string; value: string }) => (
   <div className="space-y-2">
@@ -112,14 +148,7 @@ export const PassifEmpruntForm = ({
         <FormLabel>{label}</FormLabel>
         {opts.help && <FieldHelp>{opts.help}</FieldHelp>}
         <FormControl>
-          <EuroInput
-            suffix={opts.suffix}
-            step={opts.step}
-            min="0"
-            {...field}
-            value={field.value ?? ''}
-            onChange={e => field.onChange(e.target.value === '' ? undefined : (opts.integer ? parseInt(e.target.value) : parseFloat(e.target.value)))}
-          />
+          <ChampNombre suffix={opts.suffix} integer={opts.integer} {...field} />
         </FormControl>
         <FormMessage />
       </FormItem>

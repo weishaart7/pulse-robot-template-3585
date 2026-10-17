@@ -2,7 +2,7 @@ import { hasConjoint } from '@/lib/family/maritalStatus';
 import { Chip } from '@/components/layout/workspace-panel';
 import React, { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Pencil, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Emprunt } from '@/services/passifService';
 import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
@@ -24,6 +24,8 @@ import { formatCurrency, getCategoryColor, mapDetenteurToDisplay } from '@/lib/p
 import { computePlusValueActif } from '@/lib/patrimoine/plusValueActif';
 import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+
+const libelleCategorie = (category: string) => category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
 
 interface PatrimoineTreeViewProps {
   searchQuery: string;
@@ -157,7 +159,8 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
   };
 
   const calculateWeight = (assetValue: number) => {
-    return totalValue > 0 ? ((assetValue / totalValue) * 100).toFixed(2) : '0.00';
+    const poids = totalValue > 0 ? (assetValue / totalValue) * 100 : 0;
+    return poids.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   };
 
   const formatDetenteur = (detenteur: string | undefined) => {
@@ -238,21 +241,62 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
     return { display: '0 €', className: 'text-muted-foreground' };
   };
 
+  const categoriesTriees = Object.entries(assetsByCategory)
+    .map(([category, list]) => ({ category, list, valeur: list.reduce((sum, asset) => sum + getWeightedValue(asset), 0) }))
+    .sort((a, b) => b.valeur - a.valeur);
+  const plusValueTotale = getCategoryPlusValue(filteredAssets);
+  const nbNonEvalues = filteredAssets.filter((a) => !a.valeur_estimee).length;
+
   return (
     <>
+      {filteredAssets.length > 0 && (
+        // Bandeau de totaux, même construction que la page Passifs.
+        <dl className="grid grid-cols-2 gap-x-10 gap-y-4 border-b border-border pb-6 md:grid-cols-3">
+          <div>
+            <dt className="text-[12px] text-muted-foreground">Total des actifs</dt>
+            <dd className="mt-1 text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums">{formatCurrency(totalValue)}</dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-muted-foreground">Plus-values latentes</dt>
+            <dd className={`mt-1 text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums ${plusValueTotale.className}`}>{plusValueTotale.display}</dd>
+          </div>
+          <div className="col-span-2 md:col-span-1">
+            <dt className="text-[12px] text-muted-foreground">Répartition</dt>
+            <dd className="mt-2">
+              <div className="flex h-[6px] w-full overflow-hidden bg-muted">
+                {categoriesTriees.map(({ category, valeur }) => (
+                  <Tooltip key={category}>
+                    <TooltipTrigger asChild>
+                      <span className="h-full" style={{ width: `${totalValue > 0 ? (valeur / totalValue) * 100 : 0}%`, backgroundColor: getCategoryColor(category) }} />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">{libelleCategorie(category)} · {calculateWeight(valeur)} %</TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[12px] text-muted-foreground">
+                {categoriesTriees.length} catégorie{categoriesTriees.length > 1 ? 's' : ''}
+                {nbNonEvalues > 0 && ` · ${nbNonEvalues} actif${nbNonEvalues > 1 ? 's' : ''} non évalué${nbNonEvalues > 1 ? 's' : ''}`}
+              </p>
+            </dd>
+          </div>
+        </dl>
+      )}
+
+      {/* Mise en page fixe : colonnes chiffrées à largeur fixe, le libellé prend le reste et se tronque. */}
+      <div className="[&_table]:table-fixed">
       <FullTable variant="categorized">
         <FullTable.Colgroup>
-          <FullTable.Col className="w-[35%]" />
-          <FullTable.Col className="w-[15%]" />
-          <FullTable.Col className="w-[15%]" />
-          <FullTable.Col className="w-[15%]" />
-          <FullTable.Col className="w-[12%]" />
-          <FullTable.Col className="w-[8%]" />
+          <FullTable.Col />
+          <FullTable.Col className="hidden w-[130px] lg:table-column" />
+          <FullTable.Col className="w-[64px]" />
+          <FullTable.Col className="w-[104px]" />
+          <FullTable.Col className="w-[104px]" />
+          <FullTable.Col className="w-[40px]" />
         </FullTable.Colgroup>
         <FullTable.Header>
           <FullTable.Row>
             <FullTable.Head className="pl-0">Actif</FullTable.Head>
-            <FullTable.Head>Détenteur</FullTable.Head>
+            <FullTable.Head className="hidden lg:table-cell">Détenteur</FullTable.Head>
             <FullTable.Head className="text-right">Poids</FullTable.Head>
             <FullTable.Head className="text-right">Valeur</FullTable.Head>
             <FullTable.Head className="text-right">+/- value</FullTable.Head>
@@ -260,14 +304,7 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
           </FullTable.Row>
         </FullTable.Header>
         <FullTable.Body interactive>
-          {Object.entries(assetsByCategory)
-            .sort(([, assetsA], [, assetsB]) => {
-              const valueA = assetsA.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
-              const valueB = assetsB.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
-              return valueB - valueA;
-            })
-            .map(([category, categoryAssets]) => {
-              const categoryValue = categoryAssets.reduce((sum, asset) => sum + getWeightedValue(asset), 0);
+          {categoriesTriees.map(({ category, list: categoryAssets, valeur: categoryValue }) => {
               const categoryWeight = calculateWeight(categoryValue);
               const isExpanded = expandedCategories.has(category);
               const categoryPlusValue = getCategoryPlusValue(categoryAssets);
@@ -280,29 +317,23 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                       <button
                         type="button"
                         aria-expanded={isExpanded}
-                        className="flex items-center gap-2 rounded-[2px] text-[13.5px] font-medium tracking-[-0.01em] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground"
+                        className="flex w-full min-w-0 items-center gap-2 rounded-[2px] text-left text-[13.5px] font-medium tracking-[-0.01em] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground"
                         onClick={() => toggleCategory(category)}
                       >
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                        <span aria-hidden className="h-3 w-[3px] rounded-full" style={{ backgroundColor: getCategoryColor(category) }} />
-                        <span className="text-foreground">{category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}</span>
-                        <span className="text-[12px] font-normal tabular-nums text-muted-foreground">{categoryAssets.length}</span>
+                        <ChevronRight className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                        <span aria-hidden className="h-3 w-[3px] shrink-0 rounded-full" style={{ backgroundColor: getCategoryColor(category) }} />
+                        <span className="truncate text-foreground">{libelleCategorie(category)}</span>
+                        <span className="shrink-0 text-[12px] font-normal tabular-nums text-muted-foreground">{categoryAssets.length}</span>
                       </button>
                     </FullTable.Cell>
-                    <FullTable.Cell>
-                      <span className="text-muted-foreground">—</span>
-                    </FullTable.Cell>
-                    <FullTable.Cell className="text-right tabular-nums">
+                    <FullTable.Cell className="hidden lg:table-cell"> </FullTable.Cell>
+                    <FullTable.Cell className="whitespace-nowrap text-right tabular-nums text-muted-foreground">
                       {categoryWeight} %
                     </FullTable.Cell>
-                    <FullTable.Cell className="text-right tabular-nums">
+                    <FullTable.Cell className="whitespace-nowrap text-right tabular-nums">
                       {formatCurrency(categoryValue)}
                     </FullTable.Cell>
-                    <FullTable.Cell className="text-right tabular-nums">
+                    <FullTable.Cell className="whitespace-nowrap text-right tabular-nums">
                       <span className={categoryPlusValue.className}>{categoryPlusValue.display}</span>
                     </FullTable.Cell>
                     <FullTable.Cell> </FullTable.Cell>
@@ -353,25 +384,25 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
                                 )}
                               </div>
                               {asset.etablissement && (
-                                <div className="mt-0.5 text-[12px] text-muted-foreground">
+                                <div className="mt-0.5 truncate text-[12px] text-muted-foreground">
                                   {asset.etablissement}
                                 </div>
                               )}
                             </div>
                           </div>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2">
+                        <FullTable.Cell className="hidden truncate py-2 lg:table-cell">
                           <span className="text-[13px] text-muted-foreground">{formatDetenteur(asset.detenteur)}</span>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2 text-right">
+                        <FullTable.Cell className="whitespace-nowrap py-2 text-right">
                           <span className="text-[13px] tabular-nums text-muted-foreground">{assetWeight} %</span>
                         </FullTable.Cell>
-                        <FullTable.Cell className="py-2 text-right">
+                        <FullTable.Cell className="whitespace-nowrap py-2 text-right">
                           <span className={asset.valeur_estimee ? 'text-[13px] tabular-nums text-foreground' : 'text-[12px] text-muted-foreground'}>{asset.valeur_estimee ? formatCurrency(weightedValue) : 'Non évalué'}</span>
                         </FullTable.Cell>
                         <FullTable.Cell className="py-2">
                           <div className="flex items-center justify-end gap-1.5">
-                            <span className={`text-[13px] tabular-nums ${plusValueInfo.className}`}>{plusValueInfo.display}</span>
+                            <span className={`whitespace-nowrap text-[13px] tabular-nums ${plusValueInfo.className}`}>{plusValueInfo.display}</span>
                             {plusValueInfo.regimeNonDetermine && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -430,19 +461,22 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
             })}
 
           <FullTable.Row isTotal>
-            <FullTable.Cell colSpan={3} className="pl-0 text-[13.5px] font-medium text-foreground">
+            <FullTable.Cell className="pl-0 text-[13.5px] font-medium text-foreground">
               Total
             </FullTable.Cell>
-            <FullTable.Cell className="text-right text-[13.5px] font-medium tabular-nums text-foreground">
+            <FullTable.Cell className="hidden lg:table-cell"> </FullTable.Cell>
+            <FullTable.Cell> </FullTable.Cell>
+            <FullTable.Cell className="whitespace-nowrap text-right text-[13.5px] font-medium tabular-nums text-foreground">
               {formatCurrency(totalValue)}
             </FullTable.Cell>
-            <FullTable.Cell className="text-right text-muted-foreground">
-              —
+            <FullTable.Cell className="whitespace-nowrap text-right text-[13.5px] font-medium tabular-nums">
+              <span className={plusValueTotale.className}>{plusValueTotale.display}</span>
             </FullTable.Cell>
             <FullTable.Cell> </FullTable.Cell>
           </FullTable.Row>
         </FullTable.Body>
       </FullTable>
+      </div>
 
       <AssetDetailsDialog
         asset={selectedAsset}
