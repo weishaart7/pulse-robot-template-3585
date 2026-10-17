@@ -106,7 +106,7 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
   Tailwind `lagon` (`#55b4bd`, `ink` `#16707a`, `soft` `#e3f3f4`) et `citron` (`#d9fd86`, `ink` `#4a5a10`, `soft`
   `#f1fcd0`), toujours par petites touches : pastille lagon de l'icône du fil d'Ariane, trait lagon 3 px devant les
   titres de section (`SectionHeader`), liens « Voir la fiche » en lagon foncé, étiquette « Avec / Sans contrat » lagon,
-  « Oui » des donations au dernier vivant en étiquette citron, point citron sur l'onglet actif (`GooeyNav`), repères
+  « Oui » des donations au dernier vivant en étiquette citron, onglet actif lagon doux (`GooeyNav`), repères
   carrés lagon / citron de la Composition du Foyer. Texte secondaire `#4f4a45`, filets `#d8d2ca`, valeurs de synthèse
   en 500, titres de panneau 16 px, titres de page 28 px, surtitres de l'arbre en 11 px.
 - Gabarit compact des panneaux de travail : barre d'en-tête 64 px collée au bord haut — 16 px au-dessus et au-dessous du bouton de 32 px, espace égal entre
@@ -133,10 +133,10 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
   `text-sm` à 14 px, libellés de champs homogènes (13 px 500 encre), saisie en 14 px ; synthèse en 14 px,
   étiquettes sur fond pierre `#e9e5e0` 13 px.
   Navigation entre onglets : `GooeyNav` (`components/ui/gooey-nav.tsx`, adapté de rare-ui « gooey-nav » sans
-  Next.js) — barre pierre `#e9e5e0` d'où l'onglet actif (fond encre, texte eggshell) se détache de 12 px avec
+  Next.js) — barre pierre claire `#f1eeea` d'où l'onglet actif (fond lagon doux `#e3f3f4`, texte lagon foncé `#16707a`, sans contour) se détache de 12 px avec
   un « col » visqueux qui s'étire puis se rompt (ressort court 0,38 s, léger rebond ; couleurs en fondu 200-300 ms ;
-  point citron qui se déplie en largeur, sans saut de mise en page), angles quasi droits (2 px), Inter 500 14 px, padding 10 px, point citron devant le libellé actif, inactifs en graphite
-  `#44403b` (encre au survol) ;
+  angles quasi droits (2 px), Inter 500, hauteur 36 px (alignée sur les champs), padding 10 px, inactifs en gris
+  `#78716c` (encre au survol, tuile foncée d'un cran `#e9e5e0`) ;
   barre pleine largeur, onglets dimensionnés sur leur libellé et qui rétrécissent ensemble (si un libellé complet ne tient pas, bascule automatique sur les libellés courts `shortLabel` — « Général »,
   « Récompenses », « Donation », « Historique » — infobulle avec le libellé complet ; jamais de défilement) ;
   `role="tablist"`, transition coupée si `prefers-reduced-motion`.

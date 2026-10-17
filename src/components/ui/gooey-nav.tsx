@@ -19,12 +19,14 @@ const NECK_H = 100;
 const FADE_IN = "transition-colors duration-300 ease-out";
 const FADE_OUT = "transition-colors duration-200 ease-out";
 
-// Barre pierre (un cran plus soutenu que le taupe) ; le col reprend la même couleur via currentColor.
-const BAR = "bg-[#e9e5e0]";
-const BAR_TEXT = "text-[#e9e5e0]";
+// Barre pierre claire ; le col reprend la même couleur via currentColor.
+const BAR = "bg-[#f1eeea]";
+const BAR_TEXT = "text-[#f1eeea]";
+// Survol d'un onglet inactif : la tuile fonce d'un cran.
+const BAR_HOVER = "hover:bg-[#e9e5e0]";
 
 const SIZES = {
-  sm: { label: "gap-1.5 px-[10px] py-1.5 text-[12.5px] min-[1440px]:text-[13px] leading-5 [&_svg]:size-3.5", radius: 2, separation: 12 },
+  sm: { label: "gap-1.5 px-[10px] py-2 text-[12.5px] min-[1440px]:text-[13px] leading-5 [&_svg]:size-3.5", radius: 2, separation: 12 },
   md: { label: "gap-2 px-4 py-2.5 text-[13px] leading-5 [&_svg]:size-4", radius: 8, separation: 18 },
 } as const;
 
@@ -38,9 +40,9 @@ export type GooeyNavProps = {
   value: string;
   onValueChange: (id: string) => void;
   size?: GooeyNavSize;
-  /** Fond de l'onglet actif (défaut : encre). */
+  /** Fond de l'onglet actif (défaut : lagon doux). */
   activeColor?: string;
-  /** Texte de l'onglet actif (défaut : eggshell). */
+  /** Texte de l'onglet actif (défaut : encre lagon). */
   activeLabelColor?: string;
   className?: string;
   "aria-label"?: string;
@@ -116,8 +118,8 @@ export function GooeyNav({
   value,
   onValueChange,
   size = "sm",
-  activeColor = "hsl(var(--foreground))",
-  activeLabelColor = "hsl(var(--background))",
+  activeColor = "#e3f3f4",
+  activeLabelColor = "#16707a",
   className,
   ...props
 }: GooeyNavProps) {
@@ -179,7 +181,7 @@ export function GooeyNav({
                 borderTopRightRadius: open(i + 1) ? corner : 0,
                 borderBottomRightRadius: open(i + 1) ? corner : 0,
               }}
-              className={cn(BAR, isActive ? FADE_IN : FADE_OUT)}
+              className={cn(BAR, isActive ? FADE_IN : cn(FADE_OUT, BAR_HOVER))}
               style={{ backgroundColor: isActive ? activeColor : undefined }}
             >
               <button
@@ -191,20 +193,12 @@ export function GooeyNav({
                 className={cn(
                   "flex w-full min-w-0 cursor-pointer items-center justify-center whitespace-nowrap font-medium outline-none [&_svg]:shrink-0",
                   "focus-visible:ring-1 focus-visible:ring-ring rounded-[inherit]",
-                  isActive ? FADE_IN : cn(FADE_OUT, "text-[#44403b] hover:text-foreground"),
+                  isActive ? FADE_IN : cn(FADE_OUT, "text-[#78716c] hover:text-foreground"),
                   SIZES[size].label,
                 )}
                 style={isActive ? { color: activeLabelColor } : undefined}
               >
                 {item.icon}
-                {/* Point citron toujours rendu, déplié en largeur sur l'onglet actif : pas de saut de mise en page. */}
-                <span
-                  aria-hidden
-                  className={cn(
-                    "h-1.5 shrink-0 rounded-full bg-citron ring-1 ring-citron/40 transition-all duration-300 ease-out",
-                    isActive ? "w-1.5 opacity-100" : "-mr-1.5 w-0 opacity-0",
-                  )}
-                />
                 <span data-gooey-label className="truncate">{compact && item.shortLabel ? item.shortLabel : item.label}</span>
               </button>
             </Segment>
