@@ -73,3 +73,28 @@ describe('computePrixRevient', () => {
     expect(moitie.rentabiliteBrute).toBeCloseTo(plein.rentabiliteBrute, 6);
   });
 });
+
+describe('computeFluxBien — parts foncières', () => {
+  const scpi = (overrides: Partial<Asset> = {}) =>
+    asset({ nature: 'Parts de SCPI', valeur_acquisition: 100_000, frais_acquisition: 0, revenus_distribues_12m: 4_800, ...overrides });
+
+  it('retient les revenus distribués sur 12 mois quand le bien n’a aucune ligne de revenus', () => {
+    const f = computeFluxBien(scpi(), [], []);
+    expect(f.loyerAnnuel).toBe(4_800);
+    expect(f.revenusMensuels).toBe(400);
+    expect(computeIndicateurs(f).rentabiliteBrute).toBeCloseTo(4.8, 6);
+  });
+
+  it('ne cumule pas les revenus distribués avec des lignes de revenus', () => {
+    const f = computeFluxBien(scpi(), [revenu(100, 'Mensuelle')], []);
+    expect(f.loyerAnnuel).toBe(1_200);
+  });
+
+  it('pondère les revenus distribués par la quote-part', () => {
+    expect(computeFluxBien(scpi({ pourcentage_utilisateur: 50 }), [], []).loyerAnnuel).toBe(2_400);
+  });
+
+  it('ignore les revenus distribués pour une autre nature', () => {
+    expect(computeFluxBien(asset({ revenus_distribues_12m: 4_800 }), [], []).loyerAnnuel).toBe(0);
+  });
+});

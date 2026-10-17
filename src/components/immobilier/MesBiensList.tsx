@@ -83,7 +83,7 @@ export const MesBiensList = ({ assets, isMeuble, onOpen, onGestion }: MesBiensLi
       const r = revenus.filter(x => x.asset_id === asset.id);
       const c = charges.filter(x => x.asset_id === asset.id);
       const flux = computeFluxBien(asset, r, c);
-      map.set(asset.id, { ...computeIndicateurs(flux), aDesFlux: r.length > 0 || c.length > 0 || flux.creditMensuel > 0 });
+      map.set(asset.id, { ...computeIndicateurs(flux), aDesFlux: r.length > 0 || c.length > 0 || flux.loyerAnnuel > 0 || flux.creditMensuel > 0 });
     }
     return map;
   }, [assets, revenus, charges]);

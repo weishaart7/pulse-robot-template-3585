@@ -10,7 +10,7 @@ import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema
 
 // Date d'achat saisie comme dans Famille (JJ/MM/AAAA ou calendrier, dates passées). Une saisie
 // incomplète reste locale : le formulaire ne reçoit qu'une date complète et valide, ou rien.
-const AcquisitionDateInput = ({ value, onChange }: { value?: Date; onChange: (value?: Date) => void }) => {
+export const AcquisitionDateInput = ({ value, onChange }: { value?: Date; onChange: (value?: Date) => void }) => {
   const [draft, setDraft] = useState<Date | string>(value ?? '');
   useEffect(() => {
     setDraft(current => (current instanceof Date && value && current.getTime() === value.getTime()) ? current : (value ?? (typeof current === 'string' ? current : '')));

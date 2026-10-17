@@ -597,8 +597,11 @@ export const TAUX_PLANCHER_ASSURANCE = 0.6;
 // champ regime_fiscal_parts) — la liste dépend de la nature sélectionnée.
 export const REGIME_FISCAL_PARTS_OPTIONS: Record<string, string[]> = {
   "Parts de SCPI": ["Revenus fonciers", "SCPI fiscale (Pinel / Malraux / Déficit foncier)", "Autre"],
-  "Parts de groupements fonciers": ["Revenus fonciers", "Dividendes", "Autre"],
-  "Parts de GFA, GAF, GFV et GFR": ["Revenus fonciers agricoles", "Revenus fonciers viticoles", "Dividendes", "Autre"],
+  // « Revenus forestiers (forfait cadastral) » : groupements forestiers (GFF, GFI) et GFR, imposés en
+  // bénéfices agricoles sur le revenu cadastral des bois (art. 76 CGI) — libellé repris par
+  // REGIME_FORFAIT_FORESTIER (lib/immobilier/partsFoncieres.ts).
+  "Parts de groupements fonciers": ["Revenus fonciers", "Revenus forestiers (forfait cadastral)", "Dividendes", "Autre"],
+  "Parts de GFA, GAF, GFV et GFR": ["Revenus fonciers agricoles", "Revenus fonciers viticoles", "Revenus forestiers (forfait cadastral)", "Dividendes", "Autre"],
   "Parts de sociétés d'épargne forestière": ["Revenus forestiers", "Dividendes", "Autre"],
 };
 

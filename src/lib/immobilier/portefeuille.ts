@@ -1,5 +1,6 @@
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
 import { computeAmortissement, computePrixAcquisitionTotal, computeQuotePart } from '@/lib/immobilier/rentabilite';
+import { isPartsFoncieres } from '@/lib/immobilier/partsFoncieres';
 
 // Flux d'un bien pour les indicateurs de portefeuille (Vue d'ensemble, Mes biens), extraits tels
 // quels d'ImmobilierOverview pour que les totaux du portefeuille soient la somme exacte des
@@ -59,6 +60,15 @@ export const computeFluxBien = (asset: Asset, revenus: AssetRevenu[], charges: A
     const montant = (revenu.montant || 0) * quotePart;
     loyerAnnuel += montant * annualFactor(revenu.periodicite, 1);
     revenusMensuels += montant / (monthlyDivisor(revenu.periodicite, 12) as number);
+  }
+
+  // Parts foncières/forestières sans ligne de revenus : les revenus distribués sur 12 mois saisis dans
+  // Patrimoine tiennent lieu de revenu annuel (jamais cumulés avec des lignes, pour ne pas compter
+  // deux fois le même revenu).
+  if (revenus.length === 0 && isPartsFoncieres(asset.nature) && (asset.revenus_distribues_12m || 0) > 0) {
+    const montant = (asset.revenus_distribues_12m || 0) * quotePart;
+    loyerAnnuel += montant;
+    revenusMensuels += montant / 12;
   }
 
   let chargesAnnuelles = 0;

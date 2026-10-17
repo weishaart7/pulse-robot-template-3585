@@ -30,7 +30,7 @@ près : « Parts de SCI », seule nature à la fois immobilière et éligible au
 | Onglet | Composant | Rôle |
 |---|---|---|
 | Vue d'ensemble (par défaut) | [ImmobilierOverview.tsx](src/components/immobilier/ImmobilierOverview.tsx) + [FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx) | KPI de portefeuille et répartition de la valeur par bien (nombre de biens, valeur totale, rentabilité brute/nette, cashflow mensuel, plus-value brute ; tous pondérés par la quote-part d'indivision du foyer, `computeQuotePart`, comme les simulateurs — sauf le nombre de biens ; valeur totale et plus-value pondérées en plus par la fraction de démembrement du bien, `getFractionDemembrement`, à l'identique du Résumé Patrimoine), puis, si le foyer détient au moins un bien en location nue (`type_location === 'Location nue'`), la synthèse foncière du foyer (voir ci-dessous) |
-| Mes biens | [MesBiensList.tsx](src/components/immobilier/MesBiensList.tsx) (sections par famille, rentabilité brute et cashflow par bien) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx) ou [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location) ou vue LMNP dédiée si le bien est meublé |
+| Mes biens | [MesBiensList.tsx](src/components/immobilier/MesBiensList.tsx) (sections par famille, rentabilité brute et cashflow par bien) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx), [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) ou [PartsFoncieresDetailView.tsx](src/components/immobilier/parts/PartsFoncieresDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location), vue LMNP dédiée si le bien est meublé, ou fiche des parts foncières/forestières |
 | Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du menu ⋯ → « Revenus et charges » de « Mes biens » |
 
 Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/components/immobilier/ImmobilierGestionDialog.tsx)
@@ -281,6 +281,31 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   [:296-305](src/services/assetService.ts:296-305)). Le risque réel est faible (les RLS sont correctes
   et vérifiées), mais c'est une incohérence de méthode avec le reste du durcissement déjà fait ailleurs.
 
+- **Fiche des parts foncières et forestières** ([PartsFoncieresDetailView.tsx](src/components/immobilier/parts/PartsFoncieresDetailView.tsx),
+  moteur [partsFoncieres.ts](src/lib/immobilier/partsFoncieres.ts), testé) pour les 4 natures de
+  `PARTS_FONCIERES_NATURES` (SCPI, groupements fonciers, GFA/GAF/GFV/GFR, sociétés d'épargne
+  forestière) — « Parts de SCI » reste sur Sociétés. Saisie (via `assetService.updateAsset`) des champs
+  déjà captés par Patrimoine : gestionnaire, date, prix et frais d'acquisition, valeur estimée, revenus
+  distribués sur 12 mois, régime fiscal. Indicateurs : taux de distribution (revenus ÷ prix
+  d'acquisition), rendement actuel (revenus ÷ valeur estimée), plus-value latente pondérée comme la Vue
+  d'ensemble (quote-part × fraction de démembrement, frais non pondérés par la fraction) ; rappel du
+  régime d'exonération successorale pour les natures rurales. **Imposition indicative, aucun impôt
+  calculé** — le revenu imposable n'est pas le revenu distribué mais la quote-part du résultat de la
+  société (attestation fiscale) :
+  - « Revenus fonciers… » : quote-part du résultat foncier ; micro-foncier possible seulement si le
+    foyer loue aussi un bien nu **en direct** (art. 32 CGI, BOI-RFPI-DECLA-10 — `estBienNuEnDirect`),
+    sinon réel obligatoire ; trésorerie en revenus de capitaux mobiliers.
+  - « Revenus forestiers (forfait cadastral) » (option ajoutée aux groupements fonciers et aux GFR,
+    `REGIME_FORFAIT_FORESTIER`) : bénéfices agricoles égaux au revenu cadastral des bois (art. 76 CGI),
+    2042 C PRO, dus même sans coupe ni distribution.
+  - SCPI fiscale : rappel de l'engagement de conservation ; « Dividendes » : PFU ou barème, avec
+    avertissement (un groupement foncier ou forestier est en principe transparent) ; « Revenus
+    forestiers » (sociétés d'épargne forestière) et « Autre » : selon attestation, non modélisés.
+- **Revenus distribués dans les indicateurs de portefeuille** : pour ces 4 natures, sans aucune ligne
+  `asset_revenus`, `computeFluxBien` retient `revenus_distribues_12m` (× quote-part) comme revenu annuel
+  — jamais cumulé avec des lignes de revenus. Ils entrent donc dans la rentabilité et le cashflow de la
+  Vue d'ensemble et de « Mes biens », pas dans « Gestion des biens » (qui liste les lignes saisies).
+
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant
@@ -470,6 +495,13 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Groupement forestier classé en GFA/GFV** : au 2026-10-17, une ligne de parts d'un groupement
+  forestier d'investissement est saisie en nature « Parts de GFA, GAF, GFV et GFR » avec le régime
+  fiscal « Dividendes ». Son régime d'exonération successorale (forestier) est correct ; son régime
+  d'imposition devrait être le forfait cadastral. Aucune nature « groupement forestier » dédiée
+  n'existe : « Parts de groupements fonciers » est la plus proche. Correction de saisie laissée à
+  l'utilisateur.
+
 - **Un nouvel actif « Parts de SCI » peut encore être créé avec les deux transferts actifs** si
   l'utilisateur ne touche à aucune des deux cases « Transfert dans Immobilier »/« Transfert dans
   Sociétés » avant de sauvegarder (`getDefaultAssetValues()` initialise les deux à `true`, et
@@ -544,21 +576,15 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
   - **Location nue pour les 5 autres natures de `RENTAL_PROPERTY_TYPES`** (Autres immeubles de rapport,
     Parking/Garage/Box, etc.) : toujours aucun moteur de calcul dédié, gate du simulateur strictement
     limité à « Immeubles locatifs (loués nus) ».
-  - **Terrains, Bois & forêts, Parts de SCPI/GFA/GFV/GFR, Maison mobile, Autres biens d'usage** : ces
-    natures apparaissent dans « Mes biens » si transférées (elles appartiennent à
-    `ASSET_CATEGORIES['actifs immobiliers']`, et le transfert est désormais automatique — cf. §1),
-    mais `isResidenceType`/`isRentalPropertyType` ne les couvrent pas — la fiche affiche explicitement
-    « La gestion des informations pour cette catégorie sera disponible prochainement »
-    (`ImmobilierPropertyDetailView.tsx:74-79`) : gap assumé et documenté par le message lui-même, pas
-    un bug silencieux. **Nuance récente** : pour 4 de ces natures — Parts de SCPI, Parts de
-    groupements fonciers, Parts de GFA/GAF/GFV/GFR, Parts de sociétés d'épargne forestière (pas
-    « Parts de SCI », qui reste sur le module Sociétés) — `AssetForm.tsx` (Patrimoine, pas Immobilier)
-    capture désormais un établissement dédié (libellé « Société de gestion »/« Gestionnaire » selon la
-    nature), les revenus distribués sur 12 mois et un régime fiscal
-    (`PARTS_FONCIERES_NATURES`/`REGIME_FISCAL_PARTS_OPTIONS`,
-    [assetTypes.ts](src/constants/assetTypes.ts)). Cette information existe donc en base
-    (`assets.revenus_distribues_12m`, `assets.regime_fiscal_parts`) mais reste invisible depuis
-    Immobilier, qui continue d'afficher le message « à venir » pour ces natures.
+  - **Terrains, Bois & forêts, Maison mobile, Autres biens d'usage** : ces natures apparaissent dans
+    « Mes biens » si transférées (elles appartiennent à `ASSET_CATEGORIES['actifs immobiliers']`, et le
+    transfert est automatique — cf. §1), mais leur fiche affiche « La gestion des informations pour
+    cette catégorie sera disponible prochainement » (`ImmobilierPropertyDetailView.tsx`) : gap assumé.
+  - **Parts foncières/forestières : intégration à la synthèse foncière différée** (décision du
+    2026-10-17). Le revenu foncier imposable des parts (quote-part du résultat de la société, attestation
+    fiscale) n'est pas saisi : il faudrait une colonne dédiée pour l'ajouter au seuil de 15 000 € et aux
+    déficits du foyer. Aucun impôt n'est donc calculé pour ces parts ; l'IFI n'est pas chiffré non plus
+    (seuils d'exonération GFA et numérotation de l'art. 976 CGI non vérifiés sur source officielle).
   - **Financement (`financement_*`) : consommé partout où un résultat ou un cashflow est calculé.** Les 5
     champs `financement_actif`/`financement_duree_mois`/`financement_apport`/`financement_taux_credit`/
     `financement_taux_assurance`, saisissables via

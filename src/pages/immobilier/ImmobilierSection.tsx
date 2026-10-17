@@ -11,6 +11,8 @@ import { GestionBiensSection } from '@/components/immobilier/GestionBiensSection
 import { MesBiensList } from '@/components/immobilier/MesBiensList';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { LMNPDetailView } from '@/components/immobilier/lmnp/LMNPDetailView';
+import { PartsFoncieresDetailView } from '@/components/immobilier/parts/PartsFoncieresDetailView';
+import { isPartsFoncieres } from '@/lib/immobilier/partsFoncieres';
 import { Asset } from '@/services/assetService';
 
 const MEUBLE_NATURES = [
@@ -74,6 +76,14 @@ export const ImmobilierSection = () => {
           onBack={() => setLmnpAssetId(null)}
           onUpdate={handleUpdate}
         />
+      </div>
+    );
+  }
+
+  if (selectedAsset && isPartsFoncieres(selectedAsset.nature)) {
+    return (
+      <div>
+        <PartsFoncieresDetailView asset={selectedAsset} onBack={handleDialogClose} onUpdate={handleUpdate} />
       </div>
     );
   }
