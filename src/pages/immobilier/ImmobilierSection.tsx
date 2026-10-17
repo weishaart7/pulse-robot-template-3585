@@ -65,7 +65,14 @@ export const ImmobilierSection = () => {
     { id: 'revenus', label: 'Gestion des biens' }
   ];
 
-  useModuleSubNav(TABS, activeTab, setActiveTab);
+  // Changer d'onglet referme la fiche ouverte : sinon elle reste affichée par-dessus l'onglet choisi.
+  const handleTabChange = useCallback((tab: string) => {
+    setSelectedAssetId(null);
+    setLmnpAssetId(null);
+    setActiveTab(tab);
+  }, []);
+
+  useModuleSubNav(TABS, activeTab, handleTabChange);
 
   // If LMNP detail view is active, show it
   if (lmnpAsset) {
