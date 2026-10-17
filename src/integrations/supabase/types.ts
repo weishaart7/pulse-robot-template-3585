@@ -894,6 +894,15 @@ export type Database = {
       }
       emprunts: {
         Row: {
+          assurance_mode: string | null
+          assurance_valeur: number | null
+          capital_initial: number | null
+          date_premiere_echeance: string | null
+          differe_mois: number | null
+          differe_type: string | null
+          duree_totale_mois: number | null
+          frais_dossier: number | null
+          frais_garantie: number | null
           asset_id: string | null
           assure: boolean | null
           capital_garanti_deces: number | null
@@ -925,6 +934,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assurance_mode?: string | null
+          assurance_valeur?: number | null
+          capital_initial?: number | null
+          date_premiere_echeance?: string | null
+          differe_mois?: number | null
+          differe_type?: string | null
+          duree_totale_mois?: number | null
+          frais_dossier?: number | null
+          frais_garantie?: number | null
           asset_id?: string | null
           assure?: boolean | null
           capital_garanti_deces?: number | null
@@ -956,6 +974,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assurance_mode?: string | null
+          assurance_valeur?: number | null
+          capital_initial?: number | null
+          date_premiere_echeance?: string | null
+          differe_mois?: number | null
+          differe_type?: string | null
+          duree_totale_mois?: number | null
+          frais_dossier?: number | null
+          frais_garantie?: number | null
           asset_id?: string | null
           assure?: boolean | null
           capital_garanti_deces?: number | null

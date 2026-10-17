@@ -1,3 +1,4 @@
+import { actualiserEmprunt, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -131,6 +132,15 @@ export const usePassifEmpruntForm = ({
         type_taux: isEmpruntItem ? ((item.type_taux as 'Fixe' | 'Variable' | 'Mixte') || 'Fixe') : 'Fixe',
         taeg: isEmpruntItem ? item.taeg : undefined,
         cout_total_credit: isEmpruntItem ? item.cout_total_credit : undefined,
+        capital_initial: isEmpruntItem ? item.capital_initial ?? undefined : undefined,
+        date_premiere_echeance: isEmpruntItem ? item.date_premiere_echeance ?? undefined : undefined,
+        duree_totale_mois: isEmpruntItem ? item.duree_totale_mois ?? undefined : undefined,
+        differe_mois: isEmpruntItem ? item.differe_mois ?? undefined : undefined,
+        differe_type: isEmpruntItem && (item.differe_type === 'partiel' || item.differe_type === 'total') ? item.differe_type : undefined,
+        assurance_mode: isEmpruntItem && (item.assurance_mode === 'taux_capital_initial' || item.assurance_mode === 'taux_crd' || item.assurance_mode === 'montant') ? item.assurance_mode : undefined,
+        assurance_valeur: isEmpruntItem ? item.assurance_valeur ?? undefined : undefined,
+        frais_dossier: isEmpruntItem ? item.frais_dossier ?? undefined : undefined,
+        frais_garantie: isEmpruntItem ? item.frais_garantie ?? undefined : undefined,
       });
     }
   }, [item, familyData, form]);
@@ -294,7 +304,26 @@ export const usePassifEmpruntForm = ({
           type_taux: values.type_taux || 'Fixe',
           taeg: values.taeg,
           cout_total_credit: values.cout_total_credit,
+          capital_initial: values.capital_initial ?? null,
+          date_premiere_echeance: values.date_premiere_echeance || null,
+          duree_totale_mois: values.duree_totale_mois ?? null,
+          differe_mois: values.differe_mois || null,
+          differe_type: values.differe_mois ? (values.differe_type || 'partiel') : null,
+          assurance_mode: values.assure && values.assurance_mode ? values.assurance_mode : null,
+          assurance_valeur: values.assure && values.assurance_mode ? values.assurance_valeur ?? null : null,
+          frais_dossier: values.frais_dossier ?? null,
+          frais_garantie: values.frais_garantie ?? null,
         };
+        // Contrat complet : capital restant dû et durée restante enregistrés à leur valeur calculée du
+        // jour (instantané cohérent en base ; ils sont recalculés à chaque lecture).
+        // La fiche relue est actualisée : une mensualité vide y apparaît à sa valeur calculée. Si elle
+        // n'a pas été modifiée, elle reste non saisie (elle suit alors le contrat).
+        const contrat = contratDepuisEmprunt(empruntData);
+        if (contrat && empruntData.mensualite != null
+          && Math.abs(empruntData.mensualite - Math.round(construireTableau(contrat).mensualiteHorsAssurance * 100) / 100) < 0.005) {
+          empruntData.mensualite = null;
+        }
+        Object.assign(empruntData, actualiserEmprunt(empruntData), contrat && empruntData.mensualite == null ? { mensualite: null } : {});
 
         if (item && isEmpruntRecord(item)) {
           await updateEmprunt(item.id, empruntData);

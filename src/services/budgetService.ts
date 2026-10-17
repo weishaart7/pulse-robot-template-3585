@@ -4,6 +4,8 @@ import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, FamilyInfo } from '@/lib/patrimoine/utils';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { partFoyerEmprunt, estimateEmpruntFin } from '@/lib/budget/emprunts';
+import { actualiserEmprunt, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
+import { format } from 'date-fns';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
 
@@ -338,7 +340,7 @@ export const budgetService = {
     const [{ data, error }, familyInfo] = await Promise.all([
       supabase
         .from('emprunts')
-        .select('id, nature, libelle, mensualite, detenteur, qualification_bien, pourcentage_utilisateur, pourcentage_conjoint, societe_id, duree_restante, created_at, updated_at')
+        .select('id, nature, libelle, mensualite, detenteur, qualification_bien, pourcentage_utilisateur, pourcentage_conjoint, societe_id, duree_restante, capital_restant_du, capital_initial, date_premiere_echeance, duree_totale_mois, differe_mois, differe_type, assurance_mode, assurance_valeur, frais_dossier, frais_garantie, mode_amortissement, taux_interet, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('reporter_budget', true),
       getFamilyInfoForDetenteur(),
@@ -346,7 +348,10 @@ export const budgetService = {
 
     if (error) throw error;
 
-    return (data || []).flatMap(item => {
+    return (data || []).flatMap(brut => {
+      // Contrat complet : mensualité (si non saisie) et fin issues du tableau d'amortissement.
+      const item = actualiserEmprunt(brut);
+      const contrat = contratDepuisEmprunt(item);
       const part = partFoyerEmprunt(item);
       if (part === null || !item.mensualite || item.mensualite <= 0) return [];
       return [{
@@ -357,7 +362,7 @@ export const budgetService = {
         debiteur: mapDetenteurToDisplay(item.detenteur, familyInfo),
         montant: Math.round(item.mensualite * part * 100) / 100,
         periodicite: 'mensuel',
-        date_fin: estimateEmpruntFin(item.updated_at, item.duree_restante),
+        date_fin: contrat ? format(construireTableau(contrat).dateFin, 'yyyy-MM-dd') : estimateEmpruntFin(item.updated_at, item.duree_restante),
         created_at: item.created_at,
         updated_at: item.updated_at,
         source: 'emprunt' as const,

@@ -86,9 +86,12 @@ export function construireEcheancier(p: ParametresCredit): Echeancier {
 }
 
 /** Paramètres d'un emprunt Patrimoine ; null sans capital restant dû renseigné. */
-export function parametresDepuisEmprunt(e: Pick<Emprunt, 'capital_restant_du' | 'taux_interet' | 'mensualite' | 'duree_restante' | 'mode_amortissement' | 'updated_at' | 'created_at'>): ParametresCredit | null {
+export function parametresDepuisEmprunt(e: Pick<Emprunt, 'capital_restant_du' | 'taux_interet' | 'mensualite' | 'duree_restante' | 'mode_amortissement' | 'updated_at' | 'created_at'> & Partial<Pick<Emprunt, 'capital_initial' | 'date_premiere_echeance' | 'duree_totale_mois'>>): ParametresCredit | null {
   if (!e.capital_restant_du || e.capital_restant_du <= 0) return null;
-  const ref = new Date(e.updated_at || e.created_at);
+  // Contrat complet : l'emprunt a été actualisé (passifService), son capital restant dû est celui
+  // d'aujourd'hui et non de la dernière modification.
+  const contratComplet = !!e.capital_initial && !!e.date_premiere_echeance && !!e.duree_totale_mois;
+  const ref = contratComplet ? new Date() : new Date(e.updated_at || e.created_at);
   return {
     capitalDepart: e.capital_restant_du,
     dateReference: Number.isNaN(ref.getTime()) ? new Date() : ref,

@@ -9,7 +9,7 @@ import { PassifEmpruntForm } from './PassifEmpruntForm';
 import { MoreHorizontal, Pencil, Trash2, Landmark, Receipt } from 'lucide-react';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 import { useAssets } from '@/hooks/useAssets';
-import { PassifDetailsDialog } from './PassifDetailsDialog';
+import { PassifDetailView } from './PassifDetailView';
 import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
 import { Emprunt, Passif } from '@/services/passifService';
 import {
@@ -26,8 +26,6 @@ export const PatrimoinePassifs = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Emprunt | Passif | null>(null);
   const [selectedPassif, setSelectedPassif] = useState<Emprunt | Passif | null>(null);
-  const [passifType, setPassifType] = useState<'emprunt' | 'passif'>('emprunt');
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; type: 'emprunt' | 'passif'; label: string } | null>(null);
   const { emprunts, loading: empruntsLoading, createEmprunt, updateEmprunt, deleteEmprunt } = useEmprunts();
   const { passifs, loading: passifsLoading, createPassif, updatePassif, deletePassif } = usePassifs();
@@ -54,7 +52,27 @@ export const PatrimoinePassifs = () => {
     );
   }
 
+  // Fiche relue dans les listes rechargées : après une modification, elle affiche la version à jour.
+  const selection = selectedPassif
+    ? [...emprunts, ...passifs].find((p) => p.id === selectedPassif.id) ?? selectedPassif
+    : null;
+  if (selection) {
+    return (
+      <PassifDetailView
+        item={selection}
+        assets={assets}
+        onBack={() => setSelectedPassif(null)}
+        onEdit={() => { setEditingItem(selection); }}
+      />
+    );
+  }
+
   const nbEmprunts = emprunts.length;
+  const empruntsPerso = emprunts.filter((e) => !e.societe_id);
+  const totalEmprunts = Math.round(empruntsPerso.reduce((sum, e) => sum + (e.capital_restant_du || 0), 0));
+  const totalDettes = Math.round(passifs.reduce((sum, p) => sum + (p.montant_du || 0), 0));
+  const totalPassifs = totalEmprunts + totalDettes;
+  const totalMensualites = Math.round(empruntsPerso.reduce((sum, e) => sum + (e.mensualite || 0), 0));
   const nbDettes = passifs.length;
 
   return (
@@ -69,6 +87,26 @@ export const PatrimoinePassifs = () => {
       }
     >
       <div className="space-y-6">
+
+      {nbEmprunts + nbDettes > 0 && (
+        // Totaux hors emprunts de société (déjà reflétés dans la valorisation des parts), comme le Résumé.
+        <dl className="grid grid-cols-2 gap-x-10 gap-y-4 border-b border-border pb-6 md:grid-cols-3">
+          <div>
+            <dt className="text-[12px] text-muted-foreground">Total des passifs</dt>
+            <dd className="mt-1 text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums">{euros(totalPassifs)}</dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-muted-foreground">Mensualités</dt>
+            <dd className="mt-1 text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums">{euros(totalMensualites)}<span className="ml-1 text-[13px] font-normal text-muted-foreground">/ mois</span></dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-muted-foreground">Répartition</dt>
+            <dd className="mt-1 text-[13px] tabular-nums text-foreground">
+              {euros(totalEmprunts)} d'emprunts · {euros(totalDettes)} de dettes
+            </dd>
+          </div>
+        </dl>
+      )}
 
       <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-2">
         <section>
@@ -97,11 +135,7 @@ export const PatrimoinePassifs = () => {
                   ].filter(Boolean).join(' · ')}
                   amount={emprunt.capital_restant_du != null ? euros(emprunt.capital_restant_du) : undefined}
                   amountLabel="Capital restant dû"
-                  onOpen={() => {
-                    setSelectedPassif(emprunt);
-                    setPassifType('emprunt');
-                    setDetailsOpen(true);
-                  }}
+                  onOpen={() => setSelectedPassif(emprunt)}
                   onEdit={() => setEditingItem(emprunt)}
                   onDelete={() => setPendingDelete({ id: emprunt.id, type: 'emprunt', label: emprunt.libelle || emprunt.nature })}
                 />
@@ -129,11 +163,7 @@ export const PatrimoinePassifs = () => {
                   title={passif.nature}
                   amount={euros(passif.montant_du)}
                   amountLabel="Montant dû"
-                  onOpen={() => {
-                    setSelectedPassif(passif);
-                    setPassifType('passif');
-                    setDetailsOpen(true);
-                  }}
+                  onOpen={() => setSelectedPassif(passif)}
                   onEdit={() => setEditingItem(passif)}
                   onDelete={() => setPendingDelete({ id: passif.id, type: 'passif', label: passif.nature })}
                 />
@@ -155,14 +185,6 @@ export const PatrimoinePassifs = () => {
           setPendingDelete(null);
         }}
         onCancel={() => setPendingDelete(null)}
-      />
-
-      <PassifDetailsDialog
-        passif={selectedPassif}
-        type={passifType}
-        assets={assets}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
       />
       </div>
     </PatrimoinePanel>

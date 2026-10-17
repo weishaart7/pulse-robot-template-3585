@@ -1,3 +1,4 @@
+import { actualiserEmprunt } from '@/lib/credit/contrat';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Emprunt {
@@ -34,6 +35,19 @@ export interface Emprunt {
   cout_total_credit?: number;
   // Date à laquelle la dette a été contractée (qualification, cf. qualifierDette).
   date_souscription?: string | null;
+  // Données d'origine du contrat (facultatives). Complètes (capital, première échéance, durée totale),
+  // elles déterminent le tableau d'amortissement et le capital restant dû (src/lib/credit/contrat.ts).
+  capital_initial?: number | null;
+  date_premiere_echeance?: string | null;
+  /** Durée totale en mois, différé compris. */
+  duree_totale_mois?: number | null;
+  differe_mois?: number | null;
+  differe_type?: 'partiel' | 'total' | string | null;
+  assurance_mode?: 'taux_capital_initial' | 'taux_crd' | 'montant' | string | null;
+  /** Taux annuel en % (modes « taux ») ou montant mensuel en € (mode « montant »). */
+  assurance_valeur?: number | null;
+  frais_dossier?: number | null;
+  frais_garantie?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -62,7 +76,8 @@ export const passifService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    // Contrat complet : capital restant dû et durée restante calculés à la date du jour.
+    return (data || []).map((e) => actualiserEmprunt(e as Emprunt));
   },
 
   async createEmprunt(emprunt: Omit<Emprunt, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Emprunt> {

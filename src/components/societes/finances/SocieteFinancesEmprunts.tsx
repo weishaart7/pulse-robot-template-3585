@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { actualiserEmprunt } from '@/lib/credit/contrat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,16 +38,18 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
     try {
       const { data, error } = await supabase
         .from('emprunts')
-        .select('id, libelle, nature, capital_restant_du, mensualite, taux_interet, duree_restante, societe_id')
+        .select('id, libelle, nature, capital_restant_du, mensualite, duree_restante, societe_id, capital_initial, date_premiere_echeance, duree_totale_mois, differe_mois, differe_type, assurance_mode, assurance_valeur, frais_dossier, frais_garantie, mode_amortissement, taux_interet')
         .order('libelle');
 
       if (error) throw error;
       
-      setEmprunts(data || []);
+      // Contrat complet : capital restant dû et durée restante calculés à la date du jour.
+      const actualises = (data || []).map((e) => actualiserEmprunt(e));
+      setEmprunts(actualises);
       
       // Filter linked and available emprunts
-      const linked = (data || []).filter(e => e.societe_id === societeId);
-      const available = (data || []).filter(e => !e.societe_id);
+      const linked = actualises.filter(e => e.societe_id === societeId);
+      const available = actualises.filter(e => !e.societe_id);
       
       setLinkedEmprunts(linked);
       setAvailableEmprunts(available);

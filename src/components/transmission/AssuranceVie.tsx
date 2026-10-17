@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { actualiserEmprunt } from '@/lib/credit/contrat';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -141,7 +142,7 @@ export const AssuranceVie = () => {
           // écran afficherait un patrimoine net divergent de la Synthèse.
           supabase
             .from('emprunts')
-            .select('asset_id, capital_restant_du, qualification_bien, societe_id, capital_garanti_deces, quotite_assuree_utilisateur, quotite_assuree_conjoint')
+            .select('asset_id, capital_restant_du, duree_restante, mensualite, qualification_bien, societe_id, capital_garanti_deces, quotite_assuree_utilisateur, quotite_assuree_conjoint, capital_initial, date_premiere_echeance, duree_totale_mois, differe_mois, differe_type, assurance_mode, assurance_valeur, frais_dossier, frais_garantie, mode_amortissement, taux_interet')
             .eq('user_id', user.id),
         ]);
 
@@ -265,7 +266,7 @@ export const AssuranceVie = () => {
               maritalStatus: maritalRes.data,
               familyLinks: familyLinksRows
             };
-            const passifLines = buildPassifLines(passifsRes.data || [], empruntsRes.data || [], 'user');
+            const passifLines = buildPassifLines(passifsRes.data || [], (empruntsRes.data || []).map((e) => actualiserEmprunt(e)), 'user');
             const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(
               (allAssets || []) as Asset[],
               passifLines,

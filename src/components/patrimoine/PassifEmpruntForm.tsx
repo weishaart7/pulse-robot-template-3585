@@ -11,10 +11,15 @@ import {
 } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { EMPRUNT_NATURES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
-import { Wallet } from 'lucide-react';
+import { format } from 'date-fns';
 import { Emprunt, Passif } from '@/services/passifService';
 import { usePassifEmpruntForm } from '@/hooks/usePassifEmpruntForm';
 import { FieldHelp } from '@/components/ui/field-help';
+import { EuroInput } from '@/components/ui/euro-input';
+import { DateInput } from '@/components/ui/date-input';
+import { SectionHeader } from '@/components/family/SectionHeader';
+import { capitalRestantDuAu, construireTableau, contratDepuisEmprunt, echeancesRestantes } from '@/lib/credit/contrat';
+import { formatCurrency } from '@/lib/patrimoine/utils';
 
 interface PassifEmpruntFormProps {
   item?: Emprunt | Passif;
@@ -25,6 +30,30 @@ interface PassifEmpruntFormProps {
   createPassif: (data: Omit<Passif, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Passif>;
   updatePassif: (id: string, data: Partial<Passif>) => Promise<Passif>;
 }
+
+type NumberFieldName = 'capital_restant_du' | 'duree_restante' | 'taux_interet' | 'mensualite' | 'montant_du'
+  | 'taeg' | 'cout_total_credit' | 'quotite_assuree_utilisateur' | 'quotite_assuree_conjoint' | 'capital_garanti_deces'
+  | 'capital_initial' | 'duree_totale_mois' | 'differe_mois' | 'assurance_valeur' | 'frais_dossier' | 'frais_garantie';
+
+// Valeur calculée affichée à la place d'un champ (contrat complet).
+const CalculatedValue = ({ label, value }: { label: string; value: string }) => (
+  <div className="space-y-2">
+    <p className="text-[13px] font-medium leading-none text-foreground">{label}</p>
+    <div className="flex h-9 items-center justify-between border-l-2 border-lagon bg-lagon-soft/60 px-3 text-sm tabular-nums">
+      {value}
+      <span className="text-[11.5px] text-lagon-ink">calculé</span>
+    </div>
+  </div>
+);
+
+// Section titrée du formulaire, champs sur deux colonnes (comme les panneaux de travail).
+const FormSection = ({ title, intro, children }: { title: string; intro?: string; children: React.ReactNode }) => (
+  <section className="py-6 first:pt-0">
+    <SectionHeader title={title} />
+    {intro && <p className="-mt-2 mb-4 max-w-2xl text-[12.5px] text-muted-foreground">{intro}</p>}
+    <div className="grid grid-cols-1 gap-x-6 gap-y-5 md:grid-cols-2">{children}</div>
+  </section>
+);
 
 export const PassifEmpruntForm = ({
   item,
@@ -50,12 +79,52 @@ export const PassifEmpruntForm = ({
   const watchedAssure = form.watch('assure');
   const watchedQualificationBien = form.watch('qualification_bien');
   const isEmprunt = EMPRUNT_NATURES.includes(watchedNature);
+  const watchedDiffere = form.watch('differe_mois');
+  const watchedAssuranceMode = form.watch('assurance_mode');
+  // Contrat complet : capital restant dû et durée restante calculés (aperçu à la date du jour).
+  const contratValues = form.watch(['capital_initial', 'date_premiere_echeance', 'duree_totale_mois', 'taux_interet', 'mode_amortissement', 'differe_mois', 'differe_type']);
+  const apercu = (() => {
+    const [capital_initial, date_premiere_echeance, duree_totale_mois, taux_interet, mode_amortissement, differe_mois, differe_type] = contratValues;
+    const contrat = contratDepuisEmprunt({ capital_initial, date_premiere_echeance, duree_totale_mois, taux_interet, mode_amortissement, differe_mois, differe_type, assurance_mode: null, assurance_valeur: null, frais_dossier: null, frais_garantie: null });
+    if (!contrat) return null;
+    const tableau = construireTableau(contrat);
+    return {
+      crd: capitalRestantDuAu(tableau, contrat.capitalInitial, new Date()),
+      dureeRestante: echeancesRestantes(tableau, new Date()),
+      mensualite: tableau.mensualiteHorsAssurance,
+    };
+  })();
   // "Le couple" (commun, 50/50 fixé par la loi) n'a de sens que si la dette
   // n'est pas qualifiée "Bien propre"/"Bien personnel" (100/0 binaire) — même
   // garde-fou que AssetForm.tsx.
   const filteredDetenteurOptions = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel'
     ? detenteurOptions.filter(option => option !== 'Le couple')
     : detenteurOptions;
+
+  // Champ numérique avec unité dans le champ (€ par défaut).
+  const numberField = (
+    name: NumberFieldName,
+    label: string,
+    opts: { suffix?: string; step?: string; integer?: boolean; help?: string } = {},
+  ) => (
+    <FormField control={form.control} name={name} render={({ field }) => (
+      <FormItem>
+        <FormLabel>{label}</FormLabel>
+        {opts.help && <FieldHelp>{opts.help}</FieldHelp>}
+        <FormControl>
+          <EuroInput
+            suffix={opts.suffix}
+            step={opts.step}
+            min="0"
+            {...field}
+            value={field.value ?? ''}
+            onChange={e => field.onChange(e.target.value === '' ? undefined : (opts.integer ? parseInt(e.target.value) : parseFloat(e.target.value)))}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )} />
+  );
 
   return (
     <ActifFormFrame
@@ -74,80 +143,171 @@ export const PassifEmpruntForm = ({
       }
     >
         <Form {...form}>
-          <form id="passif-form" onSubmit={form.handleSubmit(handleSubmit)} className="max-w-4xl space-y-5">
-            <FormField control={form.control} name="nature" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nature</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger size="lg">
-                      <SelectValue placeholder="Sélectionnez la nature" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {originalIsEmprunt !== false && (
-                      <SelectGroup>
-                        <SelectLabel>Emprunts</SelectLabel>
-                        {EMPRUNT_NATURES.map((n) => (
-                          <SelectItem key={n} value={n}>{n}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                    {originalIsEmprunt !== false && originalIsEmprunt !== true && <SelectSeparator />}
-                    {originalIsEmprunt !== true && (
-                      <SelectGroup>
-                        <SelectLabel>Dettes / passifs simples</SelectLabel>
-                        {PASSIF_NATURES.map((n) => (
-                          <SelectItem key={n} value={n}>{n}</SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
+          <form id="passif-form" onSubmit={form.handleSubmit(handleSubmit)} className="max-w-4xl divide-y divide-border">
+            <FormSection title="Type de passif">
+              <FormField control={form.control} name="nature" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nature</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger size="lg">
+                        <SelectValue placeholder="Sélectionnez la nature" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {originalIsEmprunt !== false && (
+                        <SelectGroup>
+                          <SelectLabel>Emprunts</SelectLabel>
+                          {EMPRUNT_NATURES.map((n) => (
+                            <SelectItem key={n} value={n}>{n}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {originalIsEmprunt !== false && originalIsEmprunt !== true && <SelectSeparator />}
+                      {originalIsEmprunt !== true && (
+                        <SelectGroup>
+                          <SelectLabel>Dettes / passifs simples</SelectLabel>
+                          {PASSIF_NATURES.map((n) => (
+                            <SelectItem key={n} value={n}>{n}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
-            <FormField control={form.control} name="date_souscription" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date de souscription</FormLabel>
-                <FieldHelp>
-                  Date à laquelle la dette a été contractée. Une dette antérieure au mariage ou au PACS reste personnelle à celui qui l'a contractée. Sans date, elle est présumée contractée pendant l'union.
-                </FieldHelp>
-                <FormControl>
-                  <Input type="date" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {isEmprunt && (
-              <>
+              {isEmprunt && (
                 <FormField control={form.control} name="libelle" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Libellé</FormLabel>
                     <FormControl>
-                      <Input placeholder="Libellé de l'emprunt" {...field} />
+                      <Input placeholder="Ex. Prêt résidence principale — Crédit Agricole" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+            </FormSection>
+
+            {watchedNature && (
+              <FormSection title={isEmprunt ? 'Le prêt' : 'La dette'}>
+                {isEmprunt && (
+                  <FormField control={form.control} name="asset_id" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Actif financé / garanti</FormLabel>
+                      <FieldHelp>
+                        Le détenteur et la quote-part seront préremplis depuis cet actif, puis restent modifiables (emprunt non solidaire).
+                      </FieldHelp>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Aucun actif lié" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {assets.map((a) => (
+                            <SelectItem key={a.id} value={a.id!}>{a.denomination || a.nature}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+
+                <FormField control={form.control} name="date_souscription" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date de souscription</FormLabel>
+                    <FieldHelp>
+                      Date à laquelle la dette a été contractée. Une dette antérieure au mariage ou au PACS reste personnelle à celui qui l'a contractée. Sans date, elle est présumée contractée pendant l'union.
+                    </FieldHelp>
+                    <FormControl>
+                      <DateInput
+                        value={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                        onChange={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="asset_id" render={({ field }) => (
+                {isEmprunt ? (
+                  <>
+                    {apercu
+                      ? <CalculatedValue label="Capital restant dû" value={formatCurrency(apercu.crd)} />
+                      : numberField('capital_restant_du', 'Capital restant dû', { help: "Renseignez l'offre de prêt ci-dessous pour qu'il soit calculé automatiquement." })}
+                    {apercu
+                      ? <CalculatedValue label="Durée restante" value={`${apercu.dureeRestante} mois`} />
+                      : numberField('duree_restante', 'Durée restante', { suffix: 'mois', integer: true })}
+                    {numberField('taux_interet', "Taux d'intérêt", { suffix: '%', step: '0.01', help: 'Taux nominal. Un taux variable est projeté au taux actuel, supposé constant.' })}
+                    {numberField('mensualite', 'Mensualité', {
+                      help: apercu
+                        ? `Hors assurance emprunteur. Laissée vide, la mensualité calculée (${formatCurrency(apercu.mensualite)}) est retenue.`
+                        : 'Hors assurance emprunteur.',
+                    })}
+                  </>
+                ) : (
+                  numberField('montant_du', 'Montant dû')
+                )}
+              </FormSection>
+            )}
+
+            {isEmprunt && (
+              <FormSection title="Offre de prêt" intro="Facultatif : avec le capital emprunté, la première échéance et la durée totale, le tableau d'amortissement est calculé et le capital restant dû se met à jour chaque mois.">
+                {numberField('capital_initial', 'Capital emprunté')}
+                <FormField control={form.control} name="date_premiere_echeance" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Actif financé / garanti</FormLabel>
-                    <FieldHelp>
-                      Le détenteur et la quote-part seront préremplis depuis cet actif, puis restent modifiables (emprunt non solidaire).
-                    </FieldHelp>
-                    <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <FormLabel>Date de première échéance</FormLabel>
+                    <FormControl>
+                      <DateInput
+                        value={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                        onChange={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                {numberField('duree_totale_mois', 'Durée totale', { suffix: 'mois', integer: true, help: 'Nombre total d\'échéances, différé compris (ex. 240 pour 20 ans).' })}
+                {numberField('differe_mois', 'Différé', { suffix: 'mois', integer: true, help: 'Période en début de prêt pendant laquelle le capital n\'est pas remboursé (0 si aucun).' })}
+                {!!watchedDiffere && watchedDiffere > 0 && (
+                  <FormField control={form.control} name="differe_type" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type de différé</FormLabel>
+                      <FieldHelp>Partiel : seuls les intérêts sont payés. Total : rien n'est payé, les intérêts s'ajoutent au capital.</FieldHelp>
+                      <Select onValueChange={field.onChange} value={field.value || 'partiel'}>
+                        <FormControl>
+                          <SelectTrigger size="lg"><SelectValue /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="partiel">Partiel (intérêts payés)</SelectItem>
+                          <SelectItem value="total">Total (intérêts capitalisés)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+                {numberField('frais_dossier', 'Frais de dossier')}
+                {numberField('frais_garantie', 'Frais de garantie', { help: 'Caution, hypothèque ou nantissement.' })}
+              </FormSection>
+            )}
+
+            {isEmprunt && (
+              <FormSection title="Conditions de l'offre">
+                <FormField control={form.control} name="mode_amortissement" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mode d'amortissement</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger size="lg">
-                          <SelectValue placeholder="Aucun actif lié" />
+                          <SelectValue placeholder="Choisir un mode" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {assets.map((a) => (
-                          <SelectItem key={a.id} value={a.id!}>{a.denomination || a.nature}</SelectItem>
+                        {MODE_AMORTISSEMENT_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -155,110 +315,32 @@ export const PassifEmpruntForm = ({
                   </FormItem>
                 )} />
 
-                <FormField control={form.control} name="capital_restant_du" render={({ field }) => (
+                <FormField control={form.control} name="type_taux" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Capital restant dû (€)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="taux_interet" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Taux d'intérêt (%)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="mensualite" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mensualité (€)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <FormField control={form.control} name="duree_restante" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Durée restante (en mois)</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseInt(e.target.value))} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField control={form.control} name="mode_amortissement" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mode d'amortissement</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger size="lg">
-                            <SelectValue placeholder="Choisir un mode" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {MODE_AMORTISSEMENT_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <FormField control={form.control} name="type_taux" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Type de taux</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger size="lg">
-                            <SelectValue placeholder="Choisir un type de taux" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {TYPE_TAUX_OPTIONS.map((option) => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <FormField control={form.control} name="taeg" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>TAEG (%)</FormLabel>
-                      <FieldHelp>Tel que figurant sur l'offre de prêt.</FieldHelp>
+                    <FormLabel>Type de taux</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                        <SelectTrigger size="lg">
+                          <SelectValue placeholder="Choisir un type de taux" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                      <SelectContent>
+                        {TYPE_TAUX_OPTIONS.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
 
-                  <FormField control={form.control} name="cout_total_credit" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Coût total du crédit (€)</FormLabel>
-                      <FieldHelp>Tel que figurant sur l'offre de prêt.</FieldHelp>
-                      <FormControl>
-                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
+                {numberField('taeg', 'TAEG', { suffix: '%', step: '0.01', help: "Tel que figurant sur l'offre de prêt." })}
+                {numberField('cout_total_credit', 'Coût total du crédit', { help: "Tel que figurant sur l'offre de prêt." })}
+              </FormSection>
+            )}
 
+            {isEmprunt && (
+              <FormSection title="Garantie et assurance">
                 <FormField control={form.control} name="type_garantie" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type de garantie</FormLabel>
@@ -278,147 +360,119 @@ export const PassifEmpruntForm = ({
                   </FormItem>
                 )} />
 
-                <FormField
-                  control={form.control}
-                  name="reporter_budget"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 bg-secondary/50">
-                      <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="flex items-center gap-2 cursor-pointer">
-                          <Wallet className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                          Reporter la mensualité dans le budget
-                        </FormLabel>
-                        <p className="text-[12px] text-muted-foreground">
-                          La mensualité de cet emprunt sera ajoutée automatiquement aux charges du budget mensuel.
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="assure"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-[2px] border border-border p-4 bg-secondary/50">
-                      <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="cursor-pointer">Assuré (assurance emprunteur)</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="assure" render={({ field }) => (
+                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 md:pt-7">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="cursor-pointer">Assuré (assurance emprunteur)</FormLabel>
+                  </FormItem>
+                )} />
 
                 {watchedAssure && (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <FormField control={form.control} name="quotite_assuree_utilisateur" render={({ field }) => (
+                  <>
+                    <FormField control={form.control} name="assurance_mode" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Quotité assurée {familyData.userFirstName || 'vous'} (%)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" max="100" step="0.1" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-
-                    {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-                      <FormField control={form.control} name="quotite_assuree_conjoint" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Quotité assurée {familyData.partnerFirstName || 'conjoint(e)'} (%)</FormLabel>
+                        <FormLabel>Coût de l'assurance</FormLabel>
+                        <FieldHelp>Sert au tableau d'amortissement. Taux sur le capital initial : cas le plus courant en contrat groupe bancaire. Taux sur le capital restant dû : fréquent en délégation.</FieldHelp>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <Input type="number" min="0" max="100" step="0.1" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                            <SelectTrigger size="lg"><SelectValue placeholder="Non renseigné" /></SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    )}
-
-                    <FormField control={form.control} name="capital_garanti_deces" render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Capital garanti en cas de décès (€)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                        </FormControl>
+                          <SelectContent>
+                            <SelectItem value="taux_capital_initial">Taux annuel sur le capital initial</SelectItem>
+                            <SelectItem value="taux_crd">Taux annuel sur le capital restant dû</SelectItem>
+                            <SelectItem value="montant">Montant mensuel fixe</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )} />
-                  </div>
+                    {watchedAssuranceMode
+                      ? numberField('assurance_valeur', watchedAssuranceMode === 'montant' ? 'Montant mensuel' : 'Taux annuel', watchedAssuranceMode === 'montant' ? {} : { suffix: '%', step: '0.01' })
+                      : <div className="hidden md:block" />}
+                    {numberField('quotite_assuree_utilisateur', `Quotité assurée ${familyData.userFirstName || 'vous'}`, { suffix: '%', step: '0.1' })}
+                    {watchedDetenteur === 'Le couple' && familyData.hasPartner
+                      ? numberField('quotite_assuree_conjoint', `Quotité assurée ${familyData.partnerFirstName || 'conjoint(e)'}`, { suffix: '%', step: '0.1' })
+                      : <div className="hidden md:block" />}
+                    {numberField('capital_garanti_deces', 'Capital garanti en cas de décès')}
+                  </>
                 )}
-              </>
+              </FormSection>
             )}
 
-            {watchedNature && !isEmprunt && (
-              <FormField control={form.control} name="montant_du" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Montant dû (€)</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            )}
+            {watchedNature && (
+              <FormSection title="Détention">
+                {detenteurOptions.length > 0 && (
+                  <FormField control={form.control} name="detenteur" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Détenteur</FormLabel>
+                      {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
+                        <FieldHelp>
+                          "Le couple" n'est pas proposé : cette dette est qualifiée {watchedQualificationBien.toLowerCase()}, elle appartient donc entièrement à une seule personne.
+                        </FieldHelp>
+                      )}
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Choisir un détenteur" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredDetenteurOptions.map((option) => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
+                        <p className="text-[12px] text-muted-foreground">
+                          Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
+                          <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
 
-            {watchedNature && detenteurOptions.length > 0 && (
-              <FormField control={form.control} name="detenteur" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Détenteur</FormLabel>
-                  {(watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel') && (
-                    <FieldHelp>
-                      "Le couple" n'est pas proposé : cette dette est qualifiée {watchedQualificationBien.toLowerCase()}, elle appartient donc entièrement à une seule personne.
-                    </FieldHelp>
-                  )}
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger size="lg">
-                        <SelectValue placeholder="Choisir un détenteur" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {filteredDetenteurOptions.map((option) => (
-                        <SelectItem key={option} value={option}>{option}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            )}
+                {isEmprunt && (
+                  <FormField control={form.control} name="contributeur_remboursement" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contributeur au remboursement</FormLabel>
+                      <FieldHelp>
+                        Qui règle effectivement les mensualités, indépendamment de la titularité juridique de la dette ci-dessus.
+                      </FieldHelp>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Qui règle les mensualités ?" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="utilisateur">{familyData.userFirstName || 'Vous'}</SelectItem>
+                          <SelectItem value="conjoint">{familyData.partnerFirstName || 'Conjoint(e)'}</SelectItem>
+                          <SelectItem value="les_deux">Les deux</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
 
-            {watchedDetenteur === 'Le couple' && familyData.hasPartner && (
-              <div className="text-sm text-muted-foreground bg-secondary/50 rounded-[2px] px-3 py-2">
-                Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
-                <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
-              </div>
-            )}
-
-            {isEmprunt && (
-              <FormField control={form.control} name="contributeur_remboursement" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contributeur au remboursement</FormLabel>
-                  <FieldHelp>
-                    Qui règle effectivement les mensualités, indépendamment de la titularité juridique de la dette ci-dessus.
-                  </FieldHelp>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger size="lg">
-                        <SelectValue placeholder="Qui règle les mensualités ?" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="utilisateur">{familyData.userFirstName || 'Vous'}</SelectItem>
-                      <SelectItem value="conjoint">{familyData.partnerFirstName || 'Conjoint(e)'}</SelectItem>
-                      <SelectItem value="les_deux">Les deux</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
+                {isEmprunt && (
+                  <FormField control={form.control} name="reporter_budget" render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0 md:col-span-2">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <FormLabel className="flex cursor-pointer items-center leading-none">
+                        Reporter la mensualité dans le budget
+                        <FieldHelp>La mensualité de cet emprunt sera ajoutée automatiquement aux charges du budget mensuel.</FieldHelp>
+                      </FormLabel>
+                    </FormItem>
+                  )} />
+                )}
+              </FormSection>
             )}
           </form>
         </Form>
