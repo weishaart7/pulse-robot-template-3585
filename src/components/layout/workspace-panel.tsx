@@ -45,6 +45,7 @@ const CHIP_TONES = {
   neutral: 'bg-[#e9e5e0] text-foreground',
   lagon: 'bg-lagon-soft text-lagon-ink',
   citron: 'bg-citron-soft text-citron-ink',
+  alerte: 'bg-destructive/10 text-destructive',
 } as const;
 
 export function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: keyof typeof CHIP_TONES }) {
