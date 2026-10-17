@@ -154,7 +154,7 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
 ## 7. Données et couleurs sémantiques
 
 - Palette TS partagée : [src/lib/palette.ts](../src/lib/palette.ts) (`INK`, `VIOLET`, `EMBER`,
-  `POSITIVE`, `NEGATIVE`, `SERIES` de 10 couleurs). À utiliser pour Recharts / SVG, ou quand
+  `POSITIVE`, `NEGATIVE`, `SERIES` de 10 couleurs, `PATRIMOINE` — catégories d'actifs déclinées du lagon / citron, utilisées par `CATEGORY_COLORS` et la courbe d'évolution du net —, `isDarkColor` pour choisir un texte blanc ou encre sur une couleur). À utiliser pour Recharts / SVG, ou quand
   un appelant suffixe une opacité hexadécimale.
 - Violet et braise ne servent qu'aux visuels de données et aux alertes, jamais au chrome.
 - Gains / pertes : `text-positive` / `text-destructive` (et `bg-*/10` pour les fonds).

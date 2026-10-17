@@ -3,8 +3,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { PanelDivider, PanelTitle, SummaryRow, panelLinkClass } from '@/components/layout/workspace-panel';
 import RangeNavigator from '@/components/ui/range-navigator';
-import { PatrimoineChart, computePatrimoineBreakdown } from './PatrimoineChart';
+import { PATRIMOINE } from '@/lib/palette';
+import { computePatrimoineBreakdown } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
+import { RepartitionActifs } from './RepartitionActifs';
 import { useAssets } from '@/hooks/useAssets';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
@@ -74,18 +76,20 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
 
   const evolutionPatrimoine = useMemo(
     () => computeEvolutionPatrimoine(assets, valorisations, {
+      passifs,
+      emprunts,
       assetDemembrements,
       demembrementCtx
     }),
-    [assets, valorisations, assetDemembrements, demembrementCtx]
+    [assets, valorisations, passifs, emprunts, assetDemembrements, demembrementCtx]
   );
 
   const evolutionPoints = useMemo(
-    () => evolutionPatrimoine.map((p) => ({ date: p.date, value: p.total })),
+    () => evolutionPatrimoine.map((p) => ({ date: p.date, value: p.net, marked: p.valorisation })),
     [evolutionPatrimoine]
   );
 
-  // Composition des actifs par catégorie — même calcul que le donut (part du foyer,
+  // Composition des actifs par catégorie — même calcul que la Vue d'ensemble (part du foyer,
   // démembrement pondéré, éléments non qualifiés exclus).
   const composition = useMemo(() => {
     const items = computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, demembrementCtx)
@@ -94,7 +98,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     return items.map(i => ({ ...i, pct: total > 0 ? (i.value / total) * 100 : 0 }));
   }, [assets, passifs, emprunts, assetDemembrements, demembrementCtx]);
 
-  // Variation des actifs sur 12 mois (ou depuis le premier point d'historique s'il est plus récent).
+  // Variation du patrimoine net sur 12 mois (ou depuis le premier point d'historique s'il est plus récent).
   const variation = useMemo(() => {
     if (evolutionPatrimoine.length < 2) return null;
     const last = evolutionPatrimoine[evolutionPatrimoine.length - 1];
@@ -102,10 +106,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     cutoff.setFullYear(cutoff.getFullYear() - 1);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     const base = [...evolutionPatrimoine].reverse().find(p => p.date <= cutoffStr) ?? evolutionPatrimoine[0];
-    if (!base.total || base === last) return null;
+    if (base === last) return null;
     return {
-      delta: last.total - base.total,
-      pct: ((last.total - base.total) / base.total) * 100,
+      delta: last.net - base.net,
+      // Pas de % sur une base nulle ou négative : il n'aurait pas de sens.
+      pct: base.net > 0 ? ((last.net - base.net) / base.net) * 100 : null,
       depuis: base.date <= cutoffStr ? 'sur 12 mois' : `depuis le ${new Date(base.date).toLocaleDateString('fr-FR')}`,
     };
   }, [evolutionPatrimoine]);
@@ -149,7 +154,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       ].filter(Boolean).join(' · ')}
       bare
     >
-      {/* En-tête : patrimoine net et sa variation, puis composition des actifs. */}
+      {/* En-tête : patrimoine net et sa variation, puis évolution des actifs. */}
       <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
         <div className="px-8 py-6">
           <p className="text-[12px] text-muted-foreground">Patrimoine net</p>
@@ -160,10 +165,12 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
               <span className={`inline-flex h-6 items-center gap-1 rounded-[2px] px-2 font-medium tabular-nums ${variation.delta >= 0 ? 'bg-positive/10 text-positive' : 'bg-destructive/10 text-destructive'}`}>
                 {variation.delta >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {variation.delta >= 0 ? '+' : ''}{variation.pct.toFixed(1).replace('.', ',')} %
+                {variation.pct !== null
+                  ? `${variation.delta >= 0 ? '+' : ''}${variation.pct.toFixed(1).replace('.', ',')} %`
+                  : `${variation.delta >= 0 ? '+' : ''}${formatCurrency(variation.delta)}`}
               </span>
               <span className="text-muted-foreground">
-                actifs {variation.depuis} ({variation.delta >= 0 ? '+' : ''}{formatCurrency(variation.delta)})
+                {variation.depuis}{variation.pct !== null && ` (${variation.delta >= 0 ? '+' : ''}${formatCurrency(variation.delta)})`}
               </span>
             </p>
           )}
@@ -178,63 +185,23 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
         </div>
 
         <div className="px-8 py-6">
-          <PanelTitle>Composition des actifs</PanelTitle>
-          {composition.length === 0 ? (
-            <p className="mt-3 text-[13px] text-muted-foreground">Aucun actif valorisé.</p>
-          ) : (
+          {evolutionPatrimoine.length === 0 ? (
             <>
-              <div className="mt-4 flex h-2.5 w-full gap-[2px] overflow-hidden rounded-[1px]">
-                {composition.map(c => (
-                  <div key={c.name} title={`${c.name} · ${c.pct.toFixed(1)} %`} className="h-full" style={{ width: `${c.pct}%`, backgroundColor: c.color }} />
-                ))}
-              </div>
-              <ul className="mt-5 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-                {composition.map(c => (
-                  <li key={c.name} className="flex items-baseline justify-between gap-3">
-                    <span className="flex min-w-0 items-center gap-2 text-[13px] text-foreground">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: c.color }} />
-                      <span className="truncate">{c.name}</span>
-                    </span>
-                    <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
-                      <span className="text-[13px] font-medium text-foreground">{formatCurrency(c.value)}</span>
-                      <span className="w-11 text-right text-[12px] text-muted-foreground">{c.pct.toFixed(1).replace('.', ',')} %</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <PanelTitle>Évolution du patrimoine net</PanelTitle>
+              <p className="mt-4 text-[13px] text-muted-foreground">
+                Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
+              </p>
             </>
+          ) : (
+            <RangeNavigator color={PATRIMOINE.lagonProfond} title={<PanelTitle>Évolution du patrimoine net</PanelTitle>} points={evolutionPoints} formatValue={formatCurrency} />
           )}
         </div>
       </div>
 
-      {/* Graphiques */}
-      <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-        <div className="px-8 py-6">
-          <PanelTitle>Répartition du patrimoine</PanelTitle>
-          <div className="mt-4">
-            <PatrimoineChart
-              assets={assets}
-              passifs={passifs}
-              emprunts={emprunts}
-              selectedCategory={null}
-              assetDemembrements={assetDemembrements}
-              demembrementCtx={demembrementCtx}
-            />
-          </div>
-        </div>
-        <div className="px-8 py-6 lg:col-span-2">
-          <PanelTitle>Évolution des actifs</PanelTitle>
-          <div className="mt-4">
-            {evolutionPatrimoine.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground">
-                Pas encore d'historique de valorisation. Ajoutez des valorisations à vos actifs pour voir l'évolution de votre patrimoine dans le temps.
-              </p>
-            ) : (
-              <RangeNavigator points={evolutionPoints} formatValue={formatCurrency} />
-            )}
-          </div>
-        </div>
-      </div>
+      <RepartitionActifs
+        categories={composition.map(c => ({ name: c.name, value: c.value, pct: c.pct, color: c.color }))}
+        formatCurrency={formatCurrency}
+      />
 
       {/* Par tête, plus-values, objectifs */}
       <div className="grid grid-cols-1 divide-y divide-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">

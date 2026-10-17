@@ -1,20 +1,21 @@
-import { SERIES, ASH } from '@/lib/palette';
+import { PATRIMOINE, ASH } from '@/lib/palette';
 /**
  * Patrimoine utilities - centralized functions for asset/liability management
  */
 
 // Category colors for consistent visualization
-// Couleur par catégorie d'actif, dans la série du simulateur (lib/palette.ts).
+// Couleur par catégorie d'actif, palette PATRIMOINE (lib/palette.ts) : catégories voisines
+// (épargnes, placements) en teintes proches, contrastes suffisants entre catégories adjacentes.
 export const CATEGORY_COLORS: Record<string, string> = {
-  'actifs immobiliers': SERIES[0],
-  'épargne et assurance-vie': SERIES[1],
-  'valeurs mobilières et placements financiers': SERIES[2],
-  'épargne retraite et prévoyance': SERIES[3],
-  'actifs corporels': SERIES[4],
-  'épargne bancaire / liquidités': SERIES[5],
-  'actifs professionnels': SERIES[6],
-  'épargne salariale': SERIES[8],
-  'autres': SERIES[7],
+  'actifs immobiliers': PATRIMOINE.lagonProfond,
+  'épargne et assurance-vie': PATRIMOINE.lagon,
+  'valeurs mobilières et placements financiers': PATRIMOINE.citron,
+  'épargne retraite et prévoyance': PATRIMOINE.olive,
+  'actifs corporels': PATRIMOINE.sable,
+  'épargne bancaire / liquidités': PATRIMOINE.brume,
+  'actifs professionnels': PATRIMOINE.ardoise,
+  'épargne salariale': PATRIMOINE.citronPale,
+  'autres': ASH,
 };
 
 export const getCategoryColor = (category: string): string => {

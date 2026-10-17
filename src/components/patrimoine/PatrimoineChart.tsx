@@ -1,23 +1,11 @@
-import React, { useMemo } from 'react';
-import { SectorsDonut } from '@/components/ui/sectors-donut';
 import { Asset } from '@/services/assetService';
 import { Passif, Emprunt } from '@/services/passifService';
 import { AssetDemembrement } from '@/services/assetDemembrementService';
 import { getAssetCategory } from '@/constants/assetTypes';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
-import { CATEGORY_COLORS, formatCurrency } from '@/lib/patrimoine/utils';
+import { CATEGORY_COLORS } from '@/lib/patrimoine/utils';
 import { getRepartitionFoyer, BienNonQualifieError, SuccessionAssetInput } from '@/lib/patrimoine/succession';
 import { ASH, NEGATIVE } from '@/lib/palette';
-interface PatrimoineChartProps {
-  assets: Asset[];
-  passifs: Passif[];
-  emprunts: Emprunt[];
-  selectedCategory: string | null;
-  // Optionnels : sans eux, un actif démembré reste compté à sa valeur pleine
-  // propriété (comportement historique) — cf. usePatrimoineCalculations.ts.
-  assetDemembrements?: AssetDemembrement[];
-  demembrementCtx?: DemembrementFractionContext;
-}
 // Répartition du patrimoine par catégorie d'actif + ligne « Passifs ».
 // Exportée pour être réutilisée par la Vue d'ensemble (Dashboard).
 export function computePatrimoineBreakdown(
@@ -94,48 +82,3 @@ export function computePatrimoineBreakdown(
   }
   return actifData.sort((a, b) => b.value - a.value);
 }
-
-export const PatrimoineChart = ({
-  assets,
-  passifs,
-  emprunts,
-  selectedCategory,
-  assetDemembrements,
-  demembrementCtx
-}: PatrimoineChartProps) => {
-  // Contexte stabilisé sur ses champs (l'appelant passe un objet littéral
-  // recréé à chaque rendu, qui invaliderait le useMemo ci-dessous).
-  const { familyProfile, maritalStatus, familyLinks } = demembrementCtx ?? {};
-  const chartData = useMemo(
-    () => computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, { familyProfile, maritalStatus, familyLinks }),
-    [assets, passifs, emprunts, assetDemembrements, familyProfile, maritalStatus, familyLinks]
-  );
-  const totalActifs = chartData.filter(item => item.type === 'actif').reduce((sum, item) => sum + item.value, 0);
-  const totalPassifs = chartData.filter(item => item.type === 'passif').reduce((sum, item) => sum + item.value, 0);
-  const patrimoineNet = totalActifs - totalPassifs;
-  const totalBrut = totalActifs + totalPassifs;
-  const formatCompact = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      notation: 'compact',
-      maximumFractionDigits: 1
-    }).format(value);
-  };
-  const sectors = chartData.map(item => ({
-    label: item.name,
-    pct: totalBrut > 0 ? (item.value / totalBrut) * 100 : 0,
-    value: item.value,
-    color: item.color
-  }));
-  return (
-    <div title={formatCurrency(patrimoineNet)}>
-      <SectorsDonut
-        sectors={sectors}
-        formatValue={formatCompact}
-        centerLabel={formatCompact(patrimoineNet)}
-        centerCaption="Patrimoine net"
-      />
-    </div>
-  );
-};

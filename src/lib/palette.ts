@@ -31,3 +31,24 @@ export const SERIES = [
   '#0a2a99',
   '#ffd2bd',
 ] as const;
+
+// Palette des catégories de patrimoine, déclinée du lagon / citron du « panneau de travail »
+// (tailwind.config.ts) : teintes d'eau et de végétal, plus un sable chaud pour respirer.
+// Ordonnée du plus soutenu au plus clair, dans l'ordre d'importance usuel des catégories.
+export const PATRIMOINE = {
+  lagonProfond: '#16707a',
+  lagon: '#55b4bd',
+  citron: '#b5d65e',
+  olive: '#5f7019',
+  sable: '#dcae78',
+  brume: '#a9dbe0',
+  ardoise: '#2d4a4f',
+  citronPale: '#dcef9f',
+} as const;
+
+/** Vrai si un texte blanc se lit mieux qu'un texte encre sur cette couleur. */
+export function isDarkColor(hex: string): boolean {
+  const n = parseInt(hex.replace('#', '').slice(0, 6), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return 0.299 * r + 0.587 * g + 0.114 * b < 150;
+}

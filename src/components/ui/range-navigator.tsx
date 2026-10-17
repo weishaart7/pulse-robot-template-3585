@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 /** Range Navigator — graphique d'évolution avec sélecteur de plage (1M / 3M / 1A / Tout)
@@ -14,6 +14,8 @@ export interface RangeNavigatorPoint {
   /** date ISO (ex: "2024-06-01") */
   date: string;
   value: number;
+  /** Point marqué d'un repère sur la courbe (ex. date de valorisation saisie). */
+  marked?: boolean;
 }
 
 type RangeKey = '1M' | '3M' | '1A' | 'ALL';
@@ -33,10 +35,20 @@ const TEXT_MUTED = 'hsl(var(--muted-foreground))';
 
 const DEFAULT_W = 560;
 const MAIN_H = 260;
-const PAD = { l: 8, r: 64, t: 18, b: 22 };
-const AXIS_TICKS = [0, 0.25, 0.5, 0.75, 1]; // fraction depuis le haut du plot
+const PAD = { l: 0, r: 56, t: 12, b: 26 };
+const DATE_TICKS = 5;
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+// Pas « rond » (1, 2, 2,5 ou 5 × 10^n) donnant environ `count` graduations sur [lo, hi].
+function niceStep(span: number, count: number) {
+  const raw = span / Math.max(1, count);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const norm = raw / mag;
+  return (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+}
+
+const formatAxis = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', notation: 'compact', maximumFractionDigits: 1 }).format(n);
+
 
 const defaultFormatValue = (n: number, precision = 0) =>
   new Intl.NumberFormat('fr-FR', {
@@ -66,9 +78,12 @@ export default function RangeNavigator({
   color = BLUE,
   formatValue = defaultFormatValue,
   formatDate = defaultFormatDate,
+  title,
   className = '',
 }: {
   points: RangeNavigatorPoint[];
+  /** Titre posé à gauche de la ligne d'en-tête, le sélecteur de plage à droite. */
+  title?: ReactNode;
   defaultRange?: RangeKey;
   color?: string;
   formatValue?: (n: number, precision?: number) => string;
@@ -117,18 +132,43 @@ export default function RangeNavigator({
     const tSpan = times[n - 1] - t0 || 1;
     const lo = Math.min(...values);
     const hi = Math.max(...values);
-    const pad = (hi - lo) * 0.1 || Math.max(1, Math.abs(lo) * 0.05);
-    // Pas de marge sous zéro quand toutes les valeurs sont positives : un
-    // axe gradué en négatif n'a pas de sens pour une série de montants ≥ 0.
-    const min = lo >= 0 ? Math.max(0, lo - pad) : lo - pad;
-    const max = hi + pad;
+    // Bornes calées sur des graduations rondes ; pas de graduation sous zéro
+    // quand toutes les valeurs sont positives (montants ≥ 0).
+    const step = niceStep((hi - lo) || Math.max(1, Math.abs(hi) * 0.1), 4);
+    let min = Math.floor(lo / step) * step;
+    if (lo >= 0) min = Math.max(0, min);
+    const max = Math.max(Math.ceil(hi / step) * step, min + step);
+    const ticks: number[] = [];
+    for (let v = min; v <= max + step / 2; v += step) ticks.push(v);
     // espacement proportionnel au temps écoulé entre les dates, pas à leur index
     const x = (i: number) => PAD.l + (n === 1 ? 0.5 : (times[i] - t0) / tSpan) * plotW;
     const y = (v: number) => PAD.t + (1 - (v - min) / (max - min || 1)) * (MAIN_H - PAD.t - PAD.b);
-    const line = values.map((v, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+    // Courbe lissée monotone (Fritsch–Carlson) : passe par chaque point sans
+    // dépasser les valeurs voisines — pas de faux creux ni de faux pic.
+    const xs = values.map((_, i) => x(i));
+    const ys = values.map((v) => y(v));
+    const pentes = xs.slice(1).map((xi, i) => (ys[i + 1] - ys[i]) / (xi - xs[i] || 1));
+    const tangentes = xs.map((_, i) => {
+      if (i === 0) return pentes[0] ?? 0;
+      if (i === n - 1) return pentes[n - 2] ?? 0;
+      const a = pentes[i - 1];
+      const b = pentes[i];
+      return a * b <= 0 ? 0 : (2 * a * b) / (a + b);
+    });
+    const line = xs
+      .map((xi, i) => {
+        if (i === 0) return `M${xi.toFixed(1)},${ys[0].toFixed(1)}`;
+        const dx = (xi - xs[i - 1]) / 3;
+        return `C${(xs[i - 1] + dx).toFixed(1)},${(ys[i - 1] + tangentes[i - 1] * dx).toFixed(1)} ${(xi - dx).toFixed(1)},${(ys[i] - tangentes[i] * dx).toFixed(1)} ${xi.toFixed(1)},${ys[i].toFixed(1)}`;
+      })
+      .join(' ');
     const area = `${line} L${x(n - 1).toFixed(1)},${MAIN_H - PAD.b} L${x(0).toFixed(1)},${MAIN_H - PAD.b} Z`;
-    const axisPrecision = max - min >= 6 ? 0 : 2;
-    return { line, area, min, max, values, n, x, y, axisPrecision };
+    // Dates intermédiaires régulièrement espacées dans le temps.
+    const dateTicks = Array.from({ length: DATE_TICKS }, (_, k) => {
+      const t = t0 + (k / (DATE_TICKS - 1)) * tSpan;
+      return { t, x: PAD.l + (k / (DATE_TICKS - 1)) * plotW };
+    });
+    return { line, area, min, max, ticks, values, n, x, y, dateTicks };
   }, [windowPoints, plotW]);
 
   const onMainMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -155,13 +195,15 @@ export default function RangeNavigator({
       : null;
 
   const rangeSelector = (
-    <div className="flex gap-1">
+    <div role="tablist" aria-label="Période" className="flex gap-1">
       {RANGES.map((r) => (
         <button
           key={r.key}
           type="button"
+          role="tab"
+          aria-selected={range === r.key}
           onClick={() => setRange(r.key)}
-          className="rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors duration-150"
+          className="rounded-[2px] px-2.5 py-1 text-[11px] font-medium transition-colors duration-150"
           style={
             range === r.key
               ? { backgroundColor: TEXT, color: CARD }
@@ -177,7 +219,7 @@ export default function RangeNavigator({
   if (points.length < 2 || !detail) {
     return (
       <div className={`w-full ${className}`}>
-        <div className="mb-2 flex justify-end">{rangeSelector}</div>
+        <div className="mb-2 flex items-center justify-between gap-3">{title}{rangeSelector}</div>
         <div className="flex h-40 items-center justify-center text-sm" style={{ color: TEXT_MUTED }}>
           Pas assez de données pour afficher l'évolution.
         </div>
@@ -188,45 +230,64 @@ export default function RangeNavigator({
   const crossesYear =
     new Date(windowPoints[0].date).getUTCFullYear() !== new Date(windowPoints[windowPoints.length - 1].date).getUTCFullYear();
 
+  const first = detail.values[0];
+  const last = detail.values[detail.n - 1];
+  const delta = last - first;
+  const deltaPct = first > 0 ? (delta / first) * 100 : null;
+  const shown = hv ?? { i: detail.n - 1, v: last };
+
   return (
     <div className={`w-full ${className}`}>
-      <div className="mb-2 flex justify-end">{rangeSelector}</div>
+      <div className="flex items-center justify-between gap-3">
+        {title ?? <span />}
+        {rangeSelector}
+      </div>
+      {/* Valeur au point survolé (dernier point sinon) et variation sur la plage affichée. */}
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-[22px] font-medium leading-none tracking-[-0.03em] tabular-nums" style={{ color: TEXT }}>
+          {formatValue(shown.v)}
+        </span>
+        {hv ? (
+          <span className="text-[12px] tabular-nums" style={{ color: TEXT_MUTED }}>au {fmtAt(hv.i, true)}</span>
+        ) : (
+          <span className="text-[12px] tabular-nums" style={{ color: TEXT_MUTED }}>
+            <span className={delta >= 0 ? 'text-positive' : 'text-destructive'}>
+              {delta >= 0 ? '+' : '−'}{formatValue(Math.abs(delta))}
+              {deltaPct !== null && ` (${delta >= 0 ? '+' : '−'}${Math.abs(deltaPct).toFixed(1).replace('.', ',')} %)`}
+            </span>{' '}
+            depuis le {fmtAt(0, true)}
+          </span>
+        )}
+      </div>
 
       <svg
         ref={mainRef}
         viewBox={`0 0 ${W} ${MAIN_H}`}
-        className="block w-full h-[260px]"
+        className="mt-4 block h-[260px] w-full"
         onPointerMove={onMainMove}
         onPointerLeave={() => setHover(null)}
       >
         <defs>
           <linearGradient id="rn-g" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
+            <stop offset="60%" stopColor={color} stopOpacity="0.04" />
             <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
-        {AXIS_TICKS.map((f) => {
-          const ty = PAD.t + f * (MAIN_H - PAD.t - PAD.b);
+        {detail.ticks.map((v) => {
+          const ty = detail.y(v);
           return (
-            <g key={f}>
-              {f > 0 && f < 1 && (
-                <line
-                  x1={PAD.l}
-                  y1={ty}
-                  x2={W - PAD.r}
-                  y2={ty}
-                  stroke={`color-mix(in srgb, ${TEXT} 4%, transparent)`}
-                  strokeDasharray="2 5"
-                />
-              )}
-              <text
-                x={W - PAD.r + 10}
-                y={ty + (f === 0 ? 4 : f === 1 ? 0 : 3)}
-                fontSize={11}
-                fill={TEXT_MUTED}
-                className="tabular-nums"
-              >
-                {formatValue(detail.max - f * (detail.max - detail.min), detail.axisPrecision)}
+            <g key={v}>
+              <line
+                x1={PAD.l}
+                y1={ty}
+                x2={W - PAD.r}
+                y2={ty}
+                stroke={BORDER}
+                strokeOpacity={v === detail.min ? 1 : 0.55}
+              />
+              <text x={W - PAD.r + 10} y={ty + 3.5} fontSize={11} fill={TEXT_MUTED} className="tabular-nums">
+                {formatAxis(v)}
               </text>
             </g>
           );
@@ -235,18 +296,54 @@ export default function RangeNavigator({
           key={`${range}-${windowPoints.length}`}
           d={detail.area}
           fill="url(#rn-g)"
-          initial={{ opacity: reduced ? 1 : 0.4 }}
+          initial={{ opacity: reduced ? 1 : 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: reduced ? 0 : 0.2 }}
+          transition={{ duration: reduced ? 0 : 0.6, delay: reduced ? 0 : 0.35 }}
         />
-        <path d={detail.line} fill="none" stroke={color} strokeWidth={1.8} vectorEffect="non-scaling-stroke" />
-        {/* libellés de dates aux extrémités */}
-        <text x={PAD.l} y={MAIN_H - 5} fontSize={11} fill={TEXT_MUTED} className="tabular-nums">
-          {fmtAt(0, crossesYear)}
-        </text>
-        <text x={W - PAD.r} y={MAIN_H - 5} fontSize={11} fill={TEXT_MUTED} textAnchor="end" className="tabular-nums">
-          {fmtAt(detail.n - 1, crossesYear)}
-        </text>
+        <motion.path
+          key={`line-${range}-${windowPoints.length}`}
+          d={detail.line}
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          initial={{ pathLength: reduced ? 1 : 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
+        />
+        {/* Point final « aujourd'hui » : halo qui respire doucement. */}
+        {!hv && (
+          <g pointerEvents="none">
+            {!reduced && (
+              <motion.circle
+                cx={detail.x(detail.n - 1)}
+                cy={detail.y(detail.values[detail.n - 1])}
+                r={4}
+                fill={color}
+                initial={{ opacity: 0.35, scale: 1 }}
+                animate={{ opacity: 0, scale: 3 }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut', delay: 0.9 }}
+                style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+              />
+            )}
+            <circle cx={detail.x(detail.n - 1)} cy={detail.y(detail.values[detail.n - 1])} r={4} fill={color} stroke={CARD} strokeWidth={2} />
+          </g>
+        )}
+        {/* dates régulièrement espacées sous l'axe */}
+        {detail.dateTicks.map((d, k) => (
+          <text
+            key={k}
+            x={d.x}
+            y={MAIN_H - 6}
+            fontSize={11}
+            fill={TEXT_MUTED}
+            textAnchor={k === 0 ? 'start' : k === DATE_TICKS - 1 ? 'end' : 'middle'}
+            className="tabular-nums"
+          >
+            {formatDate(new Date(d.t), crossesYear)}
+          </text>
+        ))}
         {hv && (
           <g pointerEvents="none">
             <line
@@ -257,27 +354,7 @@ export default function RangeNavigator({
               stroke={`color-mix(in srgb, ${TEXT} 22%, transparent)`}
               strokeDasharray="3 3"
             />
-            <circle cx={hv.x} cy={hv.y} r={3.5} fill={color} stroke={CARD} strokeWidth={1.5} />
-            {(() => {
-              const label = `${formatValue(hv.v)} · ${fmtAt(hv.i, crossesYear)}`;
-              const bw = label.length * 6 + 16;
-              const bx = clamp(hv.x - bw / 2, PAD.l, W - PAD.r - bw);
-              return (
-                <g>
-                  <rect x={bx} y={PAD.t - 12} width={bw} height={19} rx={4} fill={CARD} stroke={BORDER} />
-                  <text
-                    x={bx + bw / 2}
-                    y={PAD.t + 1}
-                    textAnchor="middle"
-                    fontSize={10.5}
-                    fill={TEXT}
-                    className="tabular-nums"
-                  >
-                    {label}
-                  </text>
-                </g>
-              );
-            })()}
+            <circle cx={hv.x} cy={hv.y} r={4.5} fill={color} stroke={CARD} strokeWidth={2} />
           </g>
         )}
       </svg>
