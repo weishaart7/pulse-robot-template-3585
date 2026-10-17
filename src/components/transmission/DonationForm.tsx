@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCardTitle } from '@/components/layout/panel-section';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { CalendarIcon, X } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -547,9 +548,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+      <DialogContent overlayClassName="bg-black/30 backdrop-blur-[6px]" className="workspace-panel kairos-transmission max-w-6xl max-h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]">
+        <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">
             {editingGroup ? 'Modifier la donation' : 'Donations'}
           </DialogTitle>
         </DialogHeader>
@@ -666,21 +667,22 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           </div>
 
           {/* Clauses insérées */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                Clauses insérée(s)
-                <Button 
-                  type="button" 
-                  variant="outline" 
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <div className="flex items-center justify-between gap-3">
+                <PanelCardTitle>Clauses insérée(s)</PanelCardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={panelButtonClass}
                   onClick={() => setShowClauses(!showClauses)}
                 >
                   {showClauses ? 'Fermer' : 'Ouvrir'}
                 </Button>
-              </CardTitle>
-            </CardHeader>
+              </div>
+            </div>
             {showClauses && (
-              <CardContent className="space-y-3">
+              <div className="space-y-3">
                 {clausesOptions.map((clause) => (
                   <div key={clause} className="space-y-2">
                     <div className="flex items-start space-x-2">
@@ -719,9 +721,9 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                     )}
                   </div>
                 ))}
-              </CardContent>
+              </div>
             )}
-          </Card>
+          </section>
 
           {/* Prise en charge des droits */}
           <div className="flex items-center space-x-2">
@@ -853,11 +855,11 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
           </div>
 
           {/* Sélection des biens donnés */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sélection des biens donnés</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <PanelCardTitle>Sélection des biens donnés</PanelCardTitle>
+            </div>
+            <div>
               {loading ? (
                 <LoadingSpinner size="sm" text="Chargement des biens..." />
               ) : assets.length === 0 ? (
@@ -867,7 +869,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                   {assets.map((asset) => {
                     const isSelected = selectedAssets.find(a => a.id === asset.id);
                     return (
-                      <div key={asset.id} className="border rounded-lg p-4 space-y-3">
+                      <div key={asset.id} className="border rounded-[2px] p-4 space-y-3">
                         <div className="flex items-start space-x-3">
                           <Checkbox
                             id={asset.id}
@@ -923,15 +925,15 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                   })}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Donataires */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Donataires</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <PanelCardTitle>Donataires</PanelCardTitle>
+            </div>
+            <div>
               {donatairesPossibles.length === 0 ? (
                 <p className="text-muted-foreground">
                   Aucun lien familial renseigné. Ajoutez des membres de famille dans la section "Liens familiaux" pour les sélectionner comme donataires.
@@ -944,7 +946,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                   {donatairesPossibles.map((member) => {
                     const isSelected = beneficiaries.find(b => b.id === member.id);
                     return (
-                      <div key={member.id} className="border rounded-lg p-4 space-y-3">
+                      <div key={member.id} className="border rounded-[2px] p-4 space-y-3">
                         <div className="flex items-start space-x-3">
                           <Checkbox
                             id={`beneficiary-${member.id}`}
@@ -997,7 +999,7 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                     />
                   )}
                   {beneficiaries.length > 0 && (
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <div className="mt-4 p-3 bg-muted rounded-[2px]">
                       <div className="text-sm">
                         <span className="font-medium">Total des pourcentages : </span>
                         <span className={`${
@@ -1017,15 +1019,15 @@ export const DonationForm = ({ open, onOpenChange, editingGroup, onSaved }: Dona
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-6">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+          <div className="-mx-6 -mb-6 flex justify-end gap-2 border-t border-border px-6 py-4">
+            <Button type="button" variant="outline" className={panelButtonClass} onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Annuler
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" className={panelPrimaryButtonClass} disabled={isSubmitting}>
               Enregistrer
             </Button>
           </div>

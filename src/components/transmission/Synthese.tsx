@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { PanelTitle, SummaryRow, Chip } from '@/components/layout/workspace-panel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Calculator, FileText, DollarSign, Shield, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { FileText, DollarSign, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldHelp } from '@/components/ui/field-help';
 import { supabase } from '@/integrations/supabase/client';
@@ -361,7 +362,7 @@ export const Synthese = () => {
 
   if (loading) {
     return (
-      <div className="kairos-transmission flex justify-center items-center h-64">
+      <div className="kairos-transmission px-8 py-6">
         <div className="text-lg text-[var(--text-secondary)]">Calcul en cours...</div>
       </div>
     );
@@ -369,8 +370,8 @@ export const Synthese = () => {
 
   if (!transmissionResult) {
     return (
-      <div className="kairos-transmission text-center py-12">
-        <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">
+      <div className="kairos-transmission px-8 py-7">
+        <h3 className="text-lg font-medium mb-2 text-[var(--text-primary)]">
           {computeErrorMessage ? 'Calcul incomplet' : 'Données insuffisantes'}
         </h3>
         <p className="text-[var(--text-secondary)] mb-4">
@@ -522,7 +523,7 @@ export const Synthese = () => {
   };
 
   return (
-    <div className="kairos-transmission space-y-6">
+    <div className="kairos-transmission [&>[role=alert]]:mx-8 [&>[role=alert]]:my-4 [&>[role=alert]]:w-auto [&>[role=alert]]:rounded-[2px]">
       {transmissionIncomplete && (
         <Alert variant="destructive" className="bg-[var(--negative-soft)] border-[var(--negative)]/30 text-[var(--negative)]">
           <AlertTriangle className="h-4 w-4" />
@@ -587,19 +588,124 @@ export const Synthese = () => {
           </AlertDescription>
         </Alert>
       )}
+      {/* Bande d'en-tête sur le modèle de la Vue d'ensemble Immobilier : transmission nette et
+          masses à gauche, répartition par héritier (barre segmentée + lignes) à droite. */}
+      {(() => {
+        const masse = transmissionResult.masseCalcul || 0;
+        const quotite = Math.max(0, masse - transmissionResult.reserve);
+        const pctMasse = (v: number) => (masse > 0 ? `${((v / masse) * 100).toFixed(1).replace('.', ',')} %` : '0 %');
+        const coutsTotaux = (transmissionResult.netBreakdown?.heirs || []).reduce((t: number, h: any) => t + (h.totalCouts || 0), 0);
+        type HeritierAffiche = {
+          name: string; value: number; percentage: string; lien: string;
+          typeQuotePart?: string; droitsDetail?: string; representation?: boolean;
+        };
+        const liste: HeritierAffiche[] = heritiersData;
+        const couleur = (h: HeritierAffiche) => getColorForLien(h.lien, liste.indexOf(h));
+        const heritiersTries = [...liste].sort((x, y) => y.value - x.value);
+        const totalPositif = heritiersTries.reduce((t, h) => t + Math.max(0, h.value), 0);
+        return (
+          <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
+            <div className="px-8 py-6">
+              <p className="text-[12px] text-muted-foreground">Transmission nette</p>
+              <p className="kairos-num mt-2 text-[34px] font-medium leading-none tracking-[-0.03em] text-foreground">
+                {formatCurrency(transmissionResult.transmissionNette)}
+              </p>
+              <p className="mt-3 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
+                <Chip tone="lagon">{heritiersData.length} bénéficiaire{heritiersData.length > 1 ? 's' : ''}</Chip>
+                <span>après droits et frais</span>
+              </p>
+              <dl className="mt-5">
+                <SummaryRow label="Masse calcul"><span className="kairos-num">{formatCurrency(masse)}</span></SummaryRow>
+                <SummaryRow label="Réserve">
+                  <span className="kairos-num">{formatCurrency(transmissionResult.reserve)}</span>
+                  <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">{pctMasse(transmissionResult.reserve)} de la masse</span>
+                </SummaryRow>
+                <SummaryRow label="Quotité disp.">
+                  <span className="kairos-num">{formatCurrency(quotite)}</span>
+                  <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">{pctMasse(quotite)} de la masse</span>
+                </SummaryRow>
+                {transmissionResult.dmtg && (
+                  <SummaryRow label="Coûts">
+                    <span className="kairos-num">{formatCurrency(coutsTotaux)}</span>
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">droits, notaire, partage, funéraires</span>
+                  </SummaryRow>
+                )}
+              </dl>
+            </div>
+
+            <div className="px-8 py-6">
+              <PanelTitle>Répartition par bénéficiaire</PanelTitle>
+              {heritiersTries.length === 0 ? (
+                <p className="mt-3 text-[13px] text-muted-foreground">Aucun héritier défini</p>
+              ) : (
+                <>
+                  {totalPositif > 0 && (
+                    <div className="mt-4 flex h-2.5 w-full gap-[2px] overflow-hidden rounded-[1px]">
+                      {heritiersTries.filter((h) => h.value > 0).map((h) => (
+                        <div
+                          key={h.name}
+                          className="h-full"
+                          title={`${h.name} · ${h.percentage} %`}
+                          style={{ width: `${(h.value / totalPositif) * 100}%`, backgroundColor: couleur(h) }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <ul className="mt-4 divide-y divide-border">
+                    {heritiersTries.map((heritier) => (
+                      <li key={heritier.name} className="flex items-start justify-between gap-4 py-2.5">
+                        <div className="flex min-w-0 items-start gap-2">
+                          <span
+                            className="mt-[5px] inline-block h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10"
+                            style={{ backgroundColor: couleur(heritier) }}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-[13px] font-medium text-foreground">
+                              {heritier.name}
+                              {heritier.representation && <span className="ml-1 text-[12px] font-normal text-muted-foreground">(par représentation)</span>}
+                            </div>
+                            <p className="text-[12px] text-muted-foreground">
+                              {heritier.lien}
+                              {heritier.droitsDetail ? (
+                                <span className="ml-1">({heritier.droitsDetail})</span>
+                              ) : heritier.typeQuotePart && heritier.typeQuotePart !== 'pleine_propriete' && (
+                                <span className="ml-1">({TYPE_QUOTE_PART_LABELS[heritier.typeQuotePart] || heritier.typeQuotePart})</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-baseline gap-2">
+                          {/* Net négatif = soulte de rapport à verser aux cohéritiers (art. 858). */}
+                          <span className="kairos-num text-[13px] font-medium text-foreground">
+                            {formatCurrency(heritier.value < 0 ? -heritier.value : heritier.value)}
+                          </span>
+                          <span className="kairos-num w-14 text-right text-[12px] text-muted-foreground">
+                            {heritier.value < 0 ? 'soulte' : `${heritier.percentage} %`}
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Affichage des explications de succession légale */}
       {transmissionResult.explicationsTexte && transmissionResult.explicationsTexte.length > 0 && (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>
               Succession légale
               <FieldHelp>
                 À défaut de dispositions testamentaires. L'option du conjoint survivant se modifie dans
                 l'onglet Optimisation.
               </FieldHelp>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+            </PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             {/* Seule la première phrase de chaque explication reste affichée,
                 le texte complet (fondement, exclusions, nuances) derrière un "?". */}
             <div className="space-y-2">
@@ -614,121 +720,19 @@ export const Synthese = () => {
               })}
             </div>
 
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Graphique de transmission nette */}
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Transmission nette</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <div className="relative h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={heritiersData.filter(h => h.value > 0)}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={95}
-                    outerRadius={110}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="var(--surface)"
-                    strokeWidth={2}
-                  >
-                    {heritiersData.filter(h => h.value > 0).map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={getColorForLien(entry.lien, index)}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                </PieChart>
-              </ResponsiveContainer>
-
-              {/* Valeur totale au centre */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-                    {formatCurrency(transmissionResult.transmissionNette)}
-                  </div>
-                  <div className="text-sm text-[var(--text-secondary)]">
-                    Transmission nette
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Détails par héritier */}
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Détail par héritier</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
-            <div className="space-y-4">
-              {heritiersData.length === 0 ? (
-                <p className="text-[var(--text-secondary)] text-center py-8">
-                  Aucun héritier défini
-                </p>
-              ) : (
-                heritiersData
-                  .sort((a, b) => b.value - a.value)
-                  .map((heritier) => (
-                    <div key={heritier.name} className="flex items-center justify-between p-3 bg-[var(--surface-sunken)] border border-[var(--kt-border)] rounded-[var(--radius-lg)]">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: getColorForLien(heritier.lien, heritiersData.indexOf(heritier)) }}
-                        />
-                        <div>
-                          <div className="font-medium text-[var(--text-primary)]">
-                            {heritier.name}
-                            {heritier.representation && <span className="text-xs text-[var(--text-secondary)] ml-1">(par représentation)</span>}
-                          </div>
-                          <p className="text-sm text-[var(--text-secondary)] mt-1">
-                            {heritier.percentage}% de la transmission • {heritier.lien}
-                            {heritier.droitsDetail ? (
-                              <span className="ml-1">({heritier.droitsDetail})</span>
-                            ) : heritier.typeQuotePart && heritier.typeQuotePart !== 'pleine_propriete' && (
-                              <span className="ml-1">({TYPE_QUOTE_PART_LABELS[heritier.typeQuotePart] || heritier.typeQuotePart})</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {/* Net négatif = soulte de rapport à verser aux cohéritiers (art. 858). */}
-                        <div className="kairos-num font-semibold text-[var(--text-primary)]">
-                          {formatCurrency(heritier.value < 0 ? -heritier.value : heritier.value)}
-                        </div>
-                        {heritier.value < 0 && (
-                          <div className="text-xs text-[var(--text-secondary)]">Soulte à verser</div>
-                        )}
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Coûts de succession par héritier */}
       {transmissionResult.dmtg && (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
-              <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
-              Coûts de la succession
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Coûts de la succession
               <FieldHelp>Droits de mutation (DMTG), frais de notaire, droit de partage et quote-part des frais funéraires (forfait de 1 500 €), par héritier.</FieldHelp>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+            </PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             {(() => {
               const netByPersonId = new Map(
                 (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
@@ -770,7 +774,7 @@ export const Synthese = () => {
                           <TableHead className="text-right text-[var(--text-secondary)]">Frais de notaire</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Droit de partage</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Frais funéraires</TableHead>
-                          <TableHead className="text-right font-semibold text-[var(--text-secondary)]">Total</TableHead>
+                          <TableHead className="text-right font-medium text-[var(--text-secondary)]">Total</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -778,7 +782,7 @@ export const Synthese = () => {
                           <TableRow key={row.name} className="border-[var(--kt-border)]">
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
+                                <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: row.color }} />
                                 <div>
                                   <span className="font-medium text-[var(--text-primary)]">{row.name}</span>
                                   <span className="text-xs text-[var(--text-secondary)] ml-1.5">({row.lien})</span>
@@ -789,16 +793,16 @@ export const Synthese = () => {
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisNotaire)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitPartage)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisFuneraires)}</TableCell>
-                            <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(row.totalCouts)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(row.totalCouts)}</TableCell>
                           </TableRow>
                         ))}
                         <TableRow className="border-t-2 border-[var(--kt-border-strong)]">
-                          <TableCell className="font-semibold text-[var(--text-primary)]">Total</TableCell>
-                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalDMTG)}</TableCell>
-                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalFrais)}</TableCell>
-                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalPartage)}</TableCell>
-                          <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{formatCurrency(totalFuneraires)}</TableCell>
-                          <TableCell className="kairos-num text-right tabular-nums font-bold text-[var(--text-primary)]">{formatCurrency(grandTotal)}</TableCell>
+                          <TableCell className="font-medium text-[var(--text-primary)]">Total</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalDMTG)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalFrais)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalPartage)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalFuneraires)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(grandTotal)}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -812,10 +816,10 @@ export const Synthese = () => {
                         <XAxis type="number" tickFormatter={(v) => `${Math.round(v / 1000)}k€`} stroke="var(--ink-500)" fontSize={12} />
                         <YAxis type="category" dataKey="name" width={100} stroke="var(--ink-500)" fontSize={12} />
                         <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                        <Bar dataKey="droitsDMTG" name="DMTG" fill="var(--negative)" stackId="costs" radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="var(--warning)" stackId="costs" />
-                        <Bar dataKey="droitPartage" name="Droit de partage" fill="var(--data-purple)" stackId="costs" />
-                        <Bar dataKey="fraisFuneraires" name="Frais funéraires" fill="var(--ink-400)" stackId="costs" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="droitsDMTG" name="DMTG" fill="var(--data-green)" stackId="costs" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="var(--data-blue)" stackId="costs" />
+                        <Bar dataKey="droitPartage" name="Droit de partage" fill="var(--data-teal)" stackId="costs" />
+                        <Bar dataKey="fraisFuneraires" name="Frais funéraires" fill="var(--ink-400)" stackId="costs" radius={[0, 1, 1, 0]} />
                         <Legend />
                       </BarChart>
                     </ResponsiveContainer>
@@ -823,21 +827,19 @@ export const Synthese = () => {
                 </div>
               );
             })()}
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
 
       {/* Abattements restants par héritier */}
       {transmissionResult.dmtg && (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
-              <Shield className="h-5 w-5 text-[var(--ink-400)]" />
-              Abattements restants
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Abattements restants
               <FieldHelp>Abattements fiscaux résiduels de chaque héritier, selon son lien avec le défunt.</FieldHelp>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+            </PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             {(() => {
               const dmtg = transmissionResult.dmtg;
               const family = transmissionResult.family;
@@ -882,15 +884,15 @@ export const Synthese = () => {
               });
 
               return (
-                <div className="space-y-4">
+                <div className="divide-y divide-border border-y border-border">
                   {abattementRows.map((row) => (
-                    <div key={row.name} className="p-4 rounded-[var(--radius-lg)] border border-[var(--kt-border)] space-y-3">
+                    <div key={row.name} className="space-y-2 py-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: row.color }} />
+                          <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: row.color }} />
                           <span className="font-medium text-[var(--text-primary)]">{row.name}</span>
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--ink-050)] text-[var(--ink-700)]">
+                        <span className="inline-flex h-6 items-center rounded-[2px] bg-[#e9e5e0] px-2 text-[12px] font-medium text-foreground">
                           {row.qualite}
                         </span>
                       </div>
@@ -912,15 +914,15 @@ export const Synthese = () => {
                             </div>
                             <div>
                               <div className="text-[var(--text-secondary)]">Restant</div>
-                              <div className="kairos-num font-semibold text-[var(--kt-positive)]">{row.residuel}</div>
+                              <div className="kairos-num font-medium text-[var(--kt-positive)]">{row.residuel}</div>
                             </div>
                           </div>
-                          <div className="w-full bg-[var(--ink-050)] rounded-full h-2">
+                          <div className="h-1.5 w-full rounded-[1px] bg-[#e9e5e0]">
                             <div
-                              className="h-2 rounded-full transition-all"
+                              className="h-1.5 rounded-[1px] transition-all"
                               style={{
                                 width: `${Math.min(100, row.pctUtilise)}%`,
-                                backgroundColor: row.pctUtilise > 75 ? 'var(--negative)' : row.pctUtilise > 50 ? 'var(--warning)' : 'var(--kt-positive)'
+                                backgroundColor: row.pctUtilise > 75 ? 'var(--negative)' : row.pctUtilise > 50 ? 'var(--warning)' : 'var(--data-green)'
                               }}
                             />
                           </div>
@@ -934,50 +936,9 @@ export const Synthese = () => {
                 </div>
               );
             })()}
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
-      <Card className="mt-6 bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Répartition patrimoniale</CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Réserve héréditaire et quotité disponible
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
-              <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
-                {formatCurrency(transmissionResult.reserve)}
-              </div>
-              <div className="text-sm font-medium text-[var(--text-secondary)]">
-                Réserve héréditaire
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-1">
-                {transmissionResult.masseCalcul > 0
-                  ? `${((transmissionResult.reserve / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
-                  : '0%'
-                } de la masse de calcul
-              </div>
-            </div>
-
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
-              <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
-                {formatCurrency(Math.max(0, transmissionResult.masseCalcul - transmissionResult.reserve))}
-              </div>
-              <div className="text-sm font-medium text-[var(--text-secondary)]">
-                Quotité disponible
-              </div>
-              <div className="text-xs text-[var(--text-secondary)] mt-1">
-                {transmissionResult.masseCalcul > 0
-                  ? `${(((transmissionResult.masseCalcul - transmissionResult.reserve) / transmissionResult.masseCalcul) * 100).toFixed(1)}%`
-                  : '0%'
-                } de la masse de calcul
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

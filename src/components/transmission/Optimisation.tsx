@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { Chip } from '@/components/layout/workspace-panel';
 import { FieldHelp } from '@/components/ui/field-help';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { AlertCircle, Heart, Info, Check, Handshake, Home } from 'lucide-react';
+import { AlertCircle, Info, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { supabase } from '@/integrations/supabase/client';
@@ -259,26 +259,18 @@ export const Optimisation = () => {
   const renderNoActionMessage = () => {
     if (scenario === 'no_marriage') {
       return (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3 text-[var(--text-secondary)]">
+        <div className="flex items-start gap-3 text-[var(--text-secondary)]">
               <Info className="h-5 w-5 mt-0.5 shrink-0" />
               <p>L'optimisation de l'option du conjoint n'est disponible que pour les personnes mariées. Votre situation actuelle ne nécessite pas ce choix.</p>
             </div>
-          </CardContent>
-        </Card>
       );
     }
     if (scenario === 'no_children') {
       return (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3 text-[var(--text-secondary)]">
+        <div className="flex items-start gap-3 text-[var(--text-secondary)]">
               <Info className="h-5 w-5 mt-0.5 shrink-0" />
               <p>En l'absence d'enfants, le choix de l'option du conjoint ne s'applique pas. Le conjoint hérite selon les règles légales en fonction des ascendants vivants.</p>
             </div>
-          </CardContent>
-        </Card>
       );
     }
     return null;
@@ -297,29 +289,24 @@ export const Optimisation = () => {
   const scenarioLabels = getScenarioLabel();
 
   return (
-    <div className="kairos-transmission space-y-6">
+    <div className="kairos-transmission [&>[role=alert]]:mx-8 [&>[role=alert]]:my-4 [&>[role=alert]]:w-auto [&>[role=alert]]:rounded-[2px]">
       {/* Option du conjoint survivant */}
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
+      <PanelCard>
+        <PanelCardHeader>
           <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-[var(--ink-400)]" />
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Option du conjoint survivant</CardTitle>
+            <PanelCardTitle>Option du conjoint survivant</PanelCardTitle>
             {saving && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
             {selectedOption && !saving && <Check className="h-4 w-4 text-[var(--kt-positive)]" />}
           </div>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
+        </PanelCardHeader>
+        <PanelCardContent>
           {/* Situation badges */}
           {scenarioLabels && (
             <div className="flex flex-wrap gap-2 mb-4">
               {scenarioLabels.map((label, i) => (
-                <Badge key={i} className="text-xs bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">
-                  {label}
-                </Badge>
+                <Chip key={i}>{label}</Chip>
               ))}
-              <Badge variant="outline" className="text-xs bg-transparent text-[var(--text-secondary)] border-[var(--kt-border-strong)] rounded-[var(--radius-md)]">
-                {enfants.length} enfant{enfants.length > 1 ? 's' : ''}
-              </Badge>
+              <Chip tone="lagon">{enfants.length} enfant{enfants.length > 1 ? 's' : ''}</Chip>
             </div>
           )}
 
@@ -351,18 +338,17 @@ export const Optimisation = () => {
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
       <ComparaisonOptionsConjoint options={options} selectedOption={selectedOption} />
 
       {/* Droit d'usage et d'habitation (DUH, C. civ. art. 764-766) */}
       {isMarried && (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
+        <PanelCard>
+          <PanelCardHeader>
             <div className="flex items-center gap-2">
-              <Home className="h-5 w-5 text-[var(--ink-400)]" />
-              <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+              <PanelCardTitle>
                 Droit d'usage et d'habitation
                 <FieldHelp>
                   Option du conjoint survivant sur le logement (C. civ. art. 764-766), distincte du droit de
@@ -370,37 +356,36 @@ export const Optimisation = () => {
                   retenue (60 % de la valeur d'usufruit du logement, barème art. 669 CGI) s'impute sur la part
                   successorale du conjoint plutôt que de s'y ajouter.
                 </FieldHelp>
-              </CardTitle>
+              </PanelCardTitle>
               {savingDuh && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
             </div>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+          </PanelCardHeader>
+          <PanelCardContent>
             <Switch
               checked={duhOpte}
               onCheckedChange={handleDuhOpteChange}
               label="Droit d'usage et d'habitation opté"
             />
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
 
       {/* Hypothèse de partage (droit de partage, art. 746 CGI) */}
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
+      <PanelCard>
+        <PanelCardHeader>
           <div className="flex items-center gap-2">
-            <Handshake className="h-5 w-5 text-[var(--ink-400)]" />
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+            <PanelCardTitle>
               Partage envisagé
               <FieldHelp>
                 Acte de partage effectivement envisagé entre les héritiers : déclenche le droit de partage (2,5 %
                 de l'actif net partagé, art. 746 CGI). Sans effet en cas de démembrement (usufruit/nue-propriété) ;
                 les héritiers peuvent aussi rester en indivision indéfiniment sans jamais le payer.
               </FieldHelp>
-            </CardTitle>
+            </PanelCardTitle>
             {savingPartage && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--ink-900)]" />}
           </div>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
+        </PanelCardHeader>
+        <PanelCardContent>
           <Switch
             checked={partageEnvisage}
             onCheckedChange={handlePartageEnvisageChange}
@@ -427,8 +412,8 @@ export const Optimisation = () => {
               className="mt-1 max-w-xs"
             />
           </div>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };

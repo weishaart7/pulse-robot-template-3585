@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FieldHelp } from '@/components/ui/field-help';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
@@ -240,7 +240,7 @@ export const Succession2ndDeces = () => {
 
   if (loading) {
     return (
-      <div className="kairos-transmission flex justify-center items-center h-64">
+      <div className="kairos-transmission px-8 py-6">
         <div className="text-lg text-[var(--text-secondary)]">Calcul en cours...</div>
       </div>
     );
@@ -251,9 +251,10 @@ export const Succession2ndDeces = () => {
   const decedentSecondNom = ordre === 'normal' ? nomConjoint : nomUtilisateur;
 
   return (
-    <div className="kairos-transmission space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm font-medium text-[var(--text-secondary)]">
+    <div className="kairos-transmission [&>[role=alert]]:mx-8 [&>[role=alert]]:my-4 [&>[role=alert]]:w-auto [&>[role=alert]]:rounded-[2px]">
+      {/* Bascule de l'ordre des décès : bandeau fileté, bascule segmentée comme Mensuel / Annuel. */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-8 py-3">
+        <span className="text-[12.5px] font-medium text-muted-foreground">
           Ordre des décès
           <FieldHelp>
             L'option retenue par le survivant (1/4 en pleine propriété, usufruit…) est celle choisie dans
@@ -262,15 +263,15 @@ export const Succession2ndDeces = () => {
           </FieldHelp>
           {' '}:
         </span>
-        <div className="inline-flex rounded-[var(--radius-lg)] border border-[var(--kt-border)] overflow-hidden">
+        <div className="inline-flex h-8 items-center rounded-[2px] border border-border p-0.5">
           <button
             type="button"
             onClick={() => setOrdre('normal')}
             className={
-              'px-4 py-2 text-sm font-medium transition-colors ' +
+              'h-full rounded-[1px] px-3 text-[12.5px] font-medium transition-colors ' +
               (ordre === 'normal'
-                ? 'bg-[var(--ink-900)] text-white'
-                : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]')
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:text-foreground')
             }
           >
             {nomUtilisateur} d'abord
@@ -279,10 +280,10 @@ export const Succession2ndDeces = () => {
             type="button"
             onClick={() => setOrdre('inverse')}
             className={
-              'px-4 py-2 text-sm font-medium transition-colors border-l border-[var(--kt-border)] ' +
+              'h-full rounded-[1px] px-3 text-[12.5px] font-medium transition-colors ' +
               (ordre === 'inverse'
-                ? 'bg-[var(--ink-900)] text-white'
-                : 'bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]')
+                ? 'bg-foreground text-background'
+                : 'text-muted-foreground hover:text-foreground')
             }
           >
             {nomConjoint} d'abord
@@ -292,8 +293,8 @@ export const Succession2ndDeces = () => {
 
 
       {!current.result ? (
-        <div className="kairos-transmission text-center py-12">
-          <h3 className="text-lg font-semibold mb-2 text-[var(--text-primary)]">Calcul indisponible pour cet ordre</h3>
+        <div className="kairos-transmission px-8 py-7">
+          <h3 className="text-lg font-medium mb-2 text-[var(--text-primary)]">Calcul indisponible pour cet ordre</h3>
           <p className="text-[var(--text-secondary)] mb-4 max-w-xl mx-auto">
             {current.errorMessage || 'Données insuffisantes pour simuler ce second décès.'}
           </p>
@@ -372,9 +373,9 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
 
   return (
     <div className="space-y-6">
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>
             Succession de {decedentSecondNom} (2nd décès)
             <FieldHelp>
               Patrimoine propre de {decedentSecondNom} à l'issue du 1er décès de {decedentFirstNom} : ses propres
@@ -382,43 +383,43 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
               nets de prélèvement), supposé conservé tel quel jusqu'au 2nd décès et taxé comme un actif financier.
               Sans l'usufruit qu'il/elle détenait, réuni séparément ci-dessous.
             </FieldHelp>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
-              <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
+          </PanelCardTitle>
+        </PanelCardHeader>
+        <PanelCardContent>
+          <div className="grid grid-cols-2 divide-x divide-border border-y border-border">
+            <div className="py-3 pr-4">
+              <p className="text-[12px] text-muted-foreground">Masse fiscale</p>
+              <p className="kairos-num mt-1 text-[24px] font-medium leading-none tracking-[-0.02em] text-foreground">
                 {formatCurrency(masseFiscale)}
-              </div>
-              <div className="text-sm font-medium text-[var(--text-secondary)]">Masse fiscale</div>
+              </p>
             </div>
-            <div className="text-center p-6 rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)]">
-              <div className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)] mb-2">
+            <div className="py-3 pl-4">
+              <p className="text-[12px] text-muted-foreground">Droits de succession</p>
+              <p className="kairos-num mt-1 text-[24px] font-medium leading-none tracking-[-0.02em] text-foreground">
                 {formatCurrency(droitsTotal)}
-              </div>
-              <div className="text-sm font-medium text-[var(--text-secondary)]">Droits de succession</div>
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>
             Réunion de l'usufruit
             <FieldHelp>
               Art. 1133 CGI : l'usufruit que {decedentSecondNom} détenait sur la part de {decedentFirstNom}
               s'éteint à son décès et complète directement la propriété des nu-propriétaires, sans taxation et
               sans jamais entrer dans la masse fiscale ci-dessus.
             </FieldHelp>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-4">
-          <div className="flex items-center justify-between rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--positive-subtle,var(--surface-sunken))] px-5 py-4">
+          </PanelCardTitle>
+        </PanelCardHeader>
+        <PanelCardContent>
+          <div className="flex items-center justify-between rounded-[2px] bg-secondary/50 px-4 py-3">
             <span className="text-sm font-medium text-[var(--text-secondary)]">
               Valeur totale réunie, hors taxation
             </span>
-            <span className="kairos-num text-[20px] font-semibold text-[var(--text-primary)]">
+            <span className="kairos-num text-[16px] font-medium text-[var(--text-primary)]">
               + {formatCurrency(reunionUsufruit.total)}
             </span>
           </div>
@@ -441,17 +442,17 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>
             Transmission nette combinée
             <FieldHelp>Héritage net du 2nd décès + réunion d'usufruit hors taxation, par bénéficiaire.</FieldHelp>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
+          </PanelCardTitle>
+        </PanelCardHeader>
+        <PanelCardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -474,7 +475,7 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
                     <TableCell className="text-right kairos-num">
                       {reunion ? `+ ${formatCurrency(reunion.montant)}` : '—'}
                     </TableCell>
-                    <TableCell className="text-right kairos-num font-semibold">
+                    <TableCell className="text-right kairos-num font-medium">
                       {entry.montant < 0 ? `${formatCurrency(-entry.montant)} à verser` : formatCurrency(entry.montant)}
                     </TableCell>
                   </TableRow>
@@ -482,8 +483,8 @@ const Succession2ndDecesContent: React.FC<ContentProps> = ({
               })}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };

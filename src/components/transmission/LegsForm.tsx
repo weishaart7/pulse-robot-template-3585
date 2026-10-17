@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCardTitle } from '@/components/layout/panel-section';
+import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { Separator } from '@/components/ui/separator';
 import { useAssets } from '@/hooks/useAssets';
 import { useFamilyData, useMaritalStatus } from '@/hooks/useFamilyData';
@@ -332,10 +333,10 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent overlayClassName="bg-black/30 backdrop-blur-[6px]" className="workspace-panel kairos-transmission max-w-6xl h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]">
+        <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl">
+            <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">
               {editingGroup ? 'Modifier le legs' : 'Legs (Testament)'}
             </DialogTitle>
             <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
@@ -346,11 +347,11 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
 
         <div className="space-y-6">
           {/* Informations générales */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations générales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <PanelCardTitle>Informations générales</PanelCardTitle>
+            </div>
+            <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="libelle">Libellé</Label>
@@ -428,15 +429,15 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                   rows={3}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Sélection des biens légués */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Sélection des biens légués</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <PanelCardTitle>Sélection des biens légués</PanelCardTitle>
+            </div>
+            <div>
               {assets.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">
                   Aucun bien disponible dans votre patrimoine
@@ -444,7 +445,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
               ) : (
                 <div className="space-y-3">
                   {assets.map((asset) => (
-                    <div key={asset.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={asset.id} className="flex items-center justify-between p-3 border rounded-[2px]">
                       <div className="flex items-center space-x-3">
                         <Checkbox
                           checked={formData.biensSelectionnes.includes(asset.id!)}
@@ -464,7 +465,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                 </div>
               )}
               {formData.biensSelectionnes.length > 0 && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
+                <div className="mt-4 p-3 bg-muted rounded-[2px]">
                   <p className="text-sm font-medium">
                     Montant total du legs (calculé automatiquement) : {formatCurrency(montantTotal)}
                   </p>
@@ -473,15 +474,15 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Clauses insérées */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Clauses insérées</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <PanelCardTitle>Clauses insérées</PanelCardTitle>
+            </div>
+            <div>
               <div className="space-y-3">
                 {clausesOptions.map((clause) => (
                   <div key={clause} className="flex items-center space-x-3">
@@ -493,15 +494,15 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           {/* Légataires */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Légataires</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <section className="border-t border-border pt-5">
+            <div className="mb-3">
+              <PanelCardTitle>Légataires</PanelCardTitle>
+            </div>
+            <div>
               {familyLinks.length === 0 ? (
                 <p className="text-muted-foreground text-center py-4">
                   Aucun membre de famille disponible dans la section liens familiaux
@@ -511,7 +512,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                   <div className="space-y-3">
                     {familyLinks.map((member) => (
                       <div key={member.id} className="space-y-2">
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center justify-between p-3 border rounded-[2px]">
                         <div className="flex items-center space-x-3">
                           <Checkbox
                             checked={formData.legataires.some(l => l.id === member.id)}
@@ -559,17 +560,18 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
           <Separator />
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+            <Button variant="outline" className={panelButtonClass} onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Annuler
             </Button>
             <Button
+              className={panelPrimaryButtonClass}
               disabled={totalPourcentage > 100 || isSubmitting}
               onClick={handleSubmit}
             >

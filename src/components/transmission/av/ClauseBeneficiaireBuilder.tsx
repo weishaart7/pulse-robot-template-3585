@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
+import { Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, ChevronDown, Users, Eye, ArrowDown, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -269,7 +269,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
               </div>
             )}
 
-            <div className="rounded-lg border p-4 space-y-4">
+            <div className="rounded-[2px] border p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">
                   {niveauIdx === 0 ? 'Bénéficiaire(s) principal(aux)' : `Bénéficiaire(s) subsidiaire(s) — niveau ${niveauIdx + 1}`}
@@ -286,7 +286,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
               </div>
 
               {niveau.beneficiaires.map((benef, benefIdx) => (
-                <div key={benefIdx} className="space-y-3 p-3 rounded-md bg-muted/30">
+                <div key={benefIdx} className="space-y-3 p-3 rounded-[2px] bg-muted/30">
                   <div className="flex items-start gap-3">
                     {/* Person select */}
                     <div className="flex-1 space-y-1.5">
@@ -415,7 +415,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                   </div>
 
                   {benef.statut === 'decede' && (
-                    <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-[var(--warning-soft)] text-[var(--text-primary)] text-xs">
+                    <div className="flex items-start gap-2 px-3 py-2 rounded-[2px] bg-[var(--warning-soft)] text-[var(--text-primary)] text-xs">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                       <span>
                         Bénéficiaire décédé : sa part revient aux autres bénéficiaires du même rang, puis au rang suivant. Sans bénéficiaire restant, le capital entre dans la succession.
@@ -451,7 +451,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
       </Button>
 
       {/* Final fallback */}
-      <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 px-4 py-3 rounded-[2px] bg-muted/50 text-sm text-muted-foreground">
         <Users className="h-4 w-4 shrink-0" />
         <span>À défaut de tous les bénéficiaires désignés : <strong>mes héritiers</strong></span>
       </div>
@@ -480,7 +480,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                 <div
                   key={bIdx}
                   className={cn(
-                    "flex items-center justify-between px-3 py-2 rounded-md bg-muted/30",
+                    "flex items-center justify-between px-3 py-2 rounded-[2px] bg-muted/30",
                     (estRenoncant || !niveau.niveauAtteint) && "opacity-50"
                   )}
                 >
@@ -497,14 +497,14 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
                         )}
                       </span>
                       {estRenoncant && (
-                        <Badge variant="outline" className="ml-2 text-xs border-[var(--warning)]/30 text-[var(--text-primary)] ">
+                        <Chip tone="citron">
                           Renonçant — redistribué
-                        </Badge>
+                        </Chip>
                       )}
                       {b.statut === 'decede' && (
-                        <Badge variant="outline" className="ml-2 text-xs border-destructive/40 text-destructive">
+                        <Chip tone="alerte">
                           Décédé
-                        </Badge>
+                        </Chip>
                       )}
                     </div>
                   </div>
@@ -520,7 +520,7 @@ export const ClauseBeneficiaireBuilder: React.FC<ClauseBeneficiaireBuilderProps>
         {/* Generated clause text */}
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Clause générée</Label>
-          <div className="p-3 rounded-lg bg-muted/50 text-sm italic text-muted-foreground leading-relaxed">
+          <div className="p-3 rounded-[2px] bg-muted/50 text-sm italic text-muted-foreground leading-relaxed">
             {generatedClauseText}
           </div>
         </div>

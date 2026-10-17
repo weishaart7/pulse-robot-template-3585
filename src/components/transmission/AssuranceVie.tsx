@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Chip } from '@/components/layout/workspace-panel';
 import { actualiserEmprunt } from '@/lib/credit/contrat';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency, isDetenteurSpouse } from '@/lib/patrimoine/utils';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
-import { Shield, FileText, AlertTriangle, ArrowRight, ChevronRight, Scale, UserCheck } from 'lucide-react';
+import { Shield, AlertTriangle, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -400,7 +400,6 @@ export const AssuranceVie = () => {
         ? [{ id: '', nom: 'Non renseigné', prenom: '', lien: '', capitalBrut: valeurDenoues }]
         : [];
 
-
     // Prélèvement 990I / réintégration 757B lus directement dans le résultat
     // du vrai moteur (dmtg/assurance-vie.ts) — jamais recalculés ici. Le
     // détail des droits de succession sur la réintégration 757B n'est pas
@@ -447,9 +446,9 @@ export const AssuranceVie = () => {
   // If a contract is selected, show the detail view
   if (selectedContract) {
     return (
-      <div className="kairos-transmission space-y-4">
+      <div className="kairos-transmission">
         {contracts.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
+          <div className="flex gap-2 overflow-x-auto border-b border-border px-8 py-3">
             {contracts.map((c) => (
               <Button
                 key={c.id}
@@ -457,7 +456,7 @@ export const AssuranceVie = () => {
                 size="sm"
                 onClick={() => setSelectedContract(c)}
                 className={
-                  "whitespace-nowrap rounded-[var(--radius-lg)] shadow-none " +
+                  "h-8 whitespace-nowrap rounded-[2px] px-3 text-[12.5px] shadow-none " +
                   (c.id === selectedContract.id
                     ? "bg-[var(--ink-900)] text-white border border-[var(--ink-900)] hover:bg-[var(--ink-800)]"
                     : "bg-[var(--surface)] text-[var(--text-primary)] border border-[var(--kt-border-strong)]")
@@ -493,14 +492,14 @@ export const AssuranceVie = () => {
   if (contracts.length === 0) {
     return (
       <div className="kairos-transmission">
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="py-12">
+        <PanelCard>
+          <PanelCardContent className="py-12">
             <div className="text-center space-y-4">
               <div className="mx-auto w-12 h-12 rounded-full bg-[var(--ink-050)] flex items-center justify-center">
                 <Shield className="h-6 w-6 text-[var(--ink-400)]" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">Aucun contrat d'assurance-vie ni PER assurantiel</h3>
+                <h3 className="text-lg font-medium text-[var(--text-primary)]">Aucun contrat d'assurance-vie ni PER assurantiel</h3>
                 <p className="text-sm text-[var(--text-secondary)] mt-1">
                   Ajoutez vos contrats d'assurance-vie et PER assurantiels dans la section Patrimoine pour les visualiser ici.
                 </p>
@@ -514,82 +513,45 @@ export const AssuranceVie = () => {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       </div>
     );
   }
 
   return (
-    <div className="kairos-transmission space-y-6">
-      {/* Résumé */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--ink-050)] flex items-center justify-center">
-                <FileText className="h-5 w-5 text-[var(--ink-700)]" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--text-secondary)]">Nombre de contrats</p>
-                <p className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">{contracts.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--ink-050)] flex items-center justify-center">
-                <Shield className="h-5 w-5 text-[var(--ink-700)]" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--text-secondary)]">Valeur totale</p>
-                <p className="kairos-num text-[26px] font-semibold tracking-[-0.02em] text-[var(--text-primary)]">{formatCurrency(totalValeur)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-[var(--radius-lg)] bg-[var(--warning-soft)] flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
-              </div>
-              <div>
-                <p className="text-sm text-[var(--text-secondary)]">Fiscalité transmission</p>
-                <p className="text-sm font-medium text-[var(--text-secondary)]">
-                  Hors succession (art. L132-12)
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="kairos-transmission [&>[role=alert]]:mx-8 [&>[role=alert]]:my-4 [&>[role=alert]]:w-auto [&>[role=alert]]:rounded-[2px]">
+      {/* Résumé : valeur totale et lignes de synthèse, comme l'en-tête Immobilier. */}
+      <div className="border-b border-border px-8 py-6">
+        <p className="text-[12px] text-muted-foreground">Valeur totale des contrats</p>
+        <p className="kairos-num mt-2 text-[34px] font-medium leading-none tracking-[-0.03em] text-foreground">
+          {formatCurrency(totalValeur)}
+        </p>
+        <p className="mt-3 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
+          <Chip tone="lagon">{contracts.length} contrat{contracts.length > 1 ? 's' : ''}</Chip>
+          <span>hors succession (art. L132-12 C. assur.)</span>
+        </p>
       </div>
 
       {/* Fiscal 990I / 757B summary */}
       {transmissionResult && contracts.length > 0 && (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="pb-3 p-5">
-            <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
-              <Scale className="h-4 w-4 text-[var(--ink-400)]" />
-              Répartition fiscale en cas de décès
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Répartition fiscale en cas de décès
               <FieldHelp>
                 Assurance-vie : répartition selon l'âge réel du souscripteur à chaque versement enregistré (pas
                 son âge actuel). PER assurantiel : selon l'âge du titulaire au décès. Le conjoint ou partenaire
                 de PACS est exonéré dans tous les cas.
               </FieldHelp>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+            </PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 990I */}
               <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-[var(--ink-900)] text-white border-transparent rounded-[var(--radius-md)]">Art. 990 I</Badge>
+                    <Chip tone="lagon">Art. 990 I</Chip>
                     <span className="text-xs text-[var(--text-secondary)]">
                       Primes avant 70 ans
                       <FieldHelp>
@@ -629,7 +591,7 @@ export const AssuranceVie = () => {
                     </>
                   )}
                   <Separator className="bg-[var(--kt-border)]" />
-                  <div className="flex justify-between font-semibold">
+                  <div className="flex justify-between font-medium">
                     <span className="text-[var(--text-primary)]">Prélèvement estimé</span>
                     <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.droits990I)}</span>
                   </div>
@@ -640,7 +602,7 @@ export const AssuranceVie = () => {
               <div className="space-y-3 p-4 rounded-[var(--radius-lg)] bg-[var(--surface-sunken)] border border-[var(--kt-border)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">Art. 757 B</Badge>
+                    <Chip>Art. 757 B</Chip>
                     <span className="text-xs text-[var(--text-secondary)]">
                       Primes après 70 ans
                       <FieldHelp>
@@ -666,7 +628,7 @@ export const AssuranceVie = () => {
                     <span className="kairos-num font-medium text-[var(--text-primary)]">{formatCurrency(fiscalSummary.assiette757B)}</span>
                   </div>
                   <Separator className="bg-[var(--kt-border)]" />
-                  <div className="flex justify-between font-semibold">
+                  <div className="flex justify-between font-medium">
                     <span className="text-[var(--text-primary)]">Réintégré aux droits de succession</span>
                     <span className="kairos-num text-[var(--negative)]">{formatCurrency(fiscalSummary.totalReintegration757B)}</span>
                   </div>
@@ -674,35 +636,33 @@ export const AssuranceVie = () => {
               </div>
             </div>
 
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
 
       {computeErrorMessage && (
-        <Card className="bg-[var(--negative-soft)] border-[var(--negative)]/30 rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardContent className="pt-6">
+        <PanelCard className="bg-[var(--negative-soft)]">
+          <PanelCardContent>
             <div className="flex gap-3">
               <AlertTriangle className="h-5 w-5 text-[var(--negative)] shrink-0 mt-0.5" />
               <p className="text-sm text-[var(--negative)]">{computeErrorMessage}</p>
             </div>
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
 
       {/* Beneficiary breakdown */}
       {transmissionResult && contracts.length > 0 && fiscalSummary.beneficiaireDetails.length > 0 && (
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="pb-3 p-5">
-            <CardTitle className="text-[15px] font-semibold flex items-center gap-2 text-[var(--text-primary)]">
-              <UserCheck className="h-4 w-4 text-[var(--ink-400)]" />
-              Répartition par bénéficiaire
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Répartition par bénéficiaire
               <FieldHelp>
                 Capitaux versés au décès simulé de l'utilisateur principal : seuls ses propres contrats sont
                 dénoués. Ceux du conjoint restent en cours et n'apparaissent pas ici.
               </FieldHelp>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+            </PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             <div className="space-y-3">
               {/* Header */}
               <div className="grid grid-cols-4 gap-4 text-xs font-medium text-[var(--text-secondary)] pb-2 border-b border-[var(--kt-border)]">
@@ -714,7 +674,7 @@ export const AssuranceVie = () => {
               {fiscalSummary.beneficiaireDetails.map((b, i) => (
                 <div key={i} className="grid grid-cols-4 gap-4 items-center text-sm">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-[var(--ink-050)] flex items-center justify-center text-xs font-semibold text-[var(--ink-700)] shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-[var(--ink-050)] flex items-center justify-center text-xs font-medium text-[var(--ink-700)] shrink-0">
                       {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -725,33 +685,33 @@ export const AssuranceVie = () => {
                   <p className="kairos-num text-right font-medium text-[var(--text-primary)]">{formatCurrency(b.capitalBrut)}</p>
                   <p className="text-right">
                     {b.exonere ? (
-                      <Badge variant="outline" className="text-xs bg-[var(--kt-positive-soft)] text-[var(--kt-positive)] border-transparent rounded-[var(--radius-md)]">Exonéré</Badge>
+                      <Chip tone="lagon">Exonéré</Chip>
                     ) : (
                       <span className="kairos-num text-[var(--negative)] font-medium">- {formatCurrency(b.droits)}</span>
                     )}
                   </p>
-                  <p className="kairos-num text-right font-semibold text-[var(--text-primary)]">{formatCurrency(b.capitalNet)}</p>
+                  <p className="kairos-num text-right font-medium text-[var(--text-primary)]">{formatCurrency(b.capitalNet)}</p>
                 </div>
               ))}
               {/* Total row */}
               <Separator className="bg-[var(--kt-border)]" />
-              <div className="grid grid-cols-4 gap-4 text-sm font-semibold text-[var(--text-primary)]">
+              <div className="grid grid-cols-4 gap-4 text-sm font-medium text-[var(--text-primary)]">
                 <span>Total</span>
                 <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalVerse)}</span>
                 <span className="kairos-num text-right text-[var(--negative)]">- {formatCurrency(fiscalSummary.totalDroits)}</span>
                 <span className="kairos-num text-right">{formatCurrency(fiscalSummary.totalVerse - fiscalSummary.totalDroits)}</span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       )}
 
       {/* Liste des contrats - cliquable */}
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Contrats d'assurance-vie et PER assurantiels</CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-1">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Contrats d'assurance-vie et PER assurantiels</PanelCardTitle>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-1">
           {contracts.map((contract, index) => (
             <React.Fragment key={contract.id}>
               {index > 0 && <Separator className="bg-[var(--kt-border)]" />}
@@ -764,9 +724,9 @@ export const AssuranceVie = () => {
                     <p className="font-medium text-[var(--text-primary)]">
                       {contract.denomination || contract.nature}
                     </p>
-                    <Badge className="text-xs bg-[var(--ink-050)] text-[var(--ink-700)] border-transparent rounded-[var(--radius-md)]">
+                    <Chip>
                       {contract.nature}
-                    </Badge>
+                    </Chip>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)]">
                     {contract.etablissement && (
@@ -786,20 +746,19 @@ export const AssuranceVie = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="kairos-num font-semibold text-lg text-[var(--text-primary)]">
+                    <p className="kairos-num font-medium text-lg text-[var(--text-primary)]">
                       {formatCurrency(getCapitalDecesContrat(contract))}
                     </p>
                     {contract.mode_detention && (
                       <p className="text-xs text-[var(--text-secondary)]">{contract.mode_detention}</p>
                     )}
                   </div>
-                  <ChevronRight className="h-5 w-5 text-[var(--ink-400)]" />
-                </div>
+                  </div>
               </button>
             </React.Fragment>
           ))}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };

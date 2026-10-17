@@ -1,6 +1,6 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/layout/workspace-panel';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { AlertTriangle, Check } from 'lucide-react';
 
 interface AVFiscalInfoProps {
@@ -92,16 +92,16 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
   };
 
   return (
-    <Card className="border-primary/20 bg-primary/5">
-      <CardHeader className="pb-3">
+    <PanelCard>
+      <PanelCardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Fiscalité des rachats</CardTitle>
-          <Badge variant="outline">{getRegimeLabel()}</Badge>
+          <PanelCardTitle>Fiscalité des rachats</PanelCardTitle>
+          <Chip>{getRegimeLabel()}</Chip>
         </div>
-      </CardHeader>
-      <CardContent>
+      </PanelCardHeader>
+      <PanelCardContent>
         {renderFiscalRules()}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

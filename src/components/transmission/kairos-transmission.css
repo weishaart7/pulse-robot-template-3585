@@ -1,6 +1,7 @@
 /* Tokens du module Transmission — scopés à .kairos-transmission. Harmonisés avec le
-   design system du simulateur (docs/design-system.md) : mêmes valeurs que :root, en hex
-   parce que le module les consomme via var(--x) directement. Les noms qui entreraient
+   « panneau de travail » (docs/design-system.md) : filets #d8d2ca, angles 2 px, pas d'ombre,
+   séries de données lagon / citron (components/budget/budgetColors.ts), en hex parce que le
+   module les consomme via var(--x) directement. Les noms qui entreraient
    en collision avec les tokens shadcn (--border, --positive, au format HSL) sont
    préfixés --kt-. */
 
@@ -9,7 +10,7 @@
   --ink-900: #0c0a09;
   --ink-800: #1c1917;
   --ink-700: #44403b;
-  --ink-500: #777169;
+  --ink-500: #4f4a45;
   --ink-400: #a59f97;
   --ink-050: #f5f3f1;
 
@@ -20,8 +21,8 @@
   --fill-hover: #f5f3f1;
 
   /* Filets */
-  --kt-border: #ebe8e4;
-  --kt-border-strong: #ddd8d2;
+  --kt-border: #d8d2ca;
+  --kt-border-strong: #bfb8af;
 
   /* Sémantique */
   --kt-positive: #2f7d4f;
@@ -31,34 +32,39 @@
   --warning: #ff4704;
   --warning-soft: #fff1eb;
 
-  /* Visuels de données — série de src/lib/palette.ts */
-  --data-blue: #0447ff;
-  --data-green: #0c0a09;
-  --data-teal: #777169;
-  --data-purple: #8fa6ff;
-  --data-magenta: #ff4704;
-  --data-amber: #ffa47f;
+  /* Visuels de données — palette des panneaux de travail (lagon / citron / gris) */
+  --data-blue: #55b4bd;
+  --data-green: #16707a;
+  --data-teal: #a8c44a;
+  --data-purple: #a9d9de;
+  --data-magenta: #4a5a10;
+  --data-amber: #8a837c;
 
   --text-primary: var(--ink-900);
   --text-secondary: var(--ink-500);
 
-  /* Rayons alignés sur --radius (14 px) */
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-2xl: 20px;
+  /* Angles quasi droits des panneaux de travail */
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-2xl: 2px;
 
-  /* Ombre « murmure » */
-  --shadow-sm: rgba(0,0,0,0.4) 0 0 1px 0, rgba(0,0,0,0.04) 0 1px 1px 0, rgba(0,0,0,0.04) 0 2px 4px 0;
+  /* Pas d'ombre : les sections sont séparées par des filets */
+  --shadow-sm: none;
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
   font-family: var(--font-sans);
   color: var(--text-primary);
   background: var(--canvas);
-  border-radius: var(--radius-2xl);
 }
 
 .kairos-transmission .kairos-num {
   font-variant-numeric: tabular-nums lining-nums;
   font-feature-settings: "tnum" 1, "lnum" 1, "cv01" 1;
+}
+
+/* Boutons à angles quasi droits (2 px), comme les boutons des panneaux de travail — sauf les
+   contrôles ronds par nature (interrupteurs, boutons radio, cases à cocher, « ? » d'aide). */
+.kairos-transmission button:not([role="switch"]):not([role="radio"]):not([role="checkbox"]):not([aria-label="Aide"]) {
+  border-radius: 2px;
 }

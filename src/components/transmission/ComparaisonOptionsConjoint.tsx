@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { FieldHelp } from '@/components/ui/field-help';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Scale } from 'lucide-react';
+
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { ConjointOption } from '@/lib/transmission';
@@ -109,11 +109,10 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
   ];
 
   return (
-    <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-      <CardHeader className="p-5">
+    <PanelCard>
+      <PanelCardHeader>
         <div className="flex items-center gap-2">
-          <Scale className="h-5 w-5 text-[var(--ink-400)]" />
-          <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">
+          <PanelCardTitle>
             Comparaison des options
             <FieldHelp>
               Chaque colonne simule votre décès puis celui de votre conjoint, avec cette option et toutes vos autres
@@ -121,10 +120,10 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
               quel entre les deux. La meilleure valeur est mise en évidence sur les lignes en gras ; elle ne tient pas
               compte des besoins du conjoint (revenus, capital disponible).
             </FieldHelp>
-          </CardTitle>
+          </PanelCardTitle>
         </div>
-      </CardHeader>
-      <CardContent className="p-5 pt-0">
+      </PanelCardHeader>
+      <PanelCardContent>
         {erreurGlobale ? (
           <p className="text-sm text-[var(--text-secondary)]">Comparaison indisponible : {erreurGlobale}</p>
         ) : !calcul ? (
@@ -138,7 +137,7 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
                   {calcul.colonnes.map(c => (
                     <TableHead
                       key={c.value}
-                      className={'text-right align-bottom ' + (c.value === selectedOption ? 'text-[var(--text-primary)] font-semibold' : '')}
+                      className={'text-right align-bottom ' + (c.value === selectedOption ? 'text-[var(--text-primary)] font-medium' : '')}
                     >
                       {c.label}
                       {c.value === selectedOption && <div className="text-xs font-normal text-[var(--text-secondary)]">Option retenue</div>}
@@ -149,7 +148,7 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
               <TableBody>
                 {lignes.map(l => (
                   <TableRow key={l.label}>
-                    <TableCell className={l.fort ? 'font-semibold' : ''}>
+                    <TableCell className={l.fort ? 'font-medium' : ''}>
                       {l.label}
                       {l.help && <FieldHelp>{l.help}</FieldHelp>}
                     </TableCell>
@@ -164,7 +163,7 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
                           key={c.value}
                           className={
                             'text-right kairos-num ' +
-                            (l.fort ? 'font-semibold ' : '') +
+                            (l.fort ? 'font-medium ' : '') +
                             (isBest ? 'text-[var(--kt-positive)]' : '')
                           }
                         >
@@ -185,7 +184,7 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

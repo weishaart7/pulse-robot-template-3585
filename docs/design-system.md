@@ -143,7 +143,7 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
   barre pleine largeur, onglets dimensionnés sur leur libellé et qui rétrécissent ensemble (si un libellé complet ne tient pas, bascule automatique sur les libellés courts `shortLabel` — « Général »,
   « Récompenses », « Donation », « Historique » — infobulle avec le libellé complet ; jamais de défilement) ;
   `role="tablist"`, transition coupée si `prefers-reduced-motion`.
-- **Panneau de travail** (`components/layout/workspace-panel.tsx`, classe `.workspace-panel`) : gabarit commun des pages Famille, Patrimoine, Budget, Immobilier, Retraite, Sociétés et des formulaires d'actif / de passif (`ActifFormFrame`) — barre d'en-tête à fil d'Ariane portant les actions, titre 24 px et rappel, sections séparées par des filets (pas de cartes), titres de section à repère coloré (`SectionHeader`, `PanelTitle`), lignes libellé / valeur (`SummaryRow`), étiquettes `Chip` (tons neutre, lagon, citron, alerte), sections bord à bord `PanelCard*` (`components/layout/panel-section.tsx`, mêmes briques qu'une carte : titre à repère lagon, rappel, contenu) pour convertir les écrans à cartes. Boutons d'action : `panelButtonClass` (filet) et `panelPrimaryButtonClass` (noir), 32 px, angles 2 px ; bascules segmentées pour les choix courts ; encadrés d'information à angles 2 px sur `bg-secondary/50`.
+- **Panneau de travail** (`components/layout/workspace-panel.tsx`, classe `.workspace-panel`) : gabarit commun des pages Famille, Patrimoine, Budget, Immobilier, Retraite, Sociétés, Transmission et des formulaires d'actif / de passif (`ActifFormFrame`) — barre d'en-tête à fil d'Ariane portant les actions, titre 24 px et rappel, sections séparées par des filets (pas de cartes), titres de section à repère coloré (`SectionHeader`, `PanelTitle`), lignes libellé / valeur (`SummaryRow`), étiquettes `Chip` (tons neutre, lagon, citron, alerte), sections bord à bord `PanelCard*` (`components/layout/panel-section.tsx`, mêmes briques qu'une carte : titre à repère lagon, rappel, contenu) pour convertir les écrans à cartes. Boutons d'action : `panelButtonClass` (filet) et `panelPrimaryButtonClass` (noir), 32 px, angles 2 px ; bascules segmentées pour les choix courts ; encadrés d'information à angles 2 px sur `bg-secondary/50`.
 - Fenêtres (`Dialog`) des panneaux : `workspace-panel` + `rounded-[4px] sm:rounded-[4px]` (le `sm:rounded-3xl` du composant de base n'est écrasé qu'avec la variante `sm:`), titre 16 px 500 sur un en-tête fileté, pied fileté portant `panelButtonClass` / `panelPrimaryButtonClass`, listes à cocher en lignes `divide-y` (pas de cartes). Appliqué à la sélection des biens de la société d'acquêts (`AssetSelectionModal`), à l'ajout / modification d'un membre (`FamilyMemberFormDialog`), aux fiches actif / passif, aux fenêtres Retraite (import RIS, période de carrière) et Sociétés (participations, valorisation, dividendes, emprunts).
 - Champs : fond blanc, filet `border-border`, angles 2 px dans les panneaux (plus de champs « remplis » `bg-muted`).
 - Champs `bg-muted` au focus ou ouverts : bordure encre, fond eggshell (règle globale dans
@@ -167,12 +167,13 @@ Plus de scope dédié : les formulaires suivent les tokens de `:root`.
 ## 8. Transmission
 
 Garde son scope `.kairos-transmission` ([kairos-transmission.css](../src/components/transmission/kairos-transmission.css))
-et ses noms de variables, mais leurs valeurs reprennent le design system : échelle chaude,
-surfaces eggshell / taupe, Inter, rayons 10 / 14 / 20 px, ombre murmure, `--data-*` sur `SERIES`,
-avertissements en braise. Les variables qui entraient en collision avec shadcn (`--border`,
-`--border-strong`, `--positive`, `--positive-soft`) sont renommées `--kt-*` : auparavant, le
-`--border` hexadécimal du scope rendait invalide `hsl(var(--border))` des composants shadcn
-à l'intérieur du module. `--fill-hover`, utilisé mais jamais défini, vaut désormais taupe.
+et ses noms de variables, mais leurs valeurs reprennent le « panneau de travail » : filets `#d8d2ca`,
+texte secondaire `#4f4a45`, rayons ramenés à 2 px, pas d'ombre, `--data-*` sur la palette lagon / citron
+(`budgetColors.ts`), avertissements en braise. Les boutons du scope sont à angles 2 px (règle CSS, hors
+interrupteurs, radios, cases et « ? » d'aide). Les variables qui entraient en collision avec shadcn
+(`--border`, `--border-strong`, `--positive`, `--positive-soft`) sont renommées `--kt-*`. Le cadre de
+page suit les autres modules (`WorkspaceHeader`, sous-navigation dans la barre latérale) et les cartes
+sont des sections `PanelCard*`.
 
 ## 9. Mode sombre
 
@@ -185,8 +186,8 @@ auparavant le thème du système, faute de `ThemeProvider`).
 - Quelques couleurs Tailwind codées en dur hors du périmètre traité : sections du régime
   matrimonial (`RecompensesSection`, `CreancesEntreEpouxSection`), `IndivisairesSection`,
   pages Blog et Nouveautés, composants `ui/` génériques (`toast`, `action-hub-input`).
-- Écrans non vérifiés à l'écran après la refonte : onglets de Transmission hors Synthèse,
-  onglets de détail de Retraite, Immobilier (LMNP) et Fiscalité (IFI), Sociétés avec données.
+- Écrans non vérifiés à l'écran après la refonte : Immobilier (LMNP) et Fiscalité (IFI) ; dans
+  Transmission, les fenêtres Legs et les listes de donations / legs remplies.
 
 ## Chargements
 

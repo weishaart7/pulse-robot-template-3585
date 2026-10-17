@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Chip, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Calendar, TrendingUp, TrendingDown, Shield, Users, FileText, Info, Settings, Target, RefreshCw, UserCheck, PenLine, Wand2 } from 'lucide-react';
+import { ArrowLeft, Users, Info, PenLine, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
@@ -308,25 +308,25 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-32 rounded-lg bg-muted animate-pulse" />
+          <div key={i} className="h-32 rounded-[2px] bg-muted animate-pulse" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-5 w-5" />
+    <div>
+      {/* En-tête de la fiche contrat : bandeau fileté, retour à gauche, capital décès à droite. */}
+      <div className="flex items-start gap-4 border-b border-border px-8 py-6">
+        <Button variant="outline" size="icon" onClick={onBack} aria-label="Retour aux contrats" className="h-8 w-8 shrink-0 rounded-[2px] shadow-none">
+          <ArrowLeft className="h-3.5 w-3.5" />
         </Button>
         <div className="flex-1">
-          <h3 className="text-xl font-semibold">
+          <h3 className="text-[18px] font-medium tracking-[-0.01em]">
             {contract.denomination || contract.nature}
           </h3>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <Badge variant="secondary">{contract.nature}</Badge>
+            <Chip>{contract.nature}</Chip>
             {contract.etablissement && (
               <span className="text-sm text-muted-foreground">{contract.etablissement}</span>
             )}
@@ -360,68 +360,48 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
           )}
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold">{formatCurrency(getCapitalDecesContrat(contract))}</p>
+          <p className="kairos-num text-[24px] font-medium leading-none tracking-[-0.02em]">{formatCurrency(getCapitalDecesContrat(contract))}</p>
           {contract.detenteur && (
             <p className="text-sm text-muted-foreground">{contract.detenteur}</p>
           )}
         </div>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="bg-muted/30 border border-border ">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Ancienneté</span>
-            </div>
-            <p className="text-lg font-semibold">{contractAge} ans</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30 border border-border ">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-3.5 w-3.5 text-[var(--kt-positive)]" />
-              <span className="text-xs text-muted-foreground">Versements</span>
-            </div>
-            <p className="text-lg font-semibold">{formatCurrency(totalVersements)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30 border border-border ">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-              <span className="text-xs text-muted-foreground">Rachats</span>
-            </div>
-            <p className="text-lg font-semibold">{formatCurrency(totalRachats)}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30 border border-border ">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs text-muted-foreground">Transmission</span>
-            </div>
+      {/* Indicateurs du contrat : bande divisée. */}
+      <div className="grid grid-cols-2 divide-x divide-y divide-border border-b border-border md:grid-cols-4 md:divide-y-0">
+        <div className="px-8 py-3">
+          <p className="text-[12px] text-muted-foreground">Ancienneté</p>
+          <p className="kairos-num mt-0.5 text-[16px] font-medium">{contractAge} ans</p>
+        </div>
+        <div className="px-8 py-3">
+          <p className="text-[12px] text-muted-foreground">Versements</p>
+          <p className="kairos-num mt-0.5 text-[16px] font-medium">{formatCurrency(totalVersements)}</p>
+        </div>
+        <div className="px-8 py-3">
+          <p className="text-[12px] text-muted-foreground">Rachats</p>
+          <p className="kairos-num mt-0.5 text-[16px] font-medium">{formatCurrency(totalRachats)}</p>
+        </div>
+        <div className="px-8 py-3">
+          <p className="text-[12px] text-muted-foreground">Transmission</p>
+          <div className="mt-1">
             {transmissionRegime ? (
-              <Badge variant={transmissionRegime === '990I' ? 'default' : 'secondary'} className="mt-0.5">
+              <Chip tone={transmissionRegime === '990I' ? 'lagon' : 'neutral'}>
                 Art. {transmissionRegime}
-              </Badge>
+              </Chip>
             ) : (
-              <span className="text-sm text-muted-foreground">Âge non renseigné</span>
+              <span className="text-[13px] text-muted-foreground">Âge non renseigné</span>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Bénéficiaires card — reflects clause bénéficiaire content */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <UserCheck className="h-4 w-4" />
-            Bénéficiaire(s) désigné(s)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Bénéficiaire(s) désigné(s)
+          </PanelCardTitle>
+        </PanelCardHeader>
+        <PanelCardContent>
           {(() => {
             // If structured mode with at least one named beneficiary
             if (clauseMode === 'assistee') {
@@ -445,8 +425,8 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                         )}
                         <div className="flex flex-wrap gap-2">
                           {named.map((b, i) => (
-                            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50">
-                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary">
+                            <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-[2px] bg-muted/50">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
                                 {(b.prenom?.[0] || '').toUpperCase()}{b.nom[0]?.toUpperCase()}
                               </div>
                               <div>
@@ -476,8 +456,8 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
             }
             return <p className="text-sm text-muted-foreground">Non renseigné</p>;
           })()}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
       {/* Fiscal regime info */}
       <AVFiscalInfo
@@ -488,18 +468,16 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       />
 
       {/* Main content: left (composition + clause + objectif + programmés) + right sidebar (frais) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 border-b border-border lg:grid-cols-3 lg:divide-x lg:divide-border">
         {/* Left - 2/3 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 [&>section:last-child]:border-b-0">
           {/* Origine des fonds (doctrine Ciot, §9.6.1) */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Origine des fonds
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Origine des fonds
+              </PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <RadioGroup
                 value={details.origine_fonds ?? ''}
                 onValueChange={(val: 'deniers_propres' | 'deniers_communs') =>
@@ -523,15 +501,15 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
               <p className="text-xs text-muted-foreground mt-2">
                 Détermine, si ce contrat n'est pas dénoué au décès simulé, si sa valeur de rachat est réintégrée dans la masse commune à liquider (régime de communauté uniquement).
               </p>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Avance en cours (déduite du capital décès) */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Avance en cours</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Avance en cours</PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <Input
                 type="number"
                 min={0}
@@ -544,18 +522,16 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                 Avance consentie par l'assureur et non remboursée (intérêts compris). Au décès, l'assureur la déduit du capital
                 versé aux bénéficiaires : elle réduit l'assiette du prélèvement et n'est pas une dette de la succession.
               </p>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Objectif */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Target className="h-4 w-4" />
-                Objectif du contrat
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Objectif du contrat
+              </PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <RadioGroup
                 value={details.objectif || ''}
                 onValueChange={(val) => setDetails(prev => ({ ...prev, objectif: val }))}
@@ -572,18 +548,16 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                   </div>
                 ))}
               </RadioGroup>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Composition */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Composition
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Composition
+              </PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-xs">Fonds en euros (%)</Label>
@@ -635,18 +609,16 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                 <span>Fonds euros : {details.part_fonds_euros}%</span>
                 <span>UC : {details.part_unites_compte}%</span>
               </div>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Versements / Rachats programmés */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <RefreshCw className="h-4 w-4" />
-                Mouvements programmés
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Mouvements programmés
+              </PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent className="space-y-6">
               {/* Versements programmés */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -740,18 +712,16 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
 
           {/* Clause bénéficiaire */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Clause bénéficiaire
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <PanelCard>
+            <PanelCardHeader>
+              <PanelCardTitle>Clause bénéficiaire
+              </PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <Tabs value={clauseMode} onValueChange={(v) => setClauseMode(v as 'libre' | 'assistee')}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="assistee" className="gap-1.5">
@@ -793,27 +763,25 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                 </TabsContent>
               </Tabs>
 
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+              <div className="flex items-start gap-2 p-3 rounded-[2px] bg-muted/50">
                 <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
                   La clause bénéficiaire détermine qui recevra le capital en cas de décès. 
                   Elle prime sur les règles successorales classiques.
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         </div>
 
         {/* Right sidebar - 1/3: Caractéristiques du contrat */}
-        <div>
-          <Card className="sticky top-4">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Caractéristiques du contrat
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="border-t border-border lg:border-t-0">
+          <PanelCard className="border-b-0 lg:sticky lg:top-0">
+            <PanelCardHeader>
+              <PanelCardTitle>Caractéristiques du contrat
+              </PanelCardTitle>
+            </PanelCardHeader>
+            <PanelCardContent>
               <div className="space-y-1.5">
                 <Label className="text-xs">Frais sur versement (%)</Label>
                 <Input
@@ -858,19 +826,17 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
                   onChange={(e) => setDetails(prev => ({ ...prev, frais_arbitrage: Number(e.target.value) }))}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </PanelCardContent>
+          </PanelCard>
         </div>
       </div>
 
       {/* Save button */}
-      <div className="flex justify-end">
-        <Button onClick={saveDetails} disabled={isSaving}>
+      <div className="flex justify-end border-b border-border px-8 py-4">
+        <Button onClick={saveDetails} disabled={isSaving} className={panelPrimaryButtonClass}>
           {isSaving ? 'Enregistrement...' : 'Enregistrer les détails'}
         </Button>
       </div>
-
-      <Separator />
 
       {/* Operations */}
       <AVOperationsTable

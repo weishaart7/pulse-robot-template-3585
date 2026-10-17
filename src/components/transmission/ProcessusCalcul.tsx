@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Calculator, Users, Scale, FileText, PiggyBank, Receipt, TrendingUp, AlertCircle, ArrowRight, UserSquare2 } from 'lucide-react';
 import { FieldHelp } from '@/components/ui/field-help';
 import { Separator } from '@/components/ui/separator';
@@ -198,12 +198,12 @@ export const ProcessusCalcul = () => {
   ) {
     return (
       <div className="kairos-transmission">
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Processus de calcul de transmission</CardTitle>
-            <CardDescription className="text-[var(--text-secondary)]">Chargement des données...</CardDescription>
-          </CardHeader>
-        </Card>
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Processus de calcul de transmission</PanelCardTitle>
+            <PanelCardDescription>Chargement des données...</PanelCardDescription>
+          </PanelCardHeader>
+        </PanelCard>
       </div>
     );
   }
@@ -211,11 +211,11 @@ export const ProcessusCalcul = () => {
   if (!familyGraph || !transmissionResult || !patrimony) {
     return (
       <div className="kairos-transmission">
-        <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-          <CardHeader className="p-5">
-            <CardTitle className="text-[15px] font-semibold text-[var(--text-primary)]">Processus de calcul de transmission</CardTitle>
-          </CardHeader>
-          <CardContent className="p-5 pt-0">
+        <PanelCard>
+          <PanelCardHeader>
+            <PanelCardTitle>Processus de calcul de transmission</PanelCardTitle>
+          </PanelCardHeader>
+          <PanelCardContent>
             <Alert className="bg-[var(--surface-sunken)] border-[var(--kt-border)]">
               <AlertCircle className="h-4 w-4 text-[var(--ink-400)]" />
               <AlertDescription className="text-[var(--text-secondary)]">
@@ -242,8 +242,8 @@ export const ProcessusCalcul = () => {
                 <ArrowRight className="h-4 w-4" />
               </Button>
             )}
-          </CardContent>
-        </Card>
+          </PanelCardContent>
+        </PanelCard>
       </div>
     );
   }
@@ -542,15 +542,13 @@ export const ProcessusCalcul = () => {
   const totalTransmissionNette = heritierDetails.reduce((s, h) => s + h.transmissionNetteHeritier, 0);
 
   return (
-    <div className="kairos-transmission space-y-6">
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="flex items-center gap-2 text-[15px] font-semibold text-[var(--text-primary)]">
-            <Calculator className="h-5 w-5 text-[var(--ink-400)]" />
-            Processus de calcul de transmission
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-5 pt-0 space-y-8">
+    <div className="kairos-transmission [&>[role=alert]]:mx-8 [&>[role=alert]]:my-4 [&>[role=alert]]:w-auto [&>[role=alert]]:rounded-[2px]">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Processus de calcul de transmission
+          </PanelCardTitle>
+        </PanelCardHeader>
+        <PanelCardContent className="space-y-8">
           {calculSteps.map((step, index) => (
             <div key={index} className="space-y-4">
               {/* Description et conseils derrière le "?" : seuls le détail chiffré
@@ -560,7 +558,7 @@ export const ProcessusCalcul = () => {
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--ink-050)]">
                       <step.icon className="h-5 w-5 text-[var(--ink-700)]" />
                     </div>
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                    <h3 className="text-lg font-medium text-[var(--text-primary)]">
                       {step.title}
                       <FieldHelp>
                         <p className="font-medium">{step.description}</p>
@@ -601,7 +599,7 @@ export const ProcessusCalcul = () => {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-lg)] bg-[var(--ink-050)]">
                 <UserSquare2 className="h-5 w-5 text-[var(--ink-700)]" />
               </div>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              <h3 className="text-lg font-medium text-[var(--text-primary)]">
                 Détail par héritier
                 <FieldHelp>
                   Ce que reçoit chaque héritier au titre de la succession, des donations antérieures et de
@@ -620,7 +618,7 @@ export const ProcessusCalcul = () => {
                     <TableHead className="text-right text-[var(--text-secondary)]">Droits de succession</TableHead>
                     <TableHead className="text-right text-[var(--text-secondary)]">Capitaux décès nets</TableHead>
                     <TableHead className="text-right text-[var(--text-secondary)]">Taux de couverture</TableHead>
-                    <TableHead className="text-right font-semibold text-[var(--text-secondary)]">Transmission nette</TableHead>
+                    <TableHead className="text-right font-medium text-[var(--text-secondary)]">Transmission nette</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -634,16 +632,16 @@ export const ProcessusCalcul = () => {
                       <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.droitsSuccession.toLocaleString('fr-FR')} €</TableCell>
                       <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.capitalAVNet.toLocaleString('fr-FR')} €</TableCell>
                       <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{h.tauxCouverture}</TableCell>
-                      <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</TableCell>
+                      <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</TableCell>
                     </TableRow>
                   ))}
                   <TableRow className="border-t-2 border-[var(--kt-border-strong)]">
-                    <TableCell className="font-semibold text-[var(--text-primary)]">Total</TableCell>
-                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.heritageBrut, 0).toLocaleString('fr-FR')} €</TableCell>
-                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.droitsSuccession, 0).toLocaleString('fr-FR')} €</TableCell>
-                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.capitalAVNet, 0).toLocaleString('fr-FR')} €</TableCell>
-                    <TableCell className="kairos-num text-right tabular-nums font-semibold text-[var(--text-primary)]">—</TableCell>
-                    <TableCell className="kairos-num text-right tabular-nums font-bold text-[var(--text-primary)]">{totalTransmissionNette.toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="font-medium text-[var(--text-primary)]">Total</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.heritageBrut, 0).toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.droitsSuccession, 0).toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{heritierDetails.reduce((s, h) => s + h.capitalAVNet, 0).toLocaleString('fr-FR')} €</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">—</TableCell>
+                    <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{totalTransmissionNette.toLocaleString('fr-FR')} €</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -652,7 +650,7 @@ export const ProcessusCalcul = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {heritierDetails.map(h => (
                 <div key={h.personId} className="rounded-[var(--radius-lg)] border border-[var(--kt-border)] bg-[var(--surface-sunken)] p-4 space-y-4">
-                  <h4 className="text-sm font-semibold text-[var(--text-primary)]">{h.nom} <span className="font-normal text-[var(--text-secondary)]">({h.lien})</span></h4>
+                  <h4 className="text-sm font-medium text-[var(--text-primary)]">{h.nom} <span className="font-normal text-[var(--text-secondary)]">({h.lien})</span></h4>
 
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)] mb-1.5">Succession</p>
@@ -677,7 +675,7 @@ export const ProcessusCalcul = () => {
                         <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">{h.soulte > 0 ? 'Soulte de rapport reçue' : 'Soulte de rapport due'}</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{Math.round(h.soulte).toLocaleString('fr-FR')} €</dd></div>
                       )}
                       <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Capitaux décès nets</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.capitalAVNet.toLocaleString('fr-FR')} €</dd></div>
-                      <div className="flex justify-between font-semibold"><dt className="text-[var(--text-primary)]">Transmission nette</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</dd></div>
+                      <div className="flex justify-between font-medium"><dt className="text-[var(--text-primary)]">Transmission nette</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.transmissionNetteHeritier.toLocaleString('fr-FR')} €</dd></div>
                       <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Droits de mutation</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.droitsSuccession.toLocaleString('fr-FR')} €</dd></div>
                       {h.prelev990I > 0 && (
                         <div className="flex justify-between"><dt className="text-[var(--text-secondary)]">Prélèvement sur les capitaux décès</dt><dd className="kairos-num tabular-nums text-[var(--text-primary)]">{h.prelev990I.toLocaleString('fr-FR')} €</dd></div>
@@ -689,8 +687,8 @@ export const ProcessusCalcul = () => {
             </div>
           </div>
 
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
     </div>
   );
 };

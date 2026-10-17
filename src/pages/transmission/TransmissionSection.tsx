@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import AnimatedBackground from '@/components/ui/animated-tabs';
+import { useModuleSubNav } from '@/hooks/useModuleSubNav';
+import { WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { GitFork } from 'lucide-react';
 import { Synthese } from '@/components/transmission/Synthese';
 import { Liberalites } from '@/components/transmission/Liberalites';
 import { AssuranceVie } from '@/components/transmission/AssuranceVie';
@@ -56,6 +58,10 @@ export const TransmissionSection = () => {
     ...(hasConjoint ? [{ id: 'succession-2nd-deces', label: 'Succession 2nd décès' }] : [])
   ];
 
+  // Sous-navigation dans la barre latérale, comme les autres modules (remplace la barre d'onglets
+  // propre au module). Le paramètre ?tab= reste pris en compte via l'effet ci-dessus.
+  useModuleSubNav(TABS, activeTab, setActiveTab);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'synthese':
@@ -75,48 +81,21 @@ export const TransmissionSection = () => {
     }
   };
 
+  const tabLabel = TABS.find((t) => t.id === activeTab)?.label ?? 'Synthèse';
+
+  // Cadre « panneau de travail », sur le modèle de Famille, Patrimoine, Immobilier et Sociétés.
   return (
-    <div className="kairos-transmission p-6">
-      <div className="mb-6">
-        <div>
-          <p className="text-[var(--text-secondary)]">
-            Planifiez et optimisez la transmission de votre patrimoine
-          </p>
-        </div>
+    <div className="workspace-panel kairos-transmission -mx-4 -mt-3 md:-m-6">
+      <WorkspaceHeader icon={<GitFork strokeWidth={1.75} />} trail={['Transmission', tabLabel]} />
+
+      <div className="px-8 pt-6 pb-4">
+        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{tabLabel}</h1>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">
+          Planifiez et optimisez la transmission de votre patrimoine
+        </p>
       </div>
 
-      {/* Onglets défilants sur écran étroit (barre de défilement masquée) */}
-      <div className="mb-6 flex justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-max shrink-0 gap-5 md:gap-7 border-b border-[var(--kt-border)]">
-          <AnimatedBackground
-            defaultValue="synthese"
-            onValueChange={(value) => setActiveTab(value || 'synthese')}
-            className="bg-transparent border-b-2 border-[var(--ink-900)] rounded-none shadow-none"
-            transition={{
-              ease: "easeInOut",
-              duration: 0.2,
-            }}
-          >
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                data-id={tab.id}
-                type="button"
-                className={
-                  "inline-flex items-center justify-center px-0 pb-3 text-[15px] transition-transform active:scale-[0.98] " +
-                  (activeTab === tab.id
-                    ? "font-semibold text-[var(--text-primary)]"
-                    : "font-medium text-[var(--text-secondary)]")
-                }
-              >
-                {tab.label}
-              </button>
-            ))}
-          </AnimatedBackground>
-        </div>
-      </div>
-
-      <div className="mt-6">
+      <div className="border-t border-border">
         {renderContent()}
       </div>
     </div>

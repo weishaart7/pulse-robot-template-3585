@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Chip, panelButtonClass } from '@/components/layout/workspace-panel';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/patrimoine/utils';
@@ -43,26 +43,26 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <PanelCard>
+      <PanelCardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Versements & Rachats</CardTitle>
+          <PanelCardTitle>Versements & Rachats</PanelCardTitle>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowForm(!showForm)}
-            className="gap-1"
+            className={`gap-1.5 ${panelButtonClass}`}
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             Ajouter
           </Button>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      </PanelCardHeader>
+      <PanelCardContent>
         {/* Add form */}
         {showForm && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-lg bg-muted/50">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-[2px] bg-muted/50">
               <div className="space-y-1">
                 <Label className="text-xs">Type</Label>
                 <Select value={newType} onValueChange={(v) => setNewType(v as 'versement' | 'rachat')}>
@@ -121,7 +121,7 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
         ) : (
           <div className="space-y-2">
             {operations.map((op) => (
-              <div key={op.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50 transition-colors group">
+              <div key={op.id} className="flex items-center justify-between py-2 px-3 rounded-[2px] hover:bg-muted/50 transition-colors group">
                 <div className="flex items-center gap-3">
                   {op.type_operation === 'versement' ? (
                     <div className="w-8 h-8 rounded-full bg-[var(--kt-positive)]/10 flex items-center justify-center">
@@ -134,9 +134,9 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
                   )}
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={op.type_operation === 'versement' ? 'default' : 'destructive'} className="text-xs">
+                      <Chip tone={op.type_operation === 'versement' ? 'lagon' : 'alerte'}>
                         {op.type_operation === 'versement' ? 'Versement' : 'Rachat'}
-                      </Badge>
+                      </Chip>
                       <span className="text-sm text-muted-foreground">
                         {new Date(op.date_operation).toLocaleDateString('fr-FR')}
                       </span>
@@ -147,7 +147,7 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`font-semibold ${op.type_operation === 'versement' ? 'text-[var(--kt-positive)]' : 'text-destructive'}`}>
+                  <span className={`font-medium ${op.type_operation === 'versement' ? 'text-[var(--kt-positive)]' : 'text-destructive'}`}>
                     {op.type_operation === 'versement' ? '+' : '-'}{formatCurrency(op.montant)}
                   </span>
                   <Button
@@ -163,7 +163,7 @@ export const AVOperationsTable: React.FC<AVOperationsTableProps> = ({ operations
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </PanelCardContent>
+    </PanelCard>
   );
 };

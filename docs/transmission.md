@@ -44,6 +44,8 @@ module Famille (liens familiaux, statut du couple) — voir `docs/patrimoine.md`
 | Assurance-vie | [AssuranceVie.tsx](src/components/transmission/AssuranceVie.tsx) | Contrats hors succession civile (AV et PER assurantiels des deux époux), taxation 990 I / art. 757 B séparée. La répartition par bénéficiaire et son total ne portent que sur les contrats dénoués au décès simulé de l'utilisateur, même filtre que `computeTransmission` |
 | Donations & legs | `DonationForm.tsx`, `LegsForm.tsx`, [Liberalites.tsx](src/components/transmission/Liberalites.tsx) | Saisie des libéralités consommées par le moteur de liquidation |
 
+**Habillage** : « panneau de travail » (cf. [design-system.md](design-system.md) §8) — fil d'Ariane « Transmission / onglet », onglets dans la barre latérale (`useModuleSubNav`, le paramètre `?tab=` reste lu), contenu bord à bord. Synthèse : bande d'en-tête sur le modèle d'Immobilier (transmission nette, masse de calcul, réserve, quotité disponible et coûts en `SummaryRow` ; répartition par bénéficiaire en barre segmentée et lignes), puis succession légale, coûts (tableau + barres empilées lagon / citron) et abattements en lignes filetées. Assurance-vie : valeur totale en tête, fiche contrat avec bandeau, indicateurs en bande divisée et colonnes filetées. Succession 2nd décès : ordre des décès en bascule segmentée dans un bandeau. Fenêtres Donation / Legs au format des dialogues de panneau.
+
 **Principe d'affichage** : à l'écran, chiffres, formules et avertissements bloquants ; les explications
 juridiques (fondement, exclusions, nuances) et les aides contextuelles derrière un « ? » (`FieldHelp`,
 `src/components/ui/field-help.tsx`, options `side` / `contentClassName` pour les textes longs). Appliqué à

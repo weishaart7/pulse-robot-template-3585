@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import { AddButton, Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -13,13 +14,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 import { useLiberalites } from '@/hooks/useLiberalites';
 import { useAssets } from '@/hooks/useAssets';
 import { useToast } from '@/hooks/use-toast';
 import { liberaliteService, Liberalite } from '@/services/liberaliteService';
 import { buildTransmissionLiberalites } from '@/utils/transmissionHelpers';
-import { Plus, Edit, Trash2, AlertTriangle, StickyNote } from 'lucide-react';
+import { Edit, Trash2, AlertTriangle, StickyNote } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DonationForm } from './DonationForm';
@@ -166,9 +166,9 @@ export const Liberalites = () => {
           <div className="flex items-center gap-2">
             <span>{group.denomination}</span>
             {group.statut === 'projet' && (
-              <Badge variant="outline" className="shrink-0 text-[var(--text-primary)] border-[var(--warning)]/30 ">
+              <Chip tone="citron">
                 Projet
-              </Badge>
+              </Chip>
             )}
             {group.notes && (
               <Tooltip>
@@ -196,7 +196,7 @@ export const Liberalites = () => {
             )}
             <span>{group.beneficiairesLabel}</span>
             {group.rows.length > 1 && (
-              <Badge variant="secondary" className="shrink-0">{group.rows.length} bénéficiaires</Badge>
+              <Chip>{group.rows.length} bénéficiaires</Chip>
             )}
           </div>
         </TableCell>
@@ -253,24 +253,21 @@ export const Liberalites = () => {
   }
 
   return (
-    <div className="kairos-transmission space-y-6">
+    <div className="kairos-transmission [&>[role=alert]]:mx-8 [&>[role=alert]]:my-4 [&>[role=alert]]:w-auto [&>[role=alert]]:rounded-[2px]">
       {/* Bloc Donations */}
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="flex items-center justify-between text-[15px] font-semibold text-[var(--text-primary)]">
-            Donations
-            <Button onClick={handleOpenDonationCreate} className="bg-[var(--ink-900)] text-white border border-[var(--ink-900)] rounded-[var(--radius-lg)] hover:bg-[var(--ink-800)] shadow-none">
-              <Plus className="mr-2 h-4 w-4" />
-              Ajouter une donation
-            </Button>
-          </CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Gérez les donations effectuées ou prévues
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
+      <PanelCard>
+        <PanelCardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+          <div>
+            <PanelCardTitle>Donations</PanelCardTitle>
+            <PanelCardDescription>
+              Gérez les donations effectuées ou prévues
+            </PanelCardDescription>
+          </div>
+          <AddButton onClick={handleOpenDonationCreate}>Ajouter une donation</AddButton>
+        </PanelCardHeader>
+        <PanelCardContent>
           {donationGroups.length === 0 ? (
-            <p className="text-[var(--text-secondary)] text-center py-8">
+            <p className="text-[13px] text-muted-foreground">
               Aucune donation enregistrée
             </p>
           ) : (
@@ -289,26 +286,23 @@ export const Liberalites = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
       {/* Bloc Legs */}
-      <Card className="bg-[var(--surface)] border-[var(--kt-border)] rounded-[var(--radius-2xl)] shadow-[var(--shadow-sm)]">
-        <CardHeader className="p-5">
-          <CardTitle className="flex items-center justify-between text-[15px] font-semibold text-[var(--text-primary)]">
-            Legs (Testament)
-            <Button onClick={handleOpenLegsCreate} className="bg-[var(--ink-900)] text-white border border-[var(--ink-900)] rounded-[var(--radius-lg)] hover:bg-[var(--ink-800)] shadow-none">
-              <Plus className="mr-2 h-4 w-4" />
-              Ajouter un legs
-            </Button>
-          </CardTitle>
-          <CardDescription className="text-[var(--text-secondary)]">
-            Gérez les legs testamentaires prévus
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5 pt-0">
+      <PanelCard>
+        <PanelCardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+          <div>
+            <PanelCardTitle>Legs (Testament)</PanelCardTitle>
+            <PanelCardDescription>
+              Gérez les legs testamentaires prévus
+            </PanelCardDescription>
+          </div>
+          <AddButton onClick={handleOpenLegsCreate}>Ajouter un legs</AddButton>
+        </PanelCardHeader>
+        <PanelCardContent>
           {legsGroups.length === 0 ? (
-            <p className="text-[var(--text-secondary)] text-center py-8">
+            <p className="text-[13px] text-muted-foreground">
               Aucun legs enregistré
             </p>
           ) : (
@@ -327,8 +321,8 @@ export const Liberalites = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </PanelCardContent>
+      </PanelCard>
 
       {/* Confirmation de suppression */}
       <AlertDialog open={!!groupToDelete} onOpenChange={(open) => !open && setGroupToDelete(null)}>
