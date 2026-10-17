@@ -78,3 +78,45 @@ describe('resolveAssetFiscalRegime — origine', () => {
     expect(pvFiscale(r)).toBe(190000);
   });
 });
+
+describe('computePVIRegime — cession simulée', () => {
+  const base = {
+    nature: 'Immeubles locatifs (loués nus)',
+    valeurAcquisition: 200_000,
+    fraisAcquisition: 0,
+    acquisitionOnereuse: true,
+    dateAcquisition: '2016-03-01',
+  };
+
+  it('apprécie la durée de détention à la date de cession fournie', () => {
+    // Plus-value brute 100 000 € ; à 9 ans révolues : abattement IR 24 %.
+    const r = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2025, 5, 1) });
+    expect(r?.irDetail).toBe('Abattement 24%');
+    const r2 = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2040, 5, 1) });
+    expect(r2?.irDetail).toBe('Abattement 100%');
+  });
+
+  it('retient les travaux réels s’ils sont plus favorables que le forfait de 15 %, sans cumul', () => {
+    const forfait = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2025, 5, 1) });
+    const reels = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2025, 5, 1), travauxReels: 50_000 });
+    const reelsFaibles = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2025, 5, 1), travauxReels: 10_000 });
+    // Forfait 15 % = 30 000 € ; travaux réels 50 000 € → base réduite de 20 000 € de plus.
+    expect(reels!.ir!).toBeLessThan(forfait!.ir!);
+    expect(reelsFaibles!.ir!).toBeCloseTo(forfait!.ir!, 6);
+  });
+
+  it('admet les travaux réels avant 5 ans de détention (pas de forfait)', () => {
+    const sans = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2019, 5, 1) });
+    const avec = computePVIRegime({ ...base, plusValue: 100_000, dateCession: new Date(2019, 5, 1), travauxReels: 20_000 });
+    expect(avec!.ir!).toBeLessThan(sans!.ir!);
+  });
+
+  it('majore la plus-value LMNP des amortissements réintégrés, forfait 7,5 % sur le prix brut', () => {
+    const lmnp = { ...base, nature: 'Immeubles locatifs (LMNP)', dateCession: new Date(2025, 5, 1) };
+    const sans = computePVIRegime({ ...lmnp, plusValue: 100_000 });
+    const avec = computePVIRegime({ ...lmnp, plusValue: 100_000, amortissementsReintegres: 40_000 });
+    // Même abattement : l'IR croît de 40 000 × (1 − 24 %) × 19 %.
+    expect(avec!.ir! - sans!.ir!).toBeCloseTo(40_000 * 0.76 * 0.19, 6);
+    expect(avec!.note).toContain('Amortissements déduits réintégrés');
+  });
+});

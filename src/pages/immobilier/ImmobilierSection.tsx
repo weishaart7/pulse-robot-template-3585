@@ -84,7 +84,7 @@ export const ImmobilierSection = () => {
   if (selectedAsset && isPartsFoncieres(selectedAsset.nature)) {
     return (
       <div>
-        <PartsFoncieresDetailView asset={selectedAsset} onBack={handleDialogClose} onUpdate={handleUpdate} />
+        <PartsFoncieresDetailView asset={selectedAsset} emprunts={emprunts} onBack={handleDialogClose} onUpdate={handleUpdate} />
       </div>
     );
   }

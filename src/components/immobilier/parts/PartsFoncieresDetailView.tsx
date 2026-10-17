@@ -14,6 +14,8 @@ import { AcquisitionDateInput } from '@/components/immobilier/property/PropertyG
 import { useToast } from '@/hooks/use-toast';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { Asset, assetService } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
+import { SimulationReventeSection } from '@/components/immobilier/revente/SimulationReventeSection';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getFractionDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { formatCurrency } from '@/lib/patrimoine/utils';
@@ -22,6 +24,8 @@ import { computeIndicateursParts, estBienNuEnDirect, regimeImpositionParts } fro
 
 interface PartsFoncieresDetailViewProps {
   asset: Asset;
+  /** Emprunts Patrimoine des biens (revente : capital restant dû des parts financées à crédit). */
+  emprunts?: Emprunt[];
   onBack: () => void;
   onUpdate: () => void;
 }
@@ -41,7 +45,7 @@ const EXONERATION_RURALE_LIBELLE: Record<string, string> = {
 // d'épargne forestière) en « panneau de travail » : saisie à gauche, indicateurs et imposition
 // indicative à droite. Aucun impôt calculé : le revenu imposable vient de l'attestation fiscale du
 // gestionnaire (cf. lib/immobilier/partsFoncieres.ts).
-export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> = ({ asset, onBack, onUpdate }) => {
+export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> = ({ asset, emprunts = [], onBack, onUpdate }) => {
   const { toast } = useToast();
   const [etablissement, setEtablissement] = useState(asset.etablissement ?? '');
   // La saisie de date (SmartDateInput) s'appuie sur le contexte react-hook-form d'un FormItem : la date
@@ -275,6 +279,13 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
           </div>
         </aside>
       </div>
+
+      {/* Revente : plus-value immobilière pour les SCPI ; les groupements fonciers et forestiers sont hors périmètre. */}
+      {asset.nature === 'Parts de SCPI' && (
+        <div className="border-t border-border px-8 py-6">
+          <SimulationReventeSection asset={asset} emprunts={emprunts} />
+        </div>
+      )}
     </div>
   );
 };

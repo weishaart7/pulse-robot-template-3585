@@ -7,6 +7,7 @@ import { WorkspaceHeader, panelButtonClass, panelPrimaryButtonClass } from '@/co
 import { Asset } from '@/services/assetService';
 import type { Emprunt } from '@/services/passifService';
 import { ProjectionBienSection } from './projection/ProjectionBienSection';
+import { SimulationReventeSection } from './revente/SimulationReventeSection';
 import { useImmobilierPropertyForm } from '@/hooks/useImmobilierPropertyForm';
 import { PropertyGeneralSection } from './property/PropertyGeneralSection';
 import { PropertyCostSection } from './property/PropertyCostSection';
@@ -96,6 +97,12 @@ export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailView
       {showForm && (
         <div className="border-t border-border px-8 py-6">
           <ProjectionBienSection asset={asset} emprunts={emprunts} />
+        </div>
+      )}
+
+      {showForm && (
+        <div className="border-t border-border px-8 py-6">
+          <SimulationReventeSection asset={asset} emprunts={emprunts} />
         </div>
       )}
     </div>

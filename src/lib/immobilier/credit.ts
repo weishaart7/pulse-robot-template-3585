@@ -125,6 +125,8 @@ export interface CreditBien {
   part: number;
   source: 'emprunt' | 'financement';
   libelle?: string;
+  /** Taux nominal annuel en % (pénalités de remboursement anticipé). */
+  tauxAnnuel: number;
 }
 
 /**
@@ -143,11 +145,11 @@ export function creditsDuBien(
     return relies.flatMap((e) => {
       const p = parametresDepuisEmprunt(e);
       if (!p) return [];
-      return [{ echeancier: construireEcheancier(p), part: partFoyerEmprunt(e) ?? quotePart / 100, source: 'emprunt' as const, libelle: e.libelle }];
+      return [{ echeancier: construireEcheancier(p), part: partFoyerEmprunt(e) ?? quotePart / 100, source: 'emprunt' as const, libelle: e.libelle, tauxAnnuel: p.tauxAnnuel }];
     });
   }
   const p = parametresDepuisFinancement(asset, capitalEmprunteFinancement);
-  return p ? [{ echeancier: construireEcheancier(p), part: quotePart / 100, source: 'financement' as const }] : [];
+  return p ? [{ echeancier: construireEcheancier(p), part: quotePart / 100, source: 'financement' as const, tauxAnnuel: p.tauxAnnuel }] : [];
 }
 
 export interface SyntheseCredit {

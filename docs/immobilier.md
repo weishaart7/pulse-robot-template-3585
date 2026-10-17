@@ -495,6 +495,13 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Deux lectures de `pourcentage_utilisateur`/`pourcentage_conjoint`** : Immobilier
+  (`computeQuotePart`) additionne les deux pourcentages, quelle que soit la qualification du bien ;
+  Patrimoine (`getRepartitionFoyer`) ne les lit qu'en « Indivision » et attribue au conjoint le
+  complément d'un pourcentage saisi seul. Un bien « utilisateur 50 % » compte donc pour 50 % dans les
+  indicateurs, la projection et les simulateurs d'Immobilier, mais pour 100 % du foyer dans Patrimoine
+  et dans la simulation de revente (qui suit Patrimoine pour l'impôt par cédant).
+
 - **Simulateurs LMNP/LMP sans quote-part** : `computeRentabiliteLMNP`/`LMP` et le résumé fiscal de
   `LMNPDetailView` ne pondèrent ni loyers, ni charges, ni crédit par la quote-part du foyer (convention
   existante, conservée pour le crédit issu d'un emprunt Patrimoine, compté à 100 %), contrairement au
@@ -618,7 +625,34 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
     capital restant dû, valeur (valeur estimée × quote-part × fraction de démembrement actuelle, supposée
     constante) et valeur nette. Graphique à une seule échelle (cashflow ou valeur nette, au choix) et
     tableau complet. La projection de la fiche LMNP/LMP porte sur les données enregistrées, pas sur la
-    saisie en cours. Hors périmètre : impôt année par année, revente.
+    saisie en cours. Hors périmètre : impôt année par année.
+  - **Simuler une revente** ([revente.ts](src/lib/immobilier/revente.ts), testé ;
+    [SimulationReventeSection.tsx](src/components/immobilier/revente/SimulationReventeSection.tsx)) dans la
+    fiche des résidences et biens locatifs, la fiche LMNP/LMP et la fiche des parts de SCPI. Rien n'est
+    enregistré. Hypothèses **toutes modifiables** : date de vente (aujourd'hui), prix (valeur estimée),
+    frais de vente à la charge du vendeur (déduits du prix), travaux réels retenus, amortissements LMNP
+    déduits et case « résidence étudiante, seniors ou EHPAD », pénalités de remboursement anticipé.
+    Calcul :
+    - plus-value via `computePVIRegime` de Patrimoine (abattements à la date de vente, IR 19 %, PS
+      17,2 %, surtaxe par cédant, forfaits) ; prix d'achat = `montant_immeuble`, sinon
+      `valeur_acquisition` ; frais d'acquisition réels = **notaire + agence** (frais bancaires et
+      d'hypothèque exclus, non déductibles), sinon `frais_acquisition` ;
+    - travaux réels proposés par défaut (art. 150 VB II 4° CGI, vérifié sur le BOFiP
+      BOI-RFPI-PVI-20-10-20-20 : amélioration, construction, agrandissement facturés et jamais déduits ;
+      entretien et réparation exclus ; forfait de 15 % au choix après 5 ans) : bien loué nu →
+      construction seule ; bien non loué → rénovation + construction ; meublé → 0 (travaux amortis). Le
+      champ « rénovation » ne distinguant pas amélioration et entretien, la valeur est à vérifier ;
+    - LMNP : amortissements déduits réintégrés pour une vente à compter du 15/02/2025 (hors résidences
+      services), estimation par défaut = amortissement annuel de l'immeuble (hors mobilier) × années de
+      détention, borné à la durée de chaque composant — un maximum, à remplacer par le cumul réel ;
+    - part du foyer et répartition entre cédants selon `getRepartitionFoyer` (règle de Patrimoine) ;
+    - crédit : capital restant dû à la date de vente (échéancier de credit.ts) et pénalités au plafond
+      légal par défaut (6 mois d'intérêts au taux du prêt, au plus 3 % du capital restant dû,
+      art. L313-48 C. consom.), modifiables (0 si le prêt n'en prévoit pas) ;
+    - net perçu par le foyer = prix net × part du foyer − impôt − capital restant dû − pénalités.
+    Hors périmètre, signalé : LMP (plus-values professionnelles, art. 151 septies), biens démembrés,
+    groupements fonciers et forestiers, terrains agricoles, exonérations particulières (première cession
+    avec remploi, cession ≤ 15 000 €, retraités modestes).
   - **Distinction LMNP/LMP** dans le calcul lui-même : les nouveaux simulateurs de rentabilité
     distinguent désormais les deux statuts (plafonnement de l'amortissement et PS à 18,6 % en LMNP ;
     pas de plafonnement, déficit imputable sans limite et cotisations sociales en saisie libre en LMP,

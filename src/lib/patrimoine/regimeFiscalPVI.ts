@@ -111,6 +111,20 @@ export interface ComputePVIRegimeInput {
   // 50 000 € de la surtaxe s'apprécie par cédant (BOI-RFPI-TPVIE-20 :
   // indivisaires, époux pour un bien de communauté, partenaires de PACS).
   partsCedants?: number[];
+  // Optionnels, pour une cession simulée (Immobilier → « Simuler une revente ») :
+  // - dateCession : date à laquelle s'apprécie la durée de détention (aujourd'hui sinon) ;
+  // - travauxReels : dépenses d'amélioration, construction ou agrandissement
+  //   facturées par une entreprise et jamais déduites de l'impôt (art. 150 VB
+  //   II 4° CGI) — retenues pour leur montant si plus favorables que le forfait
+  //   de 15 % (alternative, jamais cumulée) ;
+  // - amortissementsReintegres : LMNP, cessions à compter du 15/02/2025 (art.
+  //   150 VB modifié par la LF 2025, art. 84) — prix d'acquisition minoré des
+  //   amortissements déduits. Le forfait de 7,5 % reste calculé sur le prix
+  //   d'acquisition brut (base non tranchée par les textes consultés, décision
+  //   du 2026-10-17 : pas de version « prudente » minorée).
+  dateCession?: Date;
+  travauxReels?: number;
+  amortissementsReintegres?: number;
 }
 
 /**
@@ -125,19 +139,23 @@ const computePlusValueFiscale = (
   years: number,
   valeurAcquisition?: number,
   fraisAcquisition?: number,
-  acquisitionOnereuse?: boolean
+  acquisitionOnereuse?: boolean,
+  travauxReels = 0,
+  amortissementsReintegres = 0,
 ): number => {
   if (valeurAcquisition === undefined) return plusValue;
   const frais = fraisAcquisition ?? 0;
   const fraisRetenus = acquisitionOnereuse
     ? Math.max(frais, valeurAcquisition * FORFAIT_FRAIS_ACQUISITION)
     : frais;
-  const travaux = years > 5 && !NATURES_NON_BATIES.includes(nature)
+  const forfaitTravaux = years > 5 && !NATURES_NON_BATIES.includes(nature)
     ? valeurAcquisition * FORFAIT_TRAVAUX
     : 0;
+  // Travaux réels (justifiés, non déduits) ou forfait 15 % : le plus favorable, jamais les deux.
+  const travaux = Math.max(forfaitTravaux, Math.max(0, travauxReels));
   // plusValue = valeurEstimee − valeurAcquisition − frais : on remplace les
   // frais réels par les frais retenus et on retire le forfait travaux.
-  return plusValue + frais - fraisRetenus - travaux;
+  return plusValue + frais - fraisRetenus - travaux + Math.max(0, amortissementsReintegres);
 };
 
 export const computePVIRegime = ({
@@ -148,6 +166,9 @@ export const computePVIRegime = ({
   fraisAcquisition,
   acquisitionOnereuse,
   partsCedants = [1],
+  dateCession,
+  travauxReels,
+  amortissementsReintegres,
 }: ComputePVIRegimeInput): FiscalRegimeResult | null => {
   if (nature === NATURE_RESIDENCE_PRINCIPALE) {
     return {
@@ -167,7 +188,7 @@ export const computePVIRegime = ({
     return null;
   }
 
-  const years = getHoldingYears(dateAcquisition);
+  const years = getHoldingYears(dateAcquisition, dateCession);
   if (years === null) {
     return {
       badge: isLMNP ? 'LMNP — durée inconnue' : 'PVI — durée inconnue',
@@ -179,9 +200,15 @@ export const computePVIRegime = ({
     };
   }
 
-  const plusValue = computePlusValueFiscale(plusValueLatente, nature, years, valeurAcquisition, fraisAcquisition, acquisitionOnereuse);
+  const plusValue = computePlusValueFiscale(plusValueLatente, nature, years, valeurAcquisition, fraisAcquisition, acquisitionOnereuse, travauxReels, amortissementsReintegres);
   const forfaitNote = valeurAcquisition !== undefined
-    ? `Plus-value imposable ${formatCurrency(Math.max(plusValue, 0))} après forfaits (frais d'acquisition 7,5 % si plus favorable${years > 5 && !NATURES_NON_BATIES.includes(nature) ? ', travaux 15 %' : ''}).`
+    ? `Plus-value imposable ${formatCurrency(Math.max(plusValue, 0))} après forfaits (frais d'acquisition 7,5 % si plus favorable${
+      (travauxReels ?? 0) > 0
+        ? years > 5 && !NATURES_NON_BATIES.includes(nature)
+          ? ', travaux réels ou forfait 15 %, le plus favorable'
+          : ', travaux réels'
+        : years > 5 && !NATURES_NON_BATIES.includes(nature) ? ', travaux 15 %' : ''
+    }).`
     : undefined;
 
   if (plusValue <= 0) {
@@ -211,7 +238,11 @@ export const computePVIRegime = ({
   const isExonereTotal = tauxAbattementIR >= 1 && tauxAbattementPS >= 1;
 
   const notes: string[] = forfaitNote ? [forfaitNote] : [];
-  if (isLMNP) {
+  if (isLMNP && amortissementsReintegres !== undefined) {
+    notes.push(
+      `Amortissements déduits réintégrés : ${formatCurrency(amortissementsReintegres)} (cessions depuis le 15/02/2025, hors résidences étudiantes, seniors et EHPAD). Forfait de 7,5 % calculé sur le prix d'acquisition avant réintégration : point non tranché par les textes consultés.`
+    );
+  } else if (isLMNP) {
     notes.push(
       "Depuis 2025, les amortissements déduits pendant la détention doivent être réintégrés dans le calcul (ils réduisent la valeur d'acquisition prise en compte, donc majorent la plus-value imposable). Ce montant cumulé n'est pas un champ du formulaire actif : à renseigner/estimer manuellement, il n'est pas ajouté ici. La plus-value réellement imposable est donc probablement supérieure à celle affichée."
     );

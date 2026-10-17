@@ -12,6 +12,7 @@ import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDia
 import { Asset, AssetRevenu, AssetCharge, assetService } from '@/services/assetService';
 import type { Emprunt } from '@/services/passifService';
 import { ProjectionBienSection } from '../projection/ProjectionBienSection';
+import { SimulationReventeSection } from '../revente/SimulationReventeSection';
 import { useToast } from '@/hooks/use-toast';
 import { RevenuForm } from '../RevenuForm';
 import { ChargeForm } from '../ChargeForm';
@@ -566,6 +567,11 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
       {/* Projection sur les données enregistrées (revenus, charges, crédit), pas sur la saisie en cours. */}
       <div className="border-t border-border px-8 py-6">
         <ProjectionBienSection asset={asset} emprunts={emprunts} />
+      </div>
+
+      {/* Revente : LMNP (réintégration des amortissements) ; LMP signalé hors périmètre. */}
+      <div className="border-t border-border px-8 py-6">
+        <SimulationReventeSection asset={asset} emprunts={emprunts} />
       </div>
 
       <WizardConfirmDialog

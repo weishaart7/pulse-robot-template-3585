@@ -142,11 +142,12 @@ export const resolveEffectiveNature = (
   return nature;
 };
 
-export const getHoldingYears = (dateAcquisition?: string): number | null => {
+/** Années révolues de détention à `dateReference` (aujourd'hui par défaut, ou date de cession simulée). */
+export const getHoldingYears = (dateAcquisition?: string, dateReference: Date = new Date()): number | null => {
   if (!dateAcquisition) return null;
   const acquisition = new Date(dateAcquisition);
   if (isNaN(acquisition.getTime())) return null;
-  return differenceInYears(new Date(), acquisition);
+  return differenceInYears(dateReference, acquisition);
 };
 
 export interface ComputeFiscalRegimeInput {
