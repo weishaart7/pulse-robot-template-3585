@@ -1,5 +1,5 @@
 import { FiscalRegimeResult, resolveEffectiveNature, computeFiscalRegime, PFU_IR, PFU_PS, PFU_RATE } from './regimeFiscalPlusValue';
-import { computePVIRegime, computeCorporelRegime, NATURE_SCI } from './regimeFiscalPVI';
+import { computePVIRegime, computeCorporelRegime, computeBienMeubleRegime, NATURE_SCI } from './regimeFiscalPVI';
 import { computeRetraiteRegime } from './regimeFiscalRetraite';
 import { ORIGINES_PROPRES } from './qualification';
 
@@ -28,9 +28,54 @@ export interface ResolveAssetFiscalRegimeInput {
   versementsDeduitsPct?: number | null;
   // Droits sociaux / parts de holding : cession au départ à la retraite (150-0 D ter).
   cessionDepartRetraite?: boolean | null;
+  // Objets numériques (NFT) : qualification fiscale de l'objet (cf. QUALIFICATIONS_NFT).
+  qualificationNft?: string | null;
+  // Matières premières : 'physique' (bien meuble) ou 'financiere' (PFU, défaut).
+  detentionMatieresPremieres?: string | null;
 }
 
 const REGIME_IS = 'Impôt sur les sociétés';
+
+const NATURE_NFT = 'Objets numériques (NFT, etc.)';
+const NATURE_MATIERES_PREMIERES = 'Matières premières (pétrole, blé…)';
+const NATURE_RETRAITE_ETRANGERE = 'Régimes de retraite étrangers';
+
+const pfu = (plusValue: number, badge: string, note: string): FiscalRegimeResult => ({
+  badge, tone: 'pfu', ir: plusValue * PFU_IR, ps: plusValue * PFU_PS, total: plusValue * PFU_RATE, note,
+});
+
+// Objets numériques : pas de catégorie fiscale propre, le régime suit la qualification de l'objet.
+const computeNftRegime = (
+  qualification: string | null | undefined,
+  plusValue: number,
+  valeurEstimee: number,
+  dateAcquisition?: string,
+): FiscalRegimeResult => {
+  switch (qualification) {
+    case 'actif_numerique':
+      return pfu(plusValue, 'NFT actif numérique — PFU 31,4%',
+        "Actif numérique (art. 150 VH bis CGI) : PFU ou barème sur option. Franchise annuelle de 305 € (cumul des cessions) non appliquée ; échange contre un autre actif numérique en sursis d'imposition.");
+    case 'titre_financier':
+      return pfu(plusValue, 'NFT titre financier — PFU 31,4%',
+        "Droits financiers ou de gouvernance (art. 150-0 A CGI) : PFU ou barème sur option ; pas de sursis en cas d'échange contre des cryptoactifs.");
+    case 'oeuvre_art': {
+      const r = computeCorporelRegime("Objets d'art et antiquités", plusValue, valeurEstimee, dateAcquisition);
+      if (r) return { ...r, note: `NFT certifiant une œuvre physique (art. 150 VI CGI). ${r.note ?? ''}`.trim() };
+      break;
+    }
+    case 'bien_meuble':
+      return computeBienMeubleRegime(plusValue, valeurEstimee, dateAcquisition,
+        "NFT bien meuble incorporel (art. 150 UA CGI, régime par défaut) : exonéré si le prix n'excède pas 5 000 €, sinon plus-value réelle avec abattement de 5 % par an au-delà de la 2e année, 19 % + 17,2 %.");
+  }
+  return {
+    badge: 'NFT — qualification ?',
+    tone: 'non_determine',
+    ir: null,
+    ps: null,
+    total: null,
+    note: "Qualification du NFT non renseignée sur l'actif : actif numérique, titre financier, œuvre d'art ou bien meuble incorporel, chacun avec son régime.",
+  };
+};
 const REGIME_IR = 'Impôt sur le revenu';
 
 // Acquisition à titre onéreux (forfait 7,5 % de frais applicable) : origine
@@ -61,8 +106,25 @@ export const resolveAssetFiscalRegime = ({
   modeSortie,
   versementsDeduitsPct,
   cessionDepartRetraite,
+  qualificationNft,
+  detentionMatieresPremieres,
 }: ResolveAssetFiscalRegimeInput): FiscalRegimeResult => {
   const effectiveNature = resolveEffectiveNature(nature, ctoMultiActifs, ctoNatureSousJacent);
+  if (effectiveNature === NATURE_RETRAITE_ETRANGERE) {
+    return {
+      badge: 'Non pris en compte',
+      tone: 'non_determine',
+      ir: null,
+      ps: null,
+      total: null,
+      note: "Régime de retraite étranger : fiscalité de sortie non prise en compte (dépend du pays et de la convention fiscale applicable).",
+    };
+  }
+  if (effectiveNature === NATURE_NFT) return computeNftRegime(qualificationNft, plusValue, valeurEstimee, dateAcquisition);
+  if (effectiveNature === NATURE_MATIERES_PREMIERES && detentionMatieresPremieres === 'physique') {
+    return computeBienMeubleRegime(plusValue, valeurEstimee, dateAcquisition,
+      "Matières premières détenues physiquement : bien meuble (art. 150 UA CGI), exonéré si le prix n'excède pas 5 000 €, sinon plus-value réelle avec abattement de 5 % par an au-delà de la 2e année, 19 % + 17,2 %.");
+  }
   const retraite = computeRetraiteRegime({ nature: effectiveNature, plusValue, valeurAcquisition, modeSortie, versementsDeduitsPct });
   if (retraite) return retraite;
   const corporel = computeCorporelRegime(effectiveNature, plusValue, valeurEstimee, dateAcquisition);
@@ -119,9 +181,11 @@ export const caracteristiquesFiscalesActif = (
     mode_sortie?: string | null;
     versements_deduits_pct?: number | null;
     cession_depart_retraite?: boolean | null;
+    qualification_nft?: string | null;
+    detention_matieres_premieres?: string | null;
   } | undefined,
   regimesSocietes: Record<string, string | null | undefined> = {},
-): Pick<ResolveAssetFiscalRegimeInput, 'terrainConstructible' | 'surfaceBoiseeHa' | 'fixeAuSol' | 'residenceServices' | 'regimeSociete' | 'modeSortie' | 'versementsDeduitsPct' | 'cessionDepartRetraite'> => ({
+): Pick<ResolveAssetFiscalRegimeInput, 'terrainConstructible' | 'surfaceBoiseeHa' | 'fixeAuSol' | 'residenceServices' | 'regimeSociete' | 'modeSortie' | 'versementsDeduitsPct' | 'cessionDepartRetraite' | 'qualificationNft' | 'detentionMatieresPremieres'> => ({
   terrainConstructible: asset?.terrain_constructible,
   surfaceBoiseeHa: asset?.surface_boisee_ha,
   fixeAuSol: asset?.fixe_au_sol,
@@ -130,4 +194,6 @@ export const caracteristiquesFiscalesActif = (
   modeSortie: asset?.mode_sortie,
   versementsDeduitsPct: asset?.versements_deduits_pct,
   cessionDepartRetraite: asset?.cession_depart_retraite,
+  qualificationNft: asset?.qualification_nft,
+  detentionMatieresPremieres: asset?.detention_matieres_premieres,
 });

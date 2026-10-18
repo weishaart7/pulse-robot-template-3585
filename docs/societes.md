@@ -40,7 +40,7 @@ parallèle** : [SocieteFormPage.tsx](src/pages/societes/SocieteFormPage.tsx), un
 en esprit mais avec un comportement différent (§2, §3).
 
 **Tables Supabase** : `societes` (dénomination, quotités, qualification civile, valeur/pourcentage IFI,
-identité SIRENE, régime fiscal, 6 champs comptables « snapshot »), et 8 tables filles toutes en
+identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, contrôlé à l'enregistrement dans `SocieteForm.tsx` car il commande la plus-value des parts côté Patrimoine —, 6 champs comptables « snapshot »), et 8 tables filles toutes en
 `societe_id → societes(id) ON DELETE CASCADE` : `societe_dividendes`, `societe_valorisations`,
 `societe_bilans`, `societe_associes`, `societe_pactes`, `societe_comptes_courants`, `societe_dutreil`,
 `societe_participations` (+ `societe_mere_id`/`societe_fille_id`, également `CASCADE`). `societes.user_id

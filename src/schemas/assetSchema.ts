@@ -137,6 +137,8 @@ export const assetSchema = z.object({
   mode_sortie: z.string().optional(),
   versements_deduits_pct: z.number().finite().min(0).max(100).optional(),
   cession_depart_retraite: z.boolean().optional(),
+  qualification_nft: z.enum(['actif_numerique', 'titre_financier', 'oeuvre_art', 'bien_meuble']).optional(),
+  detention_matieres_premieres: z.enum(['financiere', 'physique']).optional(),
   // Champs additionnels "épargne salariale" (PEE/PEI) — cf. NATURES_EPARGNE_SALARIALE.
   abondement_employeur: z.number().finite().nonnegative().optional(),
   date_disponibilite: z.date().optional(),

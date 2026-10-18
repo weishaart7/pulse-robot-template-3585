@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "12.2.12"
   }
   public: {
     Tables: {
@@ -302,20 +302,19 @@ export type Database = {
       assets: {
         Row: {
           abondement_employeur: number | null
+          assure_tiers: boolean
           attachement_emotionnel: number | null
           beneficiaire_designe: string | null
           bien_etranger: boolean | null
           capital_garanti: number | null
           certificat_expertise: boolean | null
           certificat_expertise_reference: string | null
+          cession_depart_retraite: boolean | null
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
+          conditions_787c: boolean | null
           conditions_exoneration_990i: boolean | null
           conditions_exoneration_rural: boolean | null
-          conditions_787c: boolean | null
-          valeur_assuree: number | null
-          assure_tiers: boolean
-          regime_retraite_etrangere: string | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
@@ -326,6 +325,7 @@ export type Database = {
           date_estimation: string | null
           denomination: string | null
           detenteur: string | null
+          detention_matieres_premieres: string | null
           duree_blocage: string | null
           est_propre_par_nature: boolean | null
           etablissement: string | null
@@ -335,6 +335,8 @@ export type Database = {
           financement_mixte_apport_propre: number | null
           financement_taux_assurance: number | null
           financement_taux_credit: number | null
+          fixe_au_sol: boolean | null
+          fraction_eligible_rural: number | null
           frais_acquisition: number | null
           frais_agence: number | null
           frais_bancaires: number | null
@@ -362,13 +364,15 @@ export type Database = {
           prix_exercice: number | null
           qualification_auto: boolean | null
           qualification_bien: string | null
-          regime_exoneration_rural: string | null
-          type_groupement: string | null
+          qualification_nft: string | null
           quantite: string | null
           quantite_millesime: string | null
           reduction_ir_entree: number | null
+          regime_exoneration_rural: string | null
           regime_fiscal_parts: string | null
           regime_location: string | null
+          regime_retraite_etrangere: string | null
+          residence_services: boolean | null
           revenus_distribues_12m: number | null
           situation_particuliere: string[] | null
           societe_id: string | null
@@ -376,44 +380,41 @@ export type Database = {
           sous_type_per: string | null
           statut_bien: string | null
           support_investissement: string | null
-          surface_m2: number | null
-          terrain_constructible: boolean | null
-          residence_services: boolean | null
           surface_boisee_ha: number | null
-          fixe_au_sol: boolean | null
-          fraction_eligible_rural: number | null
-          versements_deduits_pct: number | null
-          cession_depart_retraite: boolean | null
+          surface_m2: number | null
           taux_remuneration: number | null
+          terrain_constructible: boolean | null
           transfert_immobilier: boolean | null
           transfert_societe: boolean | null
           travaux_construction: number | null
           travaux_renovation: number | null
+          type_groupement: string | null
           type_location: string | null
           type_location_lmnp: string | null
           typologie_bien: string | null
           updated_at: string
           user_id: string
           valeur_acquisition: number | null
+          valeur_assuree: number | null
           valeur_estimee: number | null
+          versements_deduits_pct: number | null
           zone_bien: string | null
         }
         Insert: {
           abondement_employeur?: number | null
+          assure_tiers?: boolean
           attachement_emotionnel?: number | null
           beneficiaire_designe?: string | null
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           certificat_expertise?: boolean | null
           certificat_expertise_reference?: string | null
+          cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
+          conditions_787c?: boolean | null
           conditions_exoneration_990i?: boolean | null
           conditions_exoneration_rural?: boolean | null
-          conditions_787c?: boolean | null
-          valeur_assuree?: number | null
-          assure_tiers?: boolean
-          regime_retraite_etrangere?: string | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -424,6 +425,7 @@ export type Database = {
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          detention_matieres_premieres?: string | null
           duree_blocage?: string | null
           est_propre_par_nature?: boolean | null
           etablissement?: string | null
@@ -433,6 +435,8 @@ export type Database = {
           financement_mixte_apport_propre?: number | null
           financement_taux_assurance?: number | null
           financement_taux_credit?: number | null
+          fixe_au_sol?: boolean | null
+          fraction_eligible_rural?: number | null
           frais_acquisition?: number | null
           frais_agence?: number | null
           frais_bancaires?: number | null
@@ -460,13 +464,15 @@ export type Database = {
           prix_exercice?: number | null
           qualification_auto?: boolean | null
           qualification_bien?: string | null
-          regime_exoneration_rural?: string | null
-          type_groupement?: string | null
+          qualification_nft?: string | null
           quantite?: string | null
           quantite_millesime?: string | null
           reduction_ir_entree?: number | null
+          regime_exoneration_rural?: string | null
           regime_fiscal_parts?: string | null
           regime_location?: string | null
+          regime_retraite_etrangere?: string | null
+          residence_services?: boolean | null
           revenus_distribues_12m?: number | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
@@ -474,44 +480,41 @@ export type Database = {
           sous_type_per?: string | null
           statut_bien?: string | null
           support_investissement?: string | null
-          surface_m2?: number | null
-          terrain_constructible?: boolean | null
-          residence_services?: boolean | null
           surface_boisee_ha?: number | null
-          fixe_au_sol?: boolean | null
-          fraction_eligible_rural?: number | null
-          versements_deduits_pct?: number | null
-          cession_depart_retraite?: boolean | null
+          surface_m2?: number | null
           taux_remuneration?: number | null
+          terrain_constructible?: boolean | null
           transfert_immobilier?: boolean | null
           transfert_societe?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
+          type_groupement?: string | null
           type_location?: string | null
           type_location_lmnp?: string | null
           typologie_bien?: string | null
           updated_at?: string
           user_id: string
           valeur_acquisition?: number | null
+          valeur_assuree?: number | null
           valeur_estimee?: number | null
+          versements_deduits_pct?: number | null
           zone_bien?: string | null
         }
         Update: {
           abondement_employeur?: number | null
+          assure_tiers?: boolean
           attachement_emotionnel?: number | null
           beneficiaire_designe?: string | null
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           certificat_expertise?: boolean | null
           certificat_expertise_reference?: string | null
+          cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
+          conditions_787c?: boolean | null
           conditions_exoneration_990i?: boolean | null
           conditions_exoneration_rural?: boolean | null
-          conditions_787c?: boolean | null
-          valeur_assuree?: number | null
-          assure_tiers?: boolean
-          regime_retraite_etrangere?: string | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -522,6 +525,7 @@ export type Database = {
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
+          detention_matieres_premieres?: string | null
           duree_blocage?: string | null
           est_propre_par_nature?: boolean | null
           etablissement?: string | null
@@ -531,6 +535,8 @@ export type Database = {
           financement_mixte_apport_propre?: number | null
           financement_taux_assurance?: number | null
           financement_taux_credit?: number | null
+          fixe_au_sol?: boolean | null
+          fraction_eligible_rural?: number | null
           frais_acquisition?: number | null
           frais_agence?: number | null
           frais_bancaires?: number | null
@@ -558,13 +564,15 @@ export type Database = {
           prix_exercice?: number | null
           qualification_auto?: boolean | null
           qualification_bien?: string | null
-          regime_exoneration_rural?: string | null
-          type_groupement?: string | null
+          qualification_nft?: string | null
           quantite?: string | null
           quantite_millesime?: string | null
           reduction_ir_entree?: number | null
+          regime_exoneration_rural?: string | null
           regime_fiscal_parts?: string | null
           regime_location?: string | null
+          regime_retraite_etrangere?: string | null
+          residence_services?: boolean | null
           revenus_distribues_12m?: number | null
           situation_particuliere?: string[] | null
           societe_id?: string | null
@@ -572,26 +580,24 @@ export type Database = {
           sous_type_per?: string | null
           statut_bien?: string | null
           support_investissement?: string | null
-          surface_m2?: number | null
-          terrain_constructible?: boolean | null
-          residence_services?: boolean | null
           surface_boisee_ha?: number | null
-          fixe_au_sol?: boolean | null
-          fraction_eligible_rural?: number | null
-          versements_deduits_pct?: number | null
-          cession_depart_retraite?: boolean | null
+          surface_m2?: number | null
           taux_remuneration?: number | null
+          terrain_constructible?: boolean | null
           transfert_immobilier?: boolean | null
           transfert_societe?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
+          type_groupement?: string | null
           type_location?: string | null
           type_location_lmnp?: string | null
           typologie_bien?: string | null
           updated_at?: string
           user_id?: string
           valeur_acquisition?: number | null
+          valeur_assuree?: number | null
           valeur_estimee?: number | null
+          versements_deduits_pct?: number | null
           zone_bien?: string | null
         }
         Relationships: [
@@ -918,25 +924,25 @@ export type Database = {
       }
       emprunts: {
         Row: {
+          asset_id: string | null
           assurance_mode: string | null
           assurance_valeur: number | null
-          capital_initial: number | null
-          date_premiere_echeance: string | null
-          differe_mois: number | null
-          differe_type: string | null
-          duree_totale_mois: number | null
-          frais_dossier: number | null
-          frais_garantie: number | null
-          asset_id: string | null
           assure: boolean | null
           capital_garanti_deces: number | null
+          capital_initial: number | null
           capital_restant_du: number | null
           contributeur_remboursement: string | null
           cout_total_credit: number | null
           created_at: string
+          date_premiere_echeance: string | null
           date_souscription: string | null
           detenteur: string | null
+          differe_mois: number | null
+          differe_type: string | null
           duree_restante: number | null
+          duree_totale_mois: number | null
+          frais_dossier: number | null
+          frais_garantie: number | null
           id: string
           libelle: string
           mensualite: number | null
@@ -958,25 +964,25 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          asset_id?: string | null
           assurance_mode?: string | null
           assurance_valeur?: number | null
-          capital_initial?: number | null
-          date_premiere_echeance?: string | null
-          differe_mois?: number | null
-          differe_type?: string | null
-          duree_totale_mois?: number | null
-          frais_dossier?: number | null
-          frais_garantie?: number | null
-          asset_id?: string | null
           assure?: boolean | null
           capital_garanti_deces?: number | null
+          capital_initial?: number | null
           capital_restant_du?: number | null
           contributeur_remboursement?: string | null
           cout_total_credit?: number | null
           created_at?: string
+          date_premiere_echeance?: string | null
           date_souscription?: string | null
           detenteur?: string | null
+          differe_mois?: number | null
+          differe_type?: string | null
           duree_restante?: number | null
+          duree_totale_mois?: number | null
+          frais_dossier?: number | null
+          frais_garantie?: number | null
           id?: string
           libelle: string
           mensualite?: number | null
@@ -998,25 +1004,25 @@ export type Database = {
           user_id: string
         }
         Update: {
+          asset_id?: string | null
           assurance_mode?: string | null
           assurance_valeur?: number | null
-          capital_initial?: number | null
-          date_premiere_echeance?: string | null
-          differe_mois?: number | null
-          differe_type?: string | null
-          duree_totale_mois?: number | null
-          frais_dossier?: number | null
-          frais_garantie?: number | null
-          asset_id?: string | null
           assure?: boolean | null
           capital_garanti_deces?: number | null
+          capital_initial?: number | null
           capital_restant_du?: number | null
           contributeur_remboursement?: string | null
           cout_total_credit?: number | null
           created_at?: string
+          date_premiere_echeance?: string | null
           date_souscription?: string | null
           detenteur?: string | null
+          differe_mois?: number | null
+          differe_type?: string | null
           duree_restante?: number | null
+          duree_totale_mois?: number | null
+          frais_dossier?: number | null
+          frais_garantie?: number | null
           id?: string
           libelle?: string
           mensualite?: number | null
@@ -1921,6 +1927,7 @@ export type Database = {
           created_at: string | null
           date_donation_conjoint: string | null
           date_donation_personne: string | null
+          date_jugement_separation_corps: string | null
           date_mandat_protection_future_conjoint: string | null
           date_mariage: string | null
           date_naissance_conjoint: string | null
@@ -1962,7 +1969,6 @@ export type Database = {
           regime_matrimonial: string | null
           residence_fiscale_etranger_conjoint: boolean | null
           residence_separee: boolean
-          date_jugement_separation_corps: string | null
           separation_corps_clause_renonciation: boolean
           separation_de_corps: boolean
           statut_couple: string | null
@@ -1983,6 +1989,7 @@ export type Database = {
           created_at?: string | null
           date_donation_conjoint?: string | null
           date_donation_personne?: string | null
+          date_jugement_separation_corps?: string | null
           date_mandat_protection_future_conjoint?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
@@ -2024,7 +2031,6 @@ export type Database = {
           regime_matrimonial?: string | null
           residence_fiscale_etranger_conjoint?: boolean | null
           residence_separee?: boolean
-          date_jugement_separation_corps?: string | null
           separation_corps_clause_renonciation?: boolean
           separation_de_corps?: boolean
           statut_couple?: string | null
@@ -2045,6 +2051,7 @@ export type Database = {
           created_at?: string | null
           date_donation_conjoint?: string | null
           date_donation_personne?: string | null
+          date_jugement_separation_corps?: string | null
           date_mandat_protection_future_conjoint?: string | null
           date_mariage?: string | null
           date_naissance_conjoint?: string | null
@@ -2086,7 +2093,6 @@ export type Database = {
           regime_matrimonial?: string | null
           residence_fiscale_etranger_conjoint?: boolean | null
           residence_separee?: boolean
-          date_jugement_separation_corps?: string | null
           separation_corps_clause_renonciation?: boolean
           separation_de_corps?: boolean
           statut_couple?: string | null

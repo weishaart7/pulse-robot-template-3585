@@ -228,6 +228,14 @@ const computeBiensMeubles = (
   };
 };
 
+/** Régime des biens meubles (art. 150 UA CGI) pour une nature hors des listes ci-dessous (NFT, matières premières détenues physiquement). */
+export const computeBienMeubleRegime = (
+  plusValue: number,
+  valeurEstimee: number,
+  dateAcquisition: string | undefined,
+  noteRegime: string,
+): FiscalRegimeResult => computeBiensMeubles(plusValue, getHoldingYears(dateAcquisition), valeurEstimee, noteRegime);
+
 const LMP_RESULT: FiscalRegimeResult = {
   badge: 'LMP — plus-values professionnelles',
   tone: 'informatif',

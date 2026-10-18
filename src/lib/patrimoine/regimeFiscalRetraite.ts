@@ -81,7 +81,7 @@ export function computeRetraiteRegime({
       ir: null,
       ps: null,
       total: null,
-      note: "Part des versements déduits du revenu non renseignée : elle détermine l'imposition du capital à la sortie (barème pour la part déduite).",
+      note: "Part des versements déduits du revenu non renseignée : elle détermine l'imposition du capital à la sortie (barème pour la part déduite). Calcul non effectué tant qu'elle n'est pas renseignée sur l'actif.",
     };
   }
   const gain = Math.max(0, plusValue);

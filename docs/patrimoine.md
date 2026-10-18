@@ -52,7 +52,7 @@ Revue nature par nature (distinctions, plus-value, succession). Plus-value : `re
 | LMNP | Régime des particuliers ; réintégration des amortissements (simulateur) sauf `residence_services` | Réintégration dans la vue Patrimoine (note seule, amortissements non saisis) |
 | LMP | Résultat informatif (court/long terme, 151 septies) | Calcul : recettes, ancienneté d'activité, amortissements non saisis ; simulateur hors périmètre |
 | Immeubles professionnels | Régime général, hypothèse patrimoine privé (note) | PV professionnelles si inscrit à l'actif |
-| Parts de SCI | Régime de la société liée (`societes.regime_fiscal`) : IS → PFU 31,4 % ; IR → PVI parts sans forfaits ; inconnu → non déterminé | Correction du prix des parts (bénéfices non distribués) ; simulateur hors périmètre ; valorisation/décote DMTG relève du module Sociétés |
+| Parts de SCI | Régime de la société liée (`societes.regime_fiscal`, obligatoire pour une SCI dans `SocieteForm.tsx`) : IS → PFU 31,4 % ; IR → PVI parts sans forfaits ; non rattachée ou inconnu → non déterminé | Correction du prix des parts (bénéfices non distribués) ; simulateur hors périmètre ; valorisation/décote DMTG relève du module Sociétés |
 | Parts de SCPI | PVI parts sans forfaits | Reprise d'avantage des SCPI fiscales : note seule |
 | Parts de groupements fonciers | `type_groupement` : GFA/GAF/GFV/GFR → agricole (793 bis), GFF et **GFI (groupement forestier d'investissement)** → forestier (3/4 sans plafond) ; PV parts sans forfaits | Réduction IR à la souscription (reprise) : note seule |
 | Bois & forêts | Régime général sans forfait travaux ; réduction IR de 10 €/ha/an (150 VF III) si `surface_boisee_ha` saisi ; DMTG forestier imposé | — |
@@ -79,7 +79,10 @@ Plus-value : `regimeFiscalPlusValue.ts::computeFiscalRegime` (PFU 31,4 % = 12,8 
 | Actions gratuites | Informatif | Calcul (valeur à l'acquisition non saisie) |
 | BSPCE | Informatif, conforme LF 2025 (gain d'exercice 12,8 % si ancienneté ≥ 3 ans, barème sinon ; cession PFU) | Ancienneté non saisie |
 | Cryptomonnaies | PFU | Franchise de 305 € (cumul annuel) : note seule |
-| Métaux précieux (argent, platine), et Or (physique) | Exonération si prix ≤ 5 000 € (150 VJ) ; sinon choix taxe forfaitaire 11,5 % / plus-value réelle 36,2 % avec abattement 5 %/an après 2 ans | — |
+| Objets numériques (NFT) | Selon `qualification_nft` (aucun défaut ; non déterminé sans elle) : actif numérique (150 VH bis) → PFU ; titre financier (150-0 A) → PFU ; œuvre d'art (150 VI, œuvre physique certifiée) → régime des objets précieux ; bien meuble incorporel (150 UA) → biens meubles | Franchise de 305 €, sursis d'échange entre actifs numériques : note seule |
+| Matières premières | `detention_matieres_premieres` : financière ou non renseignée → PFU (note) ; physique → biens meubles (150 UA). Lieu de stockage et quantité affichés en détention physique seulement | — |
+| Autres placements divers | PFU par hypothèse (note) | — |
+| Métaux précieux (argent, platine), et Or (physique) | Choix taxe forfaitaire 11,5 % (11 % + 0,5 % CRDS, due quel que soit le prix : le seuil de 5 000 € ne vise que bijoux et objets d'art) / plus-value réelle 36,2 % avec abattement 5 %/an après 2 ans | — |
 
 ### Fiscalité par nature — épargne et assurance-vie
 
@@ -106,12 +109,12 @@ Sortie (`lib/patrimoine/regimeFiscalRetraite.ts`, appelé en premier par `assetF
 
 | Nature | En place | Non modélisé |
 |---|---|---|
-| PER individuel, PER entreprise collectif | Capital (`mode_sortie` Capital, Mixte ou vide) : gains au PFU 31,4 % ; capital issu des versements déduits (`versements_deduits_pct`, migration `20261018170000`) signalé au barème, non chiffré (« Hors capital imposé au barème ») ; part déduite non renseignée : non déterminé. Rente : informatif (RVTG pour la part déduite, RVTO sinon) | Compartiments (épargne salariale du PER collectif : note seule), chiffrage au barème, déblocages anticipés (note) |
+| PER individuel, PER entreprise collectif | Capital (`mode_sortie` Capital, Mixte ou vide) : gains au PFU 31,4 % ; capital issu des versements déduits (`versements_deduits_pct`, migration `20261018170000`) signalé au barème, non chiffré (« Hors capital imposé au barème ») ; part déduite non renseignée : non déterminé, avec avertissement sur la fiche. Rente : informatif (RVTG pour la part déduite, RVTO sinon) | Compartiments (épargne salariale du PER collectif : note seule), chiffrage au barème, déblocages anticipés (note) |
 | PER entreprise obligatoire | Informatif : rente uniquement (RVTG) | — |
 | PERCO / PERCOI | Capital : IR exonéré, PS 18,6 % sur les gains ; rente : informatif (RVTO) | — |
 | PERP, Madelin, Madelin agricole, article 83, Préfon, retraite mutualiste du combattant | Informatif (RVTG ; PERP : 20 % de capital possible ou 100 % pour une première résidence principale ; mutualiste : exonérée dans la limite du plafond) | Chiffrage des rentes |
 | Contrat article 82 | Capital : calcul de rachat de l'assurance-vie (`useRachatsAssuranceVie`, au niveau du foyer) ; rente : informatif (RVTO) | — |
-| Régimes de retraite étrangers | Non déterminé | Hors périmètre |
+| Régimes de retraite étrangers | Badge « Non pris en compte » avec avertissement (`assetFiscalRegime.ts`) | Hors périmètre |
 
 Succession (déjà en place) : PER assurantiel 990 I / 757 B selon l'âge au décès, PER bancaire dans l'actif successoral, contrats de retraite par rente selon la garantie décès (990 I al. 2), article 82 par sa clause. PS au décès sur les unités de compte étendus au PER assurantiel (18,6 %) et à l'article 82 (17,2 %), même calcul que l'assurance-vie.
 
@@ -137,14 +140,15 @@ Créances (prêt à un proche, reconnaissance de dette, soulte ou prix de vente 
 
 ### 🗂️ Mis de côté — régimes de plus-value à reprendre personnellement
 
-Natures dont la plus-value reste « Non déterminé » (décision du 18/10/2026, à trancher par l'utilisateur) :
-- **Objets numériques (NFT, etc.)** : actif numérique (PFU, art. 150 VH bis) ou bien meuble (150 UA) selon la qualification de l'objet.
-- **Autres placements divers** : contenu hétérogène, aucun régime présumé.
-- **Matières premières (pétrole, blé…)** : traitées au PFU (trackers, ETC, contrats), alors que le formulaire propose `lieu_stockage` et `quantite` (détention physique, qui relèverait des biens meubles). Choix à faire : champ « physique / financier », ou retrait des deux champs.
+Natures dont la plus-value reste « Non déterminé » ou dont le régime est à revoir :
 - **Actions gratuites** : taux de PS du gain d'acquisition indiqué à 17,2 % dans la note — à vérifier depuis la LFSS 2026 (18,6 % probable).
-- **Droits à royalties** : régime dépendant de la forme de l'actif (droits acquis comme placement, brevets, catalogue musical via une plateforme…) — plus-value non déterminée.
-- **Fonds de private equity (LBO, growth, venture)** : régime dépendant de la forme de l'investissement (FCPR fiscal / non fiscal, FPCI, SCR, détention directe ou via holding, carried interest…). Le code applique aujourd'hui PFU avant 5 ans et PS seuls après (fonds fiscal présumé) — à revoir.
+- **Droits à royalties** : régime dépendant de la forme de l'actif (droits acquis comme placement, brevets, catalogue musical via une plateforme, prêt rémunéré par royalties…) — plus-value non déterminée.
+- **Fonds de private equity (LBO, growth, venture)** : régime dépendant de la forme de l'investissement (FCPR fiscal / non fiscal, FPCI, SCR, détention directe ou via holding, carried interest…). Le code applique PFU avant 5 ans et PS seuls après (fonds fiscal présumé) — à revoir.
 - **Parts de sociétés d'épargne forestière** : plus-value de cession non déterminée (régime à confirmer sur la documentation du fonds).
+- **Prélèvements sociaux des biens meubles et métaux précieux** : 17,2 % retenus (plus-value réelle à 36,2 %) ; certaines sources appliquent 18,6 % depuis la LFSS 2026 — à confirmer.
+- **Assurance-vie ouverte avant le 27/09/2017 sans versements saisis** : non déterminé, laissé en l'état.
+
+Champs ajoutés sur `assets` (migration `20261018190000`, nullables, CHECK sur les valeurs) : `qualification_nft`, `detention_matieres_premieres` — étape « Particularités ».
 
 ## 3. Dette identifiée
 

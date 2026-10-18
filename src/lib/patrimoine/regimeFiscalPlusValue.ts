@@ -74,6 +74,8 @@ const NATURES_PFU_GENERIQUE = [
   "SPV d'investissement (structures ad hoc)",
   'Parts de SOFICA',
   'Autres valeurs mobilières',
+  // Ajoutée le 2026-10-18 : contenu hétérogène, PFU retenu par hypothèse (décision utilisateur).
+  'Autres placements divers',
 ];
 
 // Notes propres à certaines natures du PFU générique (conditions non saisies).
@@ -83,6 +85,8 @@ const NOTES_PFU: Record<string, string> = {
   "SPV d'investissement (structures ad hoc)": "Souscription au capital d'une PME ayant ouvert droit à la réduction IR-PME : reprise en cas de cession avant 5 ans.",
   'Parts de SOFICA': "Aucune exonération de la plus-value. Cession avant 5 ans : reprise de la réduction d'impôt obtenue à la souscription, non comptée ici.",
   'Autres valeurs mobilières': 'PFU retenu par défaut pour des titres détenus en direct.',
+  'Autres placements divers': "Hypothèse : PFU retenu par défaut, le régime réel dépendant de la nature du placement.",
+  'Matières premières (pétrole, blé…)': "Détention financière (tracker, ETC, contrat) supposée : une détention physique relève des biens meubles (art. 150 UA), à préciser sur l'actif.",
 };
 
 // --- Fonds fiscaux de capital-investissement (FIP, FIP Corse, FCPI) ---
@@ -128,11 +132,11 @@ const NATURE_PRIVATE_EQUITY = 'Fonds de private equity (LBO, growth, venture)';
 
 // --- Groupe 8 : Or et métaux précieux ---
 const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
-// Cessions de métaux précieux dont le prix n'excède pas 5 000 € : exonérées (art. 150 VJ CGI).
-const SEUIL_EXONERATION_METAUX = 5000;
+// Taxe forfaitaire due quel que soit le prix de cession (art. 150 VI CGI) : le seuil de
+// 5 000 € (150 VJ) ne vise que les bijoux, objets d'art, de collection et antiquités.
 
-// Restent "Non déterminé" (mis de côté le 2026-10-18, cf. docs/patrimoine.md) :
-// "Objets numériques (NFT, etc.)", "Autres placements divers".
+// "Objets numériques (NFT, etc.)" : aiguillé dans assetFiscalRegime.ts selon
+// `qualification_nft` ; "Non déterminé" ici tant qu'elle n'est pas renseignée.
 //
 // Natures qui redescendent en "Non déterminé" alors qu'elles étaient
 // "Exonéré" dans l'ancien système : "Livret A", "Livret de développement
@@ -403,16 +407,6 @@ export const computeFiscalRegime = ({
     };
   }
 
-  if (NATURES_OR.includes(nature) && valeurEstimee > 0 && valeurEstimee <= SEUIL_EXONERATION_METAUX) {
-    return {
-      badge: 'Métaux précieux — prix ≤ 5 000 €',
-      tone: 'exonere_total',
-      ir: 0,
-      ps: 0,
-      total: 0,
-      note: 'Cession exonérée : prix inférieur ou égal à 5 000 € (art. 150 VJ CGI).',
-    };
-  }
   if (NATURES_OR.includes(nature)) {
     const totalForfaitaire = valeurEstimee * 0.115;
     const alternatives: FiscalAlternative[] = [
@@ -420,7 +414,7 @@ export const computeFiscalRegime = ({
     ];
 
     const years = getHoldingYears(dateAcquisition);
-    const note = "Deux régimes possibles, au choix du contribuable : taxe forfaitaire (aucun justificatif d'acquisition requis) ou option plus-value réelle (nécessite un justificatif de prix et de date d'acquisition).";
+    const note = "Deux régimes possibles, au choix du contribuable : taxe forfaitaire, due quel que soit le prix de cession (aucun justificatif d'acquisition requis), ou option plus-value réelle (nécessite un justificatif de prix et de date d'acquisition).";
     if (years !== null && plusValue > 0) {
       const abattement = years >= 22 ? 1 : Math.min(Math.max(years - 2, 0) * 0.05, 1);
       const totalReelle = plusValue * (1 - abattement) * METAUX_TOTAL;

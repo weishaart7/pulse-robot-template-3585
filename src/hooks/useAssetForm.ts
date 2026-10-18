@@ -257,6 +257,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         mode_sortie: asset.mode_sortie || undefined,
         versements_deduits_pct: asset.versements_deduits_pct ?? undefined,
         cession_depart_retraite: asset.cession_depart_retraite ?? undefined,
+        qualification_nft: (asset.qualification_nft as AssetFormValues['qualification_nft']) ?? undefined,
+        detention_matieres_premieres: (asset.detention_matieres_premieres as AssetFormValues['detention_matieres_premieres']) ?? undefined,
         abondement_employeur: asset.abondement_employeur ?? undefined,
         date_disponibilite: asset.date_disponibilite ? new Date(asset.date_disponibilite) : undefined,
         motif_deblocage_anticipe: asset.motif_deblocage_anticipe || undefined,

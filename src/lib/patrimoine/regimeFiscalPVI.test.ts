@@ -193,14 +193,34 @@ describe('computeFiscalRegime — placements financiers (2026-10-18)', () => {
     }
   });
 
-  it('NFT et autres placements divers : non déterminé', () => {
-    expect(computeFiscalRegime({ nature: 'Objets numériques (NFT, etc.)', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('non_determine');
-    expect(computeFiscalRegime({ nature: 'Autres placements divers', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('non_determine');
+  it('autres placements divers : PFU par hypothèse', () => {
+    expect(computeFiscalRegime({ nature: 'Autres placements divers', plusValue: 1000, valeurEstimee: 5000 }).total).toBeCloseTo(314, 6);
   });
 
-  it('métaux précieux : exonérés si prix ≤ 5 000 €', () => {
-    expect(computeFiscalRegime({ nature: 'Métaux précieux (argent, platine)', plusValue: 1000, valeurEstimee: 4500 }).total).toBe(0);
-    expect(computeFiscalRegime({ nature: 'Métaux précieux (argent, platine)', plusValue: 1000, valeurEstimee: 6000 }).tone).toBe('choix');
+  it('NFT : régime selon la qualification, non déterminé sans elle', () => {
+    const base = { nature: 'Objets numériques (NFT, etc.)', plusValue: 2000, valeurEstimee: 10000, dateAcquisition: ilYa(4) };
+    expect(resolveAssetFiscalRegime(base).tone).toBe('non_determine');
+    expect(resolveAssetFiscalRegime({ ...base, qualificationNft: 'actif_numerique' }).total).toBeCloseTo(628, 6);
+    expect(resolveAssetFiscalRegime({ ...base, qualificationNft: 'titre_financier' }).total).toBeCloseTo(628, 6);
+    expect(resolveAssetFiscalRegime({ ...base, qualificationNft: 'oeuvre_art' }).alternatives?.[0].total).toBeCloseTo(650, 6);
+    expect(resolveAssetFiscalRegime({ ...base, qualificationNft: 'bien_meuble' }).total).toBeCloseTo(2000 * 0.9 * 0.362, 6);
+  });
+
+  it('matières premières : PFU par défaut, bien meuble en détention physique', () => {
+    const base = { nature: 'Matières premières (pétrole, blé…)', plusValue: 2000, valeurEstimee: 10000, dateAcquisition: ilYa(4) };
+    expect(resolveAssetFiscalRegime(base).total).toBeCloseTo(628, 6);
+    expect(resolveAssetFiscalRegime({ ...base, detentionMatieresPremieres: 'physique' }).total).toBeCloseTo(2000 * 0.9 * 0.362, 6);
+  });
+
+  it('métaux précieux : taxe forfaitaire due quel que soit le prix', () => {
+    const r = computeFiscalRegime({ nature: 'Métaux précieux (argent, platine)', plusValue: 1000, valeurEstimee: 4500 });
+    expect(r.tone).toBe('choix');
+    expect(r.alternatives?.[0].total).toBeCloseTo(4500 * 0.115, 6);
+  });
+
+  it('régimes de retraite étrangers : non pris en compte', () => {
+    const r = resolveAssetFiscalRegime({ nature: 'Régimes de retraite étrangers', plusValue: 1000, valeurEstimee: 5000 });
+    expect(r.badge).toBe('Non pris en compte');
   });
 });
 

@@ -32,6 +32,7 @@ import {
   MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS,
   LIQUIDITES_NATURES_CHAMPS,
   VALEURS_MOBILIERES_NATURES_CHAMPS,
+  QUALIFICATIONS_NFT,
   isEpargneAssuranceVie,
   isNatureRurale,
   REGIME_RURAL_IMPOSE,
@@ -114,6 +115,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const isMaisonMobile = watchedNature === 'Maison mobile (péniche, etc.)';
   const isLMNP = watchedNature === 'Immeubles locatifs (LMNP)';
   const isDroitsSociaux = watchedNature === 'Droits sociaux' || watchedNature === 'Parts de holding';
+  const isNft = watchedNature === 'Objets numériques (NFT, etc.)';
+  const isMatieresPremieres = watchedNature === 'Matières premières (pétrole, blé…)';
+  const watchedDetentionMP = form.watch('detention_matieres_premieres');
   useEffect(() => {
     if (regimeRuralImpose && form.getValues('regime_exoneration_rural') !== regimeRuralImpose) {
       form.setValue('regime_exoneration_rural', regimeRuralImpose);
@@ -148,7 +152,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const showSousJacent = valeursMobilieresChamps.includes('sous_jacent');
   const showDateEcheanceVM = valeursMobilieresChamps.includes('date_echeance');
   const showCapitalGarantiVM = valeursMobilieresChamps.includes('capital_garanti');
-  const showLieuStockageQuantite = valeursMobilieresChamps.includes('lieu_stockage');
+  // Matières premières : stockage et quantité n'ont de sens qu'en détention physique.
+  const showLieuStockageQuantite = valeursMobilieresChamps.includes('lieu_stockage')
+    && (!isMatieresPremieres || watchedDetentionMP === 'physique');
   const watchedCtoMultiActifs = form.watch('cto_multi_actifs');
 
   return (
@@ -685,7 +691,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {(isTerrain || isBois || isMaisonMobile || isLMNP || isDroitsSociaux) && (
+      {(isTerrain || isBois || isMaisonMobile || isLMNP || isDroitsSociaux || isNft || isMatieresPremieres) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {isTerrain && (
             <FormField control={form.control} name="terrain_constructible" render={({ field }) => (
@@ -758,6 +764,59 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   <SelectContent>
                     <SelectItem value="oui">Fixée à demeure (immeuble)</SelectItem>
                     <SelectItem value="non">Non fixée (bien meuble)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isNft && (
+            <FormField control={form.control} name="qualification_nft" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Qualification du NFT
+                  <FieldHelp>
+                    Le NFT n'a pas de régime fiscal propre : il suit celui de ce qu'il représente. Droits transférables
+                    sur la blockchain : actif numérique (PFU). Droits financiers ou de gouvernance : titre financier (PFU).
+                    Certificat d'une œuvre physique : œuvre d'art (taxe de 6,5 % ou plus-value réelle). À défaut :
+                    bien meuble incorporel (plus-value réelle, abattement de 5 % par an après 2 ans).
+                  </FieldHelp>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {QUALIFICATIONS_NFT.map(q => (
+                      <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isMatieresPremieres && (
+            <FormField control={form.control} name="detention_matieres_premieres" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Mode de détention
+                  <FieldHelp>
+                    Détention financière (tracker, ETC, contrat) : plus-value au PFU. Détention physique : bien meuble
+                    (exonéré jusqu'à 5 000 €, sinon plus-value réelle avec abattement de 5 % par an après 2 ans).
+                  </FieldHelp>
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="financiere">Financière (tracker, ETC, contrat)</SelectItem>
+                    <SelectItem value="physique">Physique</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />

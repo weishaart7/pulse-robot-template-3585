@@ -262,6 +262,12 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
       return;
     }
 
+    // SCI : le régime IR / IS détermine la plus-value des parts (assetFiscalRegime.ts).
+    if (['sci', 'sci-familiale'].includes(formData.typeSociete) && !formData.regimeFiscal) {
+      toast.error('Le régime fiscal (IR ou IS) est obligatoire pour une SCI.');
+      return;
+    }
+
     // Determine asset nature based on holding and type
     let natureActif = '';
     if (formData.holding === 'Animatrice' || formData.holding === 'Passive') {
@@ -509,7 +515,9 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
 
         {formData.typeSociete && REGIMES_FISCAUX[formData.typeSociete as keyof typeof REGIMES_FISCAUX]?.length > 0 && (
           <div>
-            <Label htmlFor="regimeFiscal">Régime fiscal</Label>
+            <Label htmlFor="regimeFiscal">
+              Régime fiscal{['sci', 'sci-familiale'].includes(formData.typeSociete) && ' *'}
+            </Label>
             <Select
               value={formData.regimeFiscal}
               onValueChange={(value) => handleInputChange('regimeFiscal', value)}

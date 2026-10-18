@@ -638,6 +638,15 @@ export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieres
   'Matières premières (pétrole, blé…)': ['lieu_stockage', 'quantite'],
 };
 
+// Objets numériques (NFT) : qualification fiscale (assets.qualification_nft), sans valeur par
+// défaut — régime aiguillé dans lib/patrimoine/assetFiscalRegime.ts.
+export const QUALIFICATIONS_NFT = [
+  { value: 'actif_numerique', label: 'Actif numérique (droits transférables)' },
+  { value: 'titre_financier', label: 'Titre financier (droits financiers ou de gouvernance)' },
+  { value: 'oeuvre_art', label: "Œuvre d'art (certificat d'une œuvre physique)" },
+  { value: 'bien_meuble', label: 'Bien meuble incorporel (autres cas)' },
+] as const;
+
 export const MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS = [
   "Mariage/PACS",
   "Naissance/adoption (3e enfant)",
