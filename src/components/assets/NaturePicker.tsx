@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { ASSET_CATEGORIES, getAssetCategory, getNatureDisplayLabel } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, NATURE_SOUS_GROUPES, getAssetCategory, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { CATEGORY_COLORS } from '@/lib/patrimoine/utils';
 import { cn } from '@/lib/utils';
 
@@ -48,12 +48,18 @@ export const NaturePicker: React.FC<{
   const groupes = useMemo(() => {
     const q = normaliser(recherche.trim());
     return Object.entries(ASSET_CATEGORIES)
-      .map(([categorie, natures]) => ({
-        categorie,
-        natures: (natures as readonly string[]).filter(
-          (n) => !q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(CATEGORY_LABELS[categorie] ?? categorie).includes(q)
-        ),
-      }))
+      .map(([categorie, natures]) => {
+        const garder = (n: string) =>
+          !q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(CATEGORY_LABELS[categorie] ?? categorie).includes(q);
+        // Sous-groupes d'affichage s'ils existent, sinon un groupe sans titre.
+        const sousGroupes = (
+          NATURE_SOUS_GROUPES[categorie as keyof typeof ASSET_CATEGORIES] ?? [{ titre: null, natures: natures as readonly string[] }]
+        )
+          .map((sg) => ({ titre: sg.titre as string | null, natures: sg.natures.filter(garder) }))
+          .filter((sg) => sg.natures.length > 0);
+        // Natures dans l'ordre affiché (Entrée choisit la première).
+        return { categorie, sousGroupes, natures: sousGroupes.flatMap((sg) => sg.natures) };
+      })
       .filter((g) => g.natures.length > 0);
   }, [recherche]);
 
@@ -165,23 +171,28 @@ export const NaturePicker: React.FC<{
                     <span className="h-2 w-2 rounded-[1px]" style={{ backgroundColor: CATEGORY_COLORS[g.categorie] }} />
                     {CATEGORY_LABELS[g.categorie] ?? g.categorie}
                   </h3>
-                  <div className="grid grid-cols-1 gap-x-4 py-1 sm:grid-cols-2">
-                    {g.natures.map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => choisir(n)}
-                        className={cn(
-                          '-mx-2 flex items-center justify-between gap-2 rounded-[2px] px-2 py-2 text-left text-[13px] leading-snug transition-colors',
-                          'hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none',
-                          value === n ? 'font-medium text-foreground' : 'text-foreground/85'
-                        )}
-                      >
-                        <span>{getNatureDisplayLabel(n)}</span>
-                        {value === n && <Check className="h-3.5 w-3.5 shrink-0" />}
-                      </button>
-                    ))}
-                  </div>
+                  {g.sousGroupes.map((sg) => (
+                    <div key={sg.titre ?? ''}>
+                      {sg.titre && <h4 className="pb-0.5 pt-3 text-[12px] text-muted-foreground">{sg.titre}</h4>}
+                      <div className="grid grid-cols-1 gap-x-4 py-1 sm:grid-cols-2">
+                        {sg.natures.map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => choisir(n)}
+                            className={cn(
+                              '-mx-2 flex items-center justify-between gap-2 rounded-[2px] px-2 py-2 text-left text-[13px] leading-snug transition-colors',
+                              'hover:bg-secondary focus-visible:bg-secondary focus-visible:outline-none',
+                              value === n ? 'font-medium text-foreground' : 'text-foreground/85'
+                            )}
+                          >
+                            <span>{getNatureDisplayLabel(n)}</span>
+                            {value === n && <Check className="h-3.5 w-3.5 shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </section>
               ))}
             </div>

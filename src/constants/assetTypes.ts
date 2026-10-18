@@ -208,6 +208,47 @@ export const ASSET_CATEGORIES = {
 // Ordre d'affichage du sélecteur de nature : celui des catégories ci-dessous.
 export const ASSET_NATURES: string[] = Object.values(ASSET_CATEGORIES).flat();
 
+// Sous-groupes d'affichage du sélecteur de nature (NaturePicker), sans effet sur la catégorie
+// ni sur le stockage. Une catégorie absente s'affiche à plat. Chaque catégorie listée doit
+// couvrir exactement ses natures d'ASSET_CATEGORIES (vérifié par assetTypes.test.ts).
+export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, { titre: string; natures: string[] }[]>> = {
+  "actifs immobiliers": [
+    { titre: "Résidences", natures: ["Résidence principale", "Résidences secondaires", "Maison mobile (péniche, etc.)", "Parking / Garage / Box"] },
+    { titre: "Locatif et professionnel", natures: ["Immeubles locatifs (loués nus)", "Immeubles locatifs (LMNP)", "Immeubles locatifs (LMP)", "Immeubles professionnels (hors LMP)"] },
+    { titre: "Foncier", natures: ["Terrains", "Terrains agricoles", "Bois & forêts"] },
+    { titre: "Parts de sociétés", natures: ["Parts de SCI", "Parts de SCPI", "Parts de groupements fonciers", "Parts de sociétés d'épargne forestière"] },
+  ],
+  "actifs corporels": [
+    { titre: "Cadre de vie", natures: ["Meubles meublants", "Véhicules motorisés", "Matériel informatique ou audiovisuel haut de gamme", "Matériel sportif de valeur"] },
+    { titre: "Objets de valeur", natures: ["Objets d'art et antiquités", "Objets de collection", "Montres", "Bijoux et pierres précieuses", "Sacs et accessoires de luxe"] },
+    { titre: "Placements tangibles", natures: ["Vins & spiritueux d'investissement", "Or (physique)"] },
+  ],
+  "épargne retraite": [
+    { titre: "PER (loi PACTE)", natures: ["PER individuel", "PER entreprise collectif", "PER entreprise obligatoire"] },
+    { titre: "Anciens contrats d'entreprise", natures: ["PERCO/PERCOI", "Contrat article 83", "Contrat article 82"] },
+    { titre: "Anciens contrats individuels", natures: ["PERP", "Contrat loi Madelin", "Contrat loi Madelin Agricole", "Contrat Préfon-retraite", "Contrat retraite mutualiste du combattant"] },
+    { titre: "Étranger", natures: ["Régimes de retraite étrangers"] },
+  ],
+  "épargne et assurance-vie": [
+    { titre: "Assurance-vie", natures: ["Contrat d'assurance-vie", "Assurance-vie luxembourgeoise", "Contrat vie-génération", "PEP assurance vie"] },
+    { titre: "Capitalisation", natures: ["Bons & contrats de capitalisation", "Contrat de capitalisation luxembourgeois"] },
+  ],
+  "épargne bancaire / liquidités": [
+    { titre: "Comptes", natures: ["Comptes courants", "Compte à terme", "Dépôt de garantie"] },
+    { titre: "Livrets", natures: ["Comptes sur livret (CSL)", "Livret A", "Livret Bleu", "Livret de développement durable et solidaire (LDDS)", "Livret d'épargne populaire (LEP)", "Livret Jeune"] },
+    { titre: "Épargne logement et bons", natures: ["CEL", "PEL", "PEP Bancaire", "Bons de caisse (ou bon d'épargne)"] },
+  ],
+  "valeurs mobilières et placements financiers": [
+    { titre: "Enveloppes", natures: ["Compte-titres (CTO)", "PEA", "PEA-PME"] },
+    { titre: "Défiscalisation", natures: ["Parts de FIP", "Parts de FIP Corse", "Parts de FCPI", "Parts de SOFICA"] },
+    { titre: "Non coté", natures: ["Fonds de private equity (LBO, growth, venture)", "Club deals", "SPV d'investissement (structures ad hoc)", "Fonds de dette privée"] },
+    { titre: "Actionnariat salarié", natures: ["Stock-options", "Actions gratuites", "BSPCE"] },
+    { titre: "Produits complexes", natures: ["Produits structurés", "Contrat à terme", "Autres produits dérivés (Swap, Warrants, CFD...)", "Titres de dette subordonnée"] },
+    { titre: "Actifs alternatifs", natures: ["Portefeuille de valeurs numériques (cryptomonnaies)", "Objets numériques (NFT, etc.)", "Métaux précieux (argent, platine)", "Matières premières (pétrole, blé…)"] },
+    { titre: "Divers", natures: ["Autres placements divers", "Autres valeurs mobilières"] },
+  ],
+};
+
 
 
 // Libellés affichés distincts de la valeur technique stockée dans assets.nature
