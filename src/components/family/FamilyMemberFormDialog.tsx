@@ -28,7 +28,7 @@ import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/a
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-import { LINKS_RATTACHES_A_UN_MEMBRE, LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink, verifierCoherenceAscendance } from '@/lib/family/familyLinkRules';
+import { renonciationsPossibles, LINKS_RATTACHES_A_UN_MEMBRE, LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink, verifierCoherenceAscendance } from '@/lib/family/familyLinkRules';
 
 const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -81,6 +81,11 @@ const membreFamilleSchema = z.object({
   }
   if (data.lien_familial === 'Enfant' && data.enfant_renoncant && !data.enfant_renoncant_de) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_renoncant_de'], message: 'Veuillez indiquer la succession concernée' });
+  }
+  // Un enfant ne renonce qu'à la succession de son propre parent.
+  if (data.lien_familial === 'Enfant' && data.enfant_renoncant && data.enfant_renoncant_de
+    && !renonciationsPossibles(data.enfant_de).includes(data.enfant_renoncant_de)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_renoncant_de'], message: 'Succession d\'une personne qui n\'est pas son parent' });
   }
 });
 type MembreFamille = z.infer<typeof membreFamilleSchema>;
@@ -207,6 +212,10 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
         }
         if (LINKS_RATTACHES_A_UN_MEMBRE.includes(member.lien_familial) && !member.enfant_de) {
           setTimeout(() => memberForm.trigger('enfant_de'), 0);
+        }
+        if (member.enfant_renoncant && member.enfant_renoncant_de
+          && !renonciationsPossibles(member.enfant_de).includes(member.enfant_renoncant_de)) {
+          setTimeout(() => memberForm.trigger('enfant_renoncant_de'), 0);
         }
       },
     }), [memberForm]);

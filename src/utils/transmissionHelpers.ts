@@ -1030,10 +1030,15 @@ export function buildSpouseAsDecedentFamilyGraph(
   const childrenCommonWithSpouse: string[] = [];
 
   familyLinks.forEach(link => {
-    const estEnfantDuConjoint = link.lien_familial === 'Enfant' && link.parent_de !== 'user';
+    // Enfant du conjoint : 'spouse' ou 'both_parents' explicites. parent_de
+    // absent/null vaut enfant du seul Utilisateur, comme au 1er décès
+    // (buildFamilyGraph) et dans l'arbre — sinon un même enfant compterait
+    // dans les deux successions sans être un enfant commun.
+    const estEnfantDuConjoint = link.lien_familial === 'Enfant'
+      && (link.parent_de === 'spouse' || link.parent_de === 'both_parents');
 
     if (link.lien_familial === 'Enfant' && !estEnfantDuConjoint) {
-      // Enfant exclusif de l'Utilisateur (parent_de === 'user') : n'est pas
+      // Enfant exclusif de l'Utilisateur (parent_de 'user' ou absent) : n'est pas
       // un enfant du conjoint, ne doit pas hériter de sa succession à lui.
       return;
     }

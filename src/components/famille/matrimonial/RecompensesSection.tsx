@@ -99,11 +99,15 @@ export function RecompensesSection() {
     ? !valeurBienLiquidation || !valeurBienSansTravaux
     : !valeurBienAcquisition || !valeurBienLiquidation);
 
-  const peutSoumettre = !!depenseFaite && !!natureResolue && !!connaitValeurs && !valeursManquantes;
+  // Montants : dépense > 0, valeurs du bien ≥ 0 (contrainte CHECK en base également).
+  const montantsInvalides = Number(depenseFaite) <= 0
+    || [valeurBienAcquisition, valeurBienLiquidation, valeurBienSansTravaux, coutTotalTravaux].some(v => v !== '' && Number(v) < 0);
+
+  const peutSoumettre = !montantsInvalides && !!depenseFaite && !!natureResolue && !!connaitValeurs && !valeursManquantes;
 
   const handleSubmit = async () => {
     const depense = Number(depenseFaite);
-    if (!depense || !natureResolue || !connaitValeurs) return;
+    if (montantsInvalides || !depense || !natureResolue || !connaitValeurs) return;
 
     try {
       await addRecompense({
@@ -309,7 +313,7 @@ export function RecompensesSection() {
           {natureResolue && (
             <div className="space-y-1 max-w-xs">
               <Label className="text-xs">Dépense faite (€)</Label>
-              <Input type="number" value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 100 000" className={FIELD_CLS} />
+              <Input type="number" min={0} value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 100 000" className={FIELD_CLS} />
             </div>
           )}
 
@@ -358,11 +362,11 @@ export function RecompensesSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien à l'acquisition (€)</Label>
-                <Input type="number" value={valeurBienAcquisition} onChange={(e) => setValeurBienAcquisition(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
+                <Input type="number" min={0} value={valeurBienAcquisition} onChange={(e) => setValeurBienAcquisition(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien à la liquidation (€)</Label>
-                <Input type="number" value={valeurBienLiquidation} onChange={(e) => setValeurBienLiquidation(e.target.value)} placeholder="Ex : 500 000" className={FIELD_CLS} />
+                <Input type="number" min={0} value={valeurBienLiquidation} onChange={(e) => setValeurBienLiquidation(e.target.value)} placeholder="Ex : 500 000" className={FIELD_CLS} />
               </div>
             </div>
           )}

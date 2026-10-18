@@ -114,11 +114,15 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
     ? !valeurBienApres || !valeurBienSansTravaux
     : !valeurBienAvant || !valeurBienApres);
 
-  const peutSoumettre = !!depenseFaite && epouxCreancier !== epouxDebiteur && !!natureResolue && !!connaitValeurs && !valeursManquantes;
+  // Montants : dépense > 0, valeurs du bien ≥ 0 (contrainte CHECK en base également).
+  const montantsInvalides = Number(depenseFaite) <= 0
+    || [valeurBienAvant, valeurBienApres, valeurBienSansTravaux, coutTotalTravaux].some(v => v !== '' && Number(v) < 0);
+
+  const peutSoumettre = !montantsInvalides && !!depenseFaite && epouxCreancier !== epouxDebiteur && !!natureResolue && !!connaitValeurs && !valeursManquantes;
 
   const handleSubmit = async () => {
     const depense = Number(depenseFaite);
-    if (!depense || epouxCreancier === epouxDebiteur || !natureResolue || !connaitValeurs) return;
+    if (montantsInvalides || !depense || epouxCreancier === epouxDebiteur || !natureResolue || !connaitValeurs) return;
 
     try {
       await addCreance({
@@ -260,7 +264,7 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
           {natureResolue && (
             <div className="space-y-1 max-w-xs">
               <Label className="text-xs">Dépense faite (€)</Label>
-              <Input type="number" value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 40 000" className={FIELD_CLS} />
+              <Input type="number" min={0} value={depenseFaite} onChange={(e) => setDepenseFaite(e.target.value)} placeholder="Ex : 40 000" className={FIELD_CLS} />
             </div>
           )}
 
@@ -309,11 +313,11 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien avant (€)</Label>
-                <Input type="number" value={valeurBienAvant} onChange={(e) => setValeurBienAvant(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
+                <Input type="number" min={0} value={valeurBienAvant} onChange={(e) => setValeurBienAvant(e.target.value)} placeholder="Ex : 200 000" className={FIELD_CLS} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien après (€)</Label>
-                <Input type="number" value={valeurBienApres} onChange={(e) => setValeurBienApres(e.target.value)} placeholder="Ex : 260 000" className={FIELD_CLS} />
+                <Input type="number" min={0} value={valeurBienApres} onChange={(e) => setValeurBienApres(e.target.value)} placeholder="Ex : 260 000" className={FIELD_CLS} />
               </div>
             </div>
           )}

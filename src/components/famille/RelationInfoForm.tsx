@@ -29,6 +29,7 @@ import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
 import { useAssets } from "@/hooks/useAssets";
 import { calculerRequalifications, compositionSocieteAcquets, libellePerimetre, Requalification } from "@/lib/patrimoine/requalification";
 import { appliquerRequalifications } from "@/services/requalificationService";
+import { verifierDatesRegime } from "@/lib/family/datesRegime";
 import { CATEGORIES_SOCIETE_ACQUETS, clausesAvecPerimetre, lirePerimetreDesClauses, PerimetreSocieteAcquets } from "@/lib/patrimoine/societeAcquets";
 import { RequalificationDialog } from "@/components/famille/matrimonial/RequalificationDialog";
 
@@ -175,6 +176,16 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
   }, [maritalData, form]);
 
   const onSubmit = async (data: FormData) => {
+    // Cohérence des dates (mariage uniquement : les colonnes d'un ancien statut,
+    // conservées en base, ne doivent pas bloquer un PACS ou un concubinage).
+    if (relationStatus === 'Marié(e)') {
+      const erreurs = verifierDatesRegime(data);
+      if (erreurs.length > 0) {
+        erreurs.forEach(e => form.setError(e.path, { type: 'custom', message: e.message }));
+        onError(Object.fromEntries(erreurs.map(e => [e.path, { type: 'custom', message: e.message }])) as FieldErrors<FormData>);
+        return;
+      }
+    }
     try {
       const payload = buildRelationInfoPayload(relationStatus, data);
       const perimetreEnregistre = lirePerimetreDesClauses(maritalData?.clauses_contrat);

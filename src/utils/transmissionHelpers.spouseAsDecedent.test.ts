@@ -67,6 +67,15 @@ describe('buildSpouseAsDecedentFamilyGraph — cas nominal', () => {
     expect(graph.links.some(l => l.to === 'user-only')).toBe(false);
   });
 
+  it("enfant sans parent_de : enfant du seul Utilisateur, comme au 1er décès — exclu chez le conjoint défunt", () => {
+    const enfantDuConjoint = buildChildLink({ id: 'chloe', parent_de: 'spouse' });
+    const link = buildChildLink({ id: 'sans-parent', parent_de: null });
+    const graph = buildSpouseAsDecedentFamilyGraph(familyProfile, maritalStatusMarie, [enfantDuConjoint, link]);
+
+    expect(graph.childrenOfDecedent).toEqual(['chloe']);
+    expect(graph.persons.some(p => p.id === 'sans-parent')).toBe(false);
+  });
+
   it('cas mixte réaliste : un enfant du conjoint (spouse) et un enfant exclusif de l\'Utilisateur (user) — seul le premier apparaît chez le conjoint défunt', () => {
     const enfantDuConjoint = buildChildLink({ id: 'chloe', prenom: 'Chloé', parent_de: 'spouse' });
     const enfantDeLUtilisateur = buildChildLink({ id: 'romy', prenom: 'Romy', parent_de: 'user' });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeMemberForLink, evaluerExonerationFrereSoeur } from './familyLinkRules';
+import { sanitizeMemberForLink, evaluerExonerationFrereSoeur, renonciationsPossibles } from './familyLinkRules';
 
 const base = {
   lien_familial: 'Enfant',
@@ -105,5 +105,17 @@ describe('evaluerExonerationFrereSoeur (art. 796-0 ter CGI)', () => {
     const r = evaluerExonerationFrereSoeur({ seul: true, cohabitation5Ans: true }, today);
     expect(r.exonere).toBe(false);
     expect(r.conditionsManquantes[0]).toContain('date de naissance non renseignée');
+  });
+});
+
+describe('renonciationsPossibles', () => {
+  it('enfant du client seul : succession du client uniquement', () => {
+    expect(renonciationsPossibles('user')).toEqual(['user']);
+  });
+  it('enfant du conjoint seul : succession du conjoint uniquement', () => {
+    expect(renonciationsPossibles('spouse')).toEqual(['spouse']);
+  });
+  it('enfant commun : client, conjoint ou les deux', () => {
+    expect(renonciationsPossibles('both_parents')).toEqual(['user', 'spouse', 'both']);
   });
 });

@@ -427,6 +427,28 @@ soldés :
   (`computeMontantCreance`). Colonnes `valeur_bien_sans_travaux` et `cout_total_travaux` sur
   `recompenses` et `creances_entre_epoux` (migration `20261018130000_recompenses_creances_amelioration.sql`),
   saisies dans les deux formulaires quand la nature est « Amélioration ».
+- *[soldé 2026-10-18]* Montants négatifs acceptés pour les récompenses et créances entre époux :
+  contrôle dans les deux formulaires (dépense > 0, valeurs ≥ 0) et contraintes CHECK
+  `recompenses_montants_positifs` / `creances_entre_epoux_montants_positifs` (migration
+  `20261018140000_recompenses_creances_montants_positifs.sql`). `patrimoine_originaire` /
+  `patrimoine_final` restent sans contrainte : une valeur négative y est la seule façon de saisir une
+  dette (pas de champ actif / passif), additionnée telle quelle par `participationAcquets.ts`.
+- *[soldé 2026-10-18]* Dates du régime incohérentes — `verifierDatesRegime()`
+  ([lib/family/datesRegime.ts](../src/lib/family/datesRegime.ts)) bloque l'enregistrement d'un mariage
+  quand le jugement de séparation de corps n'est pas postérieur au mariage, ou quand une donation au
+  dernier vivant précède le mariage alors qu'il n'y a pas de contrat (une donation antérieure n'est
+  possible que par contrat de mariage, art. 1093 ; sinon art. 1096). Contrôle limité au statut
+  Marié(e), pour qu'une colonne conservée d'un ancien statut ne bloque pas un PACS.
+- *[soldé 2026-10-18]* « Renonce à la succession de » proposait le conjoint (ou les deux) pour un
+  enfant du seul client — `renonciationsPossibles(enfant_de)` (`familyLinkRules.ts`) limite les choix
+  au(x) parent(s) réel(s) : client seul → client, conjoint seul → conjoint, enfant commun → client,
+  conjoint ou les deux. Une valeur incohérente déjà saisie est signalée à l'ouverture et bloque
+  l'enregistrement. Aucun enfant renonçant en base au moment du correctif.
+- *[soldé 2026-10-18]* Enfant sans `parent_de` compté dans les deux successions — au 2nd décès,
+  `buildSpouseAsDecedentFamilyGraph` (`utils/transmissionHelpers.ts`) retenait tout enfant dont
+  `parent_de !== 'user'`. Seuls `spouse` et `both_parents` en font désormais un enfant du conjoint :
+  `parent_de` absent vaut enfant du seul client, comme au 1er décès et dans l'arbre. Cas latent
+  (champ obligatoire, aucune ligne concernée en base).
 - *[soldé 2026-10-18]* Case « dépense nécessaire » sans effet — `buildRecompensesCalcInput`
   (`utils/transmissionHelpers.ts`) ne transmettait pas `recompenses.depense_necessaire` : le plancher
   de l'art. 1469 al. 2 (récompense au moins égale à la dépense faite) ne jouait jamais dans la

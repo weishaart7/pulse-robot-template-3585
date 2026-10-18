@@ -30,6 +30,14 @@ export const LINKS_WITH_CHILD_FIELDS = ['Enfant'];
 
 export const LINKS_WITH_EXONERATION = ['Frère/Sœur'];
 
+// « Renonce à la succession de » ('user' | 'spouse' | 'both', cf. resolveRenoncantDe) :
+// un enfant ne peut renoncer qu'à la succession de son propre parent.
+export function renonciationsPossibles(enfantDe?: string | null): string[] {
+  if (enfantDe === 'spouse') return ['spouse'];
+  if (enfantDe === 'both_parents') return ['user', 'spouse', 'both'];
+  return ['user'];
+}
+
 // Exonération des frères et sœurs (art. 796-0 ter CGI) : les trois conditions
 // sont cumulatives et s'apprécient au jour du décès, simulé ici à la date du jour.
 //  1. célibataire, veuf, divorcé ou séparé de corps ;

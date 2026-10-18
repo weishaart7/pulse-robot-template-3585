@@ -18,8 +18,7 @@ import {
   LINKS_WITH_CHILD_FIELDS,
   LINKS_WITH_EXONERATION,
   LINKS_WITH_PARENT,
-  evaluerExonerationFrereSoeur,
-} from '@/lib/family/familyLinkRules';
+  evaluerExonerationFrereSoeur, renonciationsPossibles } from '@/lib/family/familyLinkRules';
 
 interface DynamicFamilyFormProps {
   linkType: string;
@@ -48,6 +47,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
   const form = useFormContext();
   const watchDecede = form.watch('est_decede');
   const watchRenoncant = form.watch('enfant_renoncant');
+  const renonciationsAutorisees = renonciationsPossibles(form.watch('enfant_de'));
   const watchAdoption = form.watch('enfant_adopte');
   const watchAdoptionAbattementPlein = form.watch('adoption_simple_abattement_plein');
   const watchDateNaissance = form.watch('date_naissance');
@@ -557,7 +557,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {parentsForRenunciation.map((parent) => (
+                        {parentsForRenunciation.filter(p => renonciationsAutorisees.includes(p.value)).map((parent) => (
                           <SelectItem key={parent.value} value={parent.value}>
                             {parent.label}
                           </SelectItem>
