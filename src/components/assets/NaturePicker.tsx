@@ -173,7 +173,13 @@ export const NaturePicker: React.FC<{
                   </h3>
                   {g.sousGroupes.map((sg) => (
                     <div key={sg.titre ?? ''}>
-                      {sg.titre && <h4 className="pb-0.5 pt-3 text-[12px] text-muted-foreground">{sg.titre}</h4>}
+                      {sg.titre && (
+                        // Titre de sous-groupe : gras, filet jusqu'au bord, pour le détacher des natures.
+                        <h4 className="flex items-center gap-3 pb-1 pt-4 text-[12px] font-semibold text-foreground">
+                          {sg.titre}
+                          <span className="h-px flex-1 bg-border" />
+                        </h4>
+                      )}
                       <div className="grid grid-cols-1 gap-x-4 py-1 sm:grid-cols-2">
                         {sg.natures.map((n) => (
                           <button
