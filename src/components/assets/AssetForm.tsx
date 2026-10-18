@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { NaturePicker } from '@/components/assets/NaturePicker';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { ASSET_NATURE_OPTIONS, isAssuranceVieHorsSuccession } from '@/constants/assetTypes';
+import { isAssuranceVieHorsSuccession } from '@/constants/assetTypes';
 import { useAssetForm } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Info, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -91,7 +91,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           <FormItem>
             <FormLabel>Nature *</FormLabel>
             <FormControl>
-              <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-background border-border shadow-none" />
+              <NaturePicker value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none" />
             </FormControl>
             <FormMessage />
           </FormItem>

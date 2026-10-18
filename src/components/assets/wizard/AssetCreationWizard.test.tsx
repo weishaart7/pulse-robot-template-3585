@@ -11,8 +11,8 @@ global.ResizeObserver = class {
   disconnect() {}
 };
 
-vi.mock('@/components/ui/searchable-select', () => ({
-  SearchableSelect: ({ value, onChange, placeholder }: { value?: string; onChange: (v: string) => void; placeholder?: string }) => (
+vi.mock('@/components/assets/NaturePicker', () => ({
+  NaturePicker: ({ value, onChange, placeholder }: { value?: string; onChange: (v: string) => void; placeholder?: string }) => (
     <input
       aria-label="nature"
       value={value ?? ''}

@@ -18,8 +18,8 @@ global.ResizeObserver = class {
 // La sélection de nature passe par un Popover/Command (cmdk) non pertinent
 // pour ce test : on le remplace par un simple champ pilotable directement,
 // tout en conservant le contrat FormField (value/onChange) qu'exerce le test.
-vi.mock('@/components/ui/searchable-select', () => ({
-  SearchableSelect: ({ value, onChange, placeholder }: { value?: string; onChange: (v: string) => void; placeholder?: string }) => (
+vi.mock('@/components/assets/NaturePicker', () => ({
+  NaturePicker: ({ value, onChange, placeholder }: { value?: string; onChange: (v: string) => void; placeholder?: string }) => (
     <input
       aria-label="nature"
       value={value ?? ''}

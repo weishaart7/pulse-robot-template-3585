@@ -2,8 +2,7 @@ import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { SearchableSelect } from '@/components/ui/searchable-select';
-import { ASSET_NATURE_OPTIONS } from '@/constants/assetTypes';
+import { NaturePicker } from '@/components/assets/NaturePicker';
 import { AssetFormValues } from '@/schemas/assetSchema';
 
 interface WizardStepQuoiProps {
@@ -19,7 +18,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
         <FormItem>
           <FormLabel>Nature *</FormLabel>
           <FormControl>
-            <SearchableSelect options={ASSET_NATURE_OPTIONS} value={field.value} onChange={field.onChange} placeholder="Choisir une nature" className="bg-background border-border shadow-none" />
+            <NaturePicker value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none" />
           </FormControl>
           <FormMessage />
         </FormItem>
