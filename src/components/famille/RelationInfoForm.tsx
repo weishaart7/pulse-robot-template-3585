@@ -125,7 +125,8 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
       conventionPacs: 'Régime de la séparation des biens',
       regimeMatrimonial: 'Communauté réduite aux acquêts',
       lieuMariage: "",
-      pasDeContrat: false,
+      // Sans contrat par défaut : régime légal déduit de la date de mariage (cas le plus fréquent).
+      pasDeContrat: true,
       impositionDistincte: false,
       residenceSeparee: false,
       separationDeCorps: false,
@@ -145,7 +146,9 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
         regimeMatrimonial: (maritalData.regime_matrimonial as FormData['regimeMatrimonial']) || 'Communauté réduite aux acquêts',
         dateMariage: maritalData.date_mariage ? new Date(maritalData.date_mariage) : undefined,
         lieuMariage: maritalData.lieu_mariage || "",
-        pasDeContrat: maritalData.pas_de_contrat_mariage || false,
+        // Régime jamais saisi (regime_matrimonial vide) : le false de pas_de_contrat_mariage
+        // n'est que le défaut de la colonne, pas un choix — « Sans contrat » proposé.
+        pasDeContrat: maritalData.regime_matrimonial ? !!maritalData.pas_de_contrat_mariage : true,
         impositionDistincte: maritalData.imposition_distincte || false,
         residenceSeparee: maritalData.residence_separee || false,
         separationDeCorps: maritalData.separation_de_corps || false,
