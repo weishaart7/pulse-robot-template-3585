@@ -158,6 +158,22 @@ describe('computeMontantRecompense — 4 branches art. 1469 (chantier 3)', () =>
   });
 });
 
+describe('computeMontantRecompense — amélioration', () => {
+  it('qualifiante seule : plancher = plus-value procurée, et non le prorata', () => {
+    // Profit 30000 < dépense 40000, plancher al. 3 = 30000
+    const montant = computeMontantRecompense({
+      sens: 'communaute_vers_epoux',
+      epoux: 'user',
+      depenseFaite: 40000,
+      valeurBienAcquisition: 200000,
+      valeurBienLiquidation: 260000,
+      valeurBienSansTravaux: 230000,
+      natureDepense: 'amelioration',
+    });
+    expect(montant).toBe(30000);
+  });
+});
+
 describe('computeSoldeRecompenses', () => {
   it('cas 3 — récompenses réciproques pour le même époux : compensation nette (art. 1470-1474)', () => {
     const solde = computeSoldeRecompenses([
@@ -186,8 +202,48 @@ describe('computeSoldeRecompenses', () => {
 });
 
 describe('computeMontantCreance', () => {
-  it('cas 4 — profit subsistant au prorata (défaut légal, art. 1469 al. 3 par renvoi de l\'art. 1479 al. 2)', () => {
+  it('cas 4 — profit subsistant au prorata pour une conservation (défaut légal, art. 1469 al. 3 par renvoi de l\'art. 1479 al. 2)', () => {
     // 260000 * (40000/200000) = 52000
+    const montant = computeMontantCreance({
+      epouxCreancier: 'user',
+      epouxDebiteur: 'spouse',
+      depenseFaite: 40000,
+      valeurBienAvant: 200000,
+      valeurBienApres: 260000,
+      natureDepense: 'conservation',
+    });
+    expect(montant).toBe(52000);
+  });
+
+  it('amélioration : plus-value procurée par les travaux (Cass. 1re civ., 22 févr. 2017)', () => {
+    // (260000 - 230000) * 40000/40000 = 30000 (le prorata donnait 52000)
+    const montant = computeMontantCreance({
+      epouxCreancier: 'user',
+      epouxDebiteur: 'spouse',
+      depenseFaite: 40000,
+      valeurBienAvant: 200000,
+      valeurBienApres: 260000,
+      valeurBienSansTravaux: 230000,
+      natureDepense: 'amelioration',
+    });
+    expect(montant).toBe(30000);
+  });
+
+  it('amélioration financée en partie : part de la plus-value (Cass. 1re civ., 23 mai 2024)', () => {
+    // Exemple AUREP : (400000 - 350000) * 10000/20000 = 25000
+    const montant = computeMontantCreance({
+      epouxCreancier: 'user',
+      epouxDebiteur: 'spouse',
+      depenseFaite: 10000,
+      valeurBienApres: 400000,
+      valeurBienSansTravaux: 350000,
+      coutTotalTravaux: 20000,
+      natureDepense: 'amelioration',
+    });
+    expect(montant).toBe(25000);
+  });
+
+  it('amélioration sans valeur « sans travaux » : nominal', () => {
     const montant = computeMontantCreance({
       epouxCreancier: 'user',
       epouxDebiteur: 'spouse',
@@ -196,7 +252,19 @@ describe('computeMontantCreance', () => {
       valeurBienApres: 260000,
       natureDepense: 'amelioration',
     });
-    expect(montant).toBe(52000);
+    expect(montant).toBe(40000);
+  });
+
+  it('amélioration sans plus-value : profit nul', () => {
+    const montant = computeMontantCreance({
+      epouxCreancier: 'user',
+      epouxDebiteur: 'spouse',
+      depenseFaite: 40000,
+      valeurBienApres: 220000,
+      valeurBienSansTravaux: 230000,
+      natureDepense: 'amelioration',
+    });
+    expect(montant).toBe(0);
   });
 
   it('cas 5 — mode nominal (convention contraire, art. 1479 al. 2) : montant = dépense faite', () => {
@@ -222,7 +290,7 @@ describe('computeSoldeCreancesEntreEpoux', () => {
         depenseFaite: 40000,
         valeurBienAvant: 200000,
         valeurBienApres: 260000,
-        natureDepense: 'amelioration',
+        natureDepense: 'conservation',
       },
     ]);
     expect(solde.user).toBe(52000);

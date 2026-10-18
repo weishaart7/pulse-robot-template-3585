@@ -846,6 +846,8 @@ export type Database = {
           updated_at: string
           user_id: string
           valeur_bien_apres: number | null
+          cout_total_travaux: number | null
+          valeur_bien_sans_travaux: number | null
           valeur_bien_avant: number | null
         }
         Insert: {
@@ -860,6 +862,8 @@ export type Database = {
           updated_at?: string
           user_id: string
           valeur_bien_apres?: number | null
+          cout_total_travaux?: number | null
+          valeur_bien_sans_travaux?: number | null
           valeur_bien_avant?: number | null
         }
         Update: {
@@ -874,6 +878,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valeur_bien_apres?: number | null
+          cout_total_travaux?: number | null
+          valeur_bien_sans_travaux?: number | null
           valeur_bien_avant?: number | null
         }
         Relationships: [
@@ -2369,6 +2375,8 @@ export type Database = {
           user_id: string
           valeur_bien_acquisition: number | null
           valeur_bien_liquidation: number | null
+          cout_total_travaux: number | null
+          valeur_bien_sans_travaux: number | null
         }
         Insert: {
           bien_concerne_id?: string | null
@@ -2384,6 +2392,8 @@ export type Database = {
           user_id: string
           valeur_bien_acquisition?: number | null
           valeur_bien_liquidation?: number | null
+          cout_total_travaux?: number | null
+          valeur_bien_sans_travaux?: number | null
         }
         Update: {
           bien_concerne_id?: string | null
@@ -2399,6 +2409,8 @@ export type Database = {
           user_id?: string
           valeur_bien_acquisition?: number | null
           valeur_bien_liquidation?: number | null
+          cout_total_travaux?: number | null
+          valeur_bien_sans_travaux?: number | null
         }
         Relationships: [
           {

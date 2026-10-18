@@ -18,6 +18,10 @@ export interface Recompense {
   depense_faite: number;
   valeur_bien_acquisition?: number | null;
   valeur_bien_liquidation?: number | null;
+  /** Amélioration : valeur actuelle du bien sans les travaux (profit = plus-value procurée). */
+  valeur_bien_sans_travaux?: number | null;
+  /** Amélioration : coût total des travaux, main-d'œuvre comprise ; NULL = depense_faite. */
+  cout_total_travaux?: number | null;
   nature_depense: NatureDepense;
   /** Dépense nécessaire (art. 1469 al. 2), indépendant du caractère qualifiant de nature_depense (al. 3) — les deux planchers se cumulent. */
   depense_necessaire: boolean;

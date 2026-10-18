@@ -414,16 +414,19 @@ soldés :
   maintenant saisissable pour les liens qui en ont besoin (`Grand-parent`, `Cousin/Cousine`,
   `Arrière grand-parent`, en plus de `Oncle/Tante`), aligné avec les valeurs lues par
   `transmissionHelpers.ts` et `Optimisation.tsx` (commit `de8a722`).
-- *[soldé 2026-09-17]* Profit subsistant (art. 1469 al. 3) incorrect pour les dépenses de
-  conservation/amélioration — `computeProfitSubsistant()`
-  ([lib/patrimoine/recompensesCreances.ts](../src/lib/patrimoine/recompensesCreances.ts)) appliquait
-  la formule au prorata (`valeurApres × depenseFaite / valeurAvant`) uniquement à la nature
-  `acquisition`, et un simple delta (`valeurApres - valeurAvant`) à `conservation`/`amelioration` —
-  ce qui suppose à tort que 100 % de la plus-value constatée résulte de la dépense. Exemple : travaux
-  de 40 000 € sur un bien à 200 000 € valant 260 000 € à la liquidation — l'ancien calcul donnait
-  60 000 €, la formule au prorata (identique quelle que soit la nature de la dépense, conforme à
-  l'art. 1469 al. 3) donne 52 000 €. Les deux mêmes formules alimentaient aussi les créances entre
-  époux/partenaires de PACS (`computeMontantCreance`, même fichier).
+- *[soldé 2026-10-18]* Profit subsistant (art. 1469 al. 3) selon la nature de la dépense —
+  `computeProfitSubsistant()` ([lib/patrimoine/recompensesCreances.ts](../src/lib/patrimoine/recompensesCreances.ts)) :
+  acquisition et conservation au prorata (`valeurApres × dépense / valeurAvant`) ; amélioration =
+  part financée de la plus-value procurée, `(valeur actuelle − valeur actuelle sans les travaux) ×
+  dépense / coût total des travaux` (Cass. 1re civ., 22 févr. 2017, n° 16-12.951 ; 23 mai 2024,
+  n° 22-18.911 : industrie personnelle exclue). Le coût total (main-d'œuvre comprise) vaut par défaut
+  la dépense faite ; sans valeur « sans travaux », la valeur nominale s'applique. Exemple : travaux
+  de 40 000 € sur un bien à 200 000 € valant 260 000 € (230 000 € sans les travaux) : 30 000 €. Le
+  prorata appliqué à toutes les natures le 2026-09-17 donnait 52 000 € (hausse du marché imputée aux
+  travaux), l'ancien delta 60 000 €. Même règle pour les créances entre époux / partenaires
+  (`computeMontantCreance`). Colonnes `valeur_bien_sans_travaux` et `cout_total_travaux` sur
+  `recompenses` et `creances_entre_epoux` (migration `20261018130000_recompenses_creances_amelioration.sql`),
+  saisies dans les deux formulaires quand la nature est « Amélioration ».
 
 - *[soldé 2026-09-24]* Statut du couple non modifiable une fois en couple (menu masqué, aucun autre
   formulaire ne l'exposait) — voir §1.

@@ -2,18 +2,19 @@
  * Moteur de calcul des récompenses (art. 1468-1478 C. civ.) et des créances
  * entre époux (art. 1479, 1543 C. civ.) — chantier 3A.
  *
- * Profit subsistant (art. 1469 al. 3) : la même formule au prorata s'applique
- * quelle que soit la nature de la dépense (acquisition, conservation,
- * amélioration) — valeurApres × (depenseFaite / valeurAvant). Corrigé le
- * 2026-09-17 (revue du référentiel Fidroit sur les récompenses) : la version
- * précédente appliquait ce prorata uniquement à 'acquisition' et un simple
- * delta (valeurApres - valeurAvant) à 'conservation'/'amelioration', ce qui
- * revenait à supposer que l'intégralité de la plus-value constatée résultait
- * de la dépense — hypothèse non conforme à l'art. 1469 al. 3, qui ne
- * distingue pas la nature de la dépense pour cette formule.
- * Exemple (travaux de 40 000 sur un bien à 200 000, valant 260 000 à la
- * liquidation) : profit subsistant = 260 000 × (40 000/200 000) = 52 000
- * (et non 60 000, l'ancien calcul).
+ * Profit subsistant (art. 1469 al. 3), selon la nature de la dépense :
+ * - 'acquisition' / 'conservation' : prorata, valeurApres × (depenseFaite / valeurAvant).
+ * - 'amelioration' : part financée de la plus-value procurée par les travaux,
+ *   (valeurApres − valeurSansTravaux) × depenseFaite / coutTotalTravaux
+ *   (Cass. 1re civ., 22 févr. 2017, n° 16-12.951 : valeur actuelle moins valeur à
+ *   la même date sans les travaux ; 23 mai 2024, n° 22-18.911 : seule la part
+ *   financée par la masse prêteuse, l'industrie personnelle étant exclue).
+ *   coutTotalTravaux, main-d'œuvre comprise, vaut par défaut la dépense faite
+ *   (financement intégral). Sans valeur « sans travaux », non calculable : la
+ *   valeur nominale s'applique. Le prorata, retenu jusqu'au 2026-10-18 pour
+ *   toutes les natures, imputait aux travaux la hausse générale du bien.
+ *   Exemple : travaux de 40 000 sur un bien à 200 000, valant 260 000 à la
+ *   liquidation et 230 000 sans les travaux : 30 000 (le prorata donnait 52 000).
  * - 'autre' : profit subsistant non calculable, la valeur nominale
  *   (dépense faite) s'applique.
  *
@@ -33,6 +34,10 @@ export interface RecompenseCalcInput {
   depenseFaite: number;
   valeurBienAcquisition?: number | null;
   valeurBienLiquidation?: number | null;
+  /** Amélioration : valeur du bien à la liquidation s'il n'avait pas reçu les travaux. */
+  valeurBienSansTravaux?: number | null;
+  /** Amélioration : coût total des travaux, main-d'œuvre comprise ; défaut = depenseFaite. */
+  coutTotalTravaux?: number | null;
   natureDepense: NatureDepense;
   /** Dépense nécessaire (art. 1469 al. 2), indépendant du caractère qualifiant (al. 3) — les deux planchers se cumulent. Défaut applicatif `false` si non renseigné. */
   depenseNecessaire?: boolean;
@@ -45,6 +50,8 @@ export interface CreanceCalcInput {
   depenseFaite: number;
   valeurBienAvant?: number | null;
   valeurBienApres?: number | null;
+  valeurBienSansTravaux?: number | null;
+  coutTotalTravaux?: number | null;
   natureDepense: NatureDepense;
   modeEvaluationConventionnel?: 'nominal' | 'profit_subsistant' | null;
 }
@@ -59,11 +66,21 @@ export function computeProfitSubsistant(
   depenseFaite: number,
   valeurAvant: number | null | undefined,
   valeurApres: number | null | undefined,
-  natureDepense: NatureDepense
+  natureDepense: NatureDepense,
+  amelioration: { valeurSansTravaux?: number | null; coutTotalTravaux?: number | null } = {}
 ): number | null {
+  if (natureDepense === 'amelioration') {
+    const { valeurSansTravaux } = amelioration;
+    const coutTotal = amelioration.coutTotalTravaux || depenseFaite;
+    if (valeurApres == null || valeurSansTravaux == null || !coutTotal) return null;
+    // Travaux sans plus-value (ou moins-value) : aucun profit subsistant.
+    const plusValue = Math.max(0, valeurApres - valeurSansTravaux);
+    return plusValue * (depenseFaite / coutTotal);
+  }
+
   if (valeurAvant == null || valeurApres == null || valeurAvant === 0) return null;
 
-  if (natureDepense === 'acquisition' || natureDepense === 'conservation' || natureDepense === 'amelioration') {
+  if (natureDepense === 'acquisition' || natureDepense === 'conservation') {
     return valeurApres * (depenseFaite / valeurAvant);
   }
   return null;
@@ -92,7 +109,8 @@ export function computeMontantRecompense(input: RecompenseCalcInput): number {
     input.depenseFaite,
     input.valeurBienAcquisition,
     input.valeurBienLiquidation,
-    input.natureDepense
+    input.natureDepense,
+    { valeurSansTravaux: input.valeurBienSansTravaux, coutTotalTravaux: input.coutTotalTravaux }
   );
   if (profitSubsistant == null) return input.depenseFaite;
 
@@ -137,7 +155,8 @@ export function computeMontantCreance(input: CreanceCalcInput): number {
     input.depenseFaite,
     input.valeurBienAvant,
     input.valeurBienApres,
-    input.natureDepense
+    input.natureDepense,
+    { valeurSansTravaux: input.valeurBienSansTravaux, coutTotalTravaux: input.coutTotalTravaux }
   );
   return profitSubsistant ?? input.depenseFaite;
 }

@@ -77,6 +77,8 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
   const [connaitValeurs, setConnaitValeurs] = useState<OuiNon>(null);
   const [valeurBienAvant, setValeurBienAvant] = useState('');
   const [valeurBienApres, setValeurBienApres] = useState('');
+  const [valeurBienSansTravaux, setValeurBienSansTravaux] = useState('');
+  const [coutTotalTravaux, setCoutTotalTravaux] = useState('');
 
   // Clause particulière (repliée par défaut) : seule alternative possible
   // pour une créance entre époux est le nominal (pas de mode 'plafonne').
@@ -93,6 +95,8 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
     setConnaitValeurs(null);
     setValeurBienAvant('');
     setValeurBienApres('');
+    setValeurBienSansTravaux('');
+    setCoutTotalTravaux('');
     setClauseOuverte(false);
     setModeOverride(null);
     setIsAdding(false);
@@ -104,7 +108,11 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
   const modeEvaluation: ModeEvaluationConventionnel =
     connaitValeurs === 'oui' ? (modeOverride ?? 'profit_subsistant') : 'nominal';
 
-  const valeursManquantes = modeEvaluation !== 'nominal' && (!valeurBienAvant || !valeurBienApres);
+  // Amélioration : plus-value procurée (valeur actuelle − valeur sans travaux), cf. computeProfitSubsistant.
+  const estAmelioration = natureResolue === 'amelioration';
+  const valeursManquantes = modeEvaluation !== 'nominal' && (estAmelioration
+    ? !valeurBienApres || !valeurBienSansTravaux
+    : !valeurBienAvant || !valeurBienApres);
 
   const peutSoumettre = !!depenseFaite && epouxCreancier !== epouxDebiteur && !!natureResolue && !!connaitValeurs && !valeursManquantes;
 
@@ -120,6 +128,8 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
         depense_faite: depense,
         valeur_bien_avant: connaitValeurs === 'oui' && valeurBienAvant ? Number(valeurBienAvant) : null,
         valeur_bien_apres: connaitValeurs === 'oui' && valeurBienApres ? Number(valeurBienApres) : null,
+        valeur_bien_sans_travaux: connaitValeurs === 'oui' && estAmelioration && valeurBienSansTravaux ? Number(valeurBienSansTravaux) : null,
+        cout_total_travaux: connaitValeurs === 'oui' && estAmelioration && coutTotalTravaux ? Number(coutTotalTravaux) : null,
         nature_depense: natureResolue,
         mode_evaluation_conventionnel: modeEvaluation,
       });
@@ -258,7 +268,9 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
           {natureResolue && !!depenseFaite && (
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Connaissez-vous la valeur du bien avant et après la dépense ?
+                {estAmelioration
+                  ? "Connaissez-vous la valeur actuelle du bien, avec et sans les travaux ?"
+                  : "Connaissez-vous la valeur du bien avant et après la dépense ?"}
               </Label>
               <RadioGroup value={connaitValeurs ?? undefined} onValueChange={(v) => setConnaitValeurs(v as OuiNon)} className="gap-2">
                 <div className="flex items-center space-x-2">
@@ -273,7 +285,27 @@ export function CreancesEntreEpouxSection({ contexte = 'mariage' }: CreancesEntr
             </div>
           )}
 
-          {connaitValeurs === 'oui' && (
+          {connaitValeurs === 'oui' && estAmelioration && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs">Valeur actuelle du bien (€)</Label>
+                  <Input type="number" min={0} value={valeurBienApres} onChange={(e) => setValeurBienApres(e.target.value)} placeholder="Ex : 260 000" className={FIELD_CLS} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Valeur actuelle sans les travaux (€)</Label>
+                  <Input type="number" min={0} value={valeurBienSansTravaux} onChange={(e) => setValeurBienSansTravaux(e.target.value)} placeholder="Ex : 230 000" className={FIELD_CLS} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Coût total des travaux (€, facultatif)</Label>
+                  <Input type="number" min={0} value={coutTotalTravaux} onChange={(e) => setCoutTotalTravaux(e.target.value)} placeholder="= dépense faite" className={FIELD_CLS} />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">Valeurs à la même date (liquidation ou aujourd'hui). Le coût total des travaux, main-d'œuvre comprise, permet de n'imputer que la part financée (le travail personnel d'un époux ne donne pas lieu à récompense) ; vide = la dépense faite.</p>
+            </div>
+          )}
+
+          {connaitValeurs === 'oui' && !estAmelioration && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Valeur du bien avant (€)</Label>

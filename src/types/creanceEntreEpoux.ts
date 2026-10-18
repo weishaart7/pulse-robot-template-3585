@@ -17,6 +17,10 @@ export interface CreanceEntreEpoux {
   depense_faite: number;
   valeur_bien_avant?: number | null;
   valeur_bien_apres?: number | null;
+  /** Amélioration : valeur actuelle du bien sans les travaux (profit = plus-value procurée). */
+  valeur_bien_sans_travaux?: number | null;
+  /** Amélioration : coût total des travaux, main-d'œuvre comprise ; NULL = depense_faite. */
+  cout_total_travaux?: number | null;
   nature_depense: NatureDepense;
   /** Défaut applicatif 'profit_subsistant' (art. 1479 al. 2, renvoi art. 1469 al. 3) si non renseigné — même défaut que Recompense, pas 'nominal'. */
   mode_evaluation_conventionnel?: ModeEvaluationConventionnel | null;

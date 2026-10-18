@@ -1774,6 +1774,8 @@ export function buildRecompensesCalcInput(rows: Recompense[]): RecompenseCalcInp
     depenseFaite: r.depense_faite,
     valeurBienAcquisition: r.valeur_bien_acquisition,
     valeurBienLiquidation: r.valeur_bien_liquidation,
+    valeurBienSansTravaux: r.valeur_bien_sans_travaux,
+    coutTotalTravaux: r.cout_total_travaux,
     natureDepense: r.nature_depense,
     modeEvaluationConventionnel: r.mode_evaluation_conventionnel
   }));
@@ -1790,6 +1792,8 @@ export function buildCreancesCalcInput(rows: CreanceEntreEpoux[]): CreanceCalcIn
     depenseFaite: c.depense_faite,
     valeurBienAvant: c.valeur_bien_avant,
     valeurBienApres: c.valeur_bien_apres,
+    valeurBienSansTravaux: c.valeur_bien_sans_travaux,
+    coutTotalTravaux: c.cout_total_travaux,
     natureDepense: c.nature_depense,
     modeEvaluationConventionnel: c.mode_evaluation_conventionnel
   }));
