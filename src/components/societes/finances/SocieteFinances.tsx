@@ -87,6 +87,7 @@ export const SocieteFinances: React.FC<SocieteFinancesProps> = ({
           />
 
           <SocieteFinancesImpactFiscal
+            societeId={societeId}
             formData={formData}
           />
       </div>

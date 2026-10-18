@@ -64,6 +64,17 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
 **Flux clés** :
 - Une société est créée manuellement (recherche SIRENE optionnelle) avec qualification civile et
   détenteur saisis **à la main** (§3 — friction Patrimoine↔Sociétés n°1).
+- **Détention du foyer, directe et indirecte** ([detentionFoyer.ts](src/lib/societes/detentionFoyer.ts),
+  testé) : directe = quotités de la fiche ; indirecte = pour chaque société détenue en direct, sa détention
+  multipliée par la participation totale en cascade vers la société visée (`computeTotalParticipations`).
+  - **Synthèse** : la valeur et ses répartitions comptent la valeur × détention directe — une filiale
+    détenue via une holding est comprise dans la valeur de celle-ci, jamais ajoutée.
+  - **IFI** (`useSocietesIFI`, `SocieteFinancesImpactFiscal.tsx`) : valeur imposable de chaque société ×
+    détention totale. Une holding animatrice n'est exonérée que sur ses propres titres ; ses filiales gardent
+    leur propre traitement (une SCI sous une holding animatrice reste taxable). Limite : si la valeur IFI
+    d'une holding passive inclut déjà l'immobilier d'une filiale saisie à part, il est compté deux fois.
+  - **Simulateur holding** : le régime mère-fille n'est retenu que pour une participation d'au moins 5 %
+    entre une mère et une fille toutes deux à l'IS.
 - Quotités de détention : `pourcentage_utilisateur` / `pourcentage_conjoint` = part du capital détenue
   par chacun. Une quote-part de 0 % est conservée telle quelle ; seule une quotité jamais saisie (NULL) est
   lue 100 % / 0 % (`formMapping.ts`, `useSocietesIntegration.ts`, `SocieteFinancesImpactFiscal.tsx`).
@@ -295,9 +306,6 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
   valeur × `getPartSuccessorale` (sans quote-part du capital), le module Transmission la valeur de l'actif
   Patrimoine. La valeur globale de la Synthèse compte 100 % de chaque société et compte deux fois une
   filiale et sa mère.
-- **Détention indirecte non calculée** : la valeur globale de la Synthèse additionne mère et filiales ;
-  l'IFI d'une filiale détenue via une holding vaut 0 (seule la détention directe du foyer compte) ; une
-  holding animatrice est exonérée en totalité même si elle détient de l'immobilier non affecté.
 - **Simulateurs de `SocietesStrategiesFiscales.tsx`** : prélèvement forfaitaire à 30 % codé en dur (31,4 %
   ailleurs dans l'application), barème IR 2024 à une part, régime IR = IR(résultat × 0,9) + 17 % (taux des
   prélèvements sociaux du patrimoine, pas des cotisations TNS), IS oublié sur la part versée en dividendes

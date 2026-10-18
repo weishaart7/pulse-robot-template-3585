@@ -4,6 +4,9 @@ import { Chip } from '@/components/layout/workspace-panel';
 import { Calculator, Scale, Check } from 'lucide-react';
 import { isHoldingAnimatrice } from '@/hooks/useSocietesIntegration';
 import { computeImpotSocietes } from '@/lib/societes/impotSocietes';
+import { useSocietes } from '@/hooks/useSocietes';
+import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
+import { computeDetentionsFoyer } from '@/lib/societes/detentionFoyer';
 
 interface SocieteFormData {
   type_societe: string;
@@ -21,12 +24,32 @@ interface SocieteFormData {
 }
 
 interface SocieteFinancesImpactFiscalProps {
+  societeId?: string | null;
   formData: SocieteFormData;
 }
 
 export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalProps> = ({
+  societeId,
   formData,
 }) => {
+  // Détention indirecte du foyer (via une holding), lue en base ; la détention directe
+  // reprend les quotités du formulaire.
+  const { societes } = useSocietes();
+  const { participations } = useSocieteParticipations();
+  const detention = useMemo(() => {
+    const d = societeId ? computeDetentionsFoyer(societes, participations).get(societeId) : undefined;
+    return { indirecte: d?.indirecte ?? 0 };
+  }, [societes, participations, societeId]);
+  // Filiales d'une holding : leur IFI est calculé sur leur propre fiche (une SCI sous une
+  // holding animatrice reste taxable).
+  const filiales = useMemo(
+    () => participations
+      .filter(p => p.societe_mere_id === societeId)
+      .map(p => societes.find(s => s.id === p.societe_fille_id)?.denomination)
+      .filter(Boolean) as string[],
+    [participations, societes, societeId]
+  );
+
   const formatCurrency = (value: number | null | undefined) => {
     if (value === undefined || value === null) return '-';
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
@@ -49,17 +72,18 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
   // Calculate IFI impact (valeur taxable à l'échelle de la société, puis ramenée
   // à la quotité détenue par l'utilisateur + son conjoint)
   const ifiImpact = useMemo(() => {
-    if (isIFIExempt) return { value: 0, exempt: true };
+    if (isIFIExempt) return { value: 0, exempt: true, pourcentageDetention: 0 };
 
     const valeurBase = formData.valeur_ifi ||
       (formData.valeur_estimee && formData.pourcentage_ifi
         ? formData.valeur_estimee * (formData.pourcentage_ifi / 100)
         : 0);
-    const pourcentageDetention = (formData.pourcentage_utilisateur ?? 100) + (formData.pourcentage_conjoint ?? 0);
+    const pourcentageDetention = (formData.pourcentage_utilisateur ?? 100) + (formData.pourcentage_conjoint ?? 0)
+      + detention.indirecte * 100;
     const ifiValue = valeurBase * (pourcentageDetention / 100);
 
-    return { value: ifiValue, exempt: false };
-  }, [formData.valeur_estimee, formData.pourcentage_ifi, formData.valeur_ifi, formData.pourcentage_utilisateur, formData.pourcentage_conjoint, isIFIExempt]);
+    return { value: ifiValue, exempt: false, pourcentageDetention };
+  }, [formData.valeur_estimee, formData.pourcentage_ifi, formData.valeur_ifi, formData.pourcentage_utilisateur, formData.pourcentage_conjoint, isIFIExempt, detention.indirecte]);
 
   return (
     <PanelCard>
@@ -99,6 +123,12 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
           {isIFIExempt && (
             <p className="text-xs text-muted-foreground">
               Cette société est considérée comme bien professionnel et peut être exonérée d'IFI.
+              {filiales.length > 0 && ` L'exonération ne couvre que ses propres titres : l'IFI de ses filiales (${filiales.join(', ')}) est calculé sur leur fiche.`}
+            </p>
+          )}
+          {!isIFIExempt && detention.indirecte > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Détention du foyer : {(ifiImpact.pourcentageDetention ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %, dont {(detention.indirecte * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} % via d'autres sociétés du foyer.
             </p>
           )}
         </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { PanelTitle, SummaryRow, Chip } from '@/components/layout/workspace-panel';
 import { CITRON_INK, CITRON_MID, GREY, GREY_LIGHT, LAGON, LAGON_DEEP, LAGON_INK, LAGON_MID } from '@/components/budget/budgetColors';
 import { useSocietes } from '@/hooks/useSocietes';
+import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
+import { detentionDirecteFoyer } from '@/lib/societes/detentionFoyer';
 import { useSocietesIFI, useSocietesTransmission, getSocieteTypeLabel } from '@/hooks/useSocietesIntegration';
 import { societeBilanService, SocieteBilan } from '@/services/societeExtendedService';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -52,7 +54,8 @@ const Repartition = ({ titre, data, total }: { titre: string; data: { name: stri
 
 export const SocietesSynthese = () => {
   const { societes, isLoading } = useSocietes();
-  const ifiData = useSocietesIFI(societes);
+  const { participations } = useSocieteParticipations();
+  const ifiData = useSocietesIFI(societes, participations);
   const transmissionData = useSocietesTransmission(societes);
   // Dernier bilan par société : sert de repli quand les champs "snapshot" de
   // `societes` (onglet Finances) sont vides, pour ne pas afficher des KPI à 0
@@ -75,7 +78,9 @@ export const SocietesSynthese = () => {
   if (isLoading) return <div className="px-8 py-6"><LoadingSpinner /></div>;
 
   const totalSocietes = societes.length;
-  const valeurTotale = societes.reduce((s, c) => s + (c.valeur_estimee || 0), 0);
+  // Part du foyer dans les sociétés qu'il détient en direct : une filiale détenue via une
+  // holding est déjà comprise dans la valeur de celle-ci, elle n'est pas ajoutée.
+  const valeurTotale = societes.reduce((s, c) => s + (c.valeur_estimee || 0) * detentionDirecteFoyer(c), 0);
   const capitalTotal = societes.reduce((s, c) => s + (c.capital_social || 0), 0);
   const tresoTotale = societes.reduce((s, c) => s + ((c as any).tresorerie_disponible || dernierBilanParSociete[c.id]?.tresorerie || 0), 0);
   const ccaTotal = societes.reduce((s, c) => s + ((c as any).compte_courant_associes || 0), 0);
@@ -90,12 +95,12 @@ export const SocietesSynthese = () => {
   const parRegime: Record<string, number> = {};
   societes.forEach(s => {
     const t = s.type_societe ? getSocieteTypeLabel(s.type_societe, s.forme_societe_civile) : 'Non défini';
-    parType[t] = (parType[t] || 0) + (s.valeur_estimee || 0);
+    parType[t] = (parType[t] || 0) + (s.valeur_estimee || 0) * detentionDirecteFoyer(s);
     const r = s.regime_fiscal || 'Non défini';
-    parRegime[r] = (parRegime[r] || 0) + (s.valeur_estimee || 0);
+    parRegime[r] = (parRegime[r] || 0) + (s.valeur_estimee || 0) * detentionDirecteFoyer(s);
   });
-  const dataType = Object.entries(parType).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  const dataRegime = Object.entries(parRegime).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  const dataType = Object.entries(parType).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+  const dataRegime = Object.entries(parRegime).map(([name, value]) => ({ name, value })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
 
   // Alertes
   const alertes: { type: string; message: string; societe: string }[] = [];
@@ -136,7 +141,7 @@ export const SocietesSynthese = () => {
     <>
       <div className="grid grid-cols-1 divide-y divide-border border-b border-border lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)] lg:divide-x lg:divide-y-0">
         <div className="px-8 py-6">
-          <p className="text-[12px] text-muted-foreground">Valeur globale des sociétés</p>
+          <p className="text-[12px] text-muted-foreground">Valeur des sociétés · part du foyer, filiales comprises dans leur mère</p>
           <p className="mt-2 text-[34px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">
             {formatEuro(valeurTotale)}
           </p>

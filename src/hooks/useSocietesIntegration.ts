@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 import { Societe } from '@/services/societeService';
+import type { SocieteParticipation } from '@/services/societeParticipationService';
+import { computeDetentionsFoyer } from '@/lib/societes/detentionFoyer';
 
 interface IFICalculation {
   valeurBrute: number;
@@ -37,16 +39,19 @@ const isHoldingPassive = (societe: Societe): boolean => {
   return societe.holding === 'Passive';
 };
 
-export const useSocietesIFI = (societes: Societe[]) => {
+// IFI des sociétés : valeur imposable à l'échelle de chaque société, multipliée par la
+// détention du foyer, directe ET indirecte (via une holding — lib/societes/detentionFoyer.ts).
+// Une holding animatrice n'est exonérée que sur sa propre valeur : ses filiales gardent leur
+// propre traitement, si bien qu'une SCI détenue sous une holding animatrice reste taxable.
+export const useSocietesIFI = (societes: Societe[], participations: SocieteParticipation[] = []) => {
   return useMemo(() => {
     const calculations: (IFICalculation & { societe: Societe })[] = [];
+    const detentions = computeDetentionsFoyer(societes, participations);
     
     for (const societe of societes) {
       const valeurEstimee = societe.valeur_estimee || 0;
       const pourcentageIFI = societe.pourcentage_ifi || 0;
-      const pourcentageUtilisateur = societe.pourcentage_utilisateur ?? 100;
-      const pourcentageConjoint = societe.pourcentage_conjoint ?? 0;
-      const pourcentageTotal = pourcentageUtilisateur + pourcentageConjoint;
+      const pourcentageTotal = (detentions.get(societe.id)?.totale ?? 0) * 100;
       // Valeur taxable à l'échelle de la société : `valeur_ifi` prime si saisie
       // manuellement (correction d'estimation), sinon dérivée de `pourcentage_ifi`.
       const valeurIfiBase = (societe as any).valeur_ifi || (valeurEstimee * pourcentageIFI / 100);
@@ -99,7 +104,7 @@ export const useSocietesIFI = (societes: Societe[]) => {
       nombreSocietesIFI: biensIndirects.length,
       nombreSocietesExonerees: biensProfessionnels.length
     };
-  }, [societes]);
+  }, [societes, participations]);
 };
 
 export const useSocietesTransmission = (societes: Societe[]) => {

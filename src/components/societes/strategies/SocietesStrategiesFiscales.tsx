@@ -41,10 +41,13 @@ export const SocietesStrategiesFiscales: React.FC = () => {
   // Sim 3: Holding — le régime mère-fille suppose une participation réelle d'au
   // moins 5% entre deux sociétés de l'utilisateur (societe_participations), pas
   // simplement la possession de 2 sociétés indépendantes.
-  const participationsEligibles = useMemo(
-    () => participations.filter(p => p.pourcentage >= SEUIL_PARTICIPATION_MERE_FILLE),
-    [participations]
-  );
+  // Le régime mère-fille (art. 145 et 216 CGI) suppose aussi une mère et une fille soumises
+  // à l'IS : une SCI à l'IR détenue par la holding n'en relève pas.
+  const participationsEligibles = useMemo(() => {
+    const aLIS = (id: string) => societes.find(s => s.id === id)?.regime_fiscal === 'Impôt sur les sociétés';
+    return participations.filter(p =>
+      p.pourcentage >= SEUIL_PARTICIPATION_MERE_FILLE && aLIS(p.societe_mere_id) && aLIS(p.societe_fille_id));
+  }, [participations, societes]);
   const isHolding = participationsEligibles.length > 0;
 
   const isVsIr = useMemo(() => {
@@ -139,10 +142,10 @@ export const SocietesStrategiesFiscales: React.FC = () => {
           {participationsLoading ? (
             <p className="text-sm text-muted-foreground">Chargement des participations…</p>
           ) : !isHolding ? (
-            <p className="text-sm text-muted-foreground">Détection : aucune participation d'au moins {SEUIL_PARTICIPATION_MERE_FILLE}% entre deux de vos sociétés (table des participations, onglet "Mes sociétés"). Le régime mère-fille suppose une relation mère/fille réelle, pas seulement la possession de plusieurs sociétés.</p>
+            <p className="text-sm text-muted-foreground">Détection : aucune participation d'au moins {SEUIL_PARTICIPATION_MERE_FILLE}% entre deux de vos sociétés soumises à l'IS (table des participations, onglet "Mes sociétés"). Le régime mère-fille suppose une relation mère/fille réelle, pas seulement la possession de plusieurs sociétés.</p>
           ) : (
             <>
-              <p className="text-sm text-muted-foreground">Hypothèse : 3% de la valeur estimée des filiales éligibles (participation ≥{SEUIL_PARTICIPATION_MERE_FILLE}%) distribués en dividendes ({holdingGain.dividendesEstimes.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €).</p>
+              <p className="text-sm text-muted-foreground">Hypothèse : 3% de la valeur estimée des filiales éligibles (participation ≥{SEUIL_PARTICIPATION_MERE_FILLE}%, mère et fille à l'IS) distribués en dividendes ({holdingGain.dividendesEstimes.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €).</p>
               <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-sm text-muted-foreground">Sans holding</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{holdingGain.sansHolding.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
                 <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-sm text-muted-foreground">Avec holding (mère-fille)</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{holdingGain.avecHolding.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
