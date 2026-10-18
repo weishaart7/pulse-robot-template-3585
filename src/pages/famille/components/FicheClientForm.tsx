@@ -127,7 +127,7 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
         personne_handicapee: formData.handicape,
         residence_fiscale_etranger: formData.residenceFiscaleEtranger,
         mandat_protection_future: formData.mandatProtectionFuture,
-        date_mandat_protection_future: formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
+        date_mandat_protection_future: formData.mandatProtectionFuture && formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : null,
       });
       onSuccess?.();
     } catch (error) {

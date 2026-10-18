@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { familyService, FamilyProfile, MaritalStatus, FamilyLink } from '@/services/familyService';
+import { familyService, FamilyProfile, MaritalStatus, FamilyLink, MEMBRE_UTILISE } from '@/services/familyService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { compterEnfantsFiscalementACharge } from '@/lib/fiscal';
@@ -317,9 +317,13 @@ export const useFamilyLinks = () => {
       if (import.meta.env.DEV) {
         console.error('Error deleting family link with cascade:', error);
       }
+      // Refus de la base : membre devenu utilisé ailleurs depuis l'ouverture de la confirmation.
+      const utilise = (error as { message?: string })?.message?.includes(MEMBRE_UTILISE);
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer le membre de la famille",
+        description: utilise
+          ? "Ce membre est utilisé ailleurs dans le dossier (libéralité, bien, assurance-vie) : il ne peut pas être supprimé."
+          : "Impossible de supprimer le membre de la famille",
         variant: "destructive",
       });
       throw error;

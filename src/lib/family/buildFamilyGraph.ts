@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { LINKS_RATTACHES_A_UN_MEMBRE } from '@/lib/family/familyLinkRules';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 
 export interface FamilyGraphNode {
@@ -11,6 +12,8 @@ export interface FamilyGraphNode {
   generation: number;
   isMain?: boolean;
   isSpouse?: boolean;
+  // Lien qui devrait être rattaché à un autre membre et ne l'est pas.
+  aRattacher?: boolean;
   originalData?: FamilyLink;
 }
 
@@ -85,6 +88,7 @@ export function buildFamilyGraph(
       deathYear: member.est_decede && member.date_deces ? new Date(member.date_deces).getFullYear() : undefined,
       relation: member.lien_familial,
       generation,
+      aRattacher: LINKS_RATTACHES_A_UN_MEMBRE.includes(member.lien_familial) && !member.enfant_de,
       originalData: member,
     });
   });
@@ -95,8 +99,8 @@ export function buildFamilyGraph(
   // le lien réellement saisi (member.originalData.enfant_de), plutôt que sur le premier nœud
   // trouvé de ce type. enfant_de peut être soit l'id exact du membre lié (ex: un Enfant précis
   // pour un Petit-enfant), soit 'user'/'spouse' (ex: un Parent "de mon côté" vs "du côté conjoint").
-  // Fallback sur le premier nœud du type attendu si enfant_de est absent (données saisies avant
-  // l'ajout de ce champ) ou ne correspond à rien, pour ne pas faire disparaître l'arête.
+  // Sans rattachement exploitable : aucune arête (jamais le premier nœud du type attendu), comme
+  // le moteur de succession qui ne relie alors ce membre à personne.
   const resolveAncestorId = (member: FamilyGraphNode, targetRelation: string): string | null => {
     const enfantDe = member.originalData?.enfant_de;
     if (enfantDe) {
@@ -107,8 +111,7 @@ export function buildFamilyGraph(
         if (sameSide) return sameSide.id;
       }
     }
-    const fallback = nodes.find(n => n.relation === targetRelation);
-    return fallback ? fallback.id : null;
+    return null;
   };
 
   nodes.forEach(member => {

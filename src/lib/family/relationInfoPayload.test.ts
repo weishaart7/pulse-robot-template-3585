@@ -95,3 +95,22 @@ describe('buildRelationInfoPayload — Concubinage', () => {
     expect(payload).toEqual({});
   });
 });
+
+describe('buildRelationInfoPayload — dates vidées', () => {
+  it('écrit null pour une date vidée, afin que l\'upsert efface la valeur en base', () => {
+    const marie = buildRelationInfoPayload('Marié(e)', baseData);
+    expect(marie.date_mariage).toBeNull();
+    expect(marie.date_donation_personne).toBeNull();
+    expect(marie.date_donation_conjoint).toBeNull();
+    expect(buildRelationInfoPayload('Pacsé(e)', baseData).date_pacs).toBeNull();
+  });
+
+  it('efface la date de donation au dernier vivant quand la case est décochée', () => {
+    const payload = buildRelationInfoPayload('Marié(e)', {
+      ...baseData,
+      donationDernierVivantPersonne: false,
+      dateDonationPersonne: new Date(2021, 0, 1),
+    });
+    expect(payload.date_donation_personne).toBeNull();
+  });
+});

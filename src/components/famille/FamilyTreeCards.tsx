@@ -141,6 +141,7 @@ function MemberCard({
         <span className="block truncate text-[13px] font-medium leading-4">{node.name}</span>
         <span className={cn('mt-0.5 block truncate text-[11.5px] leading-4', isCouple ? 'text-background/70' : 'text-muted-foreground')}>
           {secondaryLabel}
+          {node.aRattacher && <span className="text-destructive"> · À rattacher</span>}
         </span>
       </span>
       {flag && <span aria-label={flag} className="absolute right-2 top-2 h-1.5 w-1.5 rounded-[1px] bg-citron-ink" />}

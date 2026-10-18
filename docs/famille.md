@@ -112,6 +112,11 @@ doit donc pas effacer silencieusement ces lignes.
   calcul se transmet en `yyyy-MM-dd` (`format` de date-fns), jamais via `toISOString()` : c'est
   notamment le cas du régime légal déduit de la date de mariage (`determinerRegimeLegal`), où un
   mariage du 01/02/1966 tombait sinon le 31/01 et sous l'ancien régime légal.
+  Une date vidée s'enregistre en `null`, jamais en `undefined` (clé absente de la requête, que
+  l'upsert ignorerait en gardant l'ancienne valeur) : dates de mariage, PACS, donation au
+  dernier vivant, jugement de séparation de corps (`relationInfoPayload.ts`), naissance du
+  conjoint et mandat de protection future (fiches client et conjoint). Une date de donation au
+  dernier vivant ou de mandat est aussi effacée quand sa case est décochée.
   Le calendrier est le panneau commun de l'app ([date-picker-panel.tsx](../src/components/ui/date-picker-panel.tsx), voir design-system.md) à trois vues : jours (semaine du lundi, libellés français), mois (grille 3×4) et années (pages de 20 ans) ; un clic sur le mois ou l'année de l'en-tête y saute directement, puis on redescend année → mois → jour. Bornes ici : 1900 à aujourd'hui. Le panneau se ferme dès qu'un jour est choisi.
 
 - **Rattachement des enfants et branche familiale obligatoires.** Le schéma zod de
@@ -122,6 +127,12 @@ doit donc pas effacer silencieusement ces lignes.
   affichée, jamais enregistrée) ; un membre existant sans branche est signalé en erreur dès
   l'ouverture en modification. `buildFamilyGraph.ts` relie un enfant sans rattachement au seul
   client, aligné sur le moteur (seul `both_parents` fait un enfant commun).
+  « Enfant de » est aussi obligatoire pour les liens rattachés à un autre membre
+  (`LINKS_RATTACHES_A_UN_MEMBRE` : Petit-enfant, Arrière petit-enfant, Grand-parent, Arrière
+  grand-parent, Neveu/Nièce, Petit neveu/nièce, Cousin/Cousine), signalé dès l'ouverture d'un membre
+  existant. Sans rattachement (saisie ancienne, ou membre de rattachement supprimé), l'arbre ne le
+  relie à personne, comme le moteur de succession, et sa carte porte la mention « À rattacher » :
+  plus de repli sur le premier membre du type attendu.
   Le client et le conjoint ne sont proposés en rattachement que pour les liens directs (Enfant,
   Parent, Frère/Sœur, Oncle/Tante) : Grand-parent, Arrière grand-parent, Petit-enfant, Arrière
   petit-enfant, Neveu/Nièce, Petit neveu/nièce et Cousin/Cousine ne se rattachent qu'à un autre
@@ -170,6 +181,15 @@ doit donc pas effacer silencieusement ces lignes.
   `SECURITY INVOKER` donc soumise à la RLS) qui ré-initialise `enfant_de`/`parent_de` des membres
   dépendants puis supprime le membre dans une seule transaction. Confirmation utilisateur
   (`AlertDialog`) listant les dépendants avant suppression.
+  Un membre encore utilisé hors de la famille ne peut pas être supprimé : libéralité (bénéficiaire
+  ou génération intermédiaire), indivision, démembrement, clause bénéficiaire d'assurance-vie
+  (`familyLinkId` dans `clause_beneficiaire_structuree`, sans FK). La fonction
+  `family_link_usages(p_id)` (`SECURITY INVOKER`, migration
+  `20261018120000_family_link_usages.sql`) liste ces usages ; la confirmation les affiche à la place
+  du bouton « Supprimer », en rappelant de cocher « Décédé » plutôt que de supprimer une personne
+  décédée, et `delete_family_link_cascade` refuse la suppression (`MEMBRE_UTILISE`) même si
+  l'interface est contournée. Sans ce garde-fou, les FK `ON DELETE SET NULL` vidaient la référence
+  sans prévenir (donation sans bénéficiaire, quote-part sans titulaire).
 
 - **Changement de lien d'un membre ayant des rattachés.** Modifier le lien d'un membre auquel
   d'autres sont rattachés (`enfant_de` = son id : petits-enfants d'un Enfant, grands-parents d'un

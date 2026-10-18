@@ -28,7 +28,7 @@ import { assetIndivisaireService, AssetIndivisaireWithAsset } from '@/services/a
 import { Asset } from '@/services/assetService';
 import { AssetDetailsDialog } from '@/components/patrimoine/AssetDetailsDialog';
 import { useToast } from '@/hooks/use-toast';
-import { LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink, verifierCoherenceAscendance } from '@/lib/family/familyLinkRules';
+import { LINKS_RATTACHES_A_UN_MEMBRE, LINKS_WITH_BRANCHE, LINKS_WITH_EXONERATION, evaluerExonerationFrereSoeur, sanitizeMemberForLink, verifierCoherenceAscendance } from '@/lib/family/familyLinkRules';
 
 const membreFamilleSchema = z.object({
   lien_familial: z.string().min(1, 'Le lien familial est obligatoire'),
@@ -63,6 +63,11 @@ const membreFamilleSchema = z.object({
   // mais traité comme enfant du seul client par le moteur.
   if (data.lien_familial === 'Enfant' && !data.enfant_de) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_de'], message: 'Veuillez indiquer de qui il est l\'enfant' });
+  }
+  // Rattaché à un autre membre : sans rattachement, le moteur ne le relie à
+  // personne (pas de représentation), quoi qu'affiche l'arbre.
+  if (LINKS_RATTACHES_A_UN_MEMBRE.includes(data.lien_familial) && !data.enfant_de) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['enfant_de'], message: 'Veuillez indiquer à quel membre il est rattaché' });
   }
   // Branche familiale : sans elle, successionLegale.ts exclut le membre de la fente.
   if (LINKS_WITH_BRANCHE.includes(data.lien_familial) && !data.branche_familiale) {
@@ -195,9 +200,13 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           personne_a_charge: member.personne_a_charge || false,
         });
         setDialogOpen(true);
-        // Membre saisi avant que la branche ne soit obligatoire : erreur affichée dès l'ouverture.
+        // Membre saisi avant que la branche ou le rattachement ne soient obligatoires :
+        // erreur affichée dès l'ouverture.
         if (LINKS_WITH_BRANCHE.includes(member.lien_familial) && !member.branche_familiale) {
           setTimeout(() => memberForm.trigger('branche_familiale'), 0);
+        }
+        if (LINKS_RATTACHES_A_UN_MEMBRE.includes(member.lien_familial) && !member.enfant_de) {
+          setTimeout(() => memberForm.trigger('enfant_de'), 0);
         }
       },
     }), [memberForm]);

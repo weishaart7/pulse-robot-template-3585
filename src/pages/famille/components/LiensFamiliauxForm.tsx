@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Trash2, Pencil, MoreHorizontal, Users } from 'lucide-react';
@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
-import { FamilyLink } from '@/services/familyService';
+import { FamilyLink, familyService, type FamilyLinkUsage } from '@/services/familyService';
 import { FamilyMemberFormDialog, FamilyMemberFormDialogHandle } from '@/components/family/FamilyMemberFormDialog';
 import { cn } from '@/lib/utils';
 import { formatAgeCourt } from '@/lib/family/age';
@@ -32,6 +32,13 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { AddButton, Chip, WorkspaceHeader } from '@/components/layout/workspace-panel';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { getGroupeTone } from '@/components/famille/groupeTones';
+
+const LIBELLES_USAGE: Record<string, string> = {
+  liberalite: 'Libéralité',
+  indivision: 'Indivision',
+  demembrement: 'Démembrement',
+  assurance_vie: 'Clause bénéficiaire',
+};
 
 // Tag de la liste des membres — accent (lagon) = avantage fiscal.
 function FamilyTag({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
@@ -77,6 +84,22 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
   // Arrière petit-enfant → Petit-enfant, etc. — cf. useFamilyLinkLogic.ts::
   // getParentOptions) : à afficher dans la confirmation, car leur
   // rattachement sera réinitialisé par deleteLinkWithCascade.
+  // Usages hors de la famille (libéralités, indivisions, démembrements, clauses
+  // d'assurance-vie) : tant qu'il y en a, la suppression est refusée (la base
+  // la refuse aussi) — null pendant le chargement.
+  const [usages, setUsages] = useState<FamilyLinkUsage[] | null>(null);
+  useEffect(() => {
+    setUsages(null);
+    if (!memberToDelete?.id) return;
+    let annule = false;
+    familyService.getFamilyLinkUsages(memberToDelete.id)
+      .then(u => { if (!annule) setUsages(u); })
+      // Vérification impossible : on laisse la base trancher à la suppression.
+      .catch(() => { if (!annule) setUsages([]); });
+    return () => { annule = true; };
+  }, [memberToDelete?.id]);
+  const suppressionBloquee = !!usages && usages.length > 0;
+
   const dependentsOf = (member: FamilyLink) =>
     familyLinks.filter(link => link.enfant_de === member.id);
 
@@ -271,10 +294,25 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
       <AlertDialog open={!!memberToDelete} onOpenChange={(open) => { if (!open) setMemberToDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce membre de la famille ?</AlertDialogTitle>
+            <AlertDialogTitle>{suppressionBloquee ? 'Suppression impossible' : 'Supprimer ce membre de la famille ?'}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="text-sm text-muted-foreground">
-                {memberToDelete && (<>
+                {memberToDelete && suppressionBloquee && (<>
+                  <p>
+                    <strong>{memberToDelete.prenom ? `${memberToDelete.prenom} ` : ''}{memberToDelete.nom}</strong>{' '}
+                    est utilisé ailleurs dans le dossier. Le supprimer fausserait ces éléments :
+                  </p>
+                  <ul className="list-disc pl-5 mt-1">
+                    {usages!.map(u => (
+                      <li key={`${u.type}-${u.ref_id}`}>{LIBELLES_USAGE[u.type] ?? u.type} : {u.libelle}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-2">
+                    Modifiez ou retirez d'abord ces éléments. Si cette personne est décédée, cochez plutôt
+                    « Décédé » sur sa fiche : elle reste nécessaire au calcul de la succession.
+                  </p>
+                </>)}
+                {memberToDelete && !suppressionBloquee && (<>
                   <p>
                     Cette action supprimera définitivement{' '}
                     <strong>{memberToDelete.prenom ? `${memberToDelete.prenom} ` : ''}{memberToDelete.nom}</strong>{' '}
@@ -297,10 +335,12 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setMemberToDelete(null)}>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteMember} disabled={saving}>
-              {saving ? 'Suppression...' : 'Supprimer'}
-            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setMemberToDelete(null)}>{suppressionBloquee ? 'Fermer' : 'Annuler'}</AlertDialogCancel>
+            {!suppressionBloquee && (
+              <AlertDialogAction onClick={confirmDeleteMember} disabled={saving || usages === null}>
+                {saving ? 'Suppression...' : usages === null ? 'Vérification...' : 'Supprimer'}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

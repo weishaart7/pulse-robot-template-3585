@@ -30,3 +30,24 @@ describe('buildFamilyGraph — rattachement des enfants', () => {
     expect(sourcesOf([child('both_parents')], { statut_couple: 'Divorcé(e)' } as MaritalStatus)).toEqual(['main']);
   });
 });
+
+describe('buildFamilyGraph — membre rattaché à un autre membre', () => {
+  const enfants: FamilyLink[] = [
+    { id: 'e1', nom: 'A', lien_familial: 'Enfant', enfant_de: 'user' } as FamilyLink,
+    { id: 'e2', nom: 'B', lien_familial: 'Enfant', enfant_de: 'user' } as FamilyLink,
+  ];
+
+  it('relié au membre réellement saisi', () => {
+    const pe = { id: 'pe', nom: 'C', lien_familial: 'Petit-enfant', enfant_de: 'e2' } as FamilyLink;
+    const graph = buildFamilyGraph(null, married, [...enfants, pe]);
+    expect(graph.edges.filter(e => e.target === 'pe').map(e => e.source)).toEqual(['e2']);
+    expect(graph.nodes.find(n => n.id === 'pe')?.aRattacher).toBe(false);
+  });
+
+  it('sans rattachement : aucune arête et signalé à rattacher, comme le moteur', () => {
+    const pe = { id: 'pe', nom: 'C', lien_familial: 'Petit-enfant', enfant_de: null } as FamilyLink;
+    const graph = buildFamilyGraph(null, married, [...enfants, pe]);
+    expect(graph.edges.filter(e => e.target === 'pe')).toEqual([]);
+    expect(graph.nodes.find(n => n.id === 'pe')?.aRattacher).toBe(true);
+  });
+});

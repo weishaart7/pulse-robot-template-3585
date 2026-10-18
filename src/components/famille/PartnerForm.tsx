@@ -127,7 +127,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
         nom_conjoint: formData.nomPartenaire,
         nom_jeune_fille_conjoint: formData.nomJeuneFillePartenaire,
         prenom_conjoint: formData.prenomPartenaire,
-        date_naissance_conjoint: formData.dateNaissancePartenaire instanceof Date ? format(formData.dateNaissancePartenaire, 'yyyy-MM-dd') : undefined,
+        date_naissance_conjoint: formData.dateNaissancePartenaire instanceof Date ? format(formData.dateNaissancePartenaire, 'yyyy-MM-dd') : null,
         profession_conjoint: formData.profession?.trim() || '',
         profession_csp_conjoint: '',
         nationalite_conjoint: formData.nationalitePartenaire,
@@ -136,7 +136,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
         residence_fiscale_etranger_conjoint: formData.residenceFiscaleEtrangerPartenaire,
         capacite_juridique_conjoint: formData.capaciteJuridique,
         mandat_protection_future_conjoint: formData.mandatProtectionFuture,
-        date_mandat_protection_future_conjoint: formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : undefined,
+        date_mandat_protection_future_conjoint: formData.mandatProtectionFuture && formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : null,
       };
 
       await setStatutCouple(formData.statutCouple ?? null, supabaseData);

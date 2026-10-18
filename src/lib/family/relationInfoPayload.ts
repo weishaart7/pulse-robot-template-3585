@@ -33,7 +33,9 @@ export interface RelationInfoFormValues {
   datePacs?: Date;
 }
 
-const formatDate = (d?: Date): string | undefined => (d instanceof Date ? format(d, 'yyyy-MM-dd') : undefined);
+// null (et non undefined) pour un champ vidé : une clé undefined disparaît de
+// la requête et l'upsert laisserait l'ancienne date en base.
+const formatDate = (d?: Date): string | null => (d instanceof Date ? format(d, 'yyyy-MM-dd') : null);
 
 export const buildRelationInfoPayload = (
   relationStatus: string,
@@ -54,9 +56,9 @@ export const buildRelationInfoPayload = (
       lieu_mariage: data.lieuMariage,
       pas_de_contrat_mariage: data.pasDeContrat ?? false,
       donation_dernier_vivant_personne: data.donationDernierVivantPersonne ?? false,
-      date_donation_personne: formatDate(data.dateDonationPersonne),
+      date_donation_personne: data.donationDernierVivantPersonne ? formatDate(data.dateDonationPersonne) : null,
       donation_dernier_vivant_conjoint: data.donationDernierVivantConjoint ?? false,
-      date_donation_conjoint: formatDate(data.dateDonationConjoint),
+      date_donation_conjoint: data.donationDernierVivantConjoint ? formatDate(data.dateDonationConjoint) : null,
       mariage_precedent_personne: data.mariagePrecedentPersonne ?? false,
       duree_mariage_precedent_personne_annees: data.dureeMariagePrecedentPersonneAnnees ?? null,
       duree_mariage_precedent_personne_mois: data.dureeMariagePrecedentPersonneMois ?? null,
@@ -66,7 +68,7 @@ export const buildRelationInfoPayload = (
       separation_de_corps: data.separationDeCorps ?? false,
       separation_corps_clause_renonciation: data.separationCorpsClauseRenonciation ?? false,
       // Vidée si la case est décochée : la date ne vaut que pour une séparation de corps en cours.
-      date_jugement_separation_corps: data.separationDeCorps ? formatDate(data.dateJugementSeparationCorps) ?? null : null,
+      date_jugement_separation_corps: data.separationDeCorps ? formatDate(data.dateJugementSeparationCorps) : null,
     };
   }
 

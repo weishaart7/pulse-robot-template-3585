@@ -15,6 +15,14 @@ export const LINKS_WITH_PARENT = [
   'Grand-parent', 'Arrière grand-parent', 'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine',
 ];
 
+// Liens rattachés à un autre membre, jamais directement au client ou au
+// conjoint (cf. useFamilyLinkLogic.ts::getParentOptions) : sans rattachement,
+// le moteur de succession ne les relie à personne. « Enfant de » obligatoire.
+export const LINKS_RATTACHES_A_UN_MEMBRE = [
+  'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent',
+  'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine',
+];
+
 export const LINKS_WITH_ADOPTION = ['Enfant', 'Petit-enfant', 'Arrière petit-enfant'];
 
 // Renonciation et enfant à charge (civil / fiscal) : Enfant uniquement.

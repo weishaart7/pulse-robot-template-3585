@@ -3603,6 +3603,14 @@ export type Database = {
     }
     Functions: {
       delete_family_link_cascade: { Args: { p_id: string }; Returns: undefined }
+      family_link_usages: {
+        Args: { p_id: string }
+        Returns: {
+          libelle: string
+          ref_id: string
+          type: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

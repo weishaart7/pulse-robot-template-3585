@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
 import { isSingleStatus } from '@/lib/family/maritalStatus';
-import { rattachementsComplets } from '@/lib/family/familyLinkRules';
+import { LINKS_RATTACHES_A_UN_MEMBRE, rattachementsComplets } from '@/lib/family/familyLinkRules';
 
 export interface FamilyLinkOption {
   value: string;
@@ -142,10 +142,7 @@ export const useFamilyLinkLogic = (
     // conjoint : « Enfant de : client » ferait d'un neveu un enfant (et le
     // détacherait de sa souche dans le moteur de succession), « Parent de :
     // client » ferait d'un grand-parent un parent.
-    const rattacheAUnMembre = [
-      'Petit-enfant', 'Arrière petit-enfant', 'Grand-parent', 'Arrière grand-parent',
-      'Neveu/Nièce', 'Petit neveu/nièce', 'Cousin/Cousine',
-    ].includes(linkType);
+    const rattacheAUnMembre = LINKS_RATTACHES_A_UN_MEMBRE.includes(linkType);
 
     if (!rattacheAUnMembre) {
       // Always add user as default option for direct links

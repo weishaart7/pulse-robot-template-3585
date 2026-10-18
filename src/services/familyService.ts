@@ -25,7 +25,7 @@ export interface FamilyProfile {
   pays?: string;
   capacite_juridique?: string;
   mandat_protection_future?: boolean;
-  date_mandat_protection_future?: string;
+  date_mandat_protection_future?: string | null;
 }
 
 export interface MaritalStatus {
@@ -38,7 +38,7 @@ export interface MaritalStatus {
   nom_conjoint?: string;
   prenom_conjoint?: string;
   civilite_conjoint?: string;
-  date_naissance_conjoint?: string;
+  date_naissance_conjoint?: string | null;
   lieu_naissance_conjoint?: string;
   nationalite_conjoint?: string;
   nationalite_2_conjoint?: string;
@@ -50,7 +50,7 @@ export interface MaritalStatus {
   ancien_combattant_conjoint?: boolean;
   capacite_juridique_conjoint?: string;
   mandat_protection_future_conjoint?: boolean;
-  date_mandat_protection_future_conjoint?: string;
+  date_mandat_protection_future_conjoint?: string | null;
   nom_jeune_fille_conjoint?: string;
   pays_naissance_conjoint?: string;
   telephone_conjoint?: string;
@@ -59,10 +59,10 @@ export interface MaritalStatus {
   code_postal_conjoint?: string;
   ville_conjoint?: string;
   pays_conjoint?: string;
-  date_pacs?: string;
+  date_pacs?: string | null;
   lieu_pacs?: string;
   convention_pacs?: string;
-  date_mariage?: string;
+  date_mariage?: string | null;
   lieu_mariage?: string;
   regime_matrimonial?: string;
   // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
@@ -88,8 +88,8 @@ export interface MaritalStatus {
   duree_mariage_precedent_conjoint_mois?: number | null;
   donation_dernier_vivant_personne?: boolean;
   donation_dernier_vivant_conjoint?: boolean;
-  date_donation_personne?: string;
-  date_donation_conjoint?: string;
+  date_donation_personne?: string | null;
+  date_donation_conjoint?: string | null;
   /** Réservé à la clé societe_acquets (qualification de bien, cf. lib/patrimoine/qualification.ts) — le catalogue de clauses de régime a été retiré en V1. */
   // Lu / écrit via lirePerimetreDesClauses / clausesAvecPerimetre (lib/patrimoine/societeAcquets.ts).
   clauses_contrat?: Json | null;
@@ -130,11 +130,22 @@ export interface FamilyLink {
   fiscalement_a_charge?: boolean;
   mesure_protection_juridique?: string;
   mandat_protection_future?: boolean;
-  date_mandat_protection_future?: string;
+  date_mandat_protection_future?: string | null;
   personne_a_charge?: boolean;
   created_at?: string;
   updated_at?: string;
 }
+
+// Usage d'un membre hors de family_links (fonction Postgres family_link_usages) :
+// tant qu'il en a un, sa suppression est refusée par la base.
+export interface FamilyLinkUsage {
+  type: 'liberalite' | 'indivision' | 'demembrement' | 'assurance_vie';
+  libelle: string;
+  ref_id: string;
+}
+
+// Message levé par delete_family_link_cascade pour un membre encore utilisé.
+export const MEMBRE_UTILISE = 'MEMBRE_UTILISE';
 
 export const familyService = {
   // Family Profile
@@ -318,6 +329,19 @@ export const familyService = {
       }
       throw error;
     }
+  },
+
+  async getFamilyLinkUsages(id: string): Promise<FamilyLinkUsage[]> {
+    const { data, error } = await supabase.rpc('family_link_usages', { p_id: id });
+
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.error('Error fetching family link usages:', error);
+      }
+      throw error;
+    }
+
+    return (data ?? []) as FamilyLinkUsage[];
   },
 
   // Suppression atomique (fonction Postgres delete_family_link_cascade, SECURITY
