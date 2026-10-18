@@ -14,7 +14,6 @@ import NationalitySelect from '@/components/ui/nationality-select';
 import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
-import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
 import { CaseRepere } from '@/components/family/CaseRepere';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -322,7 +321,11 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                       control={form.control}
                       name="doubleNationalite"
                       render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
+                        <FormItem className="space-y-0">
+                          <FormControl>
+                            <CaseRepere label="Double nationalité" checked={!!field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
                       )}
                     />
                   </div>

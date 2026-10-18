@@ -8,10 +8,10 @@ interface CaseRepereProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElem
   onCheckedChange: (checked: boolean) => void;
 }
 
-// Case à cocher « à repère » : ligne de la hauteur d'un champ (h-9), filet
+// Case à cocher « à repère » : ligne d'au moins la hauteur d'un champ, filet
 // gauche qui fonce et fond blanc une fois cochée, case à droite. Toute la ligne
-// est cliquable. Utilisée par la section Situation juridique des fiches client
-// et conjoint pour s'aligner sur la grille des champs.
+// est cliquable ; un libellé long passe à la ligne. Utilisée par les fiches
+// client, conjoint et membre de la famille.
 export const CaseRepere = forwardRef<HTMLButtonElement, CaseRepereProps>(
   ({ label, checked, onCheckedChange, className, ...props }, ref) => (
     <button
@@ -21,7 +21,7 @@ export const CaseRepere = forwardRef<HTMLButtonElement, CaseRepereProps>(
       aria-checked={checked}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
-        'flex h-9 w-full items-center justify-between gap-3 border-l-2 px-3 text-left text-sm transition-colors',
+        'flex min-h-9 w-full items-center justify-between gap-3 border-l-2 px-3 py-1.5 text-left text-sm transition-colors',
         'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground',
         checked
           ? 'border-foreground bg-background text-foreground'
@@ -30,7 +30,7 @@ export const CaseRepere = forwardRef<HTMLButtonElement, CaseRepereProps>(
       )}
       {...props}
     >
-      <span className="truncate">{label}</span>
+      <span>{label}</span>
       <span
         aria-hidden="true"
         className={cn(

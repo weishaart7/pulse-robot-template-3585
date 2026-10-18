@@ -251,7 +251,11 @@ doit donc pas effacer silencieusement ces lignes.
   Chaque ligne de l'arbre est libellée d'après
   les liens qu'elle contient (ex. « Parents / Oncles et tantes », « Vous / Frères et sœurs »). Le
   tableau affiche le nom complet en une colonne. Le formulaire membre est découpé en blocs
-  Rattachement / Identité / Situation / Succession. La page régime est titrée selon le statut
+  Rattachement / Identité / Situation / Succession ; ses cases (double nationalité, décès, handicap,
+  à charge, renonciation, conditions d'exonération) sont des cases « à repère » (`CaseRepere.tsx`), comme
+  sur les fiches client et conjoint, la section Situation sur deux colonnes.
+  `CaseRepere` est la seule case à cocher du module (fiches client et conjoint, y compris « Double
+  nationalité », formulaire membre, onglets du régime matrimonial) ; l'ancien `CheckboxWithLabel` a été supprimé. La page régime est titrée selon le statut
   (Régime matrimonial, PACS, Concubinage, Mariage dissous, Mariage (veuvage)).
 
 - **Exonération des frères et sœurs (art. 796-0 ter CGI).** Trois conditions cumulatives saisies

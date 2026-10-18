@@ -16,7 +16,7 @@ import { Chip, SummaryRow, WorkspaceHeader, panelLinkClass } from "@/components/
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { SmartDateInput } from "@/components/family/SmartDateInput";
-import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
+import { CaseRepere } from "@/components/family/CaseRepere";
 import { SectionHeader } from "@/components/family/SectionHeader";
 import { SocieteAcquetsSection } from "@/components/famille/matrimonial/SocieteAcquetsSection";
 import { RecompensesSection } from "@/components/famille/matrimonial/RecompensesSection";
@@ -519,19 +519,27 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
                     <div className="mt-5 border-t border-border pt-4">
                       <p className="text-[13px] font-medium text-foreground mb-1">Situation du couple</p>
-                      <div className="flex flex-wrap items-center gap-x-6">
+                      <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
                         <FormField
                           control={form.control}
                           name="residenceSeparee"
                           render={({ field }) => (
-                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence séparée" />
+                            <FormItem className="space-y-0">
+                              <FormControl>
+                                <CaseRepere label="Résidence séparée" checked={!!field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                            </FormItem>
                           )}
                         />
                         <FormField
                           control={form.control}
                           name="separationDeCorps"
                           render={({ field }) => (
-                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Séparation de corps" />
+                            <FormItem className="space-y-0">
+                              <FormControl>
+                                <CaseRepere label="Séparation de corps" checked={!!field.value} onCheckedChange={field.onChange} />
+                              </FormControl>
+                            </FormItem>
                           )}
                         />
                       </div>
@@ -563,11 +571,11 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                             control={form.control}
                             name="separationCorpsClauseRenonciation"
                             render={({ field }) => (
-                              <CheckboxWithLabel
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                label="Clause de renonciation aux droits successoraux (convention de séparation)"
-                              />
+                              <FormItem className="space-y-0">
+                                <FormControl>
+                                  <CaseRepere label="Clause de renonciation aux droits successoraux (convention de séparation)" checked={!!field.value} onCheckedChange={field.onChange} />
+                                </FormControl>
+                              </FormItem>
                             )}
                           />
                         </div>
@@ -613,16 +621,16 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                 <div className="px-8 py-7">
                   <SectionHeader icon={Gift} title="Donation consentie au conjoint" />
                   <div>
-                    <div className="flex flex-wrap items-center gap-6">
+                    <div className="grid grid-cols-1 items-end gap-x-6 gap-y-3 md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="donationDernierVivantPersonne"
                         render={({ field }) => (
-                          <CheckboxWithLabel
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            label="J'ai consenti une donation au dernier vivant en faveur de mon conjoint"
-                          />
+                          <FormItem className="space-y-0">
+                            <FormControl>
+                              <CaseRepere label="J'ai consenti une donation au dernier vivant en faveur de mon conjoint" checked={!!field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
                         )}
                       />
                       {form.watch("donationDernierVivantPersonne") && (
@@ -651,16 +659,16 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                 <div className="px-8 py-7">
                   <SectionHeader icon={Gift} title="Donation reçue du conjoint" />
                   <div>
-                    <div className="flex flex-wrap items-center gap-6">
+                    <div className="grid grid-cols-1 items-end gap-x-6 gap-y-3 md:grid-cols-2">
                       <FormField
                         control={form.control}
                         name="donationDernierVivantConjoint"
                         render={({ field }) => (
-                          <CheckboxWithLabel
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            label="J'ai reçu une donation au dernier vivant de la part de mon conjoint"
-                          />
+                          <FormItem className="space-y-0">
+                            <FormControl>
+                              <CaseRepere label="J'ai reçu une donation au dernier vivant de la part de mon conjoint" checked={!!field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
                         )}
                       />
                       {form.watch("donationDernierVivantConjoint") && (
@@ -702,7 +710,11 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                         control={form.control}
                         name={cfg.flag}
                         render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label={cfg.label} />
+                          <FormItem className="space-y-0 md:w-1/2 md:pr-3">
+                            <FormControl>
+                              <CaseRepere label={cfg.label} checked={!!field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                          </FormItem>
                         )}
                       />
                       {form.watch(cfg.flag) && (
@@ -813,7 +825,11 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                   control={form.control}
                   name="residenceSeparee"
                   render={({ field }) => (
-                    <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence séparée" />
+                    <FormItem className="space-y-0">
+                      <FormControl>
+                        <CaseRepere label="Résidence séparée" checked={!!field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
                   )}
                 />
               </div>

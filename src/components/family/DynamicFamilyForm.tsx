@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 import { ageEnAnnees } from '@/lib/family/age';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
-import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
+import { CaseRepere } from '@/components/family/CaseRepere';
 import NationalitySelect from '@/components/ui/nationality-select';
 import {
   LINKS_WITH_ADOPTION,
@@ -322,7 +322,11 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
           control={form.control}
           name="double_nationalite"
           render={({ field }) => (
-            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Double nationalité" />
+            <FormItem className="space-y-0 md:self-end">
+              <FormControl>
+                <CaseRepere label="Double nationalité" checked={!!field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
           )}
         />
 
@@ -352,13 +356,17 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
 
       <FormSectionTitle>Situation</FormSectionTitle>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2">
         {/* Décédé */}
         <FormField
           control={form.control}
           name="est_decede"
           render={({ field }) => (
-            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Décédé" />
+            <FormItem className="space-y-0">
+              <FormControl>
+                <CaseRepere label="Décédé" checked={!!field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+            </FormItem>
           )}
         />
 
@@ -368,7 +376,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
             control={form.control}
             name="date_deces"
             render={({ field }) => (
-              <FormItem className="ml-6">
+              <FormItem className="space-y-1">
                 <FormLabel>Date de décès *</FormLabel>
                 <SmartDateInput value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20" />
                 <FormMessage />
@@ -384,7 +392,11 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="handicap"
               render={({ field }) => (
-                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
+                <FormItem className="space-y-0">
+                  <FormControl>
+                    <CaseRepere label="Personne handicapée" checked={!!field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
 
@@ -392,7 +404,11 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="personne_a_charge"
               render={({ field }) => (
-                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne à charge" />
+                <FormItem className="space-y-0">
+                  <FormControl>
+                    <CaseRepere label="Personne à charge" checked={!!field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
 
@@ -403,14 +419,18 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                   control={form.control}
                   name="enfant_a_charge"
                   render={({ field }) => (
-                    <CheckboxWithLabel
-                      checked={field.value}
-                      onCheckedChange={(checked) => {
-                        enfantAChargeManuellementModifie.current = true;
-                        field.onChange(checked);
-                      }}
-                      label="Enfant à charge (autorité parentale / garde)"
-                    />
+                    <FormItem className="space-y-0">
+                      <FormControl>
+                        <CaseRepere
+                          label="Enfant à charge (autorité parentale / garde)"
+                          checked={!!field.value}
+                          onCheckedChange={(checked) => {
+                            enfantAChargeManuellementModifie.current = true;
+                            field.onChange(checked);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
                   )}
                 />
 
@@ -418,14 +438,18 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
                   control={form.control}
                   name="fiscalement_a_charge"
                   render={({ field }) => (
-                    <CheckboxWithLabel
-                      checked={field.value}
-                      onCheckedChange={(checked) => {
-                        fiscalementAChargeManuellementModifie.current = true;
-                        field.onChange(checked);
-                      }}
-                      label="Fiscalement à charge (rattaché au foyer fiscal)"
-                    />
+                    <FormItem className="space-y-0">
+                      <FormControl>
+                        <CaseRepere
+                          label="Fiscalement à charge (rattaché au foyer fiscal)"
+                          checked={!!field.value}
+                          onCheckedChange={(checked) => {
+                            fiscalementAChargeManuellementModifie.current = true;
+                            field.onChange(checked);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
                   )}
                 />
               </>
@@ -539,7 +563,11 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="enfant_renoncant"
               render={({ field }) => (
-                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Enfant renonçant à la succession" />
+                <FormItem className="space-y-0">
+                  <FormControl>
+                    <CaseRepere label="Enfant renonçant à la succession" checked={!!field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
 
@@ -580,21 +608,33 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
               control={form.control}
               name="exo_frere_soeur_seul"
               render={({ field }) => (
-                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Célibataire, veuf(ve), divorcé(e) ou séparé(e) de corps" />
+                <FormItem className="space-y-0">
+                  <FormControl>
+                    <CaseRepere label="Célibataire, veuf(ve), divorcé(e) ou séparé(e) de corps" checked={!!field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
             <FormField
               control={form.control}
               name="exo_frere_soeur_infirmite"
               render={({ field }) => (
-                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Infirmité l'empêchant de subvenir à ses besoins (sinon : plus de 50 ans requis)" />
+                <FormItem className="space-y-0">
+                  <FormControl>
+                    <CaseRepere label="Infirmité l'empêchant de subvenir à ses besoins (sinon : plus de 50 ans requis)" checked={!!field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
             <FormField
               control={form.control}
               name="exo_frere_soeur_cohabitation_5_ans"
               render={({ field }) => (
-                <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Domicilié(e) avec vous de façon continue depuis au moins 5 ans" />
+                <FormItem className="space-y-0">
+                  <FormControl>
+                    <CaseRepere label="Domicilié(e) avec vous de façon continue depuis au moins 5 ans" checked={!!field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
               )}
             />
             <p className={cn("text-sm rounded-md px-3 py-2", exoneration.exonere ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
