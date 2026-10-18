@@ -75,8 +75,9 @@ export const NaturePicker: React.FC<{
         onClick={ouvrir}
         aria-haspopup="dialog"
         className={cn(
-          'flex h-9 w-full items-center justify-between gap-1.5 rounded-[5px] border px-3 text-sm transition-colors',
-          'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20',
+          // Mêmes bords, survol et focus que le champ texte (components/ui/input.tsx).
+          'flex h-9 w-full items-center justify-between gap-1.5 rounded-[2px] border border-border bg-background px-3 text-sm text-foreground transition-colors',
+          'hover:border-foreground/25 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20',
           !value && 'text-muted-foreground',
           className
         )}
