@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
-import { OuiNonToggle } from '@/components/family/OuiNonToggle';
+import { CaseRepere } from '@/components/family/CaseRepere';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { WorkspaceHeader } from '@/components/layout/workspace-panel';
@@ -389,10 +389,9 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                     control={form.control}
                     name="handicape"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col gap-1 space-y-0">
-                        <FormLabel>Personne handicapée</FormLabel>
+                      <FormItem className="space-y-0 md:self-end">
                         <FormControl>
-                          <OuiNonToggle value={!!field.value} onChange={field.onChange} />
+                          <CaseRepere label="Personne handicapée" checked={!!field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                       </FormItem>
                     )}
@@ -401,10 +400,9 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                     control={form.control}
                     name="mandatProtectionFuture"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col gap-1 space-y-0">
-                        <FormLabel>Mandat de protection future</FormLabel>
+                      <FormItem className="space-y-0 md:self-end">
                         <FormControl>
-                          <OuiNonToggle value={!!field.value} onChange={field.onChange} />
+                          <CaseRepere label="Mandat de protection future" checked={!!field.value} onCheckedChange={field.onChange} />
                         </FormControl>
                       </FormItem>
                     )}
