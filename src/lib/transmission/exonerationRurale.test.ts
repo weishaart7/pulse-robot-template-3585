@@ -53,12 +53,12 @@ const calcul = (valeur: number, nature: string, regime?: string | null, conditio
 
 describe('qualification', () => {
   it('bloque un bien rural sans régime, ou sans conditions hors régime « aucun »', () => {
-    expect(isBienRuralNonQualifie({ nature: 'Parts de GFA, GAF, GFV et GFR' })).toBe(true);
+    expect(isBienRuralNonQualifie({ nature: 'Parts de groupements fonciers' })).toBe(true);
     expect(isBienRuralNonQualifie({ nature: 'Bois & forêts', regime_exoneration_rural: 'forestier' })).toBe(true);
     expect(isBienRuralNonQualifie({ nature: 'Parts de groupements fonciers', regime_exoneration_rural: 'aucun' })).toBe(false);
     expect(isBienRuralNonQualifie({ nature: 'Terrains agricoles', regime_exoneration_rural: 'agricole', conditions_exoneration_rural: false })).toBe(false);
     expect(isBienRuralNonQualifie({ nature: 'Comptes courants' })).toBe(false);
-    expect(() => calcul(500000, 'Parts de GFA, GAF, GFV et GFR')).toThrow(BienNonQualifieError);
+    expect(() => calcul(500000, 'Parts de groupements fonciers')).toThrow(BienNonQualifieError);
   });
 
   it('n\'exonère que si les conditions sont remplies', () => {
@@ -79,9 +79,9 @@ describe('qualification', () => {
 
 describe('calcul des droits', () => {
   it('GFA de 500 000 € (1/4 PP, 2 enfants) : 3/4 exonérés, plus aucun droit', () => {
-    const taxe = calcul(500000, 'Parts de GFA, GAF, GFV et GFR', 'agricole', false);
+    const taxe = calcul(500000, 'Parts de groupements fonciers', 'agricole', false);
     expect(taxe.dmtg.perBeneficiary.e1.droitsHorsAV).toBe(17457);
-    const exonere = calcul(500000, 'Parts de GFA, GAF, GFV et GFR', 'agricole', true);
+    const exonere = calcul(500000, 'Parts de groupements fonciers', 'agricole', true);
     // 187 500 € × 1/4 = 46 875 €, forfait mobilier compris : sous l'abattement de 100 000 €.
     expect(exonere.dmtg.perBeneficiary.e1.droitsHorsAV).toBe(0);
     expect(exonere.explicationsTexte?.some(t => t.includes('793 bis'))).toBe(true);
@@ -89,7 +89,7 @@ describe('calcul des droits', () => {
 
   it('au-delà de 600 000 € par héritier, l\'exonération tombe à 1/2', () => {
     // 2 000 000 € : 750 000 € par enfant, dont 150 000 € au-delà du seuil.
-    const r = calcul(2000000, 'Parts de GFA, GAF, GFV et GFR', 'agricole', true);
+    const r = calcul(2000000, 'Parts de groupements fonciers', 'agricole', true);
     // Base = 750 000 × 1/4 + 150 000 × (3/4 − 1/2) = 225 000, moins sa part des frais
     // funéraires (1 500 € × 225 000 / 575 000, conjoint sous le seuil : 125 000 €).
     expect(r.dmtg.perBeneficiary.e1.baseApresFrais).toBe(224413);

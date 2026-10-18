@@ -10,11 +10,13 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'actifs immobiliers': PATRIMOINE.lagonProfond,
   'épargne et assurance-vie': PATRIMOINE.lagon,
   'valeurs mobilières et placements financiers': PATRIMOINE.citron,
-  'épargne retraite et prévoyance': PATRIMOINE.olive,
+  'épargne retraite': PATRIMOINE.olive,
+  'prévoyance': PATRIMOINE.citronPale,
   'actifs corporels': PATRIMOINE.sable,
   'épargne bancaire / liquidités': PATRIMOINE.brume,
   'actifs professionnels': PATRIMOINE.ardoise,
-  'épargne salariale': PATRIMOINE.citronPale,
+  'épargne salariale': PATRIMOINE.lagonPale,
+  'créances': PATRIMOINE.sableFonce,
   'autres': ASH,
 };
 

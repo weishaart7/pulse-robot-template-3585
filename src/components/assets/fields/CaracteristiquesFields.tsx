@@ -35,7 +35,8 @@ import {
   isEpargneAssuranceVie,
   isNatureRurale,
   REGIME_RURAL_IMPOSE,
-  REGIME_RURAL_PAR_DEFAUT,
+  TYPES_GROUPEMENT_FONCIER,
+  NATURE_GROUPEMENT_FONCIER,
 } from '@/constants/assetTypes';
 import { NATURES_LIQUIDITES_FR } from '@/schemas/assetSchema';
 import { NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
@@ -109,10 +110,16 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   useEffect(() => {
     if (regimeRuralImpose && form.getValues('regime_exoneration_rural') !== regimeRuralImpose) {
       form.setValue('regime_exoneration_rural', regimeRuralImpose);
-    } else if (!regimeRuralImpose && REGIME_RURAL_PAR_DEFAUT[watchedNature] && form.getValues('regime_exoneration_rural') === undefined) {
-      form.setValue('regime_exoneration_rural', REGIME_RURAL_PAR_DEFAUT[watchedNature]);
     }
   }, [regimeRuralImpose, watchedNature, form]);
+
+  // Groupement foncier : le type choisi propose son régime d'exonération (modifiable ensuite).
+  const isGroupementFoncier = watchedNature === NATURE_GROUPEMENT_FONCIER;
+  const changerTypeGroupement = (type: string) => {
+    form.setValue('type_groupement', type as AssetFormValues['type_groupement'], { shouldDirty: true });
+    const regime = TYPES_GROUPEMENT_FONCIER.find((t) => t.value === type)?.regime;
+    if (regime) form.setValue('regime_exoneration_rural', regime, { shouldDirty: true });
+  };
 
   // PER obligatoire : sous-type figé sur Assurantiel, enregistré tel quel.
   useEffect(() => {
@@ -560,6 +567,31 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
 
       {isRurale && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {isGroupementFoncier && (
+            <FormField control={form.control} name="type_groupement" render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>
+                  Type de groupement
+                  <FieldHelp>
+                    Informatif. Le type choisi propose le régime d'exonération correspondant, que vous pouvez ensuite modifier.
+                  </FieldHelp>
+                </FormLabel>
+                <Select onValueChange={changerTypeGroupement} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {TYPES_GROUPEMENT_FONCIER.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
           <FormField control={form.control} name="regime_exoneration_rural" render={({ field }) => (
             <FormItem>
               <FormLabel>

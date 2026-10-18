@@ -67,6 +67,7 @@ export interface Asset {
   conditions_exoneration_990i?: boolean | null;
   // Biens ruraux, groupements fonciers, bois et forêts (cf. constants/assetTypes.ts::NATURES_RURALES).
   regime_exoneration_rural?: 'forestier' | 'agricole' | 'aucun' | string | null;
+  type_groupement?: string | null;
   conditions_exoneration_rural?: boolean | null;
   // Entreprise individuelle / biens professionnels (art. 787 C CGI).
   conditions_787c?: boolean | null;
@@ -99,7 +100,7 @@ export interface Asset {
   certificat_expertise_reference?: string;
   numero_serie?: string;
   quantite_millesime?: string;
-  // Champs additionnels "épargne retraite et prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
+  // Champs additionnels "épargne retraite" et "prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
   capital_garanti?: number;
   beneficiaire_designe?: string;
   mode_sortie?: string;

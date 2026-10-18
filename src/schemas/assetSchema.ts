@@ -98,6 +98,7 @@ export const assetSchema = z.object({
   conditions_exoneration_990i: z.boolean().optional(),
   // Biens ruraux, groupements fonciers, bois et forêts (cf. NATURES_RURALES).
   regime_exoneration_rural: z.enum(['forestier', 'agricole', 'aucun']).optional(),
+  type_groupement: z.enum(['GFA', 'GAF', 'GFV', 'GFR', 'GFF', 'GFI']).optional(),
   conditions_exoneration_rural: z.boolean().optional(),
   // Biens professionnels d'une entreprise individuelle (cf. NATURES_787C).
   conditions_787c: z.boolean().optional(),
@@ -124,7 +125,7 @@ export const assetSchema = z.object({
   certificat_expertise_reference: z.string().optional(),
   numero_serie: z.string().optional(),
   quantite_millesime: z.string().optional(),
-  // Champs additionnels "épargne retraite et prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
+  // Champs additionnels "épargne retraite" et "prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
   capital_garanti: z.number().finite().nonnegative().optional(),
   beneficiaire_designe: z.string().optional(),
   mode_sortie: z.string().optional(),

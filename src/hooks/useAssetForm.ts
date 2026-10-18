@@ -21,7 +21,8 @@ import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
 export const NATURES_WITH_ETABLISSEMENT = [
   'Objets numériques (NFT, etc.)',
   'Portefeuille de valeurs numériques (cryptomonnaies)',
-  ...ASSET_CATEGORIES['épargne retraite et prévoyance'],
+  ...ASSET_CATEGORIES['épargne retraite'],
+  ...ASSET_CATEGORIES['prévoyance'],
   ...ASSET_CATEGORIES['épargne et assurance-vie'],
   ...ASSET_CATEGORIES['épargne salariale'],
   ...ASSET_CATEGORIES['épargne bancaire / liquidités'],
@@ -226,6 +227,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         garantie_deces: asset.garantie_deces ?? undefined,
         conditions_exoneration_990i: asset.conditions_exoneration_990i ?? undefined,
         regime_exoneration_rural: (asset.regime_exoneration_rural as AssetFormValues['regime_exoneration_rural']) ?? undefined,
+        type_groupement: (asset.type_groupement as AssetFormValues['type_groupement']) ?? undefined,
         conditions_exoneration_rural: asset.conditions_exoneration_rural ?? undefined,
         conditions_787c: asset.conditions_787c ?? undefined,
         valeur_assuree: asset.valeur_assuree ?? undefined,

@@ -109,6 +109,6 @@ describe('simulerRevente', () => {
   it('signale les cas hors périmètre', () => {
     expect(simulerRevente(bien({ nature: 'Immeubles locatifs (LMP)' }), [], hyp()).statut).toBe('hors_perimetre');
     expect(simulerRevente(bien({ mode_detention: 'Nue-propriété' }), [], hyp()).statut).toBe('hors_perimetre');
-    expect(simulerRevente(bien({ nature: 'Parts de GFA, GAF, GFV et GFR' }), [], hyp()).statut).toBe('hors_perimetre');
+    expect(simulerRevente(bien({ nature: 'Parts de groupements fonciers' }), [], hyp()).statut).toBe('hors_perimetre');
   });
 });

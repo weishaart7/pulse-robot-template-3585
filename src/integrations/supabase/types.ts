@@ -363,6 +363,7 @@ export type Database = {
           qualification_auto: boolean | null
           qualification_bien: string | null
           regime_exoneration_rural: string | null
+          type_groupement: string | null
           quantite: string | null
           quantite_millesime: string | null
           reduction_ir_entree: number | null
@@ -453,6 +454,7 @@ export type Database = {
           qualification_auto?: boolean | null
           qualification_bien?: string | null
           regime_exoneration_rural?: string | null
+          type_groupement?: string | null
           quantite?: string | null
           quantite_millesime?: string | null
           reduction_ir_entree?: number | null
@@ -543,6 +545,7 @@ export type Database = {
           qualification_auto?: boolean | null
           qualification_bien?: string | null
           regime_exoneration_rural?: string | null
+          type_groupement?: string | null
           quantite?: string | null
           quantite_millesime?: string | null
           reduction_ir_entree?: number | null

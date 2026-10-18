@@ -44,6 +44,8 @@ export const PATRIMOINE = {
   brume: '#a9dbe0',
   ardoise: '#2d4a4f',
   citronPale: '#dcef9f',
+  lagonPale: '#d3eef0',
+  sableFonce: '#a9784a',
 } as const;
 
 /** Vrai si un texte blanc se lit mieux qu'un texte encre sur cette couleur. */

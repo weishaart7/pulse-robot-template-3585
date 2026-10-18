@@ -4,7 +4,6 @@
 export const SOCIETE_ELIGIBLE_NATURES: string[] = [
   // Actifs professionnels
   'Droits sociaux',
-  'Autres droits sociaux',
   'Entreprise individuelle',
   'Parts de holding',
   'Compte courant d\'associé',
@@ -29,7 +28,6 @@ export const natureToTypeSociete = (nature: string): string => {
     case 'Parts de holding':
       return 'sas';
     case 'Droits sociaux':
-    case 'Autres droits sociaux':
     case 'Compte courant d\'associé':
     case 'Autres biens professionnels':
     default:

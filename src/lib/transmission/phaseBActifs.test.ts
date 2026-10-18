@@ -105,7 +105,7 @@ describe('N5 — donations de biens ruraux imputées sur le seuil (art. 793 bis)
       type: 'donation', beneficiaire_id: 'E1', beneficiaire_nom: 'E1', denomination: 'Don', montant: 400000,
       date_acte: '2018-01-01', biens: [{ asset_id: 'gfa', valeur: 300000 }, { asset_id: 'cpt', valeur: 100000 }]
     }], [
-      { id: 'gfa', nature: 'Parts de GFA, GAF, GFV et GFR', regime_exoneration_rural: 'agricole', conditions_exoneration_rural: true },
+      { id: 'gfa', nature: 'Parts de groupements fonciers', regime_exoneration_rural: 'agricole', conditions_exoneration_rural: true },
       { id: 'cpt', nature: 'Comptes courants' }
     ]);
     expect(liberalites[0].partRuraleAgricole).toBe(0.75);

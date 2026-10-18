@@ -3,19 +3,14 @@ import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { useCharges, useRevenus } from '@/hooks/useBudget';
 import { useAssets } from '@/hooks/useAssets';
-import { NATURES_PER } from '@/constants/assetTypes';
+import { NATURES_PER, NATURES_EPARGNE_ASSURANCE_VIE } from '@/constants/assetTypes';
 import { getRepartitionFoyer, BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { sumAnnualActive } from '@/lib/budget/periodicite';
 import { ageEnMois } from '@/lib/retraite/calcul';
 import { lignesRevenuNet } from '@/lib/retraite/revenuNetFoyer';
 import { ageReferenceDeces, sexeDepuisCivilite } from '@/lib/retraite/decisionDepart';
 
-const NATURES_ASSURANCE_VIE = [
-  "Contrat d'assurance-vie",
-  'Contrat vie-génération',
-  'PEP assurance vie',
-  'Bons & contrats de capitalisation',
-];
+const NATURES_ASSURANCE_VIE: string[] = [...NATURES_EPARGNE_ASSURANCE_VIE];
 
 export interface DonneesEcartRevenu {
   dateDepart: Date;

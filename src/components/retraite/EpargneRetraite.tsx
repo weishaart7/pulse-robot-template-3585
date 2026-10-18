@@ -10,17 +10,12 @@ import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { SaveStatusIndicator } from '@/components/ui/save-status-indicator';
 import { useAssets } from '@/hooks/useAssets';
-import { NATURES_PER } from '@/constants/assetTypes';
+import { NATURES_PER, NATURES_EPARGNE_ASSURANCE_VIE } from '@/constants/assetTypes';
 import { getRepartitionFoyer, BienNonQualifieError } from '@/lib/patrimoine/succession';
 
 // Natures de la catégorie "épargne et assurance-vie" (assetTypes.ts) retenues
 // ici pour le total assurance-vie de la section Retraite.
-const NATURES_ASSURANCE_VIE = [
-  "Contrat d'assurance-vie",
-  "Contrat vie-génération",
-  "PEP assurance vie",
-  "Bons & contrats de capitalisation",
-];
+const NATURES_ASSURANCE_VIE: string[] = [...NATURES_EPARGNE_ASSURANCE_VIE];
 
 const formatCurrency = (value: number) => value.toLocaleString('fr-FR', {
   style: 'currency',

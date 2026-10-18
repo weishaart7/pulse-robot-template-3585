@@ -68,7 +68,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
     label: 'Particularités',
     // sous_type_per (PER), garantie_deces (retraite par rente) et régime
     // d'exonération rurale : obligatoires selon la nature (cf. assetSchema.ts).
-    fields: ['sous_type_per', 'garantie_deces', 'regime_exoneration_rural', 'conditions_exoneration_rural', 'conditions_787c', 'regime_retraite_etrangere'],
+    fields: ['sous_type_per', 'garantie_deces', 'type_groupement', 'regime_exoneration_rural', 'conditions_exoneration_rural', 'conditions_787c', 'regime_retraite_etrangere'],
     isVisible: () => true,
   },
   {

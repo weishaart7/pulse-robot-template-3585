@@ -1,119 +1,3 @@
-export const ASSET_NATURES = [
-  // Actifs immobiliers
-  "Résidence principale",
-  "Résidences secondaires", 
-  "Terrains",
-  "Terrains agricoles",
-  "Immeubles locatifs (loués nus)",
-  "Immeubles locatifs (LMNP)",
-  "Immeubles locatifs (LMP)",
-  "Immeubles professionnels (hors LMP)",
-  "Autres immeubles de rapport",
-  "Parts de SCI",
-  "Parts de SCPI",
-  "Parts de groupements fonciers",
-  "Parts de GFA, GAF, GFV et GFR",
-  "Bois & forêts",
-  "Parts de sociétés d'épargne forestière",
-  "Maison mobile (péniche, etc.)",
-  "Parking / Garage / Box",
-  "Autres biens d'usage",
-  
-  // Actifs corporels
-  "Meubles meublants",
-  "Objets d'art et antiquités",
-  "Véhicules motorisés",
-  "Montres",
-  "Objets de collection",
-  "Bijoux et pierres précieuses",
-  "Sacs et accessoires de luxe",
-  "Matériel informatique ou audiovisuel haut de gamme",
-  "Matériel sportif de valeur",
-  "Vins & spiritueux d'investissement",
-  "Autres placements divers",
-  
-  // Actifs professionnels
-  "Droits sociaux",
-  "Autres droits sociaux",
-  "Entreprise individuelle",
-  "Parts de holding",
-  "Compte courant d'associé",
-  "Autres biens professionnels",
-  
-  // Retraite et prévoyance
-  "PER individuel",
-  "PER entreprise collectif",
-  "PER entreprise obligatoire",
-  "PERCO/PERCOI",
-  "PERP",
-  "Contrat loi Madelin",
-  "Contrat loi Madelin Agricole",
-  "Contrat article 83",
-  "Contrat article 82",
-  "Contrat Préfon-retraite",
-  "Contrat retraite mutualiste du combattant",
-  "Régimes de retraite étrangers",
-  "Temporaire décès",
-  "Vie entière",
-  "Contrat prévoyance individuelle",
-  "Contrat d'assurance-vie",
-  "Contrat vie-génération",
-  "PEP assurance vie",
-  "Bons & contrats de capitalisation",
-  "PEE",
-  "PEI",
-  
-  // Actifs financiers liquides
-  "Comptes courants",
-  "Comptes sur livret (CSL)",
-  "Livret A",
-  "Livret Bleu",
-  "Livret de développement durable et solidaire (LDDS)",
-  "Livret d'épargne populaire (LEP)",
-  "Livret Jeune",
-  "CEL",
-  "PEL",
-  "Compte à terme",
-  "Bons de caisse (ou bon d'épargne)",
-  "PEP Bancaire",
-  "Dépôt de garantie",
-  "Autres dépôts",
-  "Autres disponibilités",
-
-  // Actifs financiers investis
-  "Compte-titres (CTO)",
-  "PEA",
-  "PEA-PME",
-  "Parts de FIP",
-  "Parts de FIP Corse",
-  "Parts de FCPI",
-  "Parts de SOFICA",
-  "Actions",
-  "Obligations",
-  "Credit default swap",
-  "Contrat à terme",
-  "Options",
-  "Stock-options",
-  "Actions gratuites",
-  "Titres de dette subordonné",
-  "Bons du Trésor",
-  "BCSPE",
-  "Portefeuille de valeurs numériques (cryptomonnaies)",
-  "Objets numériques (NFT, etc.)",
-  "Droits de propriété littéraire ou artistique",
-  "Droits à royalties",
-  "Fonds de private equity (LBO, growth, venture)",
-  "Club deals",
-  "SPV d'investissement (structures ad hoc)",
-  "Fonds de dette privée",
-  "Produits structurés",
-  "Autres produits dérivés (Swap, Warrants, CFD...)",
-  "Or (physique)",
-  "Métaux précieux (argent, platine)",
-  "Matières premières (pétrole, blé…)",
-  "Autres valeurs mobilières"
-];
-
 export const EMPRUNT_NATURES = [
   "Crédit à la consommation",
   "Crédit affecté (auto, travaux, etc.)",
@@ -194,26 +78,26 @@ export const UNITE_OPTIONS = [
   "%"
 ] as const;
 
+// Catégories et natures d'actifs (refonte validée le 2026-10-18, docs/patrimoine.md). Les
+// valeurs sont stockées telles quelles dans assets.nature et comparées ailleurs (régimes
+// fiscaux, IFI, Transmission) : un libellé différent passe par NATURE_DISPLAY_LABELS.
 export const ASSET_CATEGORIES = {
   "actifs immobiliers": [
     "Résidence principale",
-    "Résidences secondaires", 
+    "Résidences secondaires",
     "Terrains",
     "Terrains agricoles",
     "Immeubles locatifs (loués nus)",
     "Immeubles locatifs (LMNP)",
     "Immeubles locatifs (LMP)",
     "Immeubles professionnels (hors LMP)",
-    "Autres immeubles de rapport",
     "Parts de SCI",
     "Parts de SCPI",
     "Parts de groupements fonciers",
-    "Parts de GFA, GAF, GFV et GFR",
     "Bois & forêts",
     "Parts de sociétés d'épargne forestière",
     "Maison mobile (péniche, etc.)",
-    "Parking / Garage / Box",
-    "Autres biens d'usage"
+    "Parking / Garage / Box"
   ],
   "actifs corporels": [
     "Meubles meublants",
@@ -226,17 +110,16 @@ export const ASSET_CATEGORIES = {
     "Matériel informatique ou audiovisuel haut de gamme",
     "Matériel sportif de valeur",
     "Vins & spiritueux d'investissement",
-    "Autres placements divers"
+    "Or (physique)"
   ],
   "actifs professionnels": [
     "Droits sociaux",
-    "Autres droits sociaux",
     "Entreprise individuelle",
     "Parts de holding",
     "Compte courant d'associé",
     "Autres biens professionnels"
   ],
-  "épargne retraite et prévoyance": [
+  "épargne retraite": [
     "PER individuel",
     "PER entreprise collectif",
     "PER entreprise obligatoire",
@@ -248,16 +131,22 @@ export const ASSET_CATEGORIES = {
     "Contrat article 82",
     "Contrat Préfon-retraite",
     "Contrat retraite mutualiste du combattant",
-    "Régimes de retraite étrangers",
+    "Régimes de retraite étrangers"
+  ],
+  // Contrats de prévoyance décès : sans valeur de rachat (sauf vie entière), ils pèsent 0 dans
+  // le patrimoine mais restent transmis par clause (capital garanti, cf. NATURES_PREVOYANCE_DECES).
+  "prévoyance": [
     "Temporaire décès",
     "Vie entière",
     "Contrat prévoyance individuelle"
   ],
   "épargne et assurance-vie": [
     "Contrat d'assurance-vie",
+    "Assurance-vie luxembourgeoise",
     "Contrat vie-génération",
     "PEP assurance vie",
-    "Bons & contrats de capitalisation"
+    "Bons & contrats de capitalisation",
+    "Contrat de capitalisation luxembourgeois"
   ],
   "épargne salariale": [
     "PEE",
@@ -276,9 +165,7 @@ export const ASSET_CATEGORIES = {
     "Compte à terme",
     "Bons de caisse (ou bon d'épargne)",
     "PEP Bancaire",
-    "Dépôt de garantie",
-    "Autres dépôts",
-    "Autres disponibilités"
+    "Dépôt de garantie"
   ],
   "valeurs mobilières et placements financiers": [
     "Compte-titres (CTO)",
@@ -288,32 +175,40 @@ export const ASSET_CATEGORIES = {
     "Parts de FIP Corse",
     "Parts de FCPI",
     "Parts de SOFICA",
-    "Actions",
-    "Obligations",
-    "Credit default swap",
     "Contrat à terme",
-    "Options",
     "Stock-options",
     "Actions gratuites",
-    "Titres de dette subordonné",
-    "Bons du Trésor",
-    "BCSPE",
+    "Titres de dette subordonnée",
+    "BSPCE",
     "Portefeuille de valeurs numériques (cryptomonnaies)",
     "Objets numériques (NFT, etc.)",
-    "Droits de propriété littéraire ou artistique",
-    "Droits à royalties",
     "Fonds de private equity (LBO, growth, venture)",
     "Club deals",
     "SPV d'investissement (structures ad hoc)",
     "Fonds de dette privée",
     "Produits structurés",
     "Autres produits dérivés (Swap, Warrants, CFD...)",
-    "Or (physique)",
     "Métaux précieux (argent, platine)",
     "Matières premières (pétrole, blé…)",
+    "Autres placements divers",
     "Autres valeurs mobilières"
+  ],
+  // Sommes dues au foyer : valorisées au montant restant dû, sans plus-value.
+  "créances": [
+    "Prêt consenti à un proche",
+    "Créance sur un tiers (reconnaissance de dette)",
+    "Soulte ou prix de vente à recevoir"
+  ],
+  "autres": [
+    "Droits de propriété littéraire ou artistique",
+    "Droits à royalties"
   ]
 } as const;
+
+// Ordre d'affichage du sélecteur de nature : celui des catégories ci-dessous.
+export const ASSET_NATURES: string[] = Object.values(ASSET_CATEGORIES).flat();
+
+
 
 // Libellés affichés distincts de la valeur technique stockée dans assets.nature
 // (et comparée telle quelle ailleurs : catégorisation, régimes fiscaux, etc.).
@@ -322,6 +217,13 @@ export const ASSET_CATEGORIES = {
 export const NATURE_DISPLAY_LABELS: Record<string, string> = {
   "PEA": "Plan d'Épargne en Actions (PEA)",
   "PEA-PME": "Plan d'Épargne en Actions PME (PEA-PME)",
+  "Résidences secondaires": "Résidence secondaire",
+  "Terrains": "Terrain",
+  "CEL": "Compte épargne logement (CEL)",
+  "PEL": "Plan épargne logement (PEL)",
+  "PEE": "Plan d'épargne entreprise (PEE)",
+  "PEI": "Plan d'épargne interentreprises (PEI)",
+  "BSPCE": "Bons de souscription de parts de créateur d'entreprise (BSPCE)",
 };
 
 export const getNatureDisplayLabel = (nature: string): string => NATURE_DISPLAY_LABELS[nature] || nature;
@@ -358,6 +260,9 @@ export const CTO_SOUS_JACENT_OPTIONS = [
 // 4 natures de la famille de façon uniforme.
 export const NATURES_AV_HORS_SUCCESSION = [
   "Contrat d'assurance-vie",
+  // Contrat luxembourgeois : même régime civil et fiscal qu'un contrat français pour un
+  // résident (L132-12, 990 I / 757 B) ; seule la protection des avoirs diffère.
+  "Assurance-vie luxembourgeoise",
   "Contrat vie-génération",
   "PEP assurance vie",
 ];
@@ -515,7 +420,6 @@ export const isEpargneAssuranceVie = (nature: string | null | undefined): boolea
 export const PARTS_FONCIERES_NATURES = [
   "Parts de SCPI",
   "Parts de groupements fonciers",
-  "Parts de GFA, GAF, GFV et GFR",
   "Parts de sociétés d'épargne forestière",
 ] as const;
 
@@ -533,7 +437,6 @@ export type RegimeExonerationRurale = 'forestier' | 'agricole' | 'aucun';
 export const NATURES_RURALES = [
   "Bois & forêts",
   "Parts de groupements fonciers",
-  "Parts de GFA, GAF, GFV et GFR",
   "Terrains agricoles",
 ] as const;
 
@@ -541,9 +444,19 @@ export const NATURES_RURALES = [
 export const REGIME_RURAL_IMPOSE: Record<string, RegimeExonerationRurale> = {
   "Bois & forêts": 'forestier',
 };
-export const REGIME_RURAL_PAR_DEFAUT: Record<string, RegimeExonerationRurale> = {
-  "Parts de GFA, GAF, GFV et GFR": 'agricole',
-};
+
+// Type de groupement foncier (assets.type_groupement, informatif) : propose le régime
+// d'exonération par défaut, toujours modifiable. GFR : régime dominant à choisir (agricole proposé).
+export const TYPES_GROUPEMENT_FONCIER = [
+  { value: 'GFA', label: 'Groupement foncier agricole (GFA)', regime: 'agricole' },
+  { value: 'GAF', label: "Groupement agricole foncier (GAF)", regime: 'agricole' },
+  { value: 'GFV', label: 'Groupement foncier viticole (GFV)', regime: 'agricole' },
+  { value: 'GFR', label: 'Groupement foncier rural (GFR)', regime: 'agricole' },
+  { value: 'GFF', label: 'Groupement forestier (GFF)', regime: 'forestier' },
+  { value: 'GFI', label: 'Groupement foncier immobilier (GFI)', regime: 'aucun' },
+] as const satisfies readonly { value: string; label: string; regime: RegimeExonerationRurale }[];
+export type TypeGroupementFoncier = (typeof TYPES_GROUPEMENT_FONCIER)[number]['value'];
+export const NATURE_GROUPEMENT_FONCIER = "Parts de groupements fonciers";
 
 export const isNatureRurale = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_RURALES as readonly string[]).includes(nature);
@@ -600,8 +513,7 @@ export const REGIME_FISCAL_PARTS_OPTIONS: Record<string, string[]> = {
   // « Revenus forestiers (forfait cadastral) » : groupements forestiers (GFF, GFI) et GFR, imposés en
   // bénéfices agricoles sur le revenu cadastral des bois (art. 76 CGI) — libellé repris par
   // REGIME_FORFAIT_FORESTIER (lib/immobilier/partsFoncieres.ts).
-  "Parts de groupements fonciers": ["Revenus fonciers", "Revenus forestiers (forfait cadastral)", "Dividendes", "Autre"],
-  "Parts de GFA, GAF, GFV et GFR": ["Revenus fonciers agricoles", "Revenus fonciers viticoles", "Revenus forestiers (forfait cadastral)", "Dividendes", "Autre"],
+  "Parts de groupements fonciers": ["Revenus fonciers", "Revenus fonciers agricoles", "Revenus fonciers viticoles", "Revenus forestiers (forfait cadastral)", "Dividendes", "Autre"],
   "Parts de sociétés d'épargne forestière": ["Revenus forestiers", "Dividendes", "Autre"],
 };
 
@@ -748,7 +660,6 @@ export const NATURES_WITHOUT_ACQUISITION: string[] = [
   "Bons de caisse (ou bon d'épargne)",
   "PEP Bancaire",
   "Dépôt de garantie",
-  "Autres dépôts",
-  "Autres disponibilités",
-  "Compte courant d'associé"
+  "Compte courant d'associé",
+  ...ASSET_CATEGORIES["créances"],
 ];

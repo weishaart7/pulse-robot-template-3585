@@ -34,7 +34,6 @@ export const RENTAL_PROPERTY_TYPES = [
   'Immeubles locatifs (LMNP)',
   'Immeubles locatifs (LMP)',
   'Immeubles professionnels (hors LMP)',
-  'Autres immeubles de rapport',
   'Parking / Garage / Box'
 ];
 

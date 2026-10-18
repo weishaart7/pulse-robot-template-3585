@@ -46,12 +46,12 @@ export interface FiscalRegimeResult {
 }
 
 // --- Groupe 1 : PFU générique ---
-// Actions, Obligations, Bons du Trésor, dettes subordonnées, dette privée
+// Dettes subordonnées, dette privée
 // (par défaut), CTO générique, matières premières (trackers/ETC/contrats à
 // terme).
 //
 // Changements vs l'ancien système (NATURES_PFU) :
-// - "Actions", "Obligations", "Bons du Trésor", "Titres de dette subordonné",
+// - "Titres de dette subordonnée",
 //   "Fonds de dette privée", "Contrat à terme" : restaient déjà PFU.
 // - "Compte-titres (CTO)" : corrige un bug de l'ancien système, qui listait
 //   "Compte-titres" (sans "(CTO)") dans NATURES_PFU — cette chaîne ne
@@ -61,10 +61,7 @@ export interface FiscalRegimeResult {
 // - "Matières premières (pétrole, blé…)" : nouvelle addition, absente de
 //   l'ancien NATURES_PFU.
 const NATURES_PFU_GENERIQUE = [
-  'Actions',
-  'Obligations',
-  'Bons du Trésor',
-  'Titres de dette subordonné',
+  'Titres de dette subordonnée',
   'Fonds de dette privée',
   'Compte-titres (CTO)',
   'Matières premières (pétrole, blé…)',
@@ -81,11 +78,7 @@ const NATURE_AGA = 'Actions gratuites';
 const NATURE_STOCK_OPTIONS = 'Stock-options';
 
 // --- Groupe 5 : BSPCE ---
-// La nature "BSPCE" n'existe pas telle quelle dans ASSET_NATURES : la
-// constante existante est orthographiée "BCSPE" (coquille historique du
-// projet, non corrigée ici — hors périmètre de cette tâche). On s'appuie sur
-// cette valeur réelle pour que la correspondance fonctionne.
-const NATURE_BSPCE = 'BCSPE';
+const NATURE_BSPCE = 'BSPCE';
 
 // --- Groupe 6 : Cryptomonnaies ---
 const NATURE_CRYPTO = 'Portefeuille de valeurs numériques (cryptomonnaies)';
@@ -100,8 +93,7 @@ const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
 // l'ancien système (hors périmètre des 8 règles demandées ; à ne pas deviner) :
 // "Parts de FIP", "Parts de FIP Corse", "Parts de FCPI", "Club deals",
 // "SPV d'investissement (structures ad hoc)", "Produits structurés",
-// "Autres produits dérivés (Swap, Warrants, CFD...)", "Credit default swap",
-// "Options".
+// "Autres produits dérivés (Swap, Warrants, CFD...)".
 //
 // Natures qui redescendent en "Non déterminé" alors qu'elles étaient
 // "Exonéré" dans l'ancien système : "Livret A", "Livret de développement

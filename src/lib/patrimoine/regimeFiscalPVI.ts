@@ -41,7 +41,6 @@ const NATURE_RESIDENCE_PRINCIPALE = 'Résidence principale';
 const NATURES_REGIME_GENERAL = [
   'Immeubles locatifs (loués nus)',
   'Immeubles professionnels (hors LMP)',
-  'Autres immeubles de rapport',
   'Résidences secondaires',
   'Maison mobile (péniche, etc.)',
   'Parking / Garage / Box',
