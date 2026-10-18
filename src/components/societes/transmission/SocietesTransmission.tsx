@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { useSocietes } from '@/hooks/useSocietes';
+import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
+import { getSocieteTypeLabel } from '@/hooks/useSocietesIntegration';
 import { useSocieteDutreil } from '@/hooks/useSocieteExtended';
 import { societeDutreilService } from '@/services/societeExtendedService';
 import { CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
@@ -28,10 +30,25 @@ const computeDMTG = (base: number, abattement = 100000) => {
   return Math.max(0, dmtg);
 };
 
-export const SocietesTransmission: React.FC = () => {
+// Société choisie : partagée avec l'onglet Gouvernance par SocietesSection.
+export const SocietesTransmission: React.FC<{ societeId: string | null; onSocieteChange: (id: string) => void }> = ({
+  societeId,
+  onSocieteChange: setSocieteId,
+}) => {
   const { societes } = useSocietes();
-  const [societeId, setSocieteId] = useState<string | null>(null);
   const societe = societes.find(s => s.id === societeId);
+  const { participations } = useSocieteParticipations();
+  // Filiales à caractère patrimonial (SCI, société civile de gestion, holding passive) :
+  // leurs actifs sont en principe non affectés à l'activité, à reporter dans la part de
+  // biens non affectés — signalées ici, jamais déduites automatiquement.
+  const filialesPatrimoniales = useMemo(() => participations
+    .filter(p => p.societe_mere_id === societeId)
+    .map(p => ({ p, fille: societes.find(s => s.id === p.societe_fille_id) }))
+    .filter(({ fille }) => !!fille && (
+      fille.type_societe === 'societe-civile'
+      || fille.holding === 'Passive'
+      || ['Patrimoniale', 'Gestion immobilière'].includes(fille.activite || '')
+    )), [participations, societes, societeId]);
   const { dutreil, refetch } = useSocieteDutreil(societeId);
   const [draft, setDraft] = useState<any>(null);
   // Activité éligible et seuils de détention : déclaratifs, confirmés par le
@@ -174,6 +191,18 @@ export const SocietesTransmission: React.FC = () => {
                 </div>
               </div>
 
+              {filialesPatrimoniales.length > 0 && (
+                <div className="flex items-start gap-2 rounded-[2px] bg-secondary/60 p-3 text-[13px]">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                  <span>
+                    Cette société détient{' '}
+                    {filialesPatrimoniales.map(({ p, fille }) => `${fille!.denomination} (${getSocieteTypeLabel(fille!.type_societe, fille!.forme_societe_civile)}, ${p.pourcentage} %)`).join(', ')}.
+                    {' '}Si ses actifs ne sont pas affectés à l'activité, la part correspondante de la valeur des titres est à
+                    reporter dans « Part de biens non affectés à l'activité ».
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">{eligibilite.engagementCollectif ? <CheckCircle2 className="h-4 w-4 text-positive" /> : <XCircle className="h-4 w-4 text-destructive" />}Engagement collectif en cours au jour de la transmission (signé, réputé acquis ou post mortem)</div>
                 <div className="flex items-center gap-2">{eligibilite.fonctionDirection ? <CheckCircle2 className="h-4 w-4 text-positive" /> : <XCircle className="h-4 w-4 text-destructive" />}Fonction de direction renseignée</div>
@@ -194,8 +223,8 @@ export const SocietesTransmission: React.FC = () => {
 
               <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0 pt-3 border-t border-border/60">
                 <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Donation classique</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{dmtgClassique.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
-                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">Avec Dutreil (75% exonéré)</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{dmtgDutreil.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
-                <div className="py-2.5 sm:px-4 sm:first:pl-0 sm:bg-lagon-soft/60"><div className="text-xs text-muted-foreground">Économie</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em] text-lagon-ink">{economie.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
+                <div className="py-2.5 sm:px-4 sm:first:pl-0"><div className="text-xs text-muted-foreground">{eligible ? 'Avec Dutreil (75% exonéré)' : 'Avec Dutreil, si éligible'}</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em]">{dmtgDutreil.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
+                <div className="py-2.5 sm:px-4 sm:first:pl-0 sm:bg-lagon-soft/60"><div className="text-xs text-muted-foreground">{eligible ? 'Économie' : 'Économie potentielle (éligibilité incomplète)'}</div><div className="text-[18px] font-medium tabular-nums tracking-[-0.01em] text-lagon-ink">{economie.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</div></div>
               </div>
 
               <Button className={panelPrimaryButtonClass} onClick={saveDutreil}>Enregistrer</Button>

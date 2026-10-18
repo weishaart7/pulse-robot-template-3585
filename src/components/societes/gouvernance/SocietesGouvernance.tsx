@@ -15,6 +15,7 @@ import {
   societeCCAService, SocieteCCA,
 } from '@/services/societeExtendedService';
 import { useSocieteDividendes } from '@/hooks/useSocieteDividendes';
+import { useSocieteParticipations } from '@/hooks/useSocieteParticipations';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import {
   AlertDialog,
@@ -30,13 +31,35 @@ import { toast } from 'sonner';
 
 const NATURES = ['Pleine propriété', 'Nue-propriété', 'Usufruit'];
 
-export const SocietesGouvernance: React.FC = () => {
+// Société choisie : partagée avec l'onglet Transmission par SocietesSection.
+export const SocietesGouvernance: React.FC<{ societeId: string | null; onSocieteChange: (id: string) => void }> = ({
+  societeId,
+  onSocieteChange: setSocieteId,
+}) => {
   const { societes } = useSocietes();
-  const [societeId, setSocieteId] = useState<string | null>(null);
   const { associes, refetch: refetchAssocies } = useSocieteAssocies(societeId);
   const { pacte, refetch: refetchPacte } = useSocietePacte(societeId);
   const { cca, refetch: refetchCCA } = useSocieteCCA(societeId);
   const { dividendes } = useSocieteDividendes(societeId);
+  const { participations } = useSocieteParticipations();
+  const societe = societes.find(s => s.id === societeId);
+  // Détention déjà déclarée ailleurs (quotités du foyer sur la fiche, participations
+  // entre sociétés dans « Mes sociétés ») : rappelée ici, la table de capitalisation
+  // étant une saisie distincte qui n'est pas croisée avec elles.
+  const detentionsDeclarees = useMemo(() => {
+    if (!societe) return [];
+    const lignes: string[] = [];
+    const pu = societe.pourcentage_utilisateur ?? 100;
+    const pc = societe.pourcentage_conjoint ?? 0;
+    if (pu + pc > 0) lignes.push(`Foyer : ${pu + pc} % (fiche société)`);
+    participations
+      .filter(p => p.societe_fille_id === societe.id)
+      .forEach(p => {
+        const mere = societes.find(s => s.id === p.societe_mere_id);
+        lignes.push(`${mere?.denomination || 'Société'} : ${p.pourcentage} % (participations)`);
+      });
+    return lignes;
+  }, [societe, societes, participations]);
 
   const [editingAssoc, setEditingAssoc] = useState<Partial<SocieteAssocie> | null>(null);
   const [editingCCA, setEditingCCA] = useState<Partial<SocieteCCA> | null>(null);
@@ -165,11 +188,18 @@ export const SocietesGouvernance: React.FC = () => {
             <PanelCardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
               <PanelCardTitle>Table de capitalisation</PanelCardTitle>
               <div className="flex items-center gap-3">
-                <Chip tone={Math.abs(totalPct - 100) < 0.01 ? 'lagon' : 'alerte'}>Total : {totalPct.toFixed(2)} %</Chip>
+                {associes.length > 0 && (
+                  <Chip tone={Math.abs(totalPct - 100) < 0.01 ? 'lagon' : 'alerte'}>Total : {totalPct.toFixed(2)} %</Chip>
+                )}
                 <AddButton onClick={() => setEditingAssoc({ nature_detention: 'Pleine propriété', detention_directe: true })}>Ajouter</AddButton>
               </div>
             </PanelCardHeader>
             <PanelCardContent>
+              {detentionsDeclarees.length > 0 && (
+                <p className="mb-3 text-[12.5px] text-muted-foreground">
+                  Détention déclarée ailleurs : {detentionsDeclarees.join(' · ')}. La table ci-dessous est une saisie distincte.
+                </p>
+              )}
               <div className="divide-y divide-border border-border [&:has(>div)]:border-y">
                 {associes.map(a => (
                   <div key={a.id} className="flex items-center justify-between py-2.5">

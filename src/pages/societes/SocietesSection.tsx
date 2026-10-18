@@ -37,6 +37,8 @@ export const SocietesSection = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formTab, setFormTab] = useState('informations');
+  // Société choisie dans les onglets Gouvernance et Transmission, conservée de l'un à l'autre.
+  const [societeSelectionnee, setSocieteSelectionnee] = useState<string | null>(null);
   // Modifications non enregistrées de l'onglet Informations : SocieteForm est démonté
   // au changement d'onglet, on demande donc confirmation avant de les perdre.
   const [informationsDirty, setInformationsDirty] = useState(false);
@@ -185,11 +187,11 @@ export const SocietesSection = () => {
       case 'mes_societes':
         return <SocietesMesSocietes onEdit={handleEditSociete} onAdd={handleAddSociete} />;
       case 'gouvernance':
-        return <SocietesGouvernance />;
+        return <SocietesGouvernance societeId={societeSelectionnee} onSocieteChange={setSocieteSelectionnee} />;
       case 'strategies':
         return <SocietesStrategiesFiscales />;
       case 'transmission':
-        return <SocietesTransmission />;
+        return <SocietesTransmission societeId={societeSelectionnee} onSocieteChange={setSocieteSelectionnee} />;
       default:
         return <SocietesSynthese />;
     }

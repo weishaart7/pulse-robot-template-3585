@@ -41,7 +41,18 @@ demandent d'enregistrer d'abord la société en création. Quitter l'onglet Info
 modifications non enregistrées demande confirmation (le formulaire est démonté au changement d'onglet).
 Une SCI est une société civile de forme SCI ou SCI familiale (`type_societe = 'societe-civile'` +
 `forme_societe_civile`) : la recherche SIRENE (code 6541) remplit ces deux champs, et le régime IR / IS est
-obligatoire à l'enregistrement d'une SCI.
+obligatoire à l'enregistrement d'une SCI. Le champ « Holding » (non / passive / animatrice) est proposé pour
+toute forme sauf l'entreprise individuelle et la micro-entreprise. La case « Ajouter les parts à la liste
+d'actifs » n'apparaît qu'à la création. Le libellé du type d'une société civile reprend sa forme (SCI,
+SCI familiale…) dans le graphe et la Synthèse.
+
+Les onglets Gouvernance et Transmission partagent la société choisie. La Gouvernance rappelle la
+détention déclarée ailleurs (quotités du foyer, participations entre sociétés) au-dessus de la table de
+capitalisation, qui reste une saisie distincte (total affiché seulement si des associés sont saisis).
+L'onglet Transmission signale les filiales patrimoniales (société civile, holding passive, activité
+patrimoniale ou de gestion immobilière) d'une société, à prendre en compte dans la part de biens non
+affectés, et présente l'économie Dutreil comme « potentielle » tant que l'éligibilité est incomplète. Le
+simulateur holding affiche un état de chargement des participations.
 
 **Tables Supabase** : `societes` (dénomination, quotités, qualification civile, valeur/pourcentage IFI,
 identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, contrôlé à l'enregistrement dans `SocieteForm.tsx` car il commande la plus-value des parts côté Patrimoine —, 6 champs comptables « snapshot »), et 8 tables filles toutes en
@@ -284,10 +295,13 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
   valeur × `getPartSuccessorale` (sans quote-part du capital), le module Transmission la valeur de l'actif
   Patrimoine. La valeur globale de la Synthèse compte 100 % de chaque société et compte deux fois une
   filiale et sa mère.
+- **Détention indirecte non calculée** : la valeur globale de la Synthèse additionne mère et filiales ;
+  l'IFI d'une filiale détenue via une holding vaut 0 (seule la détention directe du foyer compte) ; une
+  holding animatrice est exonérée en totalité même si elle détient de l'immobilier non affecté.
 - **Simulateurs de `SocietesStrategiesFiscales.tsx`** : prélèvement forfaitaire à 30 % codé en dur (31,4 %
   ailleurs dans l'application), barème IR 2024 à une part, régime IR = IR(résultat × 0,9) + 17 % (taux des
   prélèvements sociaux du patrimoine, pas des cotisations TNS), IS oublié sur la part versée en dividendes
-  et charges comptées deux fois dans « rémunération ou dividendes », holding comparant un dividende perçu
+  et charges comptées deux fois dans « rémunération ou dividendes », holding retenant des filiales à l'IR (SCI) et comparant un dividende perçu
   à un dividende capitalisé sans vérifier que mère et fille sont à l'IS ; champ TMI affiché mais inutilisé.
 - **IFI** : le test « SCI patrimoniale » (`useSocietesIntegration.ts`) classe aussi les SCP ; holding
   animatrice exonérée sans condition ; pas d'exclusion des participations < 10 % ; la valeur IFI saisie

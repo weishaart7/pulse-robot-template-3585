@@ -143,7 +143,18 @@ export const getSocieteCategory = (societe: Societe): string => {
   return 'Autre';
 };
 
-export const getSocieteTypeLabel = (type: string): string => {
+// Libellé du type de structure ; une société civile est précisée par sa forme (SCI…).
+const FORMES_SOCIETE_CIVILE_LABELS: Record<string, string> = {
+  'sci': 'SCI',
+  'sci-familiale': 'SCI familiale',
+  'sc-portefeuille': 'SC de portefeuille',
+  'sc-moyens': 'SC de moyens',
+};
+
+export const getSocieteTypeLabel = (type: string, formeSocieteCivile?: string | null): string => {
+  if (type === 'societe-civile' && formeSocieteCivile && FORMES_SOCIETE_CIVILE_LABELS[formeSocieteCivile]) {
+    return FORMES_SOCIETE_CIVILE_LABELS[formeSocieteCivile];
+  }
   const labels: Record<string, string> = {
     'micro-entrepreneur': 'Micro-entrepreneur',
     'entreprise-individuelle': 'Entreprise individuelle',

@@ -28,9 +28,7 @@ const computeIR = (rev: number) => {
 
 export const SocietesStrategiesFiscales: React.FC = () => {
   const { societes } = useSocietes();
-  const { participations } = useSocieteParticipations();
-  const [societeId, setSocieteId] = useState<string | null>(null);
-  const societe = societes.find(s => s.id === societeId);
+  const { participations, loading: participationsLoading } = useSocieteParticipations();
 
   // Sim 1: IS vs IR
   const [resultat, setResultat] = useState(80000);
@@ -138,7 +136,9 @@ export const SocietesStrategiesFiscales: React.FC = () => {
           <PanelCardDescription>Régime mère-fille (95% exonéré) et intégration fiscale</PanelCardDescription>
         </PanelCardHeader>
         <PanelCardContent>
-          {!isHolding ? (
+          {participationsLoading ? (
+            <p className="text-sm text-muted-foreground">Chargement des participations…</p>
+          ) : !isHolding ? (
             <p className="text-sm text-muted-foreground">Détection : aucune participation d'au moins {SEUIL_PARTICIPATION_MERE_FILLE}% entre deux de vos sociétés (table des participations, onglet "Mes sociétés"). Le régime mère-fille suppose une relation mère/fille réelle, pas seulement la possession de plusieurs sociétés.</p>
           ) : (
             <>

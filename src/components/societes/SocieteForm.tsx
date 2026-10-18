@@ -303,8 +303,10 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     return '';
   };
 
+  // Toute société peut être une holding (la SAS en est la forme la plus courante), pas une
+  // entreprise individuelle, qui n'a pas de titres à détenir pour elle.
   const showHolding = (typeSociete: string) => {
-    return !['micro-entrepreneur', 'sa-conseil-administration', 'sa-directoire', 'sas'].includes(typeSociete);
+    return !['micro-entrepreneur', 'entreprise-individuelle'].includes(typeSociete);
   };
 
   const isRegimeFiscalBlocked = (typeSociete: string) => {
@@ -822,16 +824,19 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="transfertVersActifs"
-            checked={formData.transfertVersActifs}
-            onCheckedChange={(checked) => handleInputChange('transfertVersActifs', checked as boolean)}
-          />
-          <Label htmlFor="transfertVersActifs" className="cursor-pointer">
-            Transférer vers la liste d'actif
-          </Label>
-        </div>
+        {/* Ne sert qu'à la création : ensuite, l'actif se rattache depuis Patrimoine (« Société liée »). */}
+        {!initialData && (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="transfertVersActifs"
+              checked={formData.transfertVersActifs}
+              onCheckedChange={(checked) => handleInputChange('transfertVersActifs', checked as boolean)}
+            />
+            <Label htmlFor="transfertVersActifs" className="cursor-pointer">
+              Ajouter les parts à la liste d'actifs
+            </Label>
+          </div>
+        )}
       </div>
       </PanelCard>
 

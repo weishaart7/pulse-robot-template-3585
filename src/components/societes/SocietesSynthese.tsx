@@ -89,7 +89,7 @@ export const SocietesSynthese = () => {
   const parType: Record<string, number> = {};
   const parRegime: Record<string, number> = {};
   societes.forEach(s => {
-    const t = s.type_societe ? getSocieteTypeLabel(s.type_societe) : 'Non défini';
+    const t = s.type_societe ? getSocieteTypeLabel(s.type_societe, s.forme_societe_civile) : 'Non défini';
     parType[t] = (parType[t] || 0) + (s.valeur_estimee || 0);
     const r = s.regime_fiscal || 'Non défini';
     parRegime[r] = (parRegime[r] || 0) + (s.valeur_estimee || 0);
