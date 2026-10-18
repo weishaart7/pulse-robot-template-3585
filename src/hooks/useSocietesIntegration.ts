@@ -44,8 +44,8 @@ export const useSocietesIFI = (societes: Societe[]) => {
     for (const societe of societes) {
       const valeurEstimee = societe.valeur_estimee || 0;
       const pourcentageIFI = societe.pourcentage_ifi || 0;
-      const pourcentageUtilisateur = (societe as any).pourcentage_utilisateur || 100;
-      const pourcentageConjoint = (societe as any).pourcentage_conjoint || 0;
+      const pourcentageUtilisateur = societe.pourcentage_utilisateur ?? 100;
+      const pourcentageConjoint = societe.pourcentage_conjoint ?? 0;
       const pourcentageTotal = pourcentageUtilisateur + pourcentageConjoint;
       // Valeur taxable à l'échelle de la société : `valeur_ifi` prime si saisie
       // manuellement (correction d'estimation), sinon dérivée de `pourcentage_ifi`.
@@ -108,8 +108,8 @@ export const useSocietesTransmission = (societes: Societe[]) => {
     
     for (const societe of societes) {
       const valeurEstimee = societe.valeur_estimee || 0;
-      const pourcentageUtilisateur = (societe as any).pourcentage_utilisateur || 100;
-      const pourcentageConjoint = (societe as any).pourcentage_conjoint || 0;
+      const pourcentageUtilisateur = societe.pourcentage_utilisateur ?? 100;
+      const pourcentageConjoint = societe.pourcentage_conjoint ?? 0;
       const pourcentageTotal = pourcentageUtilisateur + pourcentageConjoint;
       
       const valeurSuccessorale = valeurEstimee * (pourcentageTotal / 100);

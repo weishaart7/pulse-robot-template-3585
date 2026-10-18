@@ -55,7 +55,7 @@ export const SocieteFinancesImpactFiscal: React.FC<SocieteFinancesImpactFiscalPr
       (formData.valeur_estimee && formData.pourcentage_ifi
         ? formData.valeur_estimee * (formData.pourcentage_ifi / 100)
         : 0);
-    const pourcentageDetention = (formData.pourcentage_utilisateur || 0) + (formData.pourcentage_conjoint || 0);
+    const pourcentageDetention = (formData.pourcentage_utilisateur ?? 100) + (formData.pourcentage_conjoint ?? 0);
     const ifiValue = valeurBase * (pourcentageDetention / 100);
 
     return { value: ifiValue, exempt: false };

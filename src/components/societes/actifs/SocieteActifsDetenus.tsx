@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
-import { Home, Briefcase } from 'lucide-react';
+import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle, PanelCardDescription } from '@/components/layout/panel-section';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface Props { societeId: string }
 
+type ActifLie = { id: string; nature: string; denomination: string | null; valeur_estimee: number | null };
+
+// Actifs Patrimoine rattachés à la société (assets.societe_id) : ce sont les titres
+// de la société détenus par le foyer, pas des biens détenus par la société.
 export const SocieteActifsDetenus: React.FC<Props> = ({ societeId }) => {
-  const [actifs, setActifs] = useState<any[]>([]);
+  const [actifs, setActifs] = useState<ActifLie[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from('assets').select('id, nature, denomination, valeur_estimee, typologie_bien').eq('societe_id', societeId);
+      const { data } = await supabase.from('assets').select('id, nature, denomination, valeur_estimee').eq('societe_id', societeId);
       setActifs(data || []);
       setLoading(false);
     })();
@@ -21,35 +24,26 @@ export const SocieteActifsDetenus: React.FC<Props> = ({ societeId }) => {
 
   if (loading) return <LoadingSpinner size="sm" />;
 
-  const immo = actifs.filter(a => ['Résidence principale', 'Résidence secondaire', 'Bien locatif', 'Bien immobilier'].includes(a.nature));
-  const autres = actifs.filter(a => !immo.includes(a));
-
   return (
     <div>
       <PanelCard>
-        <PanelCardHeader><PanelCardTitle>Biens immobiliers détenus</PanelCardTitle></PanelCardHeader>
+        <PanelCardHeader>
+          <PanelCardTitle>Parts détenues par le foyer</PanelCardTitle>
+          <PanelCardDescription>
+            Actifs du Patrimoine rattachés à cette société (champ « Société liée » de l'actif).
+          </PanelCardDescription>
+        </PanelCardHeader>
         <PanelCardContent>
-          {immo.length === 0 ? <p className="text-sm text-muted-foreground">Aucun bien immobilier rattaché à cette société.</p> : (
+          {actifs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aucun actif rattaché. Dans Patrimoine, choisissez cette société dans le champ « Société liée » de l'actif
+              qui représente ses parts.
+            </p>
+          ) : (
             <div className="divide-y divide-border border-y border-border empty:hidden">
-              {immo.map(a => (
+              {actifs.map(a => (
                 <div key={a.id} className="flex justify-between py-2.5 text-sm">
-                  <span>{a.denomination || a.nature} {a.typologie_bien ? `(${a.typologie_bien})` : ''}</span>
-                  <span className="font-medium">{(a.valeur_estimee || 0).toLocaleString('fr-FR')} €</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </PanelCardContent>
-      </PanelCard>
-
-      <PanelCard>
-        <PanelCardHeader><PanelCardTitle>Autres actifs détenus</PanelCardTitle></PanelCardHeader>
-        <PanelCardContent>
-          {autres.length === 0 ? <p className="text-sm text-muted-foreground">Aucun autre actif.</p> : (
-            <div className="divide-y divide-border border-y border-border empty:hidden">
-              {autres.map(a => (
-                <div key={a.id} className="flex justify-between py-2.5 text-sm">
-                  <span>{a.denomination || a.nature}</span>
+                  <span>{a.denomination || a.nature} <span className="text-muted-foreground">· {a.nature}</span></span>
                   <span className="font-medium">{(a.valeur_estimee || 0).toLocaleString('fr-FR')} €</span>
                 </div>
               ))}

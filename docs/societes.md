@@ -30,14 +30,18 @@ pattern `lib/ifi/`/`lib/patrimoine/` demandé par `CLAUDE.md`, mais très incomp
 | Stratégies fiscales | [SocietesStrategiesFiscales.tsx](src/components/societes/strategies/SocietesStrategiesFiscales.tsx) + [SocietesStrategies.tsx](src/components/societes/SocietesStrategies.tsx) (non monté, cf. §3) | Simulateurs IS/IR, rémunération/dividendes, gain holding (régime mère-fille) |
 | Transmission des parts | [SocietesTransmission.tsx](src/components/societes/transmission/SocietesTransmission.tsx) | Pacte Dutreil (éligibilité avec engagement individuel de 6 ans depuis la LF 2026, part des biens non affectés à l'activité exclue de l'exonération — `societe_dutreil.part_biens_non_affectes`, obligatoire pour le calcul de succession —, économie DMTG), simulation OBO, renvoi vers le module Transmission. Éligibilité : cf. « Éligibilité Dutreil » ci-dessous |
 
-**Habillage** : « panneau de travail » comme Famille, Patrimoine, Immobilier et Retraite (cf. [design-system.md](design-system.md)) — barre d'en-tête à fil d'Ariane « Sociétés / onglet », titre 24 px et rappel, contenu bord à bord. Synthèse sur le modèle de la Vue d'ensemble Immobilier : valeur globale (34 px) et lignes `SummaryRow` (capital, CA, rentabilité, trésorerie, CCA, IFI, valeur successorale) à gauche, répartitions par type et par régime fiscal en barres segmentées lagon / citron à droite (les deux camemberts ont disparu), alertes en lignes filetées. Mes sociétés : barre d'outils filetée (Gérer les participations, `AddButton` « Ajouter une société »), nœuds du graphe à angles 2 px et liseré lagon. Gouvernance, Stratégies, Transmission, Bilans, Actifs détenus et Finances : sections filetées à repère lagon (`PanelCard*`, [panel-section.tsx](src/components/layout/panel-section.tsx)), choix de la société en bandeau, indicateurs en bandes divisées, listes en lignes `divide-y`, étiquettes `Chip` (ton `alerte` pour les incohérences). Fiche société : fil d'Ariane « Sociétés / Mes sociétés / nom » portant le retour, onglets `GooeyNav`, Finances sans zone de défilement interne.
+**Habillage** : « panneau de travail » comme Famille, Patrimoine, Immobilier et Retraite (cf. [design-system.md](design-system.md)) — barre d'en-tête à fil d'Ariane « Sociétés / onglet », titre 24 px et rappel, contenu bord à bord. Synthèse sur le modèle de la Vue d'ensemble Immobilier : valeur globale (34 px) et lignes `SummaryRow` (capital, CA, rentabilité, trésorerie, CCA, IFI, valeur successorale) à gauche, répartitions par type et par régime fiscal en barres segmentées lagon / citron à droite (les deux camemberts ont disparu), alertes en lignes filetées. Mes sociétés : barre d'outils filetée (Gérer les participations, `AddButton` « Ajouter une société »), nœuds du graphe à angles 2 px et liseré lagon. Gouvernance, Stratégies, Transmission, Bilans, Parts du foyer et Finances : sections filetées à repère lagon (`PanelCard*`, [panel-section.tsx](src/components/layout/panel-section.tsx)), choix de la société en bandeau, indicateurs en bandes divisées, listes en lignes `divide-y`, étiquettes `Chip` (ton `alerte` pour les incohérences). Fiche société : fil d'Ariane « Sociétés / Mes sociétés / nom » portant le retour, onglets `GooeyNav`, Finances sans zone de défilement interne.
 
 Le formulaire société (créer/modifier) est en mode page pleine largeur avec ses propres onglets
-(Synthèse à venir / Informations / Finances / Bilans / Actifs détenus), piloté par
-[SocietesSection.tsx](src/pages/societes/SocietesSection.tsx). **Un second point d'entrée existe en
-parallèle** : [SocieteFormPage.tsx](src/pages/societes/SocieteFormPage.tsx), une route indépendante
-(`/societes/form`) avec sa propre sidebar et sa propre logique de sauvegarde — dupliquée à l'identique
-en esprit mais avec un comportement différent (§2, §3).
+(Synthèse à venir / Informations / Finances / Bilans / Parts du foyer), piloté par
+[SocietesSection.tsx](src/pages/societes/SocietesSection.tsx), seul point d'entrée : la route
+`/societes/form` n'est plus déclarée dans `App.tsx` (le fichier `SocieteFormPage.tsx`, orphelin, reste à
+supprimer). Les onglets Bilans et Parts du foyer portent sur la société ouverte ; Finances et Bilans
+demandent d'enregistrer d'abord la société en création. Quitter l'onglet Informations avec des
+modifications non enregistrées demande confirmation (le formulaire est démonté au changement d'onglet).
+Une SCI est une société civile de forme SCI ou SCI familiale (`type_societe = 'societe-civile'` +
+`forme_societe_civile`) : la recherche SIRENE (code 6541) remplit ces deux champs, et le régime IR / IS est
+obligatoire à l'enregistrement d'une SCI.
 
 **Tables Supabase** : `societes` (dénomination, quotités, qualification civile, valeur/pourcentage IFI,
 identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, contrôlé à l'enregistrement dans `SocieteForm.tsx` car il commande la plus-value des parts côté Patrimoine —, 6 champs comptables « snapshot »), et 8 tables filles toutes en
@@ -48,13 +52,15 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
 
 **Flux clés** :
 - Une société est créée manuellement (recherche SIRENE optionnelle) avec qualification civile et
-  détenteur saisis **à la main** (§2, §3 — friction Patrimoine↔Sociétés n°1, toujours ouverte).
-- Cocher « Transférer vers la liste d'actifs » à la création crée un actif Patrimoine en parallèle —
-  **sans lien retour** (`societe_id`) et **sans `qualification_bien`** (§2, §3 — friction n°2, toujours
-  ouverte, et pire que documenté dans `docs/patrimoine.md`).
-- Symétriquement, cocher « Transfert dans Sociétés » sur un actif Patrimoine crée une société
-  automatiquement (`src/lib/patrimoine/societeTransfer.ts` + `PatrimoineActifs.tsx`) — cette société créée
-  n'a, elle non plus, ni `qualification_bien` ni `detenteur` au moment de sa création.
+  détenteur saisis **à la main** (§3 — friction Patrimoine↔Sociétés n°1).
+- Quotités de détention : `pourcentage_utilisateur` / `pourcentage_conjoint` = part du capital détenue
+  par chacun. Une quote-part de 0 % est conservée telle quelle ; seule une quotité jamais saisie (NULL) est
+  lue 100 % / 0 % (`formMapping.ts`, `useSocietesIntegration.ts`, `SocieteFinancesImpactFiscal.tsx`).
+- **Lien actif ↔ société** (`assets.societe_id`, §2) : se fait de deux façons, jamais par création
+  automatique d'une société depuis un actif.
+  - Dans Patrimoine, la liste « Société liée » de l'actif rattache des titres à une société existante.
+  - À la création d'une société, « Transférer vers la liste d'actifs » (coché par défaut) crée l'actif
+    correspondant, rattaché à la société.
 - Les participations société → société (graphe de détention) sont une table dédiée
   (`societe_participations`), avec anti-cycle et anti-cross-user **appliqués côté base** par trigger
   (`check_societe_participation_integrity`), en plus du garde-fou côté client (`lib/societes/participations`).
@@ -90,28 +96,26 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
   l'utilisateur ne montre donc que les pourcentages directs, jamais un pourcentage de détention
   économique consolidée — écart entre un moteur de calcul plus riche que ce que l'écran en restitue.
 
-- **Trois implémentations indépendantes du lien Patrimoine ↔ Sociétés**, non harmonisées :
-  1. **Actif → Société** ([PatrimoineActifs.tsx:26-52](src/components/patrimoine/PatrimoineActifs.tsx)),
-     `syncSocieteFromAsset` : si `transfert_societe` est coché sur un actif éligible
-     (`isSocieteEligibleNature`, [societeTransfer.ts](src/lib/patrimoine/societeTransfer.ts)) et qu'aucun
-     `societe_id` n'existe déjà, crée une société et **relie l'actif** (`societe_id`). Ne transmet ni
-     `qualification_bien` ni `detenteur` à la société créée.
-  2. **Société → Actif, chemin `SocieteFormPage.tsx`** ([SocieteFormPage.tsx:63-79](src/pages/societes/SocieteFormPage.tsx)) :
-     à la création d'une société avec « Transférer vers la liste d'actifs » coché, crée un actif via
-     `useAssets().createAsset` avec seulement `nature`, `denomination`, `valeur_estimee`,
-     `date_estimation`, `detenteur: 'user'` (**valeur figée, ignore le détenteur choisi dans le
-     formulaire**), `mode_detention: 'Pleine propriété'`. **Aucun `societe_id`** n'est renseigné sur cet
-     actif : le lien retour n'existe pas.
-  3. **Société → Actif, chemin `SocietesSection.tsx`** ([SocietesSection.tsx:96-103](src/pages/societes/SocietesSection.tsx)) :
-     même déclencheur, mais via `assetService.createAsset` directement, avec `nature`, `denomination`,
-     `valeur_estimee`, `etablissement` — **pas de `detenteur` du tout** (ni `'user'` ni celui du
-     formulaire) et, là aussi, **aucun `societe_id`**.
-  Les trois chemins ont chacun leur propre logique de mapping des champs, aucun ne délègue à
-  `lib/societes/formMapping.ts`, et seul le chemin (1) referme la boucle avec un lien base de données
-  exploitable. Les chemins (2) et (3) créent un actif Patrimoine **orphelin** (jamais retrouvable
-  depuis la fiche société, jamais resynchronisé par `syncQualificationToLinkedAsset`, cf. ci-dessous)
-  à chaque société créée avec la case cochée — deux sociétés dans les données réelles ont ce
-  comportement (cf. §3).
+- **Lien Patrimoine ↔ Sociétés** (`assets.societe_id`, [societeTransfer.ts](src/lib/patrimoine/societeTransfer.ts)).
+  Seules les natures qui sont des titres de société peuvent être rattachées (`NATURES_PARTS_SOCIETE` :
+  droits sociaux, parts de holding, parts de SCI) ; un compte courant d'associé, une entreprise
+  individuelle (Dutreil art. 787 C, autre régime) ou d'« autres biens professionnels » ne le sont pas.
+  Ce lien porte l'exonération Dutreil des titres dans le calcul de succession
+  (`lib/transmission/index.ts`), le régime IR / IS des parts de SCI côté plus-value
+  (`assetFiscalRegime.ts`), la synchronisation de qualification (ci-dessous) et l'onglet « Parts du
+  foyer » de la fiche société.
+  1. **Actif → société** : liste « Société liée » de l'AssetForm (étape « Particularités »,
+     `CaracteristiquesFields.tsx`), vidée à la sauvegarde pour toute autre nature
+     (`useAssetForm.ts`). `transfert_societe` n'est plus qu'un reflet du lien (`!!societe_id`).
+  2. **Société → actif** : à la création d'une société avec « Transférer vers la liste d'actifs »,
+     [SocietesSection.tsx](src/pages/societes/SocietesSection.tsx) crée l'actif avec `societe_id`,
+     la nature donnée par `natureActifPourSociete` (holding → « Parts de holding », SCI ou SCI familiale
+     → « Parts de SCI », entreprise individuelle → « Entreprise individuelle », non rattachée, sinon
+     « Droits sociaux »), la qualification (`qualification_auto = false`), le détenteur et les quotités
+     de la société, la pleine propriété et la date du jour comme date d'estimation. La valeur reprise
+     est `valeur_estimee` telle quelle (sens de ce champ non tranché, §3).
+  Patrimoine et Transmission ne lisant que `assets`, une société sans actif rattaché reste absente du
+  bilan patrimonial et de la succession.
 
 - **Synchronisation qualification société → actif, unidirectionnelle et seulement sur `update`.**
   [societeService.ts:51-82](src/services/societeService.ts) — `syncQualificationToLinkedAsset` pousse
@@ -150,9 +154,7 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
   de la famille), mais [SocietesGouvernance.tsx](src/components/societes/gouvernance/SocietesGouvernance.tsx:157-179)
   n'expose dans son formulaire que `nom_libre`, `nombre_titres`, `pourcentage`, `nature_detention`,
   `detention_directe` — ni `societe_associee_id` ni `family_link_id` ne sont jamais renseignables ni
-  affichés (le libellé de repli « Lié famille », ligne 140, s'affiche pour n'importe quel associé sans
-  `nom_libre`, quel que soit le membre de famille réellement rattaché, puisque ce rattachement n'est
-  jamais fait). Confirmé en base : `societe_associes` est vide (0 ligne). Le graphe de détention
+  affichés (un associé sans nom s'affiche « Associé sans nom »). Confirmé en base : `societe_associes` est vide (0 ligne). Le graphe de détention
   société→société actif dans l'UI est donc exclusivement `societe_participations` — `societe_associes`
   et son champ `societe_associee_id` forment un second modèle de la même idée, non câblé, sans FK
   déclarée sur `societe_associee_id`/`family_link_id`/`associe_id`/`dirigeant_family_link_id`
@@ -268,6 +270,31 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
   régime réel de la société — ce qui rendait les deux premiers bloquants ci-dessus invisibles à l'écran
   malgré un calcul sous-jacent correct. Comparaison corrigée pour utiliser les libellés réels.
 
+### 🔴 Ouvert — à arbitrer
+
+- **Actifs existants non rattachés** : les « parts » saisies avant le rétablissement du lien doivent être
+  rattachées à la main (liste « Société liée ») pour bénéficier du Dutreil et du régime IR / IS de la SCI.
+- **Quotités recopiées sur l'actif lié** : `syncQualificationToLinkedAsset` reporte sur l'actif la part du
+  capital détenue (`pourcentage_utilisateur`/`conjoint` de la société), alors que ces champs désignent sur
+  un actif la répartition entre indivisaires ; sans effet pour un bien propre ou commun, à trancher avec le
+  sens de `valeur_estimee` ci-dessous. Une société au détenteur « Indivision » crée un actif en indivision
+  sans co-indivisaires.
+- **Sens de `valeur_estimee`** (100 % de la société ou parts du foyer) non défini : la Synthèse affiche
+  une « valeur successorale » = valeur × (quote-part utilisateur + conjoint), l'onglet Transmission
+  valeur × `getPartSuccessorale` (sans quote-part du capital), le module Transmission la valeur de l'actif
+  Patrimoine. La valeur globale de la Synthèse compte 100 % de chaque société et compte deux fois une
+  filiale et sa mère.
+- **Simulateurs de `SocietesStrategiesFiscales.tsx`** : prélèvement forfaitaire à 30 % codé en dur (31,4 %
+  ailleurs dans l'application), barème IR 2024 à une part, régime IR = IR(résultat × 0,9) + 17 % (taux des
+  prélèvements sociaux du patrimoine, pas des cotisations TNS), IS oublié sur la part versée en dividendes
+  et charges comptées deux fois dans « rémunération ou dividendes », holding comparant un dividende perçu
+  à un dividende capitalisé sans vérifier que mère et fille sont à l'IS ; champ TMI affiché mais inutilisé.
+- **IFI** : le test « SCI patrimoniale » (`useSocietesIntegration.ts`) classe aussi les SCP ; holding
+  animatrice exonérée sans condition ; pas d'exclusion des participations < 10 % ; la valeur IFI saisie
+  ici n'est pas reprise par le module IFI.
+- **Dutreil (onglet Transmission)** : aucun garde-fou SCI patrimoniale / holding passive ; simulation des
+  droits à un enfant, sans réduction de l'art. 790 ni démembrement (art. 669).
+
 ### 🟠 À surveiller (cas limite, peu probable)
 
 - **Friction Patrimoine↔Sociétés n°1 confirmée toujours ouverte : la qualification civile d'une société
@@ -277,9 +304,8 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
   avec le régime matrimonial ou l'origine des fonds ayant financé les parts. Contrairement aux actifs
   Patrimoine (recalcul automatique tant que `qualification_auto = true`), une société ne se
   requalifie jamais automatiquement si le régime matrimonial change en amont (module Famille).
-- **Friction Patrimoine↔Sociétés n°2 confirmée toujours ouverte, et aggravée par l'absence de lien
-  retour (§2).** Un actif créé depuis le formulaire société (chemins 2 et 3, `SocieteFormPage.tsx` /
-  `SocietesSection.tsx`) n'a pas de `qualification_bien` — `getPartSuccessorale()` lèvera
+- **Friction Patrimoine↔Sociétés n°2, aggravée par l'absence de lien (§2).** Un actif créé depuis le
+  formulaire société (`SocietesSection.tsx`) n'a pas de `qualification_bien` — `getPartSuccessorale()` lèvera
   `BienNonQualifieError` dès qu'un module aval (Transmission, ou `SocietesTransmission.tsx` lui-même
   pour la société d'origine) tentera de calculer sa part successorale, tant que l'utilisateur n'aura pas
   ouvert et complété manuellement cet actif dans Patrimoine. `SocietesTransmission.tsx` gère cette
@@ -310,16 +336,22 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
+- **Code mort** : `SocieteFormPage.tsx` (orphelin, plus routé), `getSocieteCategory`,
+  `computeTotalParticipations`/`findAllPaths` (tests seulement), `SocieteFormData` déclaré dans 4
+  fichiers.
+- **Trois sources de comptes courants** non rapprochées (champ de la fiche, `societe_comptes_courants`,
+  actif « Compte courant d'associé ») ; dividendes non repris en fiscalité ; historique de valorisations
+  sans effet sur `valeur_estimee` ; aucune décote (illiquidité, minorité).
+- **Synthèse** : l'alerte « Aucun bilan renseigné » ne lit que `date_dernier_bilan`, pas
+  `societe_bilans` ; un jour de clôture 31 sur un mois de 30 jours déborde au mois suivant.
+- **Graphe de participations** : la détention directe du foyer n'est pas prise en compte (un total
+  > 100 % n'est pas détecté).
+- **`parts_negociables`** faux par défaut, y compris pour une SAS → alerte art. 1832-2 à tort.
+- **Gouvernance, Bilans** : les brouillons sont remis à zéro au changement de société et les suppressions
+  (associé, compte courant, bilan) demandent confirmation.
+
 - **Code mort : `SocietesStrategies.tsx`**, composant complet (onglet IFI détaillé + liste des holdings)
   jamais monté, cf. §2.
-- **`SocieteActifsDetenus.tsx` classe mal les biens immobiliers détenus par une société**, faute de
-  synchronisation avec la nomenclature réelle : la liste locale hardcodée
-  ([SocieteActifsDetenus.tsx:23](src/components/societes/actifs/SocieteActifsDetenus.tsx)) utilise
-  `'Résidence secondaire'` (singulier) alors que la nature réellement enregistrée en base est
-  `'Résidences secondaires'` (pluriel, cf. `assetTypes.ts:4`) — confirmé sur l'actif réel « SCI Les
-  Libéllules » (nature `Résidences secondaires`, `societe_id` renseigné), qui apparaît dans la carte
-  « Autres actifs détenus » au lieu de « Biens immobiliers détenus ». Sans impact sur les totaux (le
-  bien reste compté), uniquement sur le classement affiché.
 - **Deux déclarations indépendantes du type `SocieteFormData`** : une dans
   `src/components/societes/SocieteForm.tsx` (locale), une dans `src/lib/societes/formMapping.ts`
   (exportée, censée être la référence depuis sa création — cf. commentaire en tête du fichier). Elles
@@ -339,17 +371,8 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
   ne signifie pas que le foyer ne les détient plus. `assets.societe_id` reste en `ON DELETE SET NULL`
   et le trigger `trg_decoche_transfert_societe` (BEFORE DELETE sur `societes`, migration
   `20261007140000_decoche_transfert_societe_on_delete.sql`) décoche `transfert_societe` sur ces actifs :
-  sans cela, `syncSocieteFromAsset` recréait une société vide à la sauvegarde suivante de l'actif
-  (case cochée sans `societe_id`). La confirmation de suppression liste ces actifs et rappelle de les
+  l'actif ne garde ainsi aucune trace d'un lien vers une société disparue. La confirmation de suppression liste ces actifs et rappelle de les
   supprimer dans Patrimoine si les parts ont été cédées (arbitrage utilisateur du 07/10/2026).
-- **`SocieteActifsDetenus.tsx` mélange deux notions** : il affiche les actifs `assets.societe_id =
-  societe.id` comme des biens détenus *par* la société (« Biens immobiliers détenus »), alors que ce lien
-  désigne les parts détenues *par le foyer* dans la société (chemin `syncSocieteFromAsset`, Dutreil,
-  `syncQualificationToLinkedAsset`). Non corrigé, à traiter dans un audit du module Sociétés.
-- **Libellé de repli « Lié famille » dans la table de capitalisation** (`SocietesGouvernance.tsx:140`)
-  s'affiche pour tout associé sans `nom_libre`, indépendamment du membre de famille réel, puisque
-  `family_link_id` n'est jamais renseignable dans le formulaire — texte trompeur pour un champ mort
-  (cf. §2).
 - Warning avisé par le linter Supabase (« Public/Signed-In Can See Object in GraphQL Schema ») sur
   les 8 tables du module : bruit générique lié à l'introspection GraphQL (les RLS restent la protection
   réelle et sont vérifiées correctes), pas une vulnérabilité propre à ce module — non actionnable
@@ -383,10 +406,7 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
     associé à une autre société de l'utilisateur ou à un membre de la famille, jamais exposés dans le
     formulaire de gouvernance — chantier commencé au niveau du schéma, non poursuivi côté UI (§2).
   - **Onglet « Synthèse » du formulaire société** (`formTab === 'synthese'`) : affiche littéralement
-    « Synthèse de la société (à venir) » ([SocietesSection.tsx:187-190](src/pages/societes/SocietesSection.tsx)) —
+    « Synthèse de la société (à venir) » ([SocietesSection.tsx](src/pages/societes/SocietesSection.tsx)) —
     gap assumé et signalé par le message lui-même.
-- **Hors périmètre de cet audit, signalé comme travail de suivi** : un audit croisé Patrimoine ↔
-  Transmission ↔ Sociétés dédié à la duplication des trois chemins de synchronisation actif/société
-  (§2) — au minimum, unifier la création d'actif depuis le formulaire société sur le même mécanisme que
-  `syncSocieteFromAsset` (lien retour systématique + report de qualification dès la création, pas
-  seulement à la première mise à jour).
+- **Travail de suivi** : sens de `valeur_estimee` et des quotités, simulateurs fiscaux, IFI (§3,
+  « Ouvert — à arbitrer »).

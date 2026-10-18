@@ -13,7 +13,6 @@ import Dashboard from "./pages/Dashboard";
 import DashboardSection from "./pages/DashboardSection";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import NouveautesSection from "./pages/nouveautes/NouveautesSection";
-import { SocieteFormPage } from "./pages/societes/SocieteFormPage";
 import SituationMatrimonialePage from "./pages/famille/SituationMatrimonialePage";
 import ConjointPage from "./pages/famille/ConjointPage";
 import ClientPage from "./pages/famille/ClientPage";
@@ -50,11 +49,6 @@ const App = () => {
                 <Route path="/nouveautes" element={
                   <ProtectedRoute>
                     <NouveautesSection />
-                  </ProtectedRoute>
-                } />
-                <Route path="/societes/form" element={
-                  <ProtectedRoute>
-                    <SocieteFormPage />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle, PanelCardDescription } from '@/components/layout/panel-section';
 import { panelPrimaryButtonClass, Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
@@ -236,7 +237,7 @@ export const SocietesTransmission: React.FC = () => {
                 {' '}<strong>Transmission</strong>{' '}pour calculer les droits de mutation à titre gratuit.
               </p>
               <Button variant="outline" asChild>
-                <a href="/transmission">Ouvrir Transmission →</a>
+                <Link to="/dashboard/transmission">Ouvrir Transmission →</Link>
               </Button>
             </PanelCardContent>
           </PanelCard>

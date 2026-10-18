@@ -1,9 +1,6 @@
 // Mapping unique entre la ligne Supabase `societes` et l'état du formulaire
-// SocieteForm.tsx, consommé par SocietesSection.tsx et SocieteFormPage.tsx.
-// Auparavant dupliqué dans les deux fichiers avec des divergences silencieuses
-// (defaults différents, et surtout `null` vs `undefined` dans formDataToSociete —
-// ce dernier point causait une perte de données silencieuse sur le parcours
-// SocieteFormPage.tsx : vider un champ n'effaçait pas la valeur en base).
+// SocieteForm.tsx, consommé par SocietesSection.tsx. Renvoie `null` (et non
+// `undefined`) pour un champ vidé, afin que la valeur soit effacée en base.
 import type { Societe } from '@/services/societeService';
 
 export interface SocieteFormData {
@@ -69,8 +66,10 @@ export const societeToFormData = (societe: Societe): SocieteFormData => ({
   holding: societe.holding || 'Non',
   formeSocieteCivile: societe.forme_societe_civile || '',
   transfertVersActifs: false,
-  pourcentageUtilisateur: societe.pourcentage_utilisateur || 100,
-  pourcentageConjoint: societe.pourcentage_conjoint || 0,
+  // `??` et non `||` : une quote-part de 0 % (société détenue par le seul conjoint)
+  // est une valeur saisie, pas une absence — seule l'absence retombe sur 100 % / 0 %.
+  pourcentageUtilisateur: societe.pourcentage_utilisateur ?? 100,
+  pourcentageConjoint: societe.pourcentage_conjoint ?? 0,
   qualificationBien: societe.qualification_bien || '',
   detenteur: societe.detenteur || '',
   chiffreAffaires: societe.chiffre_affaires || undefined,
@@ -107,8 +106,8 @@ export const formDataToSociete = (
   activite: data.activite || null,
   holding: data.holding || null,
   forme_societe_civile: data.formeSocieteCivile || null,
-  pourcentage_utilisateur: data.pourcentageUtilisateur || null,
-  pourcentage_conjoint: data.pourcentageConjoint || null,
+  pourcentage_utilisateur: data.pourcentageUtilisateur ?? null,
+  pourcentage_conjoint: data.pourcentageConjoint ?? null,
   qualification_bien: data.qualificationBien || null,
   detenteur: data.detenteur || null,
   chiffre_affaires: data.chiffreAffaires || null,

@@ -42,7 +42,11 @@ import {
 } from '@/constants/assetTypes';
 import { NATURES_LIQUIDITES_FR } from '@/schemas/assetSchema';
 import { NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
-import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
+import { isPartsSocieteNature } from '@/lib/patrimoine/societeTransfer';
+import { useSocietes } from '@/hooks/useSocietes';
+
+// Valeur du choix « Aucune » de la liste Société liée (une SelectItem ne peut pas valoir '').
+const AUCUNE_SOCIETE = 'aucune';
 import { FieldHelp } from '@/components/ui/field-help';
 
 interface CaracteristiquesFieldsProps {
@@ -57,7 +61,8 @@ interface CaracteristiquesFieldsProps {
 export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ form }) => {
   const watchedNature = form.watch('nature');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
-  const isSocieteEligible = isSocieteEligibleNature(watchedNature);
+  const isPartsSociete = isPartsSocieteNature(watchedNature);
+  const { societes } = useSocietes();
   const isEpargneAV = isEpargneAssuranceVie(watchedNature);
   const showEtablissement = NATURES_WITH_ETABLISSEMENT.includes(watchedNature);
   const showBienEtranger = watchedNature && !NATURES_LIQUIDITES_FR.includes(watchedNature);
@@ -317,58 +322,59 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
       {/*
         Le transfert vers "Immobilier" est automatique pour toute nature de la famille "actifs
         immobiliers" (cf. handleSubmit dans useAssetForm.ts) et ne se pilote donc plus par case à
-        cocher — sauf pour "Parts de SCI", seule nature à appartenir aussi à SOCIETE_ELIGIBLE_NATURES :
-        elle doit rester exclusive avec "Transfert dans Sociétés", d'où le choix manuel conservé ici.
+        cocher — sauf pour "Parts de SCI", seule nature immobilière qui soit aussi des parts de
+        société : le choix reste manuel.
       */}
-      {isImmobilier && isSocieteEligible && (
+      {isImmobilier && isPartsSociete && (
         <FormField
           control={form.control}
           name="transfert_immobilier"
           render={({ field }) => (
             <FormItem className="flex flex-row items-center space-x-3 space-y-0">
               <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked) form.setValue('transfert_societe', false);
-                  }}
-                />
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
               </FormControl>
               <div className="flex items-center leading-none">
                 <FormLabel>Transfert dans Immobilier</FormLabel>
-                <FieldHelp>
-                  Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"
-                  {' '}(exclusif avec "Transfert dans Sociétés")
-                </FieldHelp>
+                <FieldHelp>Ce bien apparaîtra dans la section "Immobilier" → "Mes biens"</FieldHelp>
               </div>
             </FormItem>
           )}
         />
       )}
 
-      {isSocieteEligible && (
+      {/* Rattachement des titres à leur fiche société (assets.societe_id, cf. societeTransfer.ts). */}
+      {isPartsSociete && (
         <FormField
           control={form.control}
-          name="transfert_societe"
+          name="societe_id"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    if (checked) form.setValue('transfert_immobilier', false);
-                  }}
-                />
-              </FormControl>
-              <div className="flex items-center leading-none">
-                <FormLabel>Transfert dans Sociétés</FormLabel>
-                <FieldHelp>
-                  Une fiche société sera créée automatiquement dans la section "Sociétés" → "Mes sociétés"
-                  {isImmobilier && ' (exclusif avec "Transfert dans Immobilier")'}
-                </FieldHelp>
-              </div>
+            <FormItem>
+              <FormLabel>Société liée</FormLabel>
+              <Select
+                onValueChange={(value) => field.onChange(value === AUCUNE_SOCIETE ? null : value)}
+                value={field.value || AUCUNE_SOCIETE}
+              >
+                <FormControl>
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                    <SelectValue placeholder="Choisir la société" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value={AUCUNE_SOCIETE}>Aucune</SelectItem>
+                  {societes.map((societe) => (
+                    <SelectItem key={societe.id} value={societe.id}>{societe.denomination}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldHelp>
+                {societes.length === 0
+                  ? 'Aucune société enregistrée : créez-la d\'abord dans "Sociétés" → "Mes sociétés".'
+                  : 'Société dont cet actif représente les titres. Elle fait autorité sur la qualification, le détenteur et les quotités'
+                    + ' (reportés sur l\'actif à chaque enregistrement de la société), porte le pacte Dutreil'
+                    + (watchedNature === 'Parts de SCI' ? ' et le régime IR / IS qui détermine la plus-value des parts.' : '.')}
+              </FieldHelp>
+              <FormMessage />
             </FormItem>
           )}
         />

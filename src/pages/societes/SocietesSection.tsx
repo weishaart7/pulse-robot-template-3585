@@ -13,9 +13,20 @@ import { SocieteForm } from '@/components/societes/SocieteForm';
 import { SocieteFinances } from '@/components/societes/finances/SocieteFinances';
 import { societeService } from '@/services/societeService';
 import { assetService } from '@/services/assetService';
+import { isPartsSocieteNature } from '@/lib/patrimoine/societeTransfer';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Briefcase } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { type SocieteFormData, societeToFormData, formDataToSociete } from '@/lib/societes/formMapping';
 
 export const SocietesSection = () => {
@@ -26,13 +37,25 @@ export const SocietesSection = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formTab, setFormTab] = useState('informations');
+  // Modifications non enregistrées de l'onglet Informations : SocieteForm est démonté
+  // au changement d'onglet, on demande donc confirmation avant de les perdre.
+  const [informationsDirty, setInformationsDirty] = useState(false);
+  const [pendingFormTab, setPendingFormTab] = useState<string | null>(null);
+
+  const changeFormTab = (tab: string) => {
+    if (formTab === 'informations' && tab !== 'informations' && informationsDirty) {
+      setPendingFormTab(tab);
+      return;
+    }
+    setFormTab(tab);
+  };
 
   const FORM_TABS = [
     { id: 'synthese', label: 'Synthèse' },
     { id: 'informations', label: 'Informations' },
     { id: 'finances', label: 'Finances' },
     { id: 'bilans', label: 'Bilans' },
-    { id: 'actifs', label: 'Actifs détenus' },
+    { id: 'actifs', label: 'Parts du foyer' },
   ];
   const TABS = [
     { id: 'synthese', label: 'Synthèse' },
@@ -83,6 +106,7 @@ export const SocietesSection = () => {
     setEditingSocieteId(null);
     setFormData(null);
     setFormTab('informations');
+    setInformationsDirty(false);
   };
 
   const handleSubmit = async (data: SocieteFormData) => {
@@ -96,17 +120,34 @@ export const SocietesSection = () => {
       } else {
         const newSociete = await societeService.create(societeData);
         
-        // Create asset if requested
-        if (data.transfertVersActifs && data.natureActif && newSociete) {
-          await assetService.createAsset({
-            nature: data.natureActif,
-            denomination: data.denomination,
-            valeur_estimee: data.valeurEstimee || undefined,
-            etablissement: data.denomination
-          });
-        }
-        
         toast.success('Société créée avec succès');
+
+        // « Transférer vers la liste d'actifs » : actif Patrimoine rattaché à la société
+        // (societe_id, natures « parts » seulement — cf. societeTransfer.ts), avec la
+        // qualification, le détenteur et les quotités de la société, qui font autorité.
+        if (data.transfertVersActifs && data.natureActif && newSociete) {
+          try {
+            await assetService.createAsset({
+              nature: data.natureActif,
+              denomination: data.denomination,
+              etablissement: data.denomination,
+              valeur_estimee: data.valeurEstimee || undefined,
+              date_estimation: new Date().toISOString().split('T')[0],
+              mode_detention: 'Pleine propriété',
+              qualification_bien: newSociete.qualification_bien,
+              qualification_auto: false,
+              detenteur: newSociete.detenteur,
+              pourcentage_utilisateur: newSociete.pourcentage_utilisateur,
+              pourcentage_conjoint: newSociete.pourcentage_conjoint,
+              societe_id: isPartsSocieteNature(data.natureActif) ? newSociete.id : null,
+              transfert_societe: isPartsSocieteNature(data.natureActif),
+            });
+            toast.success('Actif ajouté au patrimoine');
+          } catch (assetError) {
+            if (import.meta.env.DEV) console.error('Error creating asset:', assetError);
+            toast.error('Société créée, mais l\'actif n\'a pas pu être ajouté au patrimoine');
+          }
+        }
       }
       
       handleCancel();
@@ -182,7 +223,7 @@ export const SocietesSection = () => {
         </div>
 
         <div className="px-8 pt-5 pb-4">
-          <GooeyNav aria-label="Onglets de la fiche société" items={FORM_TABS} value={formTab} onValueChange={setFormTab} />
+          <GooeyNav aria-label="Onglets de la fiche société" items={FORM_TABS} value={formTab} onValueChange={changeFormTab} />
         </div>
 
         <div className="border-t border-border">
@@ -199,6 +240,7 @@ export const SocietesSection = () => {
                 onCancel={handleCancel}
                 initialData={formData}
                 activeTab={formTab}
+                onDirtyChange={setInformationsDirty}
               />
             )}
             {formTab === 'finances' && formData && (
@@ -242,10 +284,12 @@ export const SocietesSection = () => {
               />
             )}
             {formTab === 'finances' && !formData && (
-              <p className="px-8 py-6 text-[13px] text-muted-foreground">Chargement…</p>
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">
+                {editingMode === 'create' ? 'Enregistrez d\'abord la société pour saisir ses finances.' : 'Chargement…'}
+              </p>
             )}
             {formTab === 'bilans' && editingSocieteId && (
-              <SocietesBilans />
+              <SocietesBilans societeId={editingSocieteId} />
             )}
             {formTab === 'bilans' && !editingSocieteId && (
               <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour saisir ses bilans.</p>
@@ -254,11 +298,34 @@ export const SocietesSection = () => {
               <SocieteActifsDetenus societeId={editingSocieteId} />
             )}
             {formTab === 'actifs' && !editingSocieteId && (
-              <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour voir ses actifs détenus.</p>
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour voir les parts qui lui sont rattachées.</p>
             )}
           </>
         )}
         </div>
+
+        <AlertDialog open={!!pendingFormTab} onOpenChange={(open) => { if (!open) setPendingFormTab(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
+              <AlertDialogDescription>
+                Les modifications de l'onglet Informations seront perdues si vous changez d'onglet sans les enregistrer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Rester sur Informations</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingFormTab) setFormTab(pendingFormTab);
+                  setInformationsDirty(false);
+                  setPendingFormTab(null);
+                }}
+              >
+                Abandonner les modifications
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }

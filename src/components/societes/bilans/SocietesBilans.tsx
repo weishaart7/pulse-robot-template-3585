@@ -5,27 +5,42 @@ import { AddButton, panelButtonClass, panelPrimaryButtonClass } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSocietes } from '@/hooks/useSocietes';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useSocieteBilans } from '@/hooks/useSocieteExtended';
 import { societeBilanService, SocieteBilan } from '@/services/societeExtendedService';
 import { Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 
-export const SocietesBilans: React.FC = () => {
-  const { societes } = useSocietes();
-  const [societeId, setSocieteId] = useState<string | null>(null);
+// Onglet Bilans de la fiche société : porte sur la société ouverte, sans
+// sélecteur (qui permettait de saisir les bilans d'une autre société).
+export const SocietesBilans: React.FC<{ societeId: string }> = ({ societeId }) => {
   const { bilans, refetch } = useSocieteBilans(societeId);
   const [editing, setEditing] = useState<Partial<SocieteBilan> | null>(null);
+  const [bilanToDelete, setBilanToDelete] = useState<SocieteBilan | null>(null);
 
-  if (societes.length === 0) {
-    return (
-      <div className="px-8 py-7">
-        <p className="max-w-md text-[13px] text-muted-foreground">Aucune société. Ajoutez-en pour suivre vos bilans.</p>
-      </div>
-    );
-  }
+  const confirmDelete = async () => {
+    if (!bilanToDelete) return;
+    try {
+      await societeBilanService.delete(bilanToDelete.id);
+      toast.success('Bilan supprimé');
+      refetch();
+    } catch (e) {
+      toast.error('Erreur lors de la suppression');
+      if (import.meta.env.DEV) console.error(e);
+    } finally {
+      setBilanToDelete(null);
+    }
+  };
 
   const handleSave = async () => {
     if (!editing || !societeId || !editing.exercice_annee) return;
@@ -57,19 +72,7 @@ export const SocietesBilans: React.FC = () => {
 
   return (
     <div>
-      {/* Choix de la société : bandeau fileté en tête du panneau. */}
-      <div className="flex items-center gap-4 border-b border-border px-8 py-4">
-        <Label>Société</Label>
-        <Select value={societeId || undefined} onValueChange={setSocieteId}>
-          <SelectTrigger className="w-80"><SelectValue placeholder="Sélectionner une société" /></SelectTrigger>
-          <SelectContent>
-            {societes.map(s => <SelectItem key={s.id} value={s.id}>{s.denomination}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {societeId && (
-        <>
+      <>
           {bilans.length >= 2 && (
             <PanelCard>
               <PanelCardHeader><PanelCardTitle>Évolution</PanelCardTitle></PanelCardHeader>
@@ -107,7 +110,7 @@ export const SocietesBilans: React.FC = () => {
                     </div>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="h-8 rounded-[2px] text-[12.5px]" onClick={() => setEditing(b)}>Modifier</Button>
-                      <Button size="sm" variant="ghost" onClick={async () => { await societeBilanService.delete(b.id); refetch(); }}>
+                      <Button size="sm" variant="ghost" onClick={() => setBilanToDelete(b)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -134,8 +137,20 @@ export const SocietesBilans: React.FC = () => {
               )}
             </PanelCardContent>
           </PanelCard>
-        </>
-      )}
+      </>
+
+      <AlertDialog open={!!bilanToDelete} onOpenChange={(open) => { if (!open) setBilanToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer le bilan {bilanToDelete?.exercice_annee}</AlertDialogTitle>
+            <AlertDialogDescription>Le bilan de cet exercice sera supprimé. Cette action est définitive.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

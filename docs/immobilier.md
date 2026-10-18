@@ -21,9 +21,11 @@ meublés, un calculateur d'amortissement LMNP/LMP avec revenus et charges dédi�
 (`transfert_immobilier = true`) est **automatique** dès que la nature appartient à
 `ASSET_CATEGORIES['actifs immobiliers']` (calculé à la sauvegarde dans
 `useAssetForm.ts::handleSubmit`, plus de case à cocher manuelle dans `AssetForm`) — à une exception
-près : « Parts de SCI », seule nature à la fois immobilière et éligible au module Sociétés
-(`SOCIETE_ELIGIBLE_NATURES`), garde un choix manuel exclusif entre « Transfert dans Immobilier » et
-« Transfert dans Sociétés ».
+près : « Parts de SCI », seule nature à la fois immobilière et « parts » de société
+(`NATURES_PARTS_SOCIETE`, [societeTransfer.ts](src/lib/patrimoine/societeTransfer.ts)), garde une case
+« Transfert dans Immobilier » manuelle. Son rattachement à une fiche du module Sociétés (champ
+« Société liée », `societe_id`) est indépendant : une même « Parts de SCI » peut figurer dans Immobilier
+et être reliée à sa SCI.
 
 **Écrans** (`ImmobilierSection.tsx`, 3 onglets) :
 
@@ -98,7 +100,7 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   immobiliers']` (18 natures, `src/constants/assetTypes.ts:183-201`) **et** `transfert_immobilier =
   true` — [useImmobilierAssets.ts](src/hooks/useImmobilierAssets.ts:23-29). Depuis l'automatisme du
   transfert (cf. ci-dessus), cette seconde condition est de fait toujours vraie pour ces natures, sauf
-  pour « Parts de SCI » si l'utilisateur a explicitement choisi « Transfert dans Sociétés ».
+  pour « Parts de SCI » si l'utilisateur a décoché « Transfert dans Immobilier ».
 - Selon la nature, la fiche détail bascule vers l'un de trois comportements : formulaire générique
   (résidences : `isResidenceType`), formulaire enrichi financement/location (biens locatifs :
   `isRentalPropertyType`, `RENTAL_PROPERTY_TYPES`, 6 natures), ou vue LMNP dédiée avec amortissement
@@ -247,27 +249,12 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   seulement quand l'utilisateur modifie le prix. Distinct du forfait légal de 7,5 % des frais
   d'acquisition pour la plus-value (`regimeFiscalPVI.ts`), qui reste à part.
 
-- **Immobilier ↔ Sociétés : exclusivité restaurée pour les natures automatiques, gap résiduel à la
-  création d'une « Parts de SCI ».** `transfert_immobilier` est désormais forcé automatiquement à
-  `true` pour toute nature de `ASSET_CATEGORIES['actifs immobiliers']` (cf. §1) — sauf « Parts de
-  SCI », seule nature qui appartient aussi à `SOCIETE_ELIGIBLE_NATURES`
-  ([societeTransfer.ts](src/lib/patrimoine/societeTransfer.ts)), qui reste pilotée par les deux cases
-  exclusives « Transfert dans Immobilier »/« Transfert dans Sociétés » de `AssetForm.tsx` (cocher
-  l'une décoche l'autre via `onCheckedChange`). Une migration
-  (`force_transfert_immobilier_natures_immobilieres`) a mis à jour les actifs existants, en excluant
-  explicitement les « Parts de SCI » déjà rattachées à une société (`transfert_societe = true`) pour
-  ne pas casser ce rattachement. **Vérifié en base** : le seul actif resté en double transfert après
-  la migration (créé avant ce correctif) a été identifié et corrigé manuellement
-  (`transfert_immobilier = false`) ; plus aucune ligne en double transfert à ce jour.
-  **Gap résiduel non corrigé, différent du cas historique ci-dessus** : `getDefaultAssetValues()`
-  ([assetSchema.ts](src/schemas/assetSchema.ts)) initialise `transfert_immobilier` **et**
-  `transfert_societe` à `true` par défaut, et l'exclusivité n'est appliquée qu'au moment où
-  l'utilisateur interagit avec l'une des deux cases (`onCheckedChange`) — jamais sur l'état par
-  défaut. Côté sauvegarde, `useAssetForm.ts::handleSubmit` ne recalcule `transfert_immobilier` que
-  pour les natures immobilières *hors* exception SCI ; pour « Parts de SCI », il reprend
-  `values.transfert_immobilier` tel quel sans jamais vérifier `values.transfert_societe`. Un nouvel
-  actif « Parts de SCI » créé et sauvegardé sans que l'utilisateur touche à l'une des deux cases se
-  retrouverait donc, de nouveau, avec les deux flags à `true`.
+- **Immobilier ↔ Sociétés.** `transfert_immobilier` est forcé à `true` pour toute nature de
+  `ASSET_CATEGORIES['actifs immobiliers']` (cf. §1), sauf « Parts de SCI », pilotée par sa case
+  manuelle (cochée par défaut). Il n'y a plus d'exclusivité avec le module Sociétés : aucune société
+  n'est créée depuis un actif, et le rattachement à une société (`societe_id`, liste « Société liée »)
+  ne fait apparaître l'actif nulle part ailleurs. `transfert_societe` n'est plus qu'un reflet de ce
+  rattachement (`!!societe_id`, recalculé à chaque sauvegarde de l'actif).
 
 - **RLS en base, vérifiée directement.** `asset_charges`/`asset_revenus` ont des policies RLS
   (`SELECT`/`INSERT`/`UPDATE`/`DELETE`) qui vérifient toutes la propriété via une jointure sur
@@ -520,12 +507,6 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
   n'existe : « Parts de groupements fonciers » est la plus proche. Correction de saisie laissée à
   l'utilisateur.
 
-- **Un nouvel actif « Parts de SCI » peut encore être créé avec les deux transferts actifs** si
-  l'utilisateur ne touche à aucune des deux cases « Transfert dans Immobilier »/« Transfert dans
-  Sociétés » avant de sauvegarder (`getDefaultAssetValues()` initialise les deux à `true`, et
-  `useAssetForm.ts::handleSubmit` ne recalcule pas `transfert_immobilier` par rapport à
-  `transfert_societe` pour cette nature) — cf. §2 pour le détail. Distinct de l'incohérence
-  historique déjà corrigée en base pour les actifs existants.
 - **Le résumé fiscal de `LMNPDetailView.tsx` ne modélise pas les cotisations sociales SSI ni la
   plus-value professionnelle du LMP.** La distinction du régime réel est faite : `computeResultatReelLMNP` plafonne
   l'amortissement déductible, `computeResultatReelLMP` ne le plafonne pas, déduit intérêts et assurance

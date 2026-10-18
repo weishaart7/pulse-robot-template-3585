@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { AddButton, panelButtonClass, panelPrimaryButtonClass, Chip } from '@/components/layout/workspace-panel';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,16 @@ import {
 } from '@/services/societeExtendedService';
 import { useSocieteDividendes } from '@/hooks/useSocieteDividendes';
 import { Trash2, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const NATURES = ['Pleine propriété', 'Nue-propriété', 'Usufruit'];
@@ -31,6 +41,35 @@ export const SocietesGouvernance: React.FC = () => {
   const [editingAssoc, setEditingAssoc] = useState<Partial<SocieteAssocie> | null>(null);
   const [editingCCA, setEditingCCA] = useState<Partial<SocieteCCA> | null>(null);
   const [pacteDraft, setPacteDraft] = useState<any>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ kind: 'associe' | 'cca'; id: string; libelle: string } | null>(null);
+
+  // Brouillons propres à la société affichée : sans cette remise à zéro, un associé,
+  // un compte courant ou un pacte en cours d'édition était enregistré sur la société
+  // suivante (et, pour un associé ou un CCA existant, la ligne y était déplacée).
+  useEffect(() => {
+    setEditingAssoc(null);
+    setEditingCCA(null);
+    setPacteDraft(null);
+  }, [societeId]);
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      if (pendingDelete.kind === 'associe') {
+        await societeAssocieService.delete(pendingDelete.id);
+        refetchAssocies();
+      } else {
+        await societeCCAService.delete(pendingDelete.id);
+        refetchCCA();
+      }
+      toast.success('Ligne supprimée');
+    } catch (e) {
+      toast.error('Erreur lors de la suppression');
+      if (import.meta.env.DEV) console.error(e);
+    } finally {
+      setPendingDelete(null);
+    }
+  };
 
   const totalPct = useMemo(() => associes.reduce((s, a) => s + (Number(a.pourcentage) || 0), 0), [associes]);
   const totalCCA = useMemo(() => cca.reduce((s, c) => s + (Number(c.solde) || 0), 0), [cca]);
@@ -135,7 +174,7 @@ export const SocietesGouvernance: React.FC = () => {
                 {associes.map(a => (
                   <div key={a.id} className="flex items-center justify-between py-2.5">
                     <div className="grid grid-cols-5 gap-4 flex-1 text-sm">
-                      <div><span className="text-muted-foreground">Associé</span><br />{a.nom_libre || 'Lié famille'}</div>
+                      <div><span className="text-muted-foreground">Associé</span><br />{a.nom_libre || 'Associé sans nom'}</div>
                       <div><span className="text-muted-foreground">Titres</span><br />{a.nombre_titres ?? '-'}</div>
                       <div><span className="text-muted-foreground">Quote-part</span><br />{a.pourcentage ?? 0}%</div>
                       <div><span className="text-muted-foreground">Nature</span><br />{a.nature_detention}</div>
@@ -143,7 +182,7 @@ export const SocietesGouvernance: React.FC = () => {
                     </div>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="h-8 rounded-[2px] text-[12.5px]" onClick={() => setEditingAssoc(a)}>Modifier</Button>
-                      <Button size="sm" variant="ghost" onClick={async () => { await societeAssocieService.delete(a.id); refetchAssocies(); }}>
+                      <Button size="sm" variant="ghost" onClick={() => setPendingDelete({ kind: 'associe', id: a.id, libelle: a.nom_libre || 'cet associé' })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -253,7 +292,7 @@ export const SocietesGouvernance: React.FC = () => {
                     </div>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="h-8 rounded-[2px] text-[12.5px]" onClick={() => setEditingCCA(c)}>Modifier</Button>
-                      <Button size="sm" variant="ghost" onClick={async () => { await societeCCAService.delete(c.id); refetchCCA(); }}>
+                      <Button size="sm" variant="ghost" onClick={() => setPendingDelete({ kind: 'cca', id: c.id, libelle: c.associe_libelle || 'ce compte courant' })}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -279,6 +318,23 @@ export const SocietesGouvernance: React.FC = () => {
           </PanelCard>
         </>
       )}
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pendingDelete?.kind === 'associe' ? 'Supprimer l\'associé' : 'Supprimer le compte courant'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete?.libelle} sera supprimé de la société. Cette action est définitive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

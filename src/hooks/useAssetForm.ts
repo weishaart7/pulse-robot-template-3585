@@ -15,7 +15,7 @@ import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndiv
 import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/IndivisairesSection';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { DemembrementDraft, draftsFromDemembrements } from '@/components/assets/DemembrementSection';
-import { isSocieteEligibleNature } from '@/lib/patrimoine/societeTransfer';
+import { isPartsSocieteNature } from '@/lib/patrimoine/societeTransfer';
 
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
@@ -219,7 +219,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         situation_particuliere: asset.situation_particuliere || ['Non'],
         attachement_emotionnel: asset.attachement_emotionnel || 0,
         transfert_immobilier: asset.transfert_immobilier || false,
-        transfert_societe: asset.transfert_societe ?? true,
+        transfert_societe: !!asset.societe_id,
+        societe_id: asset.societe_id ?? null,
         bien_etranger: asset.bien_etranger || false,
         qualification_bien: asset.qualification_bien || undefined,
         qualification_auto: asset.qualification_auto !== false,
@@ -432,13 +433,15 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
       // Transfert automatique dans "Immobilier" pour toute nature de la famille "actifs
       // immobiliers" — plus de case à cocher manuelle (cf. AssetForm.tsx). Exception : "Parts de
-      // SCI", seule nature à la fois immobilière et éligible société, reste exclusive avec
-      // transfert_societe et garde donc le choix manuel porté par values.transfert_immobilier.
+      // SCI", seule nature à la fois immobilière et « parts » de société, garde le choix manuel
+      // porté par values.transfert_immobilier.
       const isImmobilierNature = getAssetCategory(values.nature) === 'actifs immobiliers';
-      const isSciException = isImmobilierNature && isSocieteEligibleNature(values.nature);
+      const isSciException = isImmobilierNature && isPartsSocieteNature(values.nature);
       const transfertImmobilier = isImmobilierNature
         ? (isSciException ? !!values.transfert_immobilier : true)
         : false;
+
+      const societeId = isPartsSocieteNature(values.nature) ? values.societe_id || null : null;
 
       const dbValues = {
         ...values,
@@ -455,6 +458,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         etablissement: values.etablissement || null,
         mode_detention: values.mode_detention || null,
         transfert_immobilier: transfertImmobilier,
+        // Lien vers la fiche société : réservé aux natures « parts » ; transfert_societe
+        // n'est plus qu'un reflet de ce lien (plus aucune création automatique de société).
+        societe_id: societeId,
+        transfert_societe: !!societeId,
       };
 
       const formattedValues = dbValues;

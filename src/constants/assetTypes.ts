@@ -413,9 +413,9 @@ export const NATURES_EPARGNE_ASSURANCE_VIE = ASSET_CATEGORIES['épargne et assur
 export const isEpargneAssuranceVie = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_EPARGNE_ASSURANCE_VIE as readonly string[]).includes(nature);
 
-// Natures "parts foncières/forestières" de la famille "actifs immobiliers" non éligibles au
-// module Sociétés (cf. SOCIETE_ELIGIBLE_NATURES dans societeTransfer.ts, qui ne contient que
-// "Parts de SCI") : elles reçoivent à la place, dans AssetForm.tsx, un établissement
+// Natures "parts foncières/forestières" de la famille "actifs immobiliers" non rattachables à
+// une fiche du module Sociétés (cf. NATURES_PARTS_SOCIETE dans societeTransfer.ts, qui ne
+// contient que "Parts de SCI" parmi les natures immobilières) : elles reçoivent à la place, dans AssetForm.tsx, un établissement
 // (société de gestion / gestionnaire), des revenus distribués et un régime fiscal dédiés.
 export const PARTS_FONCIERES_NATURES = [
   "Parts de SCPI",

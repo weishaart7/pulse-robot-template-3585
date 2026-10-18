@@ -89,6 +89,8 @@ export const assetSchema = z.object({
   attachement_emotionnel: z.number().min(0).max(10).optional(),
   transfert_immobilier: z.boolean().optional(),
   transfert_societe: z.boolean().optional(),
+  // Société du module Sociétés dont l'actif représente les titres (natures « parts », cf. societeTransfer.ts).
+  societe_id: z.string().nullable().optional(),
   bien_etranger: z.boolean().optional(),
   qualification_bien: z.string().optional(),
   qualification_auto: z.boolean().optional(),
@@ -223,7 +225,8 @@ export const getDefaultAssetValues = (): AssetFormValues => ({
   situation_particuliere: ['Non'],
   attachement_emotionnel: 0,
   transfert_immobilier: true,
-  transfert_societe: true,
+  transfert_societe: false,
+  societe_id: null,
   bien_etranger: false,
   qualification_auto: true,
   cto_multi_actifs: false,

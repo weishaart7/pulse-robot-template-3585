@@ -14,6 +14,7 @@ import { QUALIFICATION_OPTIONS } from '@/lib/patrimoine/qualification';
 import { mapDetenteurToDisplay, mapDetenteurToDb, type FamilyInfo } from '@/lib/patrimoine/utils';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
+import { natureActifPourSociete } from '@/lib/patrimoine/societeTransfer';
 
 interface SocieteFormData {
   denomination: string;
@@ -51,6 +52,8 @@ interface SocieteFormProps {
   onCancel: () => void;
   initialData?: SocieteFormData | null;
   activeTab?: string;
+  // Signale des modifications non enregistrées (le formulaire est démonté au changement d'onglet de la fiche).
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const TYPES_SOCIETE = [
@@ -119,7 +122,12 @@ const FORMES_SOCIETE_CIVILE = [
 
 const HOLDINGS = ['Non', 'Passive', 'Animatrice'];
 
-export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'informations' }: SocieteFormProps) => {
+// Une SCI est une société civile de forme SCI ou SCI familiale : il n'existe pas
+// de type de structure « sci » à part entière (cf. TYPES_SOCIETE).
+const isSCI = (typeSociete: string, formeSocieteCivile?: string) =>
+  typeSociete === 'societe-civile' && ['sci', 'sci-familiale'].includes(formeSocieteCivile || '');
+
+export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'informations', onDirtyChange }: SocieteFormProps) => {
   const [formData, setFormData] = useState<SocieteFormData>({
     denomination: '',
     typeSociete: '',
@@ -156,6 +164,12 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
   const [familyLoaded, setFamilyLoaded] = useState(false);
+  // État du formulaire à son ouverture, pour détecter les modifications non enregistrées.
+  const [baseline, setBaseline] = useState<SocieteFormData | null>(null);
+
+  useEffect(() => {
+    onDirtyChange?.(baseline !== null && JSON.stringify(formData) !== JSON.stringify(baseline));
+  }, [formData, baseline, onDirtyChange]);
 
   useEffect(() => {
     const loadFamilyData = async () => {
@@ -201,13 +215,15 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     if (!familyLoaded) return;
 
     if (initialData) {
-      setFormData({
+      const initial = {
         ...initialData,
         detenteur: mapDetenteurToDisplay(initialData.detenteur, familyData)
-      });
+      };
+      setFormData(initial);
+      setBaseline(initial);
     } else {
       // Reset form when initialData is null (new society)
-      setFormData({
+      const initial: SocieteFormData = {
         denomination: '',
         typeSociete: '',
         dateCreation: '',
@@ -233,7 +249,9 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
         pourcentageConjoint: 0,
         qualificationBien: '',
         detenteur: ''
-      });
+      };
+      setFormData(initial);
+      setBaseline(initial);
       setSearchQuery('');
       setSearchResults([]);
     }
@@ -263,20 +281,17 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     }
 
     // SCI : le régime IR / IS détermine la plus-value des parts (assetFiscalRegime.ts).
-    if (['sci', 'sci-familiale'].includes(formData.typeSociete) && !formData.regimeFiscal) {
+    if (isSCI(formData.typeSociete, formData.formeSocieteCivile) && !formData.regimeFiscal) {
       toast.error('Le régime fiscal (IR ou IS) est obligatoire pour une SCI.');
       return;
     }
 
-    // Determine asset nature based on holding and type
-    let natureActif = '';
-    if (formData.holding === 'Animatrice' || formData.holding === 'Passive') {
-      natureActif = 'Parts de holding';
-    } else if (formData.typeSociete === 'sarl') {
-      natureActif = 'Droits sociaux';
-    } else {
-      natureActif = 'Autres biens professionnels';
-    }
+    // Nature de l'actif Patrimoine créé si « Transférer vers la liste d'actifs » est coché.
+    const natureActif = natureActifPourSociete({
+      type_societe: formData.typeSociete,
+      forme_societe_civile: formData.formeSocieteCivile,
+      holding: formData.holding,
+    });
 
     onSubmit({ ...formData, natureActif, detenteur: mapDetenteurToDb(formData.detenteur, familyData) });
   };
@@ -351,7 +366,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
       '5385': 'eurl', // EURL
       '5202': 'snc', // SNC
       '6540': 'societe-civile', // Société civile
-      '6541': 'sci', // SCI
+      '6541': 'societe-civile', // SCI : société civile de forme SCI (cf. fillFormWithSireneData)
       '6543': 'societe-civile-professionnelle', // SCP
       '5470': 'selarl', // SELARL
       '1000': 'entreprise-individuelle', // Entrepreneur individuel
@@ -373,6 +388,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
       commune: data.commune || prev.commune,
       capitalSocial: data.capitalSocial || prev.capitalSocial,
       typeSociete: mappedType || prev.typeSociete,
+      formeSocieteCivile: data.formeJuridique === '6541' ? 'sci' : mappedType ? '' : prev.formeSocieteCivile,
       regimeFiscal: mappedType ? getDefaultRegimeFiscal(mappedType) : prev.regimeFiscal,
     }));
     setSearchResults([]);
@@ -455,6 +471,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
               handleInputChange('typeSociete', value);
               handleInputChange('regimeFiscal', getDefaultRegimeFiscal(value));
               handleInputChange('activite', '');
+              if (value !== 'societe-civile') handleInputChange('formeSocieteCivile', '');
             }}
           >
             <SelectTrigger size="lg">
@@ -516,7 +533,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
         {formData.typeSociete && REGIMES_FISCAUX[formData.typeSociete as keyof typeof REGIMES_FISCAUX]?.length > 0 && (
           <div>
             <Label htmlFor="regimeFiscal">
-              Régime fiscal{['sci', 'sci-familiale'].includes(formData.typeSociete) && ' *'}
+              Régime fiscal{isSCI(formData.typeSociete, formData.formeSocieteCivile) && ' *'}
             </Label>
             <Select
               value={formData.regimeFiscal}
