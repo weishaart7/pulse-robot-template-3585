@@ -77,7 +77,7 @@ export function DynamicFamilyForm({ linkType, parentOptions, parentsForRenunciat
 
   // Sans objet pour une personne décédée : on efface ces statuts pour éviter
   // qu'ils restent comptés dans des calculs fiscaux (ex. quotient familial
-  // via fiscalement_a_charge, cf. compterEnfantsFiscalementACharge).
+  // via fiscalement_a_charge).
   React.useEffect(() => {
     if (isFirstRenderDecede.current) {
       isFirstRenderDecede.current = false;

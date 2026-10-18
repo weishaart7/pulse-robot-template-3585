@@ -254,16 +254,17 @@ export const FamilyMemberFormDialog = forwardRef<FamilyMemberFormDialogHandle, F
           adoption_simple_abattement_plein: data.adoption_simple_abattement_plein,
           adoption_simple_motif: data.adoption_simple_motif,
           enfant_renoncant: data.enfant_renoncant,
-          enfant_renoncant_de: data.enfant_renoncant_de,
-          branche_familiale: data.branche_familiale,
+          // Vide = NULL, jamais '' (contraintes CHECK sur ces colonnes).
+          enfant_renoncant_de: data.enfant_renoncant_de || null,
+          branche_familiale: data.branche_familiale || null,
           // Frère/Sœur : germain, consanguin ou utérin (partage par lignes, art. 752 C. civ.).
           lien_fratrie: data.lien_familial === 'Frère/Sœur' ? (data.lien_fratrie || 'germain') : null,
-          enfant_de: data.enfant_de,
+          enfant_de: data.enfant_de || null,
           // parent_de n'a de sens que pour lien_familial === 'Enfant' (valeurs
           // 'user'/'spouse'/'both_parents' lues par transmissionHelpers.ts pour
           // la dévolution légale) — null explicite sinon, pour ne pas laisser
           // traîner un id de membre sans signification sur les autres types de lien.
-          parent_de: data.lien_familial === 'Enfant' ? data.enfant_de : null,
+          parent_de: data.lien_familial === 'Enfant' ? data.enfant_de || null : null,
           // Dérivé des trois conditions de l'art. 796-0 ter CGI (lu tel quel par le moteur DMTG).
           exoneration_succession: LINKS_WITH_EXONERATION.includes(data.lien_familial) && evaluerExonerationFrereSoeur({
             seul: data.exo_frere_soeur_seul,

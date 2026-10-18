@@ -12,6 +12,7 @@ import { getGroupeTone } from '@/components/famille/groupeTones';
 import { grouperMembres } from '@/lib/family/groupesMembres';
 import { PanelTitle, SummaryRow, WorkspaceHeader, panelLinkClass } from '@/components/layout/workspace-panel';
 import { useFamilleSubNav } from './useFamilleSubNav';
+import { isCoupleStatus } from '@/lib/family/maritalStatus';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,18 +66,14 @@ const FamilleSection = () => {
   useFamilleSubNav('foyer');
 
   const relationStatus = (maritalData?.statut_couple as string) || '';
-  const hasPartner = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(relationStatus);
+  const hasPartner = isCoupleStatus(relationStatus);
 
   // Transition en attente de confirmation (sortie d'un statut en couple).
   const [pendingStatut, setPendingStatut] = useState<{ statut: string; children: FamilyLink[] } | null>(null);
 
   const applyStatut = async (statut: string) => {
     try {
-      if (statut === 'Célibataire') {
-        await setStatutCouple('Célibataire', { parent_isole: false });
-      } else {
-        await setStatutCouple(statut);
-      }
+      await setStatutCouple(statut);
     } catch {
       // Échec déjà notifié par useMaritalStatus : le menu garde le statut enregistré.
     }

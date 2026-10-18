@@ -5,11 +5,9 @@
 // rattachement désigne le conjoint, qui n'existera plus dans les calculs.
 
 import type { FamilyLink } from '@/services/familyService';
+import { isCoupleStatus } from '@/lib/family/maritalStatus';
 
-export const COUPLE_STATUSES = ['Concubinage', 'Pacsé(e)', 'Marié(e)'] as const;
-
-export const isCoupleStatus = (statut?: string | null): boolean =>
-  !!statut && (COUPLE_STATUSES as readonly string[]).includes(statut);
+export { isCoupleStatus };
 
 // true si l'on passe d'un statut en couple à un statut sans partenaire actif.
 export const leavesCouple = (from?: string | null, to?: string | null): boolean =>

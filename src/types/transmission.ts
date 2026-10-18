@@ -45,29 +45,3 @@ export interface TransmissionAnalysis {
   }>;
 }
 
-// Enhanced types for better integration
-export interface FamilySituationSummary {
-  decedent: {
-    nom: string;
-    prenom: string;
-    regimeMatrimonial?: string;
-  };
-  conjoint?: {
-    nom: string;
-    prenom: string;
-    vivant: boolean;
-  };
-  enfants: Array<{
-    id: string;
-    nom: string;
-    prenom: string;
-    vivant: boolean;
-    branche?: 'commune' | 'precedente';
-  }>;
-  autres: Array<{
-    id: string;
-    nom: string;
-    lien: string;
-    vivant: boolean;
-  }>;
-}

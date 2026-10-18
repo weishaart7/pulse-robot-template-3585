@@ -1,140 +1,18 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Json } from '@/integrations/supabase/types';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface FamilyProfile {
-  id?: string;
-  user_id?: string;
-  civility?: string;
-  nom?: string;
-  prenom?: string;
-  commune_naissance?: string;
-  pays_naissance?: string;
-  nationalite?: string;
-  nationalite_2?: string;
-  date_naissance?: string;
-  profession?: string;
-  telephone?: string;
-  email?: string;
-  personne_handicapee?: boolean;
-  est_dirigeant?: boolean;
-  residence_fiscale_etranger?: boolean;
-  ancien_combattant?: boolean;
-  adresse_postale?: string;
-  code_postal?: string;
-  ville?: string;
-  pays?: string;
-  capacite_juridique?: string;
-  mandat_protection_future?: boolean;
-  date_mandat_protection_future?: string | null;
-}
+// Types dérivés du schéma généré (integrations/supabase/types.ts) : une colonne
+// ajoutée ou supprimée en base se répercute ici sans copie manuelle. Partial :
+// les écritures sont des upserts partiels (seuls les champs fournis changent).
+type Row<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
 
-export interface MaritalStatus {
-  id?: string;
-  user_id?: string;
-  statut_couple?: string | null;
-  separation_de_corps?: boolean;
-  separation_corps_clause_renonciation?: boolean;
-  date_jugement_separation_corps?: string | null;
-  nom_conjoint?: string;
-  prenom_conjoint?: string;
-  civilite_conjoint?: string;
-  date_naissance_conjoint?: string | null;
-  lieu_naissance_conjoint?: string;
-  nationalite_conjoint?: string;
-  nationalite_2_conjoint?: string;
-  profession_conjoint?: string;
-  profession_csp_conjoint?: string;
-  personne_handicapee_conjoint?: boolean;
-  est_dirigeant_conjoint?: boolean;
-  residence_fiscale_etranger_conjoint?: boolean;
-  ancien_combattant_conjoint?: boolean;
-  capacite_juridique_conjoint?: string;
-  mandat_protection_future_conjoint?: boolean;
-  date_mandat_protection_future_conjoint?: string | null;
-  nom_jeune_fille_conjoint?: string;
-  pays_naissance_conjoint?: string;
-  telephone_conjoint?: string;
-  email_conjoint?: string;
-  adresse_conjoint?: string;
-  code_postal_conjoint?: string;
-  ville_conjoint?: string;
-  pays_conjoint?: string;
-  date_pacs?: string | null;
-  lieu_pacs?: string;
-  convention_pacs?: string;
-  date_mariage?: string | null;
-  lieu_mariage?: string;
-  regime_matrimonial?: string;
-  // Éléments d'extranéité du régime matrimonial (DIP, §4.4, §12.1) : simple
-  // signalement déclaratif, sans automatisation des régimes de rattachement
-  // (Convention de La Haye 1978, Règlement Rome III) — cf. RelationInfoForm.tsx
-  // et lib/alertes/regles.ts (alerte dédiée, distincte de
-  // extraneite_residence_fiscale_etranger).
-  loi_applicable_regime?: string;
-  pays_premier_domicile_matrimonial?: string;
-  pas_de_contrat_mariage?: boolean;
-  parent_isole?: boolean;
-  nombre_enfants_charges?: number;
-  imposition_distincte?: boolean;
-  // Condition nécessaire (avec le régime séparation de biens / participation aux
-  // acquêts) pour autoriser imposition_distincte (art. 6, 4-a CGI) côté UI —
-  // cf. RelationInfoForm.tsx.
-  residence_separee?: boolean;
-  mariage_precedent_personne?: boolean;
-  mariage_precedent_conjoint?: boolean;
-  duree_mariage_precedent_personne_annees?: number | null;
-  duree_mariage_precedent_personne_mois?: number | null;
-  duree_mariage_precedent_conjoint_annees?: number | null;
-  duree_mariage_precedent_conjoint_mois?: number | null;
-  donation_dernier_vivant_personne?: boolean;
-  donation_dernier_vivant_conjoint?: boolean;
-  date_donation_personne?: string | null;
-  date_donation_conjoint?: string | null;
-  /** Réservé à la clé societe_acquets (qualification de bien, cf. lib/patrimoine/qualification.ts) — le catalogue de clauses de régime a été retiré en V1. */
-  // Lu / écrit via lirePerimetreDesClauses / clausesAvecPerimetre (lib/patrimoine/societeAcquets.ts).
-  clauses_contrat?: Json | null;
-  // Le droit de partage (2,5% de l'actif net partagé, art. 746 CGI) n'est dû que
-  // si un partage est effectivement envisagé entre les héritiers — jamais présumé
-  // (cf. transmission/netBreakdown.ts::computeNetPerHeir). Sans effet en cas de
-  // démembrement (usufruit/nue-propriété).
-  partage_envisage?: boolean;
-}
+export type FamilyProfile = Partial<Row<'family_profiles'>>;
 
-export interface FamilyLink {
-  id?: string;
-  user_id?: string;
-  lien_familial: string;
-  civilite?: string;
-  nom: string;
-  prenom?: string;
-  date_naissance?: string;
-  nationalite?: string;
-  nationalite_2?: string;
-  est_decede?: boolean;
-  date_deces?: string;
-  handicap?: boolean;
-  enfant_adopte?: string;
-  adoption_simple_abattement_plein?: boolean;
-  adoption_simple_motif?: string;
-  enfant_renoncant?: boolean;
-  enfant_renoncant_de?: string;
-  branche_familiale?: string;
-  lien_fratrie?: string | null;
-  enfant_de?: string | null;
-  parent_de?: string | null;
-  exoneration_succession?: boolean;
-  exo_frere_soeur_seul?: boolean;
-  exo_frere_soeur_infirmite?: boolean;
-  exo_frere_soeur_cohabitation_5_ans?: boolean;
-  enfant_a_charge?: boolean;
-  fiscalement_a_charge?: boolean;
-  mesure_protection_juridique?: string;
-  mandat_protection_future?: boolean;
-  date_mandat_protection_future?: string | null;
-  personne_a_charge?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+// clauses_contrat : réservé à la clé societe_acquets, lu / écrit via
+// lirePerimetreDesClauses / clausesAvecPerimetre (lib/patrimoine/societeAcquets.ts).
+export type MaritalStatus = Partial<Row<'marital_status'>>;
+
+export type FamilyLink = Partial<Row<'family_links'>> & Pick<Row<'family_links'>, 'lien_familial' | 'nom'>;
 
 // Usage d'un membre hors de family_links (fonction Postgres family_link_usages) :
 // tant qu'il en a un, sa suppression est refusée par la base.

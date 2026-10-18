@@ -1074,7 +1074,6 @@ export type Database = {
           civilite: string | null
           created_at: string | null
           date_deces: string | null
-          date_mandat_protection_future: string | null
           date_naissance: string | null
           enfant_a_charge: boolean | null
           enfant_adopte: string | null
@@ -1091,8 +1090,6 @@ export type Database = {
           id: string
           lien_familial: string
           lien_fratrie: string | null
-          mandat_protection_future: boolean
-          mesure_protection_juridique: string
           nationalite: string | null
           nationalite_2: string | null
           nom: string
@@ -1109,7 +1106,6 @@ export type Database = {
           civilite?: string | null
           created_at?: string | null
           date_deces?: string | null
-          date_mandat_protection_future?: string | null
           date_naissance?: string | null
           enfant_a_charge?: boolean | null
           enfant_adopte?: string | null
@@ -1126,8 +1122,6 @@ export type Database = {
           id?: string
           lien_familial: string
           lien_fratrie?: string | null
-          mandat_protection_future?: boolean
-          mesure_protection_juridique?: string
           nationalite?: string | null
           nationalite_2?: string | null
           nom: string
@@ -1144,7 +1138,6 @@ export type Database = {
           civilite?: string | null
           created_at?: string | null
           date_deces?: string | null
-          date_mandat_protection_future?: string | null
           date_naissance?: string | null
           enfant_a_charge?: boolean | null
           enfant_adopte?: string | null
@@ -1161,8 +1154,6 @@ export type Database = {
           id?: string
           lien_familial?: string
           lien_fratrie?: string | null
-          mandat_protection_future?: boolean
-          mesure_protection_juridique?: string
           nationalite?: string | null
           nationalite_2?: string | null
           nom?: string
@@ -1176,88 +1167,64 @@ export type Database = {
       }
       family_profiles: {
         Row: {
-          adresse_postale: string | null
           ancien_combattant: boolean | null
           capacite_juridique: string | null
           civility: string | null
-          code_postal: string | null
-          commune_naissance: string | null
           created_at: string | null
           date_mandat_protection_future: string | null
           date_naissance: string | null
-          email: string | null
           est_dirigeant: boolean | null
           id: string
           mandat_protection_future: boolean
           nationalite: string | null
           nationalite_2: string | null
           nom: string | null
-          pays: string | null
-          pays_naissance: string | null
           personne_handicapee: boolean | null
           prenom: string | null
           profession: string | null
           residence_fiscale_etranger: boolean | null
-          telephone: string | null
           updated_at: string | null
           user_id: string
-          ville: string | null
         }
         Insert: {
-          adresse_postale?: string | null
           ancien_combattant?: boolean | null
           capacite_juridique?: string | null
           civility?: string | null
-          code_postal?: string | null
-          commune_naissance?: string | null
           created_at?: string | null
           date_mandat_protection_future?: string | null
           date_naissance?: string | null
-          email?: string | null
           est_dirigeant?: boolean | null
           id?: string
           mandat_protection_future?: boolean
           nationalite?: string | null
           nationalite_2?: string | null
           nom?: string | null
-          pays?: string | null
-          pays_naissance?: string | null
           personne_handicapee?: boolean | null
           prenom?: string | null
           profession?: string | null
           residence_fiscale_etranger?: boolean | null
-          telephone?: string | null
           updated_at?: string | null
           user_id: string
-          ville?: string | null
         }
         Update: {
-          adresse_postale?: string | null
           ancien_combattant?: boolean | null
           capacite_juridique?: string | null
           civility?: string | null
-          code_postal?: string | null
-          commune_naissance?: string | null
           created_at?: string | null
           date_mandat_protection_future?: string | null
           date_naissance?: string | null
-          email?: string | null
           est_dirigeant?: boolean | null
           id?: string
           mandat_protection_future?: boolean
           nationalite?: string | null
           nationalite_2?: string | null
           nom?: string | null
-          pays?: string | null
-          pays_naissance?: string | null
           personne_handicapee?: boolean | null
           prenom?: string | null
           profession?: string | null
           residence_fiscale_etranger?: boolean | null
-          telephone?: string | null
           updated_at?: string | null
           user_id?: string
-          ville?: string | null
         }
         Relationships: []
       }
@@ -1923,12 +1890,10 @@ export type Database = {
       }
       marital_status: {
         Row: {
-          adresse_conjoint: string | null
           ancien_combattant_conjoint: boolean | null
           capacite_juridique_conjoint: string
           civilite_conjoint: string | null
           clauses_contrat: Json | null
-          code_postal_conjoint: string | null
           convention_pacs: string | null
           created_at: string | null
           date_donation_conjoint: string | null
@@ -1945,12 +1910,10 @@ export type Database = {
           duree_mariage_precedent_conjoint_mois: number | null
           duree_mariage_precedent_personne_annees: number | null
           duree_mariage_precedent_personne_mois: number | null
-          email_conjoint: string | null
           est_dirigeant_conjoint: boolean | null
           id: string
           imposition_distincte: boolean | null
           lieu_mariage: string | null
-          lieu_naissance_conjoint: string | null
           lieu_pacs: string | null
           loi_applicable_regime: string | null
           mandat_protection_future_conjoint: boolean
@@ -1960,13 +1923,9 @@ export type Database = {
           nationalite_conjoint: string | null
           nom_conjoint: string | null
           nom_jeune_fille_conjoint: string | null
-          nombre_enfants_charges: number | null
           option_conjoint: string | null
-          parent_isole: boolean | null
           partage_envisage: boolean
           pas_de_contrat_mariage: boolean
-          pays_conjoint: string | null
-          pays_naissance_conjoint: string | null
           pays_premier_domicile_matrimonial: string | null
           personne_handicapee_conjoint: boolean | null
           prenom_conjoint: string | null
@@ -1978,19 +1937,15 @@ export type Database = {
           separation_corps_clause_renonciation: boolean
           separation_de_corps: boolean
           statut_couple: string | null
-          telephone_conjoint: string | null
           updated_at: string | null
           user_id: string
           valeur_biens_partage: number | null
-          ville_conjoint: string | null
         }
         Insert: {
-          adresse_conjoint?: string | null
           ancien_combattant_conjoint?: boolean | null
           capacite_juridique_conjoint?: string
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
-          code_postal_conjoint?: string | null
           convention_pacs?: string | null
           created_at?: string | null
           date_donation_conjoint?: string | null
@@ -2007,12 +1962,10 @@ export type Database = {
           duree_mariage_precedent_conjoint_mois?: number | null
           duree_mariage_precedent_personne_annees?: number | null
           duree_mariage_precedent_personne_mois?: number | null
-          email_conjoint?: string | null
           est_dirigeant_conjoint?: boolean | null
           id?: string
           imposition_distincte?: boolean | null
           lieu_mariage?: string | null
-          lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
           loi_applicable_regime?: string | null
           mandat_protection_future_conjoint?: boolean
@@ -2022,13 +1975,9 @@ export type Database = {
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
           nom_jeune_fille_conjoint?: string | null
-          nombre_enfants_charges?: number | null
           option_conjoint?: string | null
-          parent_isole?: boolean | null
           partage_envisage?: boolean
           pas_de_contrat_mariage?: boolean
-          pays_conjoint?: string | null
-          pays_naissance_conjoint?: string | null
           pays_premier_domicile_matrimonial?: string | null
           personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
@@ -2040,19 +1989,15 @@ export type Database = {
           separation_corps_clause_renonciation?: boolean
           separation_de_corps?: boolean
           statut_couple?: string | null
-          telephone_conjoint?: string | null
           updated_at?: string | null
           user_id: string
           valeur_biens_partage?: number | null
-          ville_conjoint?: string | null
         }
         Update: {
-          adresse_conjoint?: string | null
           ancien_combattant_conjoint?: boolean | null
           capacite_juridique_conjoint?: string
           civilite_conjoint?: string | null
           clauses_contrat?: Json | null
-          code_postal_conjoint?: string | null
           convention_pacs?: string | null
           created_at?: string | null
           date_donation_conjoint?: string | null
@@ -2069,12 +2014,10 @@ export type Database = {
           duree_mariage_precedent_conjoint_mois?: number | null
           duree_mariage_precedent_personne_annees?: number | null
           duree_mariage_precedent_personne_mois?: number | null
-          email_conjoint?: string | null
           est_dirigeant_conjoint?: boolean | null
           id?: string
           imposition_distincte?: boolean | null
           lieu_mariage?: string | null
-          lieu_naissance_conjoint?: string | null
           lieu_pacs?: string | null
           loi_applicable_regime?: string | null
           mandat_protection_future_conjoint?: boolean
@@ -2084,13 +2027,9 @@ export type Database = {
           nationalite_conjoint?: string | null
           nom_conjoint?: string | null
           nom_jeune_fille_conjoint?: string | null
-          nombre_enfants_charges?: number | null
           option_conjoint?: string | null
-          parent_isole?: boolean | null
           partage_envisage?: boolean
           pas_de_contrat_mariage?: boolean
-          pays_conjoint?: string | null
-          pays_naissance_conjoint?: string | null
           pays_premier_domicile_matrimonial?: string | null
           personne_handicapee_conjoint?: boolean | null
           prenom_conjoint?: string | null
@@ -2102,11 +2041,9 @@ export type Database = {
           separation_corps_clause_renonciation?: boolean
           separation_de_corps?: boolean
           statut_couple?: string | null
-          telephone_conjoint?: string | null
           updated_at?: string | null
           user_id?: string
           valeur_biens_partage?: number | null
-          ville_conjoint?: string | null
         }
         Relationships: []
       }

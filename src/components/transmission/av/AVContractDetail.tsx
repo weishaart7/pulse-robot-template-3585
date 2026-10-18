@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { AVFiscalInfo } from './AVFiscalInfo';
 import { AVOperationsTable } from './AVOperationsTable';
 import { ClauseBeneficiaireBuilder, ClauseStructuree } from './ClauseBeneficiaireBuilder';
+import { isCoupleStatus } from '@/lib/family/maritalStatus';
 
 interface AVContractDetailProps {
   contract: Asset;
@@ -190,7 +191,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       if (maritalRes.data) {
         const ms = maritalRes.data as any;
         const statut = ms.statut_couple || '';
-        if (['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(statut) && (ms.nom_conjoint || ms.prenom_conjoint)) {
+        if (isCoupleStatus(statut) && (ms.nom_conjoint || ms.prenom_conjoint)) {
           setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
         }
       }

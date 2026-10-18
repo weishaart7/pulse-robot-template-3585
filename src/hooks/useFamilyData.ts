@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { familyService, FamilyProfile, MaritalStatus, FamilyLink, MEMBRE_UTILISE } from '@/services/familyService';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { compterEnfantsFiscalementACharge } from '@/lib/fiscal';
 import { buildStatutCoupleWrite } from '@/lib/family/maritalStatus';
 
 // Cache partagé (React Query) : tous les composants qui appellent ces hooks
@@ -35,19 +34,6 @@ const withLoadErrorToast = async <T,>(load: () => Promise<T>, description: strin
     }
     toast({ title: "Erreur", description, variant: "destructive" });
     throw error;
-  }
-};
-
-const syncNombreEnfantsCharges = async (links: FamilyLink[], queryClient: QueryClient, userId?: string) => {
-  try {
-    const saved = await familyService.upsertMaritalStatus({
-      nombre_enfants_charges: compterEnfantsFiscalementACharge(links),
-    });
-    queryClient.setQueryData(familyQueryKeys.marital(userId), saved);
-  } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error('Error syncing nombre_enfants_charges:', error);
-    }
   }
 };
 
@@ -214,20 +200,16 @@ export const useFamilyLinks = () => {
   });
   const data = query.data ?? EMPTY_LINKS;
 
-  // Applique la nouvelle liste au cache partagé puis resynchronise
-  // marital_status.nombre_enfants_charges — effet de bord hors de toute mise à
-  // jour d'état React, pour ne pas être rejoué deux fois en StrictMode.
-  const commitLinks = async (update: (prev: FamilyLink[]) => FamilyLink[]) => {
-    const updated = update(queryClient.getQueryData<FamilyLink[]>(key) ?? []);
-    queryClient.setQueryData(key, updated);
-    await syncNombreEnfantsCharges(updated, queryClient, user?.id);
+  // Applique la nouvelle liste au cache partagé.
+  const commitLinks = (update: (prev: FamilyLink[]) => FamilyLink[]) => {
+    queryClient.setQueryData(key, update(queryClient.getQueryData<FamilyLink[]>(key) ?? []));
   };
 
   const addLink = async (link: Omit<FamilyLink, 'id' | 'user_id'>) => {
     try {
       setSaving(true);
       const newLink = await familyService.createFamilyLink(link);
-      await commitLinks(prev => [...prev, newLink]);
+      commitLinks(prev => [...prev, newLink]);
       toast({
         title: "Succès",
         description: "Membre de la famille ajouté avec succès",
@@ -259,7 +241,7 @@ export const useFamilyLinks = () => {
         await familyService.resetRattachements(reinitialiser);
       }
       const updatedLink = await familyService.updateFamilyLink(id, link);
-      await commitLinks(prev => prev.map(item => {
+      commitLinks(prev => prev.map(item => {
         if (item.id === id) return updatedLink;
         return item.id && reinitialiser.includes(item.id) ? { ...item, enfant_de: null, parent_de: null } : item;
       }));
@@ -304,7 +286,7 @@ export const useFamilyLinks = () => {
       setSaving(true);
       const dependents = data.filter(item => item.enfant_de === id);
       await familyService.deleteFamilyLinkCascade(id);
-      await commitLinks(prev => prev
+      commitLinks(prev => prev
         .filter(item => item.id !== id)
         .map(item => (item.enfant_de === id ? { ...item, enfant_de: null, parent_de: null } : item)));
       toast({

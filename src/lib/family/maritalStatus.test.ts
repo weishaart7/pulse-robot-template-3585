@@ -27,13 +27,6 @@ describe('buildStatutCoupleWrite', () => {
     expect(buildStatutCoupleWrite(null)).toEqual({ statut_couple: null });
   });
 
-  it('fusionne les champs additionnels sans les écraser (parent_isole, FamilleSection)', () => {
-    expect(buildStatutCoupleWrite('Célibataire', { parent_isole: false })).toEqual({
-      statut_couple: 'Célibataire',
-      parent_isole: false,
-    });
-  });
-
   it('conserve le payload conjoint complet à côté du statut (PartnerForm)', () => {
     const extra = { nom_conjoint: 'Dupont', prenom_conjoint: 'Marie' };
     expect(buildStatutCoupleWrite('Pacsé(e)', extra)).toEqual({
@@ -52,7 +45,7 @@ describe('buildStatutCoupleWrite', () => {
 describe('hasConjoint', () => {
   it('exige un statut en couple et un prénom de conjoint', () => {
     expect(hasConjoint({ statut_couple: 'Marié(e)', prenom_conjoint: 'B' })).toBe(true);
-    expect(hasConjoint({ statut_couple: 'PACS', prenom_conjoint: 'B' })).toBe(true);
+    expect(hasConjoint({ statut_couple: 'Pacsé(e)', prenom_conjoint: 'B' })).toBe(true);
     expect(hasConjoint({ statut_couple: 'Marié(e)', prenom_conjoint: null })).toBe(false);
     expect(hasConjoint({ statut_couple: 'Célibataire', prenom_conjoint: 'B' })).toBe(false);
     expect(hasConjoint(null)).toBe(false);

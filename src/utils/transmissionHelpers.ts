@@ -2,7 +2,6 @@ import { FamilyLink, MaritalStatus, FamilyProfile } from '@/services/familyServi
 import { Asset } from '@/services/assetService';
 import { FamilyGraph, Person, PatrimonySnapshot, Liberalite, PersonId, TransmissionResult, RawAssetInput } from '@/lib/transmission/types';
 import { AVContract } from '@/lib/dmtg/types';
-import { FamilySituationSummary } from '@/types/transmission';
 import { getPartSuccessorale, getPartConjointSuccession } from '@/lib/patrimoine/succession';
 import { PatrimoineLigneCalcInput } from '@/lib/patrimoine/participationAcquets';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
@@ -1689,49 +1688,6 @@ export function widowFamilyGraph(graph: FamilyGraph, familyLinks: FamilyLink[]):
   };
 }
 
-/**
- * Creates a summary of the family situation for display
- */
-export function createFamilySummary(
-  familyProfile: FamilyProfile | null,
-  maritalStatus: MaritalStatus | null,
-  familyLinks: FamilyLink[]
-): FamilySituationSummary {
-  return {
-    decedent: {
-      nom: familyProfile?.nom || 'Non renseigné',
-      prenom: familyProfile?.prenom || 'Non renseigné',
-      regimeMatrimonial: maritalStatus?.regime_matrimonial
-    },
-    conjoint: maritalStatus && maritalStatus.statut_couple && 
-      ['Marié(e)', 'Pacsé(e)', 'MARIE', 'PACS', 'PACSE'].includes(maritalStatus.statut_couple) ? {
-      nom: maritalStatus.nom_conjoint || 'Non renseigné',
-      prenom: maritalStatus.prenom_conjoint || 'Non renseigné',
-      vivant: true
-    } : undefined,
-    enfants: familyLinks
-      .filter(link => link.lien_familial === 'Enfant')
-      .map(child => ({
-        id: child.id || '',
-        nom: child.nom,
-        prenom: child.prenom || '',
-        vivant: !child.est_decede,
-        branche: child.branche_familiale === 'Précédent lit' ? 'precedente' : 'commune'
-      })),
-    autres: familyLinks
-      .filter(link => link.lien_familial !== 'Enfant')
-      .map(person => ({
-        id: person.id || '',
-        nom: person.nom,
-        lien: person.lien_familial,
-        vivant: !person.est_decede
-      }))
-  };
-}
-
-/**
- * Creates a summary of the patrimony for display
- */
 /**
  * Construit le contexte `participationAcquets` attendu par
  * `computeTransmission` à partir des lignes brutes Supabase

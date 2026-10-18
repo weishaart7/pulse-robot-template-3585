@@ -140,10 +140,9 @@ auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)` — une ligne par utilisate
 (saisie manuelle, aucune FK vers Famille — décision explicite de cette phase, à rapprocher
 éventuellement d'une phase ultérieure). Le calcul du nombre de parts est fait par
 [src/lib/fiscalite/calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts), fonction pure
-couvrant l'art. 193-197 CGI (revenus 2025/impôt 2026) — voir §2. `src/lib/fiscal/calcul.ts` (dossier
-**sans** « ite ») ne contient plus que `compterEnfantsFiscalementACharge`, toujours utilisée par le
-module **Famille** (`useFamilyData.ts`, pour synchroniser `marital_status.nombre_enfants_charges`) —
-les deux dossiers `lib/fiscal/` et `lib/fiscalite/` sont volontairement distincts (cf. §2).
+couvrant l'art. 193-197 CGI (revenus 2025/impôt 2026) — voir §2. L'ancien dossier `src/lib/fiscal/`
+(sans « ite ») a été supprimé : sa dernière fonction, `compterEnfantsFiscalementACharge`, ne servait
+qu'à synchroniser `marital_status.nombre_enfants_charges`, colonne lue par aucun moteur.
 
 **Moteur de calcul de l'IR** (impôt lui-même, distinct du nombre de parts) : pas de table dédiée —
 sept fonctions pures composées par [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts) :
@@ -1013,11 +1012,8 @@ fonciers (§4).
   invalidité déclarant/conjoint/enfants conflée dans une seule majoration uniforme). Elle a été
   supprimée avec ses types (`FoyerFiscalInput`/`PartsFiscalesResult`/`EnfantPartsInput`) dans un commit
   séparé, avant l'écriture du nouveau moteur — pour ne pas mélanger nettoyage et nouvelle logique dans
-  le même diff. Seule `compterEnfantsFiscalementACharge` (toujours utilisée par
-  [useFamilyData.ts](src/hooks/useFamilyData.ts) pour `marital_status.nombre_enfants_charges`) reste
-  dans ce dossier. Les deux dossiers `lib/fiscal/` et `lib/fiscalite/` coexistent volontairement : le
-  premier reste un point de calcul ponctuel consommé par Famille, le second est le futur moteur complet
-  du module Fiscalité — pas de fusion prévue.
+  le même diff. Le dossier `lib/fiscal/` a depuis été supprimé (sa dernière fonction alimentait
+  `marital_status.nombre_enfants_charges`, que rien ne lit) : seul `lib/fiscalite/` subsiste.
 - **`FiscalOverviewCard.tsx` et `TaxRateCard.tsx` sont désormais des écrans fonctionnels pour l'IR
   salaires, statiques pour le reste.** Les deux reçoivent `overview: FiscalOverview` en prop depuis
   `FiscaliteSection.tsx` (calculé une seule fois par `useFiscalOverview`) plutôt que d'appeler

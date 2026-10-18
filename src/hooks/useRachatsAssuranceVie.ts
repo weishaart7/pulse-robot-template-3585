@@ -7,7 +7,7 @@ import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
 import { computeRachatsAssuranceVie } from '@/lib/patrimoine/regimeFiscalAssuranceVie';
 import type { FiscalRegimeResult } from '@/lib/patrimoine/regimeFiscalPlusValue';
 
-const STATUTS_IMPOSITION_COMMUNE = ['Marié(e)', 'Pacsé(e)', 'MARIE', 'PACS', 'PACSE'];
+const STATUTS_IMPOSITION_COMMUNE = ['Marié(e)', 'Pacsé(e)'];
 
 /**
  * Régime fiscal d'un rachat total de chaque contrat d'assurance-vie / capitalisation du foyer

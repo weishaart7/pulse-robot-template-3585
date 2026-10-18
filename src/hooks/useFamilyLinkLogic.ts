@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
-import { isSingleStatus } from '@/lib/family/maritalStatus';
+import { isSingleStatus, isCoupleStatus } from '@/lib/family/maritalStatus';
 import { LINKS_RATTACHES_A_UN_MEMBRE, rattachementsComplets } from '@/lib/family/familyLinkRules';
 
 export interface FamilyLinkOption {
@@ -27,8 +27,7 @@ export const useFamilyLinkLogic = (
   }, [maritalStatus]);
 
   const isMarriedOrPacsed = useMemo(() => {
-    return maritalStatus?.statut_couple && 
-           ['Marié(e)', 'Pacsé(e)', 'Concubinage'].includes(maritalStatus.statut_couple);
+    return isCoupleStatus(maritalStatus?.statut_couple);
   }, [maritalStatus]);
 
   const existingLinks = useMemo(() => {

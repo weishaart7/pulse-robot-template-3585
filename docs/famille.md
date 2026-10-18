@@ -150,18 +150,17 @@ doit donc pas effacer silencieusement ces lignes.
   les dates renseignées uniquement. Les rattachements déjà pleins sont grisés dans « Enfant de ».
   Pas de contrainte en base : les données saisies avant ces règles ne sont pas corrigées.
 
-- **`parent_de` vs `enfant_de`.** Les deux colonnes portent des sémantiques opposées dans le
-  schéma, mais ne sont écrites de façon cohérente que pour `lien_familial === 'Enfant'`
-  (`FamilyMemberFormDialog.tsx:172` : `parent_de` vaut `null` sinon). Ne pas supposer que
-  `parent_de` est toujours le miroir de `enfant_de`.
+- **`parent_de` vs `enfant_de`.** `parent_de` n'est renseigné que pour un Enfant (miroir de
+  `enfant_de`, lu par le moteur pour la filiation) et vaut `NULL` pour tout autre lien, y compris les
+  lignes anciennes (reprise `20261018160000_famille_reprise_donnees.sql`).
 
 - **Profession en texte libre.** `FicheClientForm.tsx` et `PartnerForm.tsx` saisissaient la
   profession via un `<Select>` à catégories CSP fermées (+ option « Autre » ouvrant un champ
   texte). Remplacé par un unique champ texte libre (`profession` / `profession_conjoint`), les
   catégories prédéfinies n'étant lues par aucun moteur. Compat. ascendante : les anciennes valeurs
   de catégorie CSP restent affichées telles quelles au chargement. Côté conjoint, la colonne
-  `profession_csp_conjoint` n'est plus alimentée (conservée en base, vidée à chaque sauvegarde) au
-  profit de `profession_conjoint`, lu en priorité au chargement avec repli sur l'ancienne colonne.
+  `profession_csp_conjoint` n'est plus écrite (toutes les lignes à `NULL` depuis la reprise
+  `20261018160000_famille_reprise_donnees.sql`) au profit de `profession_conjoint`.
 
 - **Double nationalité.** `nationalite` (`family_profiles`, `family_links`) et
   `nationalite_conjoint` (`marital_status`) sont désormais complétés d'une colonne sœur
@@ -203,8 +202,10 @@ doit donc pas effacer silencieusement ces lignes.
   `useFamilyLinks` lisent un cache React Query commun (clés `['family', 'profile'|'marital'|'links',
   userId]`, `staleTime` 30 s, pas de rechargement au retour sur l'onglet pour ne pas réinitialiser
   un formulaire en cours). Chaque écriture passant par ces hooks met à jour le cache pour tous les
-  composants abonnés (~20, Famille, Transmission, Patrimoine, Budget…). La resynchronisation de
-  `marital_status.nombre_enfants_charges` est faite après écriture, hors mise à jour d'état React.
+  composants abonnés (~20, Famille, Transmission, Patrimoine, Budget…). Une écriture de membre ne
+  touche plus `marital_status` : la resynchronisation de `nombre_enfants_charges` (colonne lue par
+  aucun moteur) a été retirée, comme l'écriture de `parent_isole: false` au passage à Célibataire
+  (la fiscalité lit `foyer_fiscal.parent_isole`).
   Limite connue : `Optimisation.tsx` (Transmission) écrit directement dans `marital_status`
   (`option_conjoint`, `partage_envisage`, `duh_opte`) sans passer par le hook — le cache peut rester
   périmé jusqu'à 30 s sur ces trois colonnes.
@@ -217,6 +218,18 @@ doit donc pas effacer silencieusement ces lignes.
   succès. Toute écriture déclenchée depuis l'écran (statut du couple, ajout / suppression d'une
   récompense, créance ou ligne de patrimoine originaire / final) intercepte l'échec après la
   notification du hook : pas d'erreur non interceptée en console.
+
+- **Types.** `FamilyProfile`, `MaritalStatus` et `FamilyLink` ([familyService.ts](../src/services/familyService.ts))
+  sont dérivés des types générés (`Partial<Row<…>>`, `lien_familial` et `nom` requis pour un membre) :
+  plus de copie manuelle des colonnes, qui gardait des champs supprimés et des commentaires
+  obsolètes. Régénérer `integrations/supabase/types.ts` après toute migration Famille.
+
+- **Valeurs fermées garanties en base** (migration `20261018150000_famille_checks_valeurs.sql`) :
+  CHECK sur `family_links.lien_familial`, `branche_familiale`, `enfant_renoncant_de`, `enfant_de` et
+  `parent_de` (`user` / `spouse` / `both_parents` ou uuid d'un membre), et sur
+  `marital_status.statut_couple`, `regime_matrimonial`, `convention_pacs`. Vide = `NULL`, jamais `''`
+  (`FamilyMemberFormDialog.tsx` convertit les champs vides) ; les 3 lignes à `''` ont été normalisées.
+  Ajouter une valeur (nouveau lien, nouveau régime) impose de modifier la contrainte.
 
 - **Âge.** [lib/family/age.ts](../src/lib/family/age.ts) (`ageEnAnnees`, `formatAgeCourt`) est le
   seul calcul d'âge du module (différence calendaire).
@@ -268,7 +281,11 @@ doit donc pas effacer silencieusement ces lignes.
     (marié, pacsé, concubinage) **et** prénom du conjoint renseigné, pour ne jamais proposer une personne
     sans nom.
   - Statut seul, volontairement : Famille (`FamilleSection`, `useFamilyLinkLogic`, `buildFamilyGraph` —
-    c'est ce statut qui ouvre la saisie du conjoint) et Retraite (`checkIsInCouple`). Transmission ne
+    c'est ce statut qui ouvre la saisie du conjoint) et Retraite (`checkIsInCouple`).
+  - Liste unique des statuts en couple : `COUPLE_STATUSES` / `isCoupleStatus()` dans
+    `lib/family/maritalStatus.ts`, importée par `hasConjoint`, `statutTransition`, `FamilleSection`,
+    `PartnerForm`, `useFamilyLinkLogic`, `buildFamilyGraph` et `AVContractDetail` (seuls libellés
+    `Marié(e)`, `Pacsé(e)`, `Concubinage` ; les anciens `MARIE` / `PACS`… absents de la base ont été retirés). Transmission ne
     retient que marié/pacsé : règle successorale, le concubin n'étant pas héritier.
 
 - **RGPD.** Tous les `console.error` du périmètre Famille sont encadrés par
@@ -319,7 +336,9 @@ doit donc pas effacer silencieusement ces lignes.
   (partage par moitié de la créance, sans exclusion des biens professionnels ni extension de la
   qualification d'acquêts) — voir [docs/transmission.md](transmission.md) §4. Détail complet du
   catalogue retiré et marche à suivre pour une reconstruction :
-  [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md). La
+  [docs/regimes-matrimoniaux-clauses-v1-retire.md](regimes-matrimoniaux-clauses-v1-retire.md). Les clés
+  de l'ancien catalogue encore présentes dans `clauses_contrat` ont été purgées (reprise
+  `20261018160000_famille_reprise_donnees.sql`, seule `societe_acquets` conservée). La
   colonne `marital_status.clauses_personnalisees` a été supprimée (aucune ligne active en base au
   moment du retrait) ; `marital_status.clauses_contrat` est conservée, réservée aux deux clés
   ci-dessous.
@@ -541,20 +560,19 @@ Champs déjà soldés depuis l'audit initial (retirés de l'UI ou branchés à u
 `ancien_combattant` (+ `_conjoint`, case retirée, commit `5122e87`), `exoneration_succession`
 (branché au moteur DMTG, `lib/dmtg/recall.ts`).
 
-Champs retirés de l'UI de saisie par l'audit fonctionnel Famille du 2026-09-01 (colonnes
-conservées, aucune migration, valeurs existantes non affectées grâce à l'upsert partiel de
-`familyService.ts`) :
-`family_profiles.commune_naissance`, `.pays_naissance`, `.telephone`, `.email`,
-`.adresse_postale`, `.code_postal`, `.ville`, `.pays` (onglet « Coordonnées » retiré de
-`FicheClientForm.tsx`) ; les colonnes homologues `_conjoint` sur `marital_status`
-(`lieu_naissance_conjoint`, `pays_naissance_conjoint`, `telephone_conjoint`, `email_conjoint`,
-`adresse_conjoint`, `code_postal_conjoint`, `ville_conjoint`, `pays_conjoint`, retirées de
-`PartnerForm.tsx`) ; `marital_status.imposition_distincte` (+ homologue implicite PACS, retirée de
-`RelationInfoForm.tsx`, voir 🟠 ci-dessus) ; sur `family_links` : `mesure_protection_juridique`,
-`mandat_protection_future` (+ date), retirées de `DynamicFamilyForm.tsx` puis du schéma et de
-l'écriture de `FamilyMemberFormDialog.tsx` (valeurs en base laissées intactes ; ces deux derniers champs
-restent saisissables côté client/conjoint sur `family_profiles`/`marital_status`, seule la
-duplication sur les autres membres de la famille a été retirée).
+Colonnes supprimées le 2026-10-18 (minimisation RGPD, migration
+`20261018170000_famille_drop_colonnes_dormantes.sql`) après leur retrait de l'interface par l'audit
+fonctionnel du 2026-09-01, et après vérification qu'aucun code, vue ni fonction ne les lisait — les
+valeurs restantes (coordonnées d'un profil) sont définitivement effacées :
+`family_profiles.commune_naissance`, `.pays_naissance`, `.telephone`, `.email`, `.adresse_postale`,
+`.code_postal`, `.ville`, `.pays` ; sur `marital_status` : `lieu_naissance_conjoint`,
+`pays_naissance_conjoint`, `telephone_conjoint`, `email_conjoint`, `adresse_conjoint`,
+`code_postal_conjoint`, `ville_conjoint`, `pays_conjoint`, ainsi que `parent_isole` et
+`nombre_enfants_charges` (lus par aucun moteur, la fiscalité lit `foyer_fiscal`) ; sur `family_links` :
+`mesure_protection_juridique`, `mandat_protection_future` (+ date) — ces deux derniers restent
+saisissables côté client / conjoint sur `family_profiles` / `marital_status`.
+`marital_status.imposition_distincte` est conservée (retirée de `RelationInfoForm.tsx`, en attente du
+moteur IR, voir 🟠 ci-dessus).
 
 ## 4. Périmètre V1 / différé
 
@@ -575,9 +593,9 @@ duplication sur les autres membres de la famille a été retirée).
     membres). Ces champs sont dans le schéma et l'UI de saisie mais aucun moteur (fiscalité,
     transmission, alertes) n'a encore été câblé dessus — décision implicite de saisie anticipée sans
     consommation, pas un choix documenté de report.
-  - Coordonnées (téléphone, email, adresse) et commune/pays de naissance : retirées de l'UI de
-    saisie par l'audit fonctionnel du 2026-09-01 (champs jugés non pertinents pour l'outil, jamais
-    consommés par un moteur) — colonnes conservées en base, sans plan de réintroduction documenté.
+  - Coordonnées (téléphone, email, adresse) et commune/pays de naissance : retirées de l'UI le
+    2026-09-01 puis colonnes supprimées le 2026-10-18 (minimisation RGPD, voir §3) ; une
+    réintroduction demanderait une nouvelle migration.
   - `imposition_distincte` (art. 6-4a CGI) : retirée de l'écran de saisie (voir §3), en attente
     d'être réintroduite avec le moteur IR lors du développement du module Fiscalité.
   - Volet navigation réelle en navigateur : rendu visuel vérifié en session authentifiée (Ma

@@ -18,6 +18,7 @@ import { CheckboxWithLabel } from "@/components/family/CheckboxWithLabel";
 import { SectionHeader } from "@/components/family/SectionHeader";
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { WorkspaceHeader } from "@/components/layout/workspace-panel";
+import { isCoupleStatus } from '@/lib/family/maritalStatus';
 
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
@@ -48,7 +49,7 @@ const formSchema = z.object({
   // Mêmes champs obligatoires que la Fiche client (FicheClientForm), mais
   // uniquement quand le partenaire est réellement présent dans le foyer —
   // ces champs ne sont d'ailleurs rendus dans le formulaire que dans ce cas.
-  const requiresPartnerFields = ['Concubinage', 'Pacsé(e)', 'Marié(e)'].includes(data.statutCouple ?? '');
+  const requiresPartnerFields = isCoupleStatus(data.statutCouple);
   if (!requiresPartnerFields) return;
 
   if (!data.civilitePartenaire) {
@@ -129,7 +130,6 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
         prenom_conjoint: formData.prenomPartenaire,
         date_naissance_conjoint: formData.dateNaissancePartenaire instanceof Date ? format(formData.dateNaissancePartenaire, 'yyyy-MM-dd') : null,
         profession_conjoint: formData.profession?.trim() || '',
-        profession_csp_conjoint: '',
         nationalite_conjoint: formData.nationalitePartenaire,
         nationalite_2_conjoint: formData.doubleNationalitePartenaire ? (formData.nationalite2Partenaire || '') : '',
         personne_handicapee_conjoint: formData.personneHandicapee,
@@ -156,7 +156,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
   }
 
   const showPartnerFields =
-    statutCouple === "Concubinage" || statutCouple === "Pacsé(e)" || statutCouple === "Marié(e)";
+    isCoupleStatus(statutCouple);
 
   return (
     <Form {...form}>

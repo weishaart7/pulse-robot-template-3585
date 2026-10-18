@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 import { LINKS_RATTACHES_A_UN_MEMBRE } from '@/lib/family/familyLinkRules';
 import { FamilyLink, FamilyProfile, MaritalStatus } from '@/services/familyService';
+import { isCoupleStatus } from '@/lib/family/maritalStatus';
 
 export interface FamilyGraphNode {
   id: string;
@@ -66,7 +67,7 @@ export function buildFamilyGraph(
     generation: 0,
   });
 
-  if (maritalStatus && ['Marié(e)', 'Concubinage', 'Pacsé(e)'].includes(maritalStatus.statut_couple || '')) {
+  if (isCoupleStatus(maritalStatus?.statut_couple)) {
     nodes.push({
       id: 'spouse',
       name: `${maritalStatus.prenom_conjoint || ''} ${maritalStatus.nom_conjoint || ''}`.trim() || 'Conjoint(e)',
