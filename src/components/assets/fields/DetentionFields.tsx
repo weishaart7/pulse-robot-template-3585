@@ -5,7 +5,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
-import { isEpargneAssuranceVie } from '@/constants/assetTypes';
+import { isEpargneAssuranceVie, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
 import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -23,7 +23,8 @@ type AssetForm = UseFormReturn<AssetFormValues>;
 // fournir le conteneur `grid`. DetentionFields les recompose dans l'ordre
 // d'origine, pour AssetForm.tsx.
 
-export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => (
+// Masqué pour un contrat de prévoyance : un contrat d'assurance ne se démembre pas.
+export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => isPrevoyanceDeces(form.watch('nature')) ? null : (
   <FormField control={form.control} name="mode_detention" render={({ field }) => (
     <FormItem>
       <FormLabel>Mode de détention</FormLabel>
@@ -219,6 +220,7 @@ interface DemembrementFieldsProps {
 // Démembrement (si mode de détention Usufruit ou Nue-propriété)
 export const DemembrementFields: React.FC<DemembrementFieldsProps> = ({ form, familyMembers, demembrements, setDemembrements }) => {
   const watchedModeDetention = form.watch('mode_detention');
+  if (isPrevoyanceDeces(form.watch('nature'))) return null;
   if (watchedModeDetention !== 'Usufruit' && watchedModeDetention !== 'Nue-propriété') return null;
   return (
     <DemembrementSection

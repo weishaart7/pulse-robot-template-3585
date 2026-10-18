@@ -593,7 +593,8 @@ export const CORPS_NATURES_CHAMPS: Record<string, CorpsChamp[]> = {
 // "beneficiaire_designe" n'est plus proposé (colonne conservée en base) : la clause des PER
 // assurantiels, des contrats de prévoyance décès et des contrats article 82 se saisit dans
 // Transmission → Assurance-vie (clause structurée, seule lue par le calcul de transmission).
-export type RetraitePrevoyanceChamp = 'capital_garanti' | 'mode_sortie';
+// Le capital garanti des contrats de prévoyance se saisit avec la valeur (ValeurEstimeeFields).
+export type RetraitePrevoyanceChamp = 'mode_sortie';
 
 export const RETRAITE_PREVOYANCE_NATURES_CHAMPS: Record<string, RetraitePrevoyanceChamp[]> = {
   'PER individuel': ['mode_sortie'],
@@ -608,9 +609,6 @@ export const RETRAITE_PREVOYANCE_NATURES_CHAMPS: Record<string, RetraitePrevoyan
   'Contrat Préfon-retraite': ['mode_sortie'],
   'Contrat retraite mutualiste du combattant': ['mode_sortie'],
   'Régimes de retraite étrangers': ['mode_sortie'],
-  'Temporaire décès': ['capital_garanti'],
-  'Vie entière': ['capital_garanti'],
-  'Contrat prévoyance individuelle': ['capital_garanti'],
 };
 
 export const MODE_SORTIE_OPTIONS = ['Rente', 'Capital', 'Mixte'] as const;

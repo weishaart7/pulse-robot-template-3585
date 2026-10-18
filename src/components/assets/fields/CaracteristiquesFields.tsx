@@ -16,7 +16,6 @@ import {
   NATURE_PER_TOUJOURS_ASSURANTIEL,
   NATURES_RETRAITE_RENTE_EXONERATION_990I_PAR_DEFAUT,
   isRetraiteRente,
-  isPrevoyanceDeces,
   NATURE_ARTICLE_82,
   NATURES_787C,
   NATURES_PLANCHER_ASSURANCE,
@@ -82,13 +81,11 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const showQuantiteMillesime = corpsChamps.includes('quantite_millesime');
   const watchedCertificatExpertise = form.watch('certificat_expertise');
   const retraitePrevoyanceChamps = RETRAITE_PREVOYANCE_NATURES_CHAMPS[watchedNature] || [];
-  const showCapitalGaranti = retraitePrevoyanceChamps.includes('capital_garanti');
   const showModeSortie = retraitePrevoyanceChamps.includes('mode_sortie');
   const watchedSousTypePer = form.watch('sous_type_per');
   // Le champ texte libre "Bénéficiaire désigné" n'est plus proposé : la clause d'un PER
-  // assurantiel, d'un contrat de prévoyance décès ou d'un article 82 se saisit dans Transmission →
+  // assurantiel ou d'un article 82 se saisit dans Transmission →
   // Assurance-vie (clause structurée, seule lue par le calcul de transmission).
-  const showRenvoiClausePrevoyance = isPrevoyanceDeces(watchedNature);
   const showRenvoiClauseArticle82 = watchedNature === NATURE_ARTICLE_82;
   const showRenvoiClausePER = isPERObligatoire || (isPER && watchedSousTypePer === 'Assurantiel');
 
@@ -888,9 +885,9 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {(showCapitalGaranti || showCapitalGarantiVM || showModeSortie) && (
+      {(showCapitalGarantiVM || showModeSortie) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(showCapitalGaranti || showCapitalGarantiVM) && (
+          {showCapitalGarantiVM && (
             <FormField control={form.control} name="capital_garanti" render={({ field }) => (
               <FormItem>
                 <FormLabel>Capital garanti</FormLabel>
@@ -904,12 +901,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                   />
                 </FormControl>
-                {showRenvoiClausePrevoyance && (
-                  <FieldHelp>
-                    Capital versé au décès aux bénéficiaires de la clause, qui se renseigne dans
-                    Transmission → Assurance-vie avec les primes versées.
-                  </FieldHelp>
-                )}
                 <FormMessage />
               </FormItem>
             )} />

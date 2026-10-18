@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
 import { useAssetForm } from './useAssetForm';
 import { AssetCharge } from '@/services/assetService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
@@ -26,8 +26,9 @@ interface WizardStepDef {
 // à l'ancien bloc Origine, elle reste visible pour un bien en indivision hors
 // couple : la qualification y est directement "Indivision", mais le prix
 // d'achat reste utile au calcul de la plus-value latente.
+// Masquée aussi pour un contrat de prévoyance (souscrit, sans prix d'achat ni plus-value).
 const isPrixStepVisible = (values: Partial<AssetFormValues>) =>
-  !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '');
+  !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '') && !isPrevoyanceDeces(values.nature);
 
 // Étape "Particularités" : contient toujours au moins le champ "Situation
 // particulière" (jamais masqué, quelle que soit la nature) et, pour la
@@ -60,7 +61,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
   {
     id: 'droitsvaleur',
     label: 'Droits et valeur',
-    fields: ['mode_detention', 'valeur_estimee', 'date_estimation'],
+    fields: ['mode_detention', 'valeur_estimee', 'date_estimation', 'capital_garanti'],
     isVisible: () => true,
   },
   {
@@ -135,6 +136,12 @@ export const useAssetWizard = ({ onSubmit }: UseAssetWizardProps) => {
     if (stepDef && stepDef.fields.length > 0) {
       const valid = await form.trigger(stepDef.fields);
       if (!valid) return false;
+    }
+    // Capital garanti obligatoire à la création d'un contrat de prévoyance (sans lui, le capital
+    // transmis au décès est inconnu). Facultatif en modification : la Transmission alerte alors.
+    if (currentStep.id === 'droitsvaleur' && isPrevoyanceNonQualifiee(form.getValues())) {
+      form.setError('capital_garanti', { type: 'manual', message: 'Indiquez le capital garanti par ce contrat' });
+      return false;
     }
     if (!isLastStep) {
       const nextIndex = safeIndex + 1;

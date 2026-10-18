@@ -11,6 +11,7 @@ import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
+import { NATURE_PREVOYANCE_RACHETABLE, isPrevoyanceDeces } from '@/constants/assetTypes';
 
 interface WizardStepRecapProps {
   form: UseFormReturn<AssetFormValues>;
@@ -108,6 +109,9 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
   onEditStep
 }) => {
   const values = form.watch();
+  // Contrat de prévoyance : capital garanti repris dans « Droits et valeur », pas d'origine ni de
+  // mode de détention, et rappel de ce qui reste à saisir dans Transmission.
+  const isPrevoyance = isPrevoyanceDeces(values.nature);
 
   const chargesAvecImpact = charges
     .map((c) => ({ charge: c, impact: computeImpactMensuel(c) }))
@@ -116,6 +120,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
 
   const particularitesRenseignees = PARTICULARITES_RECAP_FIELDS
     .map(({ key, label }) => ({ label, value: values[key] }))
+    .filter(({ label }) => !(isPrevoyance && label === 'Capital garanti'))
     .filter(({ value }) => value !== undefined && value !== null && value !== '');
 
   return (
@@ -126,8 +131,8 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       </RecapSection>
 
       <RecapSection title="Origine et propriété" onEdit={() => onEditStep('origine')}>
-        {values.detenteur !== 'Indivision' && formatDate(values.date_acquisition) && <Row label="Date d'acquisition" value={formatDate(values.date_acquisition)} />}
-        {values.detenteur !== 'Indivision' && values.origine_actif?.[0] && <Row label="Origine" value={getOrigineActifLabel(values.origine_actif[0])} />}
+        {values.detenteur !== 'Indivision' && formatDate(values.date_acquisition) && <Row label={isPrevoyance ? 'Date de souscription' : "Date d'acquisition"} value={formatDate(values.date_acquisition)} />}
+        {values.detenteur !== 'Indivision' && !isPrevoyance && values.origine_actif?.[0] && <Row label="Origine" value={getOrigineActifLabel(values.origine_actif[0])} />}
         {values.detenteur && <Row label="Détenteur / Souscripteur" value={values.detenteur} />}
         {values.detenteur === 'Indivision' && (
           <Row
@@ -151,10 +156,13 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
         </RecapSection>
       )}
 
-      {(values.mode_detention || values.valeur_estimee !== undefined || formatDate(values.date_estimation)) && (
+      {(isPrevoyance || values.mode_detention || values.valeur_estimee !== undefined || formatDate(values.date_estimation)) && (
         <RecapSection title="Droits et valeur" onEdit={() => onEditStep('droitsvaleur')}>
-          {values.mode_detention && <Row label="Mode de détention" value={values.mode_detention} />}
-          {values.valeur_estimee !== undefined && <Row label="Valeur estimée" value={formatEur(values.valeur_estimee)} />}
+          {isPrevoyance && <Row label="Capital garanti" value={formatEur(values.capital_garanti ?? 0)} />}
+          {!isPrevoyance && values.mode_detention && <Row label="Mode de détention" value={values.mode_detention} />}
+          {values.valeur_estimee !== undefined && (
+            <Row label={values.nature === NATURE_PREVOYANCE_RACHETABLE ? 'Valeur de rachat' : 'Valeur estimée'} value={formatEur(values.valeur_estimee)} />
+          )}
           {formatDate(values.date_estimation) && <Row label="Date d'estimation" value={formatDate(values.date_estimation)} />}
         </RecapSection>
       )}
@@ -181,6 +189,18 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
           </>
         )}
       </RecapSection>
+
+      {isPrevoyance && (
+        <div className="py-4">
+          <div className="rounded-[2px] border border-border bg-secondary/50 px-4 py-3 text-[13px]">
+            <p className="font-medium text-foreground">Reste à faire après la création</p>
+            <p className="mt-1 text-muted-foreground">
+              Renseignez la clause bénéficiaire et les primes versées dans Transmission → Assurance-vie.
+              Sans les primes, le capital transmis au décès ne peut pas être taxé (art. 990 I et 757 B).
+            </p>
+          </div>
+        </div>
+      )}
 
       <PlusValueBlock form={form} />
       <ValorisationDemembreeBlock form={form} familyData={familyData} familyMembers={familyMembers} demembrements={demembrements} />

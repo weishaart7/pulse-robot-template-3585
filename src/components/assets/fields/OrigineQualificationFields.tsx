@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -41,8 +41,11 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
   const isDateOuverture = NATURES_DATE_OUVERTURE.includes(watchedNature);
+  // Contrat de prévoyance : souscrit, ni acheté ni reçu — seule la date de souscription est
+  // demandée (date_acquisition, lue comme telle par useAVContracts), sans origine ni clauses.
+  const isPrevoyance = isPrevoyanceDeces(watchedNature);
   const isIndivisionHorsCouple = watchedDetenteur === 'Indivision';
-  const showClauseEntreeCommunaute = (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
+  const showClauseEntreeCommunaute = !isPrevoyance && (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   // Sous communauté universelle (art. 1526) ou, pour un bien meuble
   // uniquement, sous communauté de meubles et acquêts (art. 1498 al. 1), une
   // libéralité tombe dans la communauté PAR DÉFAUT — la case représente alors
@@ -61,8 +64,8 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   // l'origine.
   const isAchat = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
   const isEchange = (watchedOrigineActif || []).includes('Échange');
-  const showClauseRemploi = isAchat || isEchange;
-  const showEstPropreParNature = isInCouple(maritalContext.statutCouple);
+  const showClauseRemploi = !isPrevoyance && (isAchat || isEchange);
+  const showEstPropreParNature = !isPrevoyance && isInCouple(maritalContext.statutCouple);
   // Financement mixte (art. 1436) : ne se pose qu'en régime communautaire,
   // pour un achat (pas un échange), et n'a plus de sens si le remploi total
   // est déjà acté (clause_remploi couvre alors la totalité du prix).
@@ -88,7 +91,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="date_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>{isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}</FormLabel>
+                <FormLabel>{isPrevoyance ? 'Date de souscription' : isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}</FormLabel>
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>
@@ -96,7 +99,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="origine_actif" render={({ field }) => (
+            {!isPrevoyance && <FormField control={form.control} name="origine_actif" render={({ field }) => (
               <FormItem>
                 <FormLabel>Origine de l'actif</FormLabel>
                 <Select
@@ -120,11 +123,11 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 </Select>
                 <FormMessage />
               </FormItem>
-            )} />
+            )} />}
           </>
         )}
 
-        {showPrixSection && (
+        {showPrixSection && !isPrevoyance && (
           <>
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
@@ -199,7 +202,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
         />
       )}
 
-      {showPrixSection && showFinancementMixte && (
+      {showPrixSection && !isPrevoyance && showFinancementMixte && (
         <FormField control={form.control} name="financement_mixte_apport_propre" render={({ field }) => (
           <FormItem>
             <FormLabel>Financement mixte : contribution en fonds propres</FormLabel>
