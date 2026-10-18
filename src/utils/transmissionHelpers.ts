@@ -1763,9 +1763,9 @@ export function buildParticipationAcquetsContext(
 
 /**
  * Mappe les lignes brutes Supabase (`recompenses`, snake_case) vers les
- * entrées attendues par computeSoldeRecompenses (camelCase) — aucun mapper de
- * ce type n'existait avant ce chantier, y compris sur Succession2ndDeces.tsx
- * (recompenses/creancesEntreEpoux n'y sont pas branchés).
+ * entrées attendues par computeSoldeRecompenses (camelCase). Chaque champ lu
+ * par computeMontantRecompense doit être transmis ici, sinon il vaut sa valeur
+ * par défaut sans bruit (ex. depense_necessaire, plancher de l'art. 1469 al. 2).
  */
 export function buildRecompensesCalcInput(rows: Recompense[]): RecompenseCalcInput[] {
   return rows.map(r => ({
@@ -1777,6 +1777,7 @@ export function buildRecompensesCalcInput(rows: Recompense[]): RecompenseCalcInp
     valeurBienSansTravaux: r.valeur_bien_sans_travaux,
     coutTotalTravaux: r.cout_total_travaux,
     natureDepense: r.nature_depense,
+    depenseNecessaire: r.depense_necessaire,
     modeEvaluationConventionnel: r.mode_evaluation_conventionnel
   }));
 }

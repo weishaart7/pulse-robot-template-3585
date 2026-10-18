@@ -427,6 +427,10 @@ soldés :
   (`computeMontantCreance`). Colonnes `valeur_bien_sans_travaux` et `cout_total_travaux` sur
   `recompenses` et `creances_entre_epoux` (migration `20261018130000_recompenses_creances_amelioration.sql`),
   saisies dans les deux formulaires quand la nature est « Amélioration ».
+- *[soldé 2026-10-18]* Case « dépense nécessaire » sans effet — `buildRecompensesCalcInput`
+  (`utils/transmissionHelpers.ts`) ne transmettait pas `recompenses.depense_necessaire` : le plancher
+  de l'art. 1469 al. 2 (récompense au moins égale à la dépense faite) ne jouait jamais dans la
+  transmission. Champ désormais transmis ; aucune récompense en base au moment du correctif.
 
 - *[soldé 2026-09-24]* Statut du couple non modifiable une fois en couple (menu masqué, aucun autre
   formulaire ne l'exposait) — voir §1.
