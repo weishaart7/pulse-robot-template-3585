@@ -6,6 +6,14 @@ Format par entrée : quoi / pourquoi pas maintenant / condition de réactivation
 
 ---
 
+## Résidence fiscale à l'étranger (client / conjoint)
+
+- **Quoi** : case des fiches client et conjoint et alerte de conseil `extraneite_residence_fiscale_etranger` (« La loi applicable au régime matrimonial doit être vérifiée »), retirées le 2026-10-18. Colonnes `family_profiles.residence_fiscale_etranger` et `marital_status.residence_fiscale_etranger_conjoint` conservées (aucune valeur cochée au retrait).
+- **Pourquoi pas maintenant** : donnée de contexte du client, sans place dans la fiche d'état civil.
+- **Condition de réactivation** : création de l'espace client (distinct de la fiche) — y réintroduire la saisie et rebrancher l'alerte (`lib/alertes/regles.ts`, contexte `useAlertesConseil.ts`).
+
+---
+
 ## Pays du premier domicile matrimonial / Loi applicable au régime matrimonial
 
 - **Quoi** : deux champs dans Famille → Régime matrimonial, retirés de l'affichage. Mise à jour 2026-09-16 (simplification V1) : l'alerte de conseil `extraneite_regime_matrimonial` qui les lisait a également été retirée (les deux colonnes `marital_status.loi_applicable_regime` / `pays_premier_domicile_matrimonial` restent en base, plus aucun code ne les lit ni ne les écrit).

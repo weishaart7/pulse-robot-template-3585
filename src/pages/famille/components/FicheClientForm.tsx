@@ -48,7 +48,6 @@ const formSchema = z.object({
     required_error: 'Veuillez sélectionner une mesure de protection juridique',
   }),
   handicape: z.boolean().default(false),
-  residenceFiscaleEtranger: z.boolean().default(false),
   mandatProtectionFuture: z.boolean().default(false),
   dateMandatProtectionFuture: z.union([z.date(), z.literal(''), z.undefined()]).optional(),
 });
@@ -99,7 +98,6 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
         nationalite2: data.nationalite_2 || '',
         capaciteJuridique: (data.capacite_juridique as FormData['capaciteJuridique']) || 'Aucune',
         handicape: data.personne_handicapee || false,
-        residenceFiscaleEtranger: data.residence_fiscale_etranger || false,
         mandatProtectionFuture: data.mandat_protection_future || false,
         dateMandatProtectionFuture: data.date_mandat_protection_future ? new Date(data.date_mandat_protection_future) : undefined,
       };
@@ -125,7 +123,6 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
         nationalite_2: formData.doubleNationalite ? (formData.nationalite2 || '') : '',
         capacite_juridique: formData.capaciteJuridique,
         personne_handicapee: formData.handicape,
-        residence_fiscale_etranger: formData.residenceFiscaleEtranger,
         mandat_protection_future: formData.mandatProtectionFuture,
         date_mandat_protection_future: formData.mandatProtectionFuture && formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : null,
       });
@@ -387,34 +384,28 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                       </FormItem>
                     )}
                   />
-                </div>
+                  <div className="md:self-end">
+                    <FormField
+                      control={form.control}
+                      name="handicape"
+                      render={({ field }) => (
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
+                      )}
+                    />
+                  </div>
+                  <div className="md:self-end">
+                    <FormField
+                      control={form.control}
+                      name="mandatProtectionFuture"
+                      render={({ field }) => (
+                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
+                      )}
+                    />
+                  </div>
 
-                <div className="mt-4 flex flex-wrap items-center gap-x-6">
-                  <FormField
-                    control={form.control}
-                    name="handicape"
-                    render={({ field }) => (
-                      <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="residenceFiscaleEtranger"
-                    render={({ field }) => (
-                      <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence fiscale à l'étranger" />
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="mandatProtectionFuture"
-                    render={({ field }) => (
-                      <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
-                    )}
-                  />
-                </div>
-
+                {/* Date du mandat sous sa case, dans la même colonne. */}
                 {form.watch('mandatProtectionFuture') && (
-                  <div className="ml-7 mt-1 grid grid-cols-1 gap-5 border-l border-border pl-4 md:grid-cols-3">
+                  <div className="md:col-start-3">
                     <FormField
                       control={form.control}
                       name="dateMandatProtectionFuture"
@@ -434,6 +425,7 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                     />
                   </div>
                 )}
+                </div>
             </div>
           </div>
 

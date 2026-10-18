@@ -42,7 +42,6 @@ const formSchema = z.object({
     "Mesure d'accompagnement",
   ]).default('Aucune'),
   personneHandicapee: z.boolean().default(false),
-  residenceFiscaleEtrangerPartenaire: z.boolean().default(false),
   mandatProtectionFuture: z.boolean().default(false),
   dateMandatProtectionFuture: z.union([z.date(), z.literal(''), z.undefined()]).optional(),
 }).superRefine((data, ctx) => {
@@ -83,7 +82,6 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
     resolver: zodResolver(formSchema),
     defaultValues: {
       personneHandicapee: false,
-      residenceFiscaleEtrangerPartenaire: false,
       capaciteJuridique: 'Aucune',
       mandatProtectionFuture: false,
       civilitePartenaire: undefined,
@@ -114,7 +112,6 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
         nationalite2Partenaire: maritalData.nationalite_2_conjoint || "",
         capaciteJuridique: (maritalData.capacite_juridique_conjoint as FormData['capaciteJuridique']) || 'Aucune',
         personneHandicapee: maritalData.personne_handicapee_conjoint || false,
-        residenceFiscaleEtrangerPartenaire: maritalData.residence_fiscale_etranger_conjoint || false,
         mandatProtectionFuture: maritalData.mandat_protection_future_conjoint || false,
         dateMandatProtectionFuture: maritalData.date_mandat_protection_future_conjoint ? new Date(maritalData.date_mandat_protection_future_conjoint) : undefined,
       });
@@ -133,7 +130,6 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
         nationalite_conjoint: formData.nationalitePartenaire,
         nationalite_2_conjoint: formData.doubleNationalitePartenaire ? (formData.nationalite2Partenaire || '') : '',
         personne_handicapee_conjoint: formData.personneHandicapee,
-        residence_fiscale_etranger_conjoint: formData.residenceFiscaleEtrangerPartenaire,
         capacite_juridique_conjoint: formData.capaciteJuridique,
         mandat_protection_future_conjoint: formData.mandatProtectionFuture,
         date_mandat_protection_future_conjoint: formData.mandatProtectionFuture && formData.dateMandatProtectionFuture instanceof Date ? format(formData.dateMandatProtectionFuture, 'yyyy-MM-dd') : null,
@@ -440,34 +436,28 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                           </FormItem>
                         )}
                       />
-                    </div>
+                      <div className="md:self-end">
+                        <FormField
+                          control={form.control}
+                          name="personneHandicapee"
+                          render={({ field }) => (
+                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
+                          )}
+                        />
+                      </div>
+                      <div className="md:self-end">
+                        <FormField
+                          control={form.control}
+                          name="mandatProtectionFuture"
+                          render={({ field }) => (
+                            <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
+                          )}
+                        />
+                      </div>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-x-6">
-                      <FormField
-                        control={form.control}
-                        name="personneHandicapee"
-                        render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="residenceFiscaleEtrangerPartenaire"
-                        render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Résidence fiscale à l'étranger" />
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="mandatProtectionFuture"
-                        render={({ field }) => (
-                          <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
-                        )}
-                      />
-                    </div>
-
+                    {/* Date du mandat sous sa case, dans la même colonne. */}
                     {form.watch('mandatProtectionFuture') && (
-                      <div className="ml-7 mt-1 grid grid-cols-1 gap-5 border-l border-border pl-4 md:grid-cols-3">
+                      <div className="md:col-start-3">
                         <FormField
                           control={form.control}
                           name="dateMandatProtectionFuture"
@@ -487,6 +477,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                         />
                       </div>
                     )}
+                    </div>
                 </div>
               </>
             )}

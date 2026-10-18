@@ -18,8 +18,6 @@ export interface AlerteContext {
   datePacs?: string;
   conventionPacs?: string;
   pasDeContratMariage?: boolean;
-  clientResidenceFiscaleEtranger?: boolean;
-  conjointResidenceFiscaleEtranger?: boolean;
   liberalites: Liberalite[];
   avContracts: AVContractRawRow[];
   familyLinks: FamilyLink[];

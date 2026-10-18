@@ -124,12 +124,6 @@ export const REGLES_ALERTES_CONSEIL: AlerteDefinition[] = [
     message: 'Le régime sera très difficile à liquider. Établir un état descriptif signé (art. 1570).',
   },
   {
-    id: 'extraneite_residence_fiscale_etranger',
-    niveau: 'moyen',
-    condition: (ctx) => !!ctx.clientResidenceFiscaleEtranger || !!ctx.conjointResidenceFiscaleEtranger,
-    message: 'La loi applicable au régime matrimonial doit être vérifiée (§ 4.4).',
-  },
-  {
     id: 'enfants_non_communs_sans_ddv',
     niveau: 'eleve',
     condition: (ctx) => ctx.hasNonCommonChildren && !ctx.hasDDV,

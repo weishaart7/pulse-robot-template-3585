@@ -78,12 +78,6 @@ Ordre d'apparition réel dans `REGLES_ALERTES_CONSEIL` ([regles.ts](../src/lib/a
   - `marital_status.clauses_contrat` — clés `preciput`, `preciput_sub`, `attribution_integrale`, `attribution_integrale_sub`, `partage_inegal`, `partage_inegal_sub`, `partage_inegal_acquets` (`.enabled` / `.options.maintienDivorce`)
 - **Note** : ajoutée le 2026-09-15. Généralise le principe de la règle 9 (révocation de plein droit au divorce, art. 265 C. civ., formalisme durci par la loi n°2024-494 du 31 mai 2024) aux avantages matrimoniaux « cœur » — préciput, attribution intégrale, partage inégal, y compris leurs variantes de société d'acquêts et le partage inégal des acquêts en participation aux acquêts — jusque-là non couverts. Périmètre volontairement restreint : `modification_recompenses` (libellé du catalogue trop large pour cibler la seule dispense de récompense visée par la doctrine), `prelevement_biens_communs`, `prelevement_indemnisation`, `plafonnement_creance`, `attribution_preferentielle` (non cités explicitement par la doctrine parmi les clauses révoquées), `reprise_apports` et `dissolution_alternative` (mécanismes réglant eux-mêmes le sort du divorce, pas des avantages qui y seraient soumis) en sont exclus — voir le commentaire de `CLAUSES_REVOCATION_DIVORCE` dans [regles.ts](../src/lib/alertes/regles.ts) pour le détail. La case « Maintien exprès en cas de divorce » (`hasMaintienDivorceOption`) a été étendue aux mêmes clauses dans [`matrimonialClauses.ts`](../src/constants/matrimonialClauses.ts).
 
-### 11. `extraneite_residence_fiscale_etranger`
-- **Message** : « La loi applicable au régime matrimonial doit être vérifiée (§ 4.4). »
-- **Champs/tables lus** :
-  - `family_profiles.residence_fiscale_etranger`
-  - `marital_status.residence_fiscale_etranger_conjoint`
-
 ### 12. `enfants_non_communs_sans_ddv`
 - **Message** : « Le conjoint ne pourra prétendre qu'à 1/4 en pleine propriété (art. 757). Une donation au dernier vivant lui ouvrirait l'option de l'usufruit total. »
 - **Champs/tables lus** :
@@ -139,6 +133,11 @@ Deux règles supplémentaires retirées le 2026-09-16 (passe de simplification V
 
 - `extraneite_regime_matrimonial` — « Élément d'extranéité déclaré sur le régime matrimonial : la loi applicable doit être vérifiée (§ 4.4, § 12.1). Orienter vers un notaire si besoin — non automatisé dans cet outil. » Lisait `marital_status.pays_premier_domicile_matrimonial` / `.loi_applicable_regime`, deux champs déjà retirés de l'UI de saisie (`RelationInfoForm.tsx`) : elle ne pouvait plus se déclencher pour un nouveau dossier.
 - `changement_regime_proche_donation` (ex-16) — « Un changement de régime matrimonial (réalisé ou envisagé) et une donation sont séparés de moins de 3 ans : risque de requalification en abus de droit (art. L. 64 LPF). » Lisait `liberalites.type`/`.date_acte` et `scenarios_regime.date`/`.motivation_civile` — la table `scenarios_regime` n'a jamais eu d'écran de saisie, la règle ne s'est donc jamais déclenchée en pratique. Réintroduction possible : voir condition de réactivation dans [docs/idees-de-cote.md](idees-de-cote.md).
+
+Règle retirée le 2026-10-18 avec la case « Résidence fiscale à l'étranger » des fiches client et
+conjoint (voir [docs/idees-de-cote.md](idees-de-cote.md)) :
+
+- `extraneite_residence_fiscale_etranger` (ex-11) — « La loi applicable au régime matrimonial doit être vérifiée (§ 4.4). » Lisait `family_profiles.residence_fiscale_etranger` / `marital_status.residence_fiscale_etranger_conjoint` (colonnes conservées, aucune valeur cochée au retrait).
 
 ## 3. Correspondance avec les anciennes références externes
 

@@ -525,34 +525,3 @@ describe('parts_non_negociables_souscrites_pendant_mariage', () => {
   });
 });
 
-describe('extraneite_residence_fiscale_etranger', () => {
-  it('se déclenche : client résident fiscal à l\'étranger', () => {
-    const ctx = baseContext();
-    ctx.clientResidenceFiscaleEtranger = true;
-
-    expect(idsOf(evaluerAlertes(ctx))).toContain('extraneite_residence_fiscale_etranger');
-  });
-
-  it('se déclenche : conjoint résident fiscal à l\'étranger', () => {
-    const ctx = baseContext();
-    ctx.conjointResidenceFiscaleEtranger = true;
-
-    expect(idsOf(evaluerAlertes(ctx))).toContain('extraneite_residence_fiscale_etranger');
-  });
-
-  it('ne se déclenche pas : ni client ni conjoint résident fiscal à l\'étranger', () => {
-    const ctx = baseContext();
-    ctx.clientResidenceFiscaleEtranger = false;
-    ctx.conjointResidenceFiscaleEtranger = false;
-
-    expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_residence_fiscale_etranger');
-  });
-
-  it('ne plante pas et ne se déclenche pas à tort : champs non renseignés', () => {
-    const ctx = baseContext();
-
-    expect(() => evaluerAlertes(ctx)).not.toThrow();
-    expect(idsOf(evaluerAlertes(ctx))).not.toContain('extraneite_residence_fiscale_etranger');
-  });
-});
-
