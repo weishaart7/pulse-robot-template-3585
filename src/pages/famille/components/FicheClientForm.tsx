@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useFamilyProfile } from '@/hooks/useFamilyData';
 import { SmartDateInput } from '@/components/family/SmartDateInput';
 import { CheckboxWithLabel } from '@/components/family/CheckboxWithLabel';
+import { OuiNonToggle } from '@/components/family/OuiNonToggle';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { WorkspaceHeader } from '@/components/layout/workspace-panel';
@@ -384,24 +385,30 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                       </FormItem>
                     )}
                   />
-                  <div className="md:self-end">
-                    <FormField
-                      control={form.control}
-                      name="handicape"
-                      render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Personne handicapée" />
-                      )}
-                    />
-                  </div>
-                  <div className="md:self-end">
-                    <FormField
-                      control={form.control}
-                      name="mandatProtectionFuture"
-                      render={({ field }) => (
-                        <CheckboxWithLabel checked={field.value} onCheckedChange={field.onChange} label="Mandat de protection future signé" />
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="handicape"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1 space-y-0">
+                        <FormLabel>Personne handicapée</FormLabel>
+                        <FormControl>
+                          <OuiNonToggle value={!!field.value} onChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="mandatProtectionFuture"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col gap-1 space-y-0">
+                        <FormLabel>Mandat de protection future</FormLabel>
+                        <FormControl>
+                          <OuiNonToggle value={!!field.value} onChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
 
                 {/* Date du mandat sous sa case, dans la même colonne. */}
                 {form.watch('mandatProtectionFuture') && (
