@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, getNatureDisplayLabel, getAssetCategory } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -166,17 +166,21 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <Coins className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Valeur estimée</span>
+                <span className="text-sm text-muted-foreground">{isPrevoyanceDeces(asset.nature) ? 'Capital garanti' : 'Valeur estimée'}</span>
               </div>
               <div className="text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
-                {formatCurrency(asset.valeur_estimee)}
+                {formatCurrency(isPrevoyanceDeces(asset.nature) ? asset.capital_garanti : asset.valeur_estimee)}
               </div>
+              {/* Prévoyance : la valeur au patrimoine est la valeur de rachat (0 hors vie entière). */}
+              {asset.nature === NATURE_PREVOYANCE_RACHETABLE && (
+                <p className="mt-2 text-xs text-muted-foreground">Valeur de rachat : {formatCurrency(asset.valeur_estimee)}</p>
+              )}
             </div>
 
             <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Détenteur</span>
+                <span className="text-sm text-muted-foreground">{isContratSouscrit(asset.nature) ? 'Souscripteur' : 'Détenteur'}</span>
               </div>
               <div className="text-[17px] font-medium tabular-nums">
                 {formatDetenteur(asset.detenteur)}
@@ -184,7 +188,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             </div>
           </div>
 
-          <div className="p-4 rounded-[2px] border border-border">
+          {!isPrevoyanceSansRachat(asset.nature) && <div className="p-4 rounded-[2px] border border-border">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Qualification du bien</span>
@@ -223,7 +227,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                 Qualification à jour : {qualificationResult.qualification} — resauvegardez cette fiche pour actualiser les totaux, qui utilisent encore « {asset.qualification_bien} ».
               </p>
             )}
-          </div>
+          </div>}
 
           {empruntsLies.length > 0 && (
             <div className="p-4 rounded-[2px] border border-border">
@@ -336,17 +340,19 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <div>
               <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Acquisition
+                {isPrevoyanceDeces(asset.nature) ? 'Souscription' : 'Acquisition'}
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm text-muted-foreground">Date d'acquisition</span>
+                  <span className="text-sm text-muted-foreground">{isPrevoyanceDeces(asset.nature) ? 'Date de souscription' : "Date d'acquisition"}</span>
                   <p className="font-medium">{formatDate(asset.date_acquisition)}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">Valeur d'acquisition</span>
-                  <p className="font-medium">{formatCurrency(asset.valeur_acquisition)}</p>
-                </div>
+                {!isPrevoyanceDeces(asset.nature) && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Valeur d'acquisition</span>
+                    <p className="font-medium">{formatCurrency(asset.valeur_acquisition)}</p>
+                  </div>
+                )}
                 {asset.frais_acquisition && (
                   <div>
                     <span className="text-sm text-muted-foreground">Frais d'acquisition</span>
@@ -460,7 +466,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <>
               <Separator />
               <div className="space-y-3">
-                {asset.origine_actif && asset.origine_actif.length > 0 && (
+                {asset.origine_actif && asset.origine_actif.length > 0 && !isPrevoyanceDeces(asset.nature) && (
                   <div>
                     <span className="text-sm text-muted-foreground">Origine de l'actif</span>
                     <div className="flex flex-wrap gap-2 mt-1">

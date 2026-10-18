@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
-import { isEpargneAssuranceVie, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { isContratSouscrit, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
 import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -64,7 +64,15 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
   const watchedQualificationBien = form.watch('qualification_bien');
   const values = form.watch();
 
-  const isEpargneAV = isEpargneAssuranceVie(watchedNature);
+  // Contrat : souscripteur unique (pas d'indivision) ; « Le couple » exclu en prévoyance
+  // (co-souscription non modélisée), conservé ailleurs avec une alerte en Transmission.
+  const isContrat = isContratSouscrit(watchedNature);
+  const coupleExclu = isPrevoyanceDeces(watchedNature);
+  useEffect(() => {
+    if ((isContrat && watchedDetenteur === 'Indivision') || (coupleExclu && watchedDetenteur === 'Le couple')) {
+      form.setValue('detenteur', '');
+    }
+  }, [isContrat, coupleExclu, watchedDetenteur, form]);
   const qualifiePropre = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel';
   // "Le couple" n'a de sens que pour un bien commun (50/50 de droit) ou indivis
   // entre époux (quote-part) — jamais pour un bien propre/personnel (100/0
@@ -82,11 +90,11 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
   const filteredDetenteurOptions = (qualifiePropre && !coupleRequalifie
     ? detenteurOptions.filter(option => option !== 'Le couple')
     : detenteurOptions
-  ).filter(option => option !== 'Indivision');
+  ).filter(option => option !== 'Indivision' && !(coupleExclu && option === 'Le couple'));
 
   return (
     <>
-      <FormItem className="flex flex-row items-center space-x-3 space-y-0 col-span-full">
+      {!isContrat && <FormItem className="flex flex-row items-center space-x-3 space-y-0 col-span-full">
         <FormControl>
           <Checkbox
             checked={watchedDetenteur === 'Indivision'}
@@ -105,14 +113,14 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             Dans ce cas, la qualification du bien est directement "Indivision", quel que soit le régime matrimonial ou l'origine du bien.
           </FieldHelp>
         </div>
-      </FormItem>
+      </FormItem>}
 
       {watchedDetenteur !== 'Indivision' && (
         <FormField control={form.control} name="detenteur" render={({ field }) => (
           <FormItem>
-            {/* "Souscripteur" pour les 4 natures épargne/assurance-vie : vocabulaire
+            {/* "Souscripteur" pour les contrats (assurance-vie, retraite, prévoyance) : vocabulaire
                 assurantiel, même colonne `detenteur` (cf. constants/assetTypes.ts). */}
-            <FormLabel>{isEpargneAV ? 'Souscripteur' : 'Détenteur'}</FormLabel>
+            <FormLabel>{isContrat ? 'Souscripteur' : 'Détenteur'}</FormLabel>
             {qualifiePropre && !coupleRequalifie && (
               <FieldHelp>
                 "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
@@ -121,7 +129,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
                 <SelectTrigger className="bg-background border-border shadow-none" size="lg">
-                  <SelectValue placeholder={isEpargneAV ? 'Choisir un souscripteur' : 'Choisir un détenteur'} />
+                  <SelectValue placeholder={isContrat ? 'Choisir un souscripteur' : 'Choisir un détenteur'} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>

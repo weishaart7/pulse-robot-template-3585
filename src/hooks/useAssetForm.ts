@@ -8,7 +8,7 @@ import { Asset, AssetCharge } from '@/services/assetService';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
-import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 import { lirePerimetreDesClauses, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
@@ -457,6 +457,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         denomination: values.denomination || null,
         etablissement: values.etablissement || null,
         mode_detention: values.mode_detention || null,
+        // Contrat de prévoyance : souscrit, sans origine (ni achat ni libéralité).
+        origine_actif: isPrevoyanceDeces(values.nature) ? null : values.origine_actif,
         transfert_immobilier: transfertImmobilier,
         // Lien vers la fiche société : réservé aux natures « parts » ; transfert_societe
         // n'est plus qu'un reflet de ce lien (plus aucune création automatique de société).

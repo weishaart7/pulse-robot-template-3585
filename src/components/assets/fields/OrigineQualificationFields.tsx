@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -260,7 +260,8 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
   const watchedQualificationAuto = form.watch('qualification_auto');
   const watchedQualificationBien = form.watch('qualification_bien');
 
-  if (NATURES_WITHOUT_ACQUISITION.includes(watchedNature)) return null;
+  // Prévoyance sans valeur de rachat : qualification sans objet (rien à partager entre époux).
+  if (NATURES_WITHOUT_ACQUISITION.includes(watchedNature) || isPrevoyanceSansRachat(watchedNature)) return null;
 
   return (
     <FormField control={form.control} name="qualification_bien" render={({ field }) => (

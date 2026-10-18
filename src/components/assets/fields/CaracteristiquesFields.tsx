@@ -33,6 +33,7 @@ import {
   VALEURS_MOBILIERES_NATURES_CHAMPS,
   QUALIFICATIONS_NFT,
   isEpargneAssuranceVie,
+  isPrevoyanceDeces,
   isNatureRurale,
   REGIME_RURAL_IMPOSE,
   TYPES_GROUPEMENT_FONCIER,
@@ -1290,7 +1291,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {!isEpargneAV && (
+      {!isEpargneAV && !isPrevoyanceDeces(watchedNature) && (
         <FormField
           control={form.control}
           name="attachement_emotionnel"

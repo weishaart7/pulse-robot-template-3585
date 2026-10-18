@@ -454,6 +454,17 @@ export const NATURES_EPARGNE_ASSURANCE_VIE = ASSET_CATEGORIES['épargne et assur
 export const isEpargneAssuranceVie = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_EPARGNE_ASSURANCE_VIE as readonly string[]).includes(nature);
 
+// Contrats d'assurance et de retraite (assurance-vie, capitalisation, épargne retraite,
+// prévoyance) : un souscripteur, jamais d'indivision avec un tiers ; libellé « Souscripteur ».
+export const isContratSouscrit = (nature: string | null | undefined): boolean =>
+  !!nature && (['épargne et assurance-vie', 'épargne retraite', 'prévoyance'] as const)
+    .some((c) => (ASSET_CATEGORIES[c] as readonly string[]).includes(nature));
+
+// Prévoyance sans valeur de rachat (temporaire décès, prévoyance individuelle) : rien à
+// partager entre époux, la qualification commun / propre est sans objet (art. L132-16 C. ass.).
+export const isPrevoyanceSansRachat = (nature: string | null | undefined): boolean =>
+  isPrevoyanceDeces(nature) && nature !== NATURE_PREVOYANCE_RACHETABLE;
+
 // Natures "parts foncières/forestières" de la famille "actifs immobiliers" non rattachables à
 // une fiche du module Sociétés (cf. NATURES_PARTS_SOCIETE dans societeTransfer.ts, qui ne
 // contient que "Parts de SCI" parmi les natures immobilières) : elles reçoivent à la place, dans AssetForm.tsx, un établissement

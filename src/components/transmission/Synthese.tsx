@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isDetenteurCommon } from '@/lib/patrimoine/utils';
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { PanelTitle, SummaryRow, Chip } from '@/components/layout/workspace-panel';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -74,6 +75,7 @@ export const Synthese = () => {
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
   const [hasDeceasedAVBeneficiaire, setHasDeceasedAVBeneficiaire] = useState(false);
   const [hasPERConjointNonReintegre, setHasPERConjointNonReintegre] = useState(false);
+  const [contratsSouscripteurCouple, setContratsSouscripteurCouple] = useState<string[]>([]);
   const [hasAVContracts, setHasAVContracts] = useState(false);
   const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
   // Distingue la cause du blocage pour orienter vers le bon écran : un bien
@@ -142,6 +144,13 @@ export const Synthese = () => {
       const avAssets = (assets || []).filter(a => hasDonneesContratAV(a));
       const totalAV = avAssets.reduce((sum, a) => sum + getCapitalDecesContrat(a), 0);
       setHasAVContracts(avAssets.length > 0);
+      // Contrat au nom du couple ou en indivision : le calcul ne connaît qu'un souscripteur et
+      // le traite comme celui de l'utilisateur — signalé, jamais corrigé en silence.
+      setContratsSouscripteurCouple(
+        avAssets
+          .filter(a => isDetenteurCommon(a.detenteur || undefined) || (a.detenteur || '').toLowerCase() === 'indivision' || a.qualification_bien === 'Indivision')
+          .map(a => a.denomination || a.nature)
+      );
 
       // Récupérer le détail des contrats AV (clause bénéficiaire structurée +
       // opérations réelles) pour alimenter le vrai moteur fiscal 990I/757B.
@@ -541,6 +550,17 @@ export const Synthese = () => {
             <FieldHelp>
               Art. L. 132-13 C. assur. : critère d'appréciation multicritère (âge, situation patrimoniale et
               familiale, utilité du contrat) laissé à votre analyse, non automatisé dans cet outil.
+            </FieldHelp>
+          </AlertDescription>
+        </Alert>
+      )}
+      {contratsSouscripteurCouple.length > 0 && (
+        <Alert className="bg-[var(--surface-sunken)] border-[var(--kt-border)]">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Souscripteur à préciser : {contratsSouscripteurCouple.map(n => `« ${n} »`).join(', ')}, au nom du couple, est traité comme un contrat de l'utilisateur.
+            <FieldHelp>
+              Le calcul ne gère pas la co-souscription : tout le capital est rattaché au décès de l'utilisateur. Indiquez le souscripteur réel dans la fiche du contrat si ce n'est pas le cas.
             </FieldHelp>
           </AlertDescription>
         </Alert>

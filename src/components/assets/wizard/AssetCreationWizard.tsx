@@ -165,6 +165,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
         return (
           <WizardStepCharges
             charges={charges}
+            nature={form.watch('nature')}
             onAdd={() => setShowChargeForm(true)}
             onEdit={handleChargeEdit}
             onDelete={handleChargeDelete}

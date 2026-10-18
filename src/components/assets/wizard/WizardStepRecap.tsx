@@ -11,7 +11,7 @@ import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
-import { NATURE_PREVOYANCE_RACHETABLE, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { NATURE_PREVOYANCE_RACHETABLE, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 
 interface WizardStepRecapProps {
   form: UseFormReturn<AssetFormValues>;
@@ -140,7 +140,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
             value={indivisaires.length > 0 ? indivisaires.map((i) => formatIndivisaire(i, familyMembers)).join(', ') : '—'}
           />
         )}
-        {values.qualification_bien && <Row label="Qualification" value={values.qualification_bien} />}
+        {values.qualification_bien && !isPrevoyanceSansRachat(values.nature) && <Row label="Qualification" value={values.qualification_bien} />}
         {values.detenteur === 'Le couple' && familyData.hasPartner && (
           <Row
             label="Quote-part"
