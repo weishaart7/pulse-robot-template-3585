@@ -120,3 +120,137 @@ describe('computePVIRegime — cession simulée', () => {
     expect(avec!.note).toContain('Amortissements déduits réintégrés');
   });
 });
+
+describe('computePVIRegime — natures immobilières (référentiel 2026-10-18)', () => {
+  it('parts (SCPI, SCI, groupements) : aucun forfait (art. 150 UB)', () => {
+    for (const nature of ['Parts de SCPI', 'Parts de SCI', 'Parts de groupements fonciers']) {
+      const r = computePVIRegime({ ...base, nature, dateAcquisition: ilYa(10), acquisitionOnereuse: true });
+      expect(pvFiscale(r)).toBe(190000);
+    }
+  });
+
+  it('prix de cession ≤ 15 000 € : exonération, sauf pour les parts', () => {
+    const parking = computePVIRegime({ nature: 'Parking / Garage / Box', plusValue: 5000, dateAcquisition: ilYa(3), prixCession: 14000 });
+    expect(parking?.total).toBe(0);
+    const scpi = computePVIRegime({ nature: 'Parts de SCPI', plusValue: 5000, dateAcquisition: ilYa(3), prixCession: 14000 });
+    expect(scpi?.total).toBeGreaterThan(0);
+  });
+
+  it('terrain à bâtir : pas de surtaxe', () => {
+    const args = { nature: 'Terrains', plusValue: 300000, dateAcquisition: ilYa(3) };
+    const nonConstructible = computePVIRegime(args)!;
+    const constructible = computePVIRegime({ ...args, terrainConstructible: true })!;
+    expect(nonConstructible.total! - constructible.total!).toBeCloseTo(0.06 * 300000, 0);
+  });
+
+  it('terrains agricoles et bois & forêts : régime général', () => {
+    expect(computePVIRegime({ nature: 'Terrains agricoles', plusValue: 10000, dateAcquisition: ilYa(3) })?.tone).toBe('pfu');
+    expect(computePVIRegime({ nature: 'Bois & forêts', plusValue: 10000, dateAcquisition: ilYa(3) })?.tone).toBe('pfu');
+  });
+
+  it('bois & forêts : IR réduit de 10 €/ha/an', () => {
+    const sans = computePVIRegime({ nature: 'Bois & forêts', plusValue: 100000, dateAcquisition: ilYa(3) })!;
+    const avec = computePVIRegime({ nature: 'Bois & forêts', plusValue: 100000, dateAcquisition: ilYa(3), surfaceBoiseeHa: 20.7 })!;
+    expect(sans.ir! - avec.ir!).toBe(20 * 3 * 10);
+    expect(avec.ps).toBe(sans.ps);
+  });
+
+  it('maison mobile non fixée : bien meuble (5 %/an après 2 ans, exonérée ≤ 5 000 €)', () => {
+    const r = computePVIRegime({ nature: 'Maison mobile (péniche, etc.)', plusValue: 10000, dateAcquisition: ilYa(4), prixCession: 80000 })!;
+    expect(r.total).toBeCloseTo(10000 * 0.9 * 0.362, 6);
+    expect(computePVIRegime({ nature: 'Maison mobile (péniche, etc.)', plusValue: 1000, dateAcquisition: ilYa(4), prixCession: 4000 })?.total).toBe(0);
+    const fixee = computePVIRegime({ nature: 'Maison mobile (péniche, etc.)', plusValue: 10000, dateAcquisition: ilYa(4), prixCession: 80000, fixeAuSol: true })!;
+    expect(fixee.total).toBeCloseTo(10000 * 0.362, 6);
+  });
+
+  it('LMP : régime professionnel informatif', () => {
+    expect(computePVIRegime({ nature: 'Immeubles locatifs (LMP)', plusValue: 10000, dateAcquisition: ilYa(3) })?.tone).toBe('informatif');
+  });
+});
+
+describe('resolveAssetFiscalRegime — parts de SCI selon le régime de la société', () => {
+  const args = { nature: 'Parts de SCI', plusValue: 10000, valeurEstimee: 100000, dateAcquisition: ilYa(10) };
+  it('IS : PFU 31,4 % sans abattement', () => {
+    expect(resolveAssetFiscalRegime({ ...args, regimeSociete: 'Impôt sur les sociétés' }).total).toBeCloseTo(3140, 6);
+  });
+  it('IR : plus-value immobilière avec abattements', () => {
+    expect(resolveAssetFiscalRegime({ ...args, regimeSociete: 'Impôt sur le revenu' }).irDetail).toBe('Abattement 30%');
+  });
+  it('régime inconnu : non déterminé', () => {
+    expect(resolveAssetFiscalRegime(args).tone).toBe('non_determine');
+  });
+});
+
+describe('computeFiscalRegime — placements financiers (2026-10-18)', () => {
+  it('FIP / FCPI : PFU avant 5 ans, PS seuls après', () => {
+    expect(computeFiscalRegime({ nature: 'Parts de FCPI', plusValue: 1000, valeurEstimee: 5000, dateAcquisition: ilYa(3) }).total).toBeCloseTo(314, 6);
+    expect(computeFiscalRegime({ nature: 'Parts de FIP', plusValue: 1000, valeurEstimee: 5000, dateAcquisition: ilYa(6) }).total).toBeCloseTo(186, 6);
+  });
+
+  it('structurés, dérivés, club deals, SPV, SOFICA, autres valeurs mobilières : PFU', () => {
+    for (const nature of ['Produits structurés', 'Autres produits dérivés (Swap, Warrants, CFD...)', 'Club deals', "SPV d'investissement (structures ad hoc)", 'Parts de SOFICA', 'Autres valeurs mobilières']) {
+      expect(computeFiscalRegime({ nature, plusValue: 1000, valeurEstimee: 5000 }).total).toBeCloseTo(314, 6);
+    }
+  });
+
+  it('NFT et autres placements divers : non déterminé', () => {
+    expect(computeFiscalRegime({ nature: 'Objets numériques (NFT, etc.)', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('non_determine');
+    expect(computeFiscalRegime({ nature: 'Autres placements divers', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('non_determine');
+  });
+
+  it('métaux précieux : exonérés si prix ≤ 5 000 €', () => {
+    expect(computeFiscalRegime({ nature: 'Métaux précieux (argent, platine)', plusValue: 1000, valeurEstimee: 4500 }).total).toBe(0);
+    expect(computeFiscalRegime({ nature: 'Métaux précieux (argent, platine)', plusValue: 1000, valeurEstimee: 6000 }).tone).toBe('choix');
+  });
+});
+
+describe('computeFiscalRegime — épargne salariale', () => {
+  it('PEE / PEI : IR exonéré, PS 18,6 %', () => {
+    for (const nature of ['PEE', 'PEI']) {
+      const r = computeFiscalRegime({ nature, plusValue: 1000, valeurEstimee: 5000 });
+      expect(r.ir).toBe(0);
+      expect(r.total).toBeCloseTo(186, 6);
+    }
+  });
+});
+
+describe('computeCorporelRegime — actifs corporels', () => {
+  it('meubles meublants et véhicules : exonérés', () => {
+    expect(resolveAssetFiscalRegime({ nature: 'Véhicules motorisés', plusValue: 3000, valeurEstimee: 30000 }).total).toBe(0);
+  });
+
+  it('objets précieux : exonérés ≤ 5 000 €, sinon choix taxe 6,5 % / plus-value réelle', () => {
+    expect(resolveAssetFiscalRegime({ nature: 'Montres', plusValue: 100, valeurEstimee: 4500 }).total).toBe(0);
+    const r = resolveAssetFiscalRegime({ nature: 'Montres', plusValue: 2000, valeurEstimee: 10000, dateAcquisition: ilYa(4) });
+    expect(r.tone).toBe('choix');
+    expect(r.alternatives?.[0].total).toBeCloseTo(650, 6);
+    expect(r.alternatives?.[1].total).toBeCloseTo(2000 * 0.9 * 0.362, 6);
+  });
+
+  it('biens meubles ordinaires (vins, sacs, matériel) : 5 %/an après 2 ans', () => {
+    const r = resolveAssetFiscalRegime({ nature: "Vins & spiritueux d'investissement", plusValue: 4000, valeurEstimee: 12000, dateAcquisition: ilYa(4) });
+    expect(r.total).toBeCloseTo(4000 * 0.9 * 0.362, 6);
+    expect(resolveAssetFiscalRegime({ nature: 'Sacs et accessoires de luxe', plusValue: 500, valeurEstimee: 3000, dateAcquisition: ilYa(4) }).total).toBe(0);
+  });
+});
+
+describe('computeFiscalRegime — actifs professionnels', () => {
+  it('droits sociaux : PFU, abattement de 500 000 € au départ à la retraite sur l\'IR seul', () => {
+    const sans = computeFiscalRegime({ nature: 'Droits sociaux', plusValue: 800000, valeurEstimee: 1000000 });
+    expect(sans.total).toBeCloseTo(800000 * 0.314, 6);
+    const retraite = computeFiscalRegime({ nature: 'Parts de holding', plusValue: 800000, valeurEstimee: 1000000, cessionDepartRetraite: true });
+    expect(retraite.ir).toBeCloseTo(300000 * 0.128, 6);
+    expect(retraite.ps).toBeCloseTo(800000 * 0.186, 6);
+  });
+
+  it('entreprise individuelle : informatif', () => {
+    expect(computeFiscalRegime({ nature: 'Entreprise individuelle', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('informatif');
+  });
+});
+
+describe('computeFiscalRegime — autres', () => {
+  it("droits d'auteur : informatif ; royalties : non déterminé", () => {
+    expect(computeFiscalRegime({ nature: 'Droits de propriété littéraire ou artistique', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('informatif');
+    expect(computeFiscalRegime({ nature: 'Droits à royalties', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('non_determine');
+  });
+});

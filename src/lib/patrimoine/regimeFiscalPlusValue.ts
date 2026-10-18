@@ -66,7 +66,47 @@ const NATURES_PFU_GENERIQUE = [
   'Compte-titres (CTO)',
   'Matières premières (pétrole, blé…)',
   'Contrat à terme',
+  // Ajoutées le 2026-10-18 (revue des placements financiers) : gains sur titres et
+  // instruments financiers à terme, PFU (art. 150-0 A et 150 ter CGI).
+  'Produits structurés',
+  'Autres produits dérivés (Swap, Warrants, CFD...)',
+  'Club deals',
+  "SPV d'investissement (structures ad hoc)",
+  'Parts de SOFICA',
+  'Autres valeurs mobilières',
 ];
+
+// Notes propres à certaines natures du PFU générique (conditions non saisies).
+const NOTES_PFU: Record<string, string> = {
+  'Compte-titres (CTO)': "Titres acquis avant le 01/01/2018 : l'option pour le barème ouvre droit aux abattements pour durée de détention (50 % de 2 à 8 ans, 65 % au-delà ; régime renforcé PME jusqu'à 85 %), non calculés ici.",
+  'Club deals': "Souscription au capital d'une PME ayant ouvert droit à la réduction IR-PME : reprise en cas de cession avant 5 ans. Titres reçus en apport à une holding : report d'imposition (art. 150-0 B ter) non modélisé.",
+  "SPV d'investissement (structures ad hoc)": "Souscription au capital d'une PME ayant ouvert droit à la réduction IR-PME : reprise en cas de cession avant 5 ans.",
+  'Parts de SOFICA': "Aucune exonération de la plus-value. Cession avant 5 ans : reprise de la réduction d'impôt obtenue à la souscription, non comptée ici.",
+  'Autres valeurs mobilières': 'PFU retenu par défaut pour des titres détenus en direct.',
+};
+
+// --- Fonds fiscaux de capital-investissement (FIP, FIP Corse, FCPI) ---
+// Plus-values de cession exonérées d'IR après 5 ans de détention (art. 150-0 A III 1 CGI),
+// prélèvements sociaux dus ; avant 5 ans, PFU et reprise de la réduction d'impôt.
+const NATURES_FONDS_FISCAUX = ['Parts de FIP', 'Parts de FIP Corse', 'Parts de FCPI'];
+
+// --- Droits sociaux, parts de holding (art. 150-0 A CGI) ---
+// PFU 31,4 % ; cession par un dirigeant partant à la retraite : abattement fixe de 500 000 €
+// sur l'assiette de l'IR (art. 150-0 D ter), prélèvements sociaux sur toute la plus-value.
+const NATURES_DROITS_SOCIAUX = ['Droits sociaux', 'Parts de holding'];
+const ABATTEMENT_DEPART_RETRAITE = 500000;
+
+// --- Entreprise individuelle, autres biens professionnels : plus-values professionnelles ---
+const NATURES_PV_PROFESSIONNELLES = ['Entreprise individuelle', 'Autres biens professionnels'];
+
+// --- Droits de propriété littéraire ou artistique ---
+// Revenus de l'auteur (traitements et salaires ou BNC) : pas de plus-value.
+const NATURE_DROITS_AUTEUR = 'Droits de propriété littéraire ou artistique';
+
+// --- Épargne salariale (PEE, PEI) ---
+// Gains exonérés d'IR à l'échéance comme en cas de déblocage anticipé légal ; prélèvements
+// sociaux seuls (18,6 % : épargne salariale concernée par la hausse de CSG de la LFSS 2026).
+const NATURES_EPARGNE_SALARIALE_PV = ['PEE', 'PEI'];
 
 // --- Groupe 2 : PEA / PEA-PME ---
 const NATURES_PEA = ['PEA', 'PEA-PME'];
@@ -88,12 +128,11 @@ const NATURE_PRIVATE_EQUITY = 'Fonds de private equity (LBO, growth, venture)';
 
 // --- Groupe 8 : Or et métaux précieux ---
 const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
+// Cessions de métaux précieux dont le prix n'excède pas 5 000 € : exonérées (art. 150 VJ CGI).
+const SEUIL_EXONERATION_METAUX = 5000;
 
-// Natures qui redescendent en "Non déterminé" alors qu'elles étaient PFU dans
-// l'ancien système (hors périmètre des 8 règles demandées ; à ne pas deviner) :
-// "Parts de FIP", "Parts de FIP Corse", "Parts de FCPI", "Club deals",
-// "SPV d'investissement (structures ad hoc)", "Produits structurés",
-// "Autres produits dérivés (Swap, Warrants, CFD...)".
+// Restent "Non déterminé" (mis de côté le 2026-10-18, cf. docs/patrimoine.md) :
+// "Objets numériques (NFT, etc.)", "Autres placements divers".
 //
 // Natures qui redescendent en "Non déterminé" alors qu'elles étaient
 // "Exonéré" dans l'ancien système : "Livret A", "Livret de développement
@@ -101,9 +140,8 @@ const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
 // "Livret Jeune". En pratique ces livrets n'ont pas de valeur d'acquisition
 // suivie et n'apparaissent quasiment jamais dans ce tableau.
 //
-// "Droits à royalties" (nouvelle nature) : classée "Non déterminé" au même
-// titre que les groupes ci-dessus, faute de régime fiscal propre codifié
-// pour cette phase. La plus-value brute reste affichée normalement dans
+// "Droits à royalties" : "Non déterminé", mis de côté le 2026-10-18 (le régime
+// dépend de la forme de l'actif, cf. docs/patrimoine.md). La plus-value brute reste affichée normalement dans
 // l'UI, seule la fiscalité n'est pas calculée.
 
 // --- CTO multi-actifs : résolution de la nature effective pour le régime fiscal ---
@@ -147,6 +185,8 @@ export interface ComputeFiscalRegimeInput {
   plusValue: number;
   valeurEstimee: number;
   dateAcquisition?: string;
+  // Droits sociaux / parts de holding : cession au départ à la retraite du dirigeant.
+  cessionDepartRetraite?: boolean;
 }
 
 export const computeFiscalRegime = ({
@@ -154,15 +194,58 @@ export const computeFiscalRegime = ({
   plusValue,
   valeurEstimee,
   dateAcquisition,
+  cessionDepartRetraite,
 }: ComputeFiscalRegimeInput): FiscalRegimeResult => {
+  if (NATURES_DROITS_SOCIAUX.includes(nature)) {
+    const abattement = cessionDepartRetraite ? Math.min(Math.max(plusValue, 0), ABATTEMENT_DEPART_RETRAITE) : 0;
+    const ir = (plusValue - abattement) * PFU_IR;
+    const notes = [
+      cessionDepartRetraite
+        ? `Départ à la retraite du dirigeant : abattement fixe de ${abattement.toLocaleString('fr-FR')} € sur l'IR (art. 150-0 D ter, conditions de fonctions, de détention et de cessation d'activité dans les 2 ans) ; prélèvements sociaux sur toute la plus-value.`
+        : "Cession par un dirigeant partant à la retraite : abattement fixe de 500 000 € sur l'IR (art. 150-0 D ter), à indiquer sur l'actif.",
+      "Option barème : abattements pour durée de détention sur les titres acquis avant 2018 (50 % / 65 %, jusqu'à 85 % pour une jeune PME), non calculés.",
+      "Apport préalable à une holding : report d'imposition (art. 150-0 B ter) ; donation avant cession : plus-value purgée.",
+      "Société de personnes (IR) dans laquelle l'associé exerce son activité : plus-values professionnelles.",
+    ];
+    return {
+      badge: cessionDepartRetraite ? 'PFU 31,4% — départ retraite' : 'PFU 31,4%',
+      tone: 'pfu',
+      ir,
+      ps: plusValue * PFU_PS,
+      total: ir + plusValue * PFU_PS,
+      irDetail: abattement > 0 ? `Abattement ${abattement.toLocaleString('fr-FR')} €` : undefined,
+      note: notes.join(' '),
+    };
+  }
+  if (nature === NATURE_DROITS_AUTEUR) {
+    return {
+      badge: "Revenus d'auteur",
+      tone: 'informatif',
+      ir: null,
+      ps: null,
+      total: null,
+      note: "Droits perçus ou cédés par l'auteur : imposés comme des revenus (traitements et salaires ou bénéfices non commerciaux), pas comme une plus-value.",
+    };
+  }
+  if (NATURES_PV_PROFESSIONNELLES.includes(nature)) {
+    return {
+      badge: 'Plus-values professionnelles',
+      tone: 'informatif',
+      ir: null,
+      ps: null,
+      total: null,
+      note: "Plus-values professionnelles : court terme au barème (et cotisations sociales), long terme à 12,8 % + 17,2 %. Exonérations possibles : selon les recettes après 5 ans d'activité (art. 151 septies), cession de l'entreprise d'une valeur jusqu'à 500 000 € (totale) ou 1 000 000 € (partielle, art. 238 quindecies), départ à la retraite (art. 151 septies A). Non calculé : chiffre d'affaires, activité, ancienneté et ventilation de l'actif non saisis.",
+    };
+  }
   if (NATURES_PFU_GENERIQUE.includes(nature)) {
+    const base = "Option pour le barème progressif de l'IR possible sur demande expresse (non calculée ici).";
     return {
       badge: 'PFU 31,4%',
       tone: 'pfu',
       ir: plusValue * PFU_IR,
       ps: plusValue * PFU_PS,
       total: plusValue * PFU_RATE,
-      note: "Option pour le barème progressif de l'IR possible sur demande expresse (non calculée ici).",
+      note: NOTES_PFU[nature] ? `${base} ${NOTES_PFU[nature]}` : base,
     };
   }
 
@@ -182,6 +265,16 @@ export const computeFiscalRegime = ({
     };
   }
 
+  if (NATURES_EPARGNE_SALARIALE_PV.includes(nature)) {
+    return {
+      badge: 'Épargne salariale — exonérée d\'IR',
+      tone: 'exonere_partiel',
+      ir: 0,
+      ps: plusValue * PFU_PS,
+      total: plusValue * PFU_PS,
+      note: "Gains exonérés d'impôt sur le revenu, à l'échéance comme en cas de déblocage anticipé ; prélèvements sociaux (18,6 %) seuls dus. Gain = valeur − versements (abondement compris, déjà soumis à la CSG/CRDS à l'entrée). Des taux historiques de prélèvements sociaux peuvent s'appliquer aux gains anciens : non modélisés.",
+    };
+  }
   if (NATURES_PEA.includes(nature)) {
     const years = getHoldingYears(dateAcquisition);
     if (years === null) {
@@ -214,6 +307,37 @@ export const computeFiscalRegime = ({
     };
   }
 
+  if (NATURES_FONDS_FISCAUX.includes(nature)) {
+    const years = getHoldingYears(dateAcquisition);
+    if (years === null) {
+      return {
+        badge: 'FIP/FCPI — durée inconnue',
+        tone: 'non_determine',
+        ir: null,
+        ps: null,
+        total: null,
+        note: 'Date de souscription non renseignée : impossible de déterminer si le seuil de 5 ans est atteint.',
+      };
+    }
+    if (years < 5) {
+      return {
+        badge: 'FIP/FCPI < 5 ans',
+        tone: 'pfu',
+        ir: plusValue * PFU_IR,
+        ps: plusValue * PFU_PS,
+        total: plusValue * PFU_RATE,
+        note: "Cession avant 5 ans : plus-value au PFU et reprise de la réduction d'impôt obtenue à la souscription (non comptée ici), sauf invalidité, décès ou licenciement.",
+      };
+    }
+    return {
+      badge: 'FIP/FCPI ≥ 5 ans',
+      tone: 'exonere_partiel',
+      ir: 0,
+      ps: plusValue * PFU_PS,
+      total: plusValue * PFU_PS,
+      note: "Exonéré d'IR après 5 ans de détention ; prélèvements sociaux (18,6%) restant dus.",
+    };
+  }
   if (nature === NATURE_PRIVATE_EQUITY) {
     const years = getHoldingYears(dateAcquisition);
     if (years === null) {
@@ -242,7 +366,7 @@ export const computeFiscalRegime = ({
       ir: 0,
       ps: plusValue * PFU_PS,
       total: plusValue * PFU_PS,
-      note: "Exonéré d'IR après 5 ans de détention depuis la souscription ; prélèvements sociaux (18,6%) restant dus.",
+      note: "Exonéré d'IR après 5 ans de détention depuis la souscription ; prélèvements sociaux (18,6%) restant dus. Suppose un fonds fiscal (FCPR fiscal / FPCI) avec engagement de conservation de 5 ans et réinvestissement des distributions : un fonds non fiscal reste au PFU.",
     };
   }
 
@@ -264,7 +388,7 @@ export const computeFiscalRegime = ({
       ir: null,
       ps: null,
       total: null,
-      note: 'Gain de levée : régime traitements et salaires (barème progressif + prélèvements sociaux). Plus-value de cession au-delà : PFU 31,4%. Décomposition non calculée ici : le prix/valeur de levée n\'est pas un champ distinct dans l\'application.',
+      note: "Gain de levée (valeur des titres à la levée − prix d'exercice) : régime traitements et salaires (barème progressif + prélèvements sociaux). Plus-value de cession au-delà : PFU 31,4%. Décomposition non calculée ici : la valeur des titres au jour de la levée n'est pas saisie (seul le prix d'exercice l'est).",
     };
   }
 
@@ -279,6 +403,16 @@ export const computeFiscalRegime = ({
     };
   }
 
+  if (NATURES_OR.includes(nature) && valeurEstimee > 0 && valeurEstimee <= SEUIL_EXONERATION_METAUX) {
+    return {
+      badge: 'Métaux précieux — prix ≤ 5 000 €',
+      tone: 'exonere_total',
+      ir: 0,
+      ps: 0,
+      total: 0,
+      note: 'Cession exonérée : prix inférieur ou égal à 5 000 € (art. 150 VJ CGI).',
+    };
+  }
   if (NATURES_OR.includes(nature)) {
     const totalForfaitaire = valeurEstimee * 0.115;
     const alternatives: FiscalAlternative[] = [

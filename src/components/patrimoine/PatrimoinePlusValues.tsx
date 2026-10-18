@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ShieldCheck, BadgePercent, AlertTriangle, Info } from 'lucide-react';
 import { SectionHeader } from '@/components/family/SectionHeader';
@@ -11,7 +11,9 @@ import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useF
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { getCategoryColor } from '@/lib/patrimoine/utils';
 import { getNatureDisplayLabel } from '@/constants/assetTypes';
-import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
+import { resolveAssetFiscalRegime, caracteristiquesFiscalesActif } from '@/lib/patrimoine/assetFiscalRegime';
+import { useSocietes } from '@/hooks/useSocietes';
+import { useRachatsAssuranceVie } from '@/hooks/useRachatsAssuranceVie';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 
 interface PatrimoinePlusValuesProps {
@@ -195,11 +197,21 @@ const FiscalContent = ({
   assets: Asset[];
   formatCurrency: (v: number) => string;
 }) => {
+  const { societes } = useSocietes();
+  const regimesSocietes = useMemo(
+    () => Object.fromEntries(societes.map((s) => [s.id, s.regime_fiscal])),
+    [societes]
+  );
+  const plusValuesParActif = useMemo(
+    () => Object.fromEntries(assetsWithPlusValue.map(a => [a.id, a.plusValue])),
+    [assetsWithPlusValue]
+  );
+  const rachatsAV = useRachatsAssuranceVie(assets, plusValuesParActif);
   const allAssetsWithRegime = assetsWithPlusValue.filter(a => a.plusValue > 0).map(a => {
     const fullAsset = assets.find(asset => asset.id === a.id);
     return {
       ...a,
-      regime: resolveAssetFiscalRegime({
+      regime: rachatsAV[a.id] ?? resolveAssetFiscalRegime({
         nature: a.nature,
         ctoMultiActifs: fullAsset?.cto_multi_actifs,
         ctoNatureSousJacent: fullAsset?.cto_nature_sous_jacent,
@@ -210,6 +222,7 @@ const FiscalContent = ({
         fraisAcquisition: a.fraisAcquisition,
         origineActif: a.origineActif,
         partsCedants: a.partsCedants,
+        ...caracteristiquesFiscalesActif(fullAsset, regimesSocietes),
       }),
     };
   });

@@ -100,6 +100,12 @@ export const assetSchema = z.object({
   regime_exoneration_rural: z.enum(['forestier', 'agricole', 'aucun']).optional(),
   type_groupement: z.enum(['GFA', 'GAF', 'GFV', 'GFR', 'GFF', 'GFI']).optional(),
   conditions_exoneration_rural: z.boolean().optional(),
+  fraction_eligible_rural: z.number().finite().min(0).max(100).optional(),
+  // Caractéristiques fiscales immobilières (plus-values, cf. regimeFiscalPVI.ts).
+  terrain_constructible: z.boolean().optional(),
+  residence_services: z.boolean().optional(),
+  surface_boisee_ha: z.number().finite().nonnegative().optional(),
+  fixe_au_sol: z.boolean().optional(),
   // Biens professionnels d'une entreprise individuelle (cf. NATURES_787C).
   conditions_787c: z.boolean().optional(),
   // Bijoux, objets d'art, collections (cf. NATURES_PLANCHER_ASSURANCE).
@@ -129,6 +135,8 @@ export const assetSchema = z.object({
   capital_garanti: z.number().finite().nonnegative().optional(),
   beneficiaire_designe: z.string().optional(),
   mode_sortie: z.string().optional(),
+  versements_deduits_pct: z.number().finite().min(0).max(100).optional(),
+  cession_depart_retraite: z.boolean().optional(),
   // Champs additionnels "épargne salariale" (PEE/PEI) — cf. NATURES_EPARGNE_SALARIALE.
   abondement_employeur: z.number().finite().nonnegative().optional(),
   date_disponibilite: z.date().optional(),

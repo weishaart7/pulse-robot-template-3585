@@ -22,7 +22,9 @@ import { assetDemembrementService, AssetDemembrement } from '@/services/assetDem
 import { AssetDetailsDialog } from './AssetDetailsDialog';
 import { formatCurrency, getCategoryColor, mapDetenteurToDisplay } from '@/lib/patrimoine/utils';
 import { computePlusValueActif } from '@/lib/patrimoine/plusValueActif';
-import { resolveAssetFiscalRegime } from '@/lib/patrimoine/assetFiscalRegime';
+import { resolveAssetFiscalRegime, caracteristiquesFiscalesActif } from '@/lib/patrimoine/assetFiscalRegime';
+import { useSocietes } from '@/hooks/useSocietes';
+import { useRachatsAssuranceVie } from '@/hooks/useRachatsAssuranceVie';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 
 const libelleCategorie = (category: string) => category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
@@ -167,6 +169,23 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
     return mapDetenteurToDisplay(detenteur, familyInfo);
   };
 
+  const { societes } = useSocietes();
+  const regimesSocietes = useMemo(
+    () => Object.fromEntries(societes.map((s) => [s.id, s.regime_fiscal])),
+    [societes]
+  );
+
+  // Contrats d'assurance-vie / capitalisation : régime de rachat calculé pour tout le foyer.
+  const plusValuesAV = useMemo(() => {
+    const map: Record<string, number> = {};
+    assets.filter(a => a.id && (getAssetCategory(a.nature) === 'épargne et assurance-vie' || a.nature === 'Contrat article 82' || a.nature === 'Vie entière')).forEach(a => {
+      const pv = computePlusValueActif(a, demembrementsByAsset[a.id!] || [], demembrementCtx);
+      if (pv) map[a.id!] = pv.plusValue;
+    });
+    return map;
+  }, [assets, demembrementsByAsset, demembrementCtx]);
+  const rachatsAV = useRachatsAssuranceVie(assets, plusValuesAV);
+
   // Calculate plus-value for display
   const getPlusValueDisplay = (asset: Asset) => {
     // No plus-value for liquid assets
@@ -181,13 +200,14 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
     if (!pv) return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     const { plusValue } = pv;
 
-    const regime = resolveAssetFiscalRegime({
+    const regime = (asset.id && rachatsAV[asset.id]) || resolveAssetFiscalRegime({
       nature: asset.nature,
       ctoMultiActifs: asset.cto_multi_actifs,
       ctoNatureSousJacent: asset.cto_nature_sous_jacent,
       plusValue,
       valeurEstimee: pv.valeurEstimee,
       dateAcquisition: asset.date_acquisition,
+      ...caracteristiquesFiscalesActif(asset, regimesSocietes),
     });
     const regimeNonDetermine = regime.tone === 'non_determine';
 

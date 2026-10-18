@@ -113,7 +113,7 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
   const avAssetIds = avAssets.map(a => a.id);
   const [avDetailsRes, avOperationsRes] = avAssetIds.length > 0
     ? await Promise.all([
-        supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds, avance_en_cours').in('asset_id', avAssetIds),
+        supabase.from('av_contract_details').select('asset_id, clause_beneficiaire_structuree, origine_fonds, avance_en_cours, part_unites_compte').in('asset_id', avAssetIds),
         supabase.from('av_operations').select('asset_id, type_operation, montant, date_operation').in('asset_id', avAssetIds)
       ])
     : [{ data: [], error: null }, { data: [], error: null }];
@@ -153,6 +153,7 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
     detenteur: a.detenteur,
     origineFonds: avOrigineFondsByAsset.get(a.id) || null,
     avanceEnCours: (avDetailsRes.data || []).find((d: { asset_id: string; avance_en_cours?: number | null }) => d.asset_id === a.id)?.avance_en_cours ?? null,
+    partUniteCompte: (avDetailsRes.data || []).find((d: { asset_id: string; part_unites_compte?: number | null }) => d.asset_id === a.id)?.part_unites_compte ?? null,
     operations: avOperationsByAsset.get(a.id) || [],
     clauseBeneficiaireStructuree: avClauseByAsset.get(a.id) || null,
     nature: a.nature,

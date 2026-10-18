@@ -37,6 +37,7 @@ import {
   REGIME_RURAL_IMPOSE,
   TYPES_GROUPEMENT_FONCIER,
   NATURE_GROUPEMENT_FONCIER,
+  NATURE_SEF,
 } from '@/constants/assetTypes';
 import { NATURES_LIQUIDITES_FR } from '@/schemas/assetSchema';
 import { NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
@@ -107,6 +108,12 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const isAssuranceVie = isAssuranceVieHorsSuccession(watchedNature);
   const regimeRuralImpose = REGIME_RURAL_IMPOSE[watchedNature];
   const watchedRegimeRural = form.watch('regime_exoneration_rural');
+  const watchedConditionsRural = form.watch('conditions_exoneration_rural');
+  const isTerrain = watchedNature === 'Terrains';
+  const isBois = watchedNature === 'Bois & forêts';
+  const isMaisonMobile = watchedNature === 'Maison mobile (péniche, etc.)';
+  const isLMNP = watchedNature === 'Immeubles locatifs (LMNP)';
+  const isDroitsSociaux = watchedNature === 'Droits sociaux' || watchedNature === 'Parts de holding';
   useEffect(() => {
     if (regimeRuralImpose && form.getValues('regime_exoneration_rural') !== regimeRuralImpose) {
       form.setValue('regime_exoneration_rural', regimeRuralImpose);
@@ -600,8 +607,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   Forestier : bois, forêts et groupements forestiers, exonérés aux 3/4 sans plafond (art. 793 CGI).
                   Agricole : GFA, GAF, GFV et terres louées par bail rural à long terme, exonérés aux 3/4 jusqu'à
                   600 000 € par héritier, à 1/2 au-delà (art. 793 bis CGI). Groupement foncier rural : choisissez le
-                  régime dominant (forêts ou terres agricoles). Aucune : groupement foncier immobilier, terre non louée
-                  par bail à long terme…
+                  régime dominant (forêts ou terres agricoles). Société d'épargne forestière : forestier, au prorata de
+                  l'actif éligible. Aucune : terre non louée par bail à long terme…
                 </FieldHelp>
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value} disabled={!!regimeRuralImpose}>
@@ -643,6 +650,170 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                   <SelectContent>
                     <SelectItem value="oui">Conditions remplies</SelectItem>
                     <SelectItem value="non">Conditions non remplies</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+        </div>
+      )}
+
+      {watchedNature === NATURE_SEF && watchedRegimeRural === 'forestier' && watchedConditionsRural === true && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField control={form.control} name="fraction_eligible_rural" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Part de l'actif éligible (%)
+                  <FieldHelp>
+                    Fraction de l'actif de la société investie en bois, forêts et parts de groupements forestiers éligibles, selon l'attestation de la société de gestion. L'exonération des 3/4 ne porte que sur cette fraction.
+                  </FieldHelp>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-background border-border shadow-none"
+                    type="number"
+                    step="1"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+        </div>
+      )}
+
+      {(isTerrain || isBois || isMaisonMobile || isLMNP || isDroitsSociaux) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {isTerrain && (
+            <FormField control={form.control} name="terrain_constructible" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Terrain à bâtir
+                  <FieldHelp>
+                    Terrain constructible : sa plus-value est exclue de la surtaxe sur les plus-values élevées. Première cession après classement en zone constructible : taxes spécifiques (art. 1529 et 1605 nonies CGI).
+                  </FieldHelp>
+                </FormLabel>
+                <Select
+                  onValueChange={val => field.onChange(val === 'oui')}
+                  value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="oui">Constructible</SelectItem>
+                    <SelectItem value="non">Non constructible</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isBois && (
+            <FormField control={form.control} name="surface_boisee_ha" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Surface boisée (ha)
+                  <FieldHelp>
+                    Sert à la réduction d'impôt sur la plus-value de cession : 10 € par hectare et par année de détention (art. 150 VF III CGI). Les fractions d'hectare ne comptent pas.
+                  </FieldHelp>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-background border-border shadow-none"
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isMaisonMobile && (
+            <FormField control={form.control} name="fixe_au_sol" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Fixée au sol
+                  <FieldHelp>
+                    Une péniche ou un mobil-home non fixé à demeure est un bien meuble (plus-value des biens meubles, art. 150 UA CGI). Fixé durablement sur une fondation, il est traité comme un immeuble.
+                  </FieldHelp>
+                </FormLabel>
+                <Select
+                  onValueChange={val => field.onChange(val === 'oui')}
+                  value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="oui">Fixée à demeure (immeuble)</SelectItem>
+                    <SelectItem value="non">Non fixée (bien meuble)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isDroitsSociaux && (
+            <FormField control={form.control} name="cession_depart_retraite" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Cession au départ à la retraite
+                  <FieldHelp>
+                    Dirigeant qui cède ses titres en partant à la retraite (fonctions exercées 5 ans, au moins 25 %
+                    du capital, retraite dans les 2 ans) : abattement fixe de 500 000 € sur l'impôt sur le revenu
+                    (art. 150-0 D ter CGI). Les prélèvements sociaux restent dus sur toute la plus-value.
+                  </FieldHelp>
+                </FormLabel>
+                <Select
+                  onValueChange={val => field.onChange(val === 'oui')}
+                  value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="oui">Oui, conditions remplies</SelectItem>
+                    <SelectItem value="non">Non</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isLMNP && (
+            <FormField control={form.control} name="residence_services" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Résidence de services
+                  <FieldHelp>
+                    Résidence étudiante, seniors ou EHPAD : les amortissements déduits ne sont pas réintégrés dans la plus-value de cession (LF 2025).
+                  </FieldHelp>
+                </FormLabel>
+                <Select
+                  onValueChange={val => field.onChange(val === 'oui')}
+                  value={field.value === true ? 'oui' : field.value === false ? 'non' : undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="oui">Oui</SelectItem>
+                    <SelectItem value="non">Non</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -701,6 +872,32 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     se renseigne dans Transmission → Assurance-vie avec les cotisations versées.
                   </FieldHelp>
                 )}
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+
+          {isPER && watchedNature !== NATURE_PER_TOUJOURS_ASSURANTIEL && (
+            <FormField control={form.control} name="versements_deduits_pct" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Versements déduits du revenu (%)
+                  <FieldHelp>
+                    Part des versements volontaires déduits du revenu imposable. À la sortie en capital, cette
+                    part du capital est imposée au barème ; le reste est exonéré. Les gains sont taxés dans
+                    tous les cas (PFU ou barème, plus prélèvements sociaux).
+                  </FieldHelp>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-background border-border shadow-none"
+                    type="number"
+                    step="1"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />

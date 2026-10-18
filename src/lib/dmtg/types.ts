@@ -46,6 +46,9 @@ export interface Asset {
   // plafond (art. 793-1-3°, 793-2-2° CGI) ; 'agricole' = 3/4 jusqu'au seuil par
   // bénéficiaire, 1/2 au-delà (art. 793 bis CGI, seuil appliqué dans beneficiary.ts).
   exonerationRurale?: 'forestier' | 'agricole';
+  // Fraction (0 à 1) de la valeur éligible à l'exonération rurale (sociétés d'épargne
+  // forestière, art. 793-1-3° : au prorata de l'actif forestier). Défaut 1.
+  fractionEligibleRurale?: number;
   isDutreil?: boolean; // titres sous pacte Dutreil (art. 787 B CGI) : -75%
   // Biens affectés à l'exploitation d'une entreprise individuelle, conditions
   // de l'art. 787 C CGI remplies : -75 %.
@@ -153,6 +156,8 @@ export interface AVContract {
   assiette990I?: Money;
   // Avance non remboursée déjà déduite de capitalDeces (affichage uniquement).
   avanceDeduite?: Money;
+  // Prélèvements sociaux au décès sur les unités de compte, déjà déduits de capitalDeces.
+  psDecesDeduits?: Money;
 }
 
 export interface Donation {

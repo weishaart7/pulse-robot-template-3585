@@ -107,3 +107,24 @@ describe('calcul des droits', () => {
     expect(r.explicationsTexte?.some(t => t.includes('aucune exonération'))).toBe(true);
   });
 });
+
+describe('sociétés d\'épargne forestière', () => {
+  const calculSEF = (fraction: number | null) => computeTransmission({
+    family: famille,
+    patrimony: { date: REF, biensExistants: 2000000, passifs: 0 },
+    liberalites: [],
+    params,
+    referenceDate: REF,
+    conjointOption: 'quart_pp',
+    rawAssets: [{ ...bien(2000000, "Parts de sociétés d'épargne forestière", 'forestier', true), fraction_eligible_rural: fraction }],
+  });
+
+  it('exonération forestière au prorata de la fraction éligible', () => {
+    expect(calculSEF(100).dmtg.perBeneficiary.e1.baseApresFrais).toBe(calcul(2000000, 'Bois & forêts', 'forestier', true).dmtg.perBeneficiary.e1.baseApresFrais);
+    expect(calculSEF(50).dmtg.perBeneficiary.e1.baseApresFrais).toBeGreaterThan(calculSEF(100).dmtg.perBeneficiary.e1.baseApresFrais);
+  });
+
+  it('fraction non renseignée : bien non qualifié', () => {
+    expect(isBienRuralNonQualifie({ nature: "Parts de sociétés d'épargne forestière", regime_exoneration_rural: 'forestier', conditions_exoneration_rural: true })).toBe(true);
+  });
+});

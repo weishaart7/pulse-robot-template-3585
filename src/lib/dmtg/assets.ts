@@ -81,10 +81,13 @@ export function filterAndValueEstateAssets(
       }
 
       // Bois, forêts, groupements forestiers (art. 793-1-3°, 793-2-2° CGI) :
-      // exonération des 3/4, sans plafond.
+      // exonération des 3/4, sans plafond — au prorata de la fraction éligible (SEF).
       if (asset.exonerationRurale === 'forestier') {
-        baseTaxable *= 1 - params.exonerationRurale.tauxForestier;
-        justifs.push("Bois et forêts : exonération des 3/4 (art. 793 CGI)");
+        const fraction = Math.min(1, Math.max(0, asset.fractionEligibleRurale ?? 1));
+        baseTaxable *= 1 - params.exonerationRurale.tauxForestier * fraction;
+        justifs.push(fraction < 1
+          ? `Bois et forêts : exonération des 3/4 sur ${Math.round(fraction * 100)} % de la valeur (art. 793 CGI)`
+          : "Bois et forêts : exonération des 3/4 (art. 793 CGI)");
       }
 
       // GFA, GAF, GFV, biens ruraux à bail à long terme (art. 793 bis CGI) :

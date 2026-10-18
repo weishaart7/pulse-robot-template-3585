@@ -33,7 +33,7 @@ export const SimulationReventeSection = ({ asset, emprunts }: SimulationReventeS
   const [travauxReels, setTravauxReels] = useState(String(travauxReelsParDefaut(asset) || ''));
   // null : estimation recalculée selon la date de vente ; sinon montant saisi par l'utilisateur.
   const [amortissementsSaisis, setAmortissementsSaisis] = useState<string | null>(null);
-  const [residenceServices, setResidenceServices] = useState(false);
+  const [residenceServices, setResidenceServices] = useState(!!asset.residence_services);
   const [penalitesSaisies, setPenalitesSaisies] = useState('');
 
   const date = useMemo(() => {

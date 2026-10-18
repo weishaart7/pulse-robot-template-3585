@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel, getAssetCategory } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, getNatureDisplayLabel, getAssetCategory } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -315,6 +315,16 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                     </div>
                   )}
                 </div>
+              </div>
+            </>
+          )}
+
+          {NOTES_FISCALITE_INTERETS[asset.nature] && (
+            <>
+              <Separator />
+              <div>
+                <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3">Fiscalité des intérêts</h3>
+                <p className="text-sm text-muted-foreground">{NOTES_FISCALITE_INTERETS[asset.nature]}</p>
               </div>
             </>
           )}

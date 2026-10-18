@@ -69,6 +69,13 @@ export interface Asset {
   regime_exoneration_rural?: 'forestier' | 'agricole' | 'aucun' | string | null;
   type_groupement?: string | null;
   conditions_exoneration_rural?: boolean | null;
+  // Sociétés d'épargne forestière : fraction de l'actif éligible à l'exonération forestière (%).
+  fraction_eligible_rural?: number | null;
+  // Caractéristiques fiscales immobilières (plus-values, cf. regimeFiscalPVI.ts).
+  terrain_constructible?: boolean | null;
+  residence_services?: boolean | null;
+  surface_boisee_ha?: number | null;
+  fixe_au_sol?: boolean | null;
   // Entreprise individuelle / biens professionnels (art. 787 C CGI).
   conditions_787c?: boolean | null;
   // Bijoux, objets d'art, collections : plancher de 60 % (art. 764 II CGI).
@@ -104,6 +111,10 @@ export interface Asset {
   capital_garanti?: number;
   beneficiaire_designe?: string;
   mode_sortie?: string;
+  // PER : part des versements volontaires déduits du revenu (%).
+  versements_deduits_pct?: number | null;
+  // Droits sociaux / parts de holding : cession au départ à la retraite (150-0 D ter).
+  cession_depart_retraite?: boolean | null;
   // Champs additionnels "épargne salariale" (PEE/PEI) — cf. NATURES_EPARGNE_SALARIALE.
   abondement_employeur?: number;
   date_disponibilite?: string;

@@ -38,6 +38,114 @@ Deux notions transverses pèsent sur ces trois agrégats :
 - **Participation aux acquêts hors périmètre de ce module** : `usePatrimoineOriginaire`/`usePatrimoineFinal`/`patrimoineAcquetsService.ts` (CRUD simple, aucune logique métier propre) alimentent en réalité les écrans du régime matrimonial (`src/components/famille/matrimonial/PatrimoineOriginaireSection.tsx` / `PatrimoineFinalSection.tsx`) et le calcul de la créance de participation (`lib/patrimoine/participationAcquets.ts`), qui relèvent du module Régime matrimonial, pas de l'écran Patrimoine. Non audités en détail ici.
 - **Régime fiscal des plus-values** (`regimeFiscalPlusValue.ts` + `regimeFiscalPVI.ts` + `assetFiscalRegime.ts`) : moteur nature-par-nature avec repli explicite sur `'non_determine'` plutôt que de deviner un régime pour une nature non couverte — bonne pratique documentée en tête de fichier avec la liste exhaustive des natures couvertes et des changements par rapport à l'ancien système (`NATURES_PFU`/`NATURES_EXONEREES`).
 
+### Fiscalité par nature — actifs immobiliers
+
+Revue nature par nature (distinctions, plus-value, succession). Plus-value : `regimeFiscalPVI.ts` (aiguillage `assetFiscalRegime.ts`, simulateur `lib/immobilier/revente.ts`) ; succession : `lib/dmtg/assets.ts` + `lib/transmission/index.ts`. Socle : 19 % IR + 17,2 % PS, abattements 6 %/an (IR, 22 ans) et 1,65/1,60/9 % (PS, 30 ans), surtaxe par cédant au-delà de 50 000 €, exonération si prix de cession ≤ 15 000 € (150 U II 6°, appréciée sur la part du foyer, valeur estimée dans Patrimoine / prix net dans le simulateur ; pas pour les parts). Cessions de parts (SCPI, SCI à l'IR, groupements fonciers, 150 UB) : ni forfait 7,5 % ni forfait travaux 15 %.
+
+| Nature | En place | Non modélisé |
+|---|---|---|
+| Résidence principale | PV exonérée ; abattement DMTG 20 % (764 bis) si conjoint/partenaire ou enfant mineur/handicapé présent (occupation présumée) | Délai de vente d'un bien vacant, dépendances |
+| Résidences secondaires | Régime général, forfaits | 150 U II 1° bis (première cession avec remploi) : note seule |
+| Terrains | Régime général sans forfait travaux ; `terrain_constructible` = pas de surtaxe | Taxes 1529 / 1605 nonies : note seule |
+| Terrains agricoles | Régime général ; DMTG 793 bis (3/4 jusqu'à 600 000 € par bénéficiaire, 1/2 au-delà — LF 2025) | PV professionnelle si inscrit à l'actif ; seuil 20 M€ (conservation 18 ans) |
+| Immeubles loués nus | Régime général, travaux réels ou forfait | Reprise des réductions d'impôt (Pinel…) : note seule ; décote d'occupation en DMTG laissée à la valeur saisie |
+| LMNP | Régime des particuliers ; réintégration des amortissements (simulateur) sauf `residence_services` | Réintégration dans la vue Patrimoine (note seule, amortissements non saisis) |
+| LMP | Résultat informatif (court/long terme, 151 septies) | Calcul : recettes, ancienneté d'activité, amortissements non saisis ; simulateur hors périmètre |
+| Immeubles professionnels | Régime général, hypothèse patrimoine privé (note) | PV professionnelles si inscrit à l'actif |
+| Parts de SCI | Régime de la société liée (`societes.regime_fiscal`) : IS → PFU 31,4 % ; IR → PVI parts sans forfaits ; inconnu → non déterminé | Correction du prix des parts (bénéfices non distribués) ; simulateur hors périmètre ; valorisation/décote DMTG relève du module Sociétés |
+| Parts de SCPI | PVI parts sans forfaits | Reprise d'avantage des SCPI fiscales : note seule |
+| Parts de groupements fonciers | `type_groupement` : GFA/GAF/GFV/GFR → agricole (793 bis), GFF et **GFI (groupement forestier d'investissement)** → forestier (3/4 sans plafond) ; PV parts sans forfaits | Réduction IR à la souscription (reprise) : note seule |
+| Bois & forêts | Régime général sans forfait travaux ; réduction IR de 10 €/ha/an (150 VF III) si `surface_boisee_ha` saisi ; DMTG forestier imposé | — |
+| Sociétés d'épargne forestière | DMTG forestier au prorata de `fraction_eligible_rural` (bloquant si absent alors que les conditions sont remplies) | PV de cession : non déterminé |
+| Maison mobile | Non fixée (`fixe_au_sol` ≠ true) : biens meubles 150 UA (exonération ≤ 5 000 €, 5 %/an après 2 ans, sans forfaits ni surtaxe) ; fixée : régime général | — |
+| Parking / Garage / Box | Régime général sans forfait travaux, exonération ≤ 15 000 € | — |
+
+Champs ajoutés sur `assets` (migration `20261018150000`, tous nullables) : `terrain_constructible`, `residence_services`, `surface_boisee_ha`, `fixe_au_sol`, `fraction_eligible_rural` — saisis à l'étape « Particularités ».
+
+### Fiscalité par nature — valeurs mobilières et placements financiers
+
+Plus-value : `regimeFiscalPlusValue.ts::computeFiscalRegime` (PFU 31,4 % = 12,8 % + 18,6 % de PS depuis la LFSS 2026, qui vise le PEA et les plus-values mobilières mais pas l'assurance-vie, le PEL/CEL ni l'immobilier). Succession : cours du jour du décès ou moyenne des 30 derniers cours (art. 759) pour les titres cotés, valeur vénale sinon ; plus-values latentes purgées au décès.
+
+| Nature | En place | Non modélisé |
+|---|---|---|
+| CTO | PFU ; CTO multi-actifs aiguillé selon le sous-jacent (SCPI, crypto, or, private equity) | Abattements pour durée de détention sur option barème (titres acquis avant 2018) : note seule |
+| PEA / PEA-PME | < 5 ans PFU ; ≥ 5 ans PS seuls ; succession : note clôture du plan et PS dus | PS de clôture non déduits de l'actif ; retraits anticipés sans clôture |
+| FIP, FIP Corse, FCPI | < 5 ans PFU ; ≥ 5 ans PS seuls (150-0 A III 1) | Reprise de la réduction d'impôt en cas de cession anticipée : note seule |
+| SOFICA | PFU, sans exonération | Reprise de la réduction avant 5 ans : note seule |
+| Contrat à terme, dette subordonnée, dette privée, produits structurés, autres dérivés, autres valeurs mobilières | PFU | — |
+| Club deals, SPV | PFU | Reprise IR-PME, report 150-0 B ter : note seule |
+| Fonds de private equity | < 5 ans PFU ; ≥ 5 ans PS seuls (fonds fiscal présumé, rappelé en note) | Distinction fonds fiscal / non fiscal |
+| Stock-options | Informatif (gain de levée / plus-value) ; succession : note sur la levée par les héritiers dans les 6 mois (gain exonéré d'IR) | Calcul du gain de levée : valeur des titres à la levée non saisie |
+| Actions gratuites | Informatif | Calcul (valeur à l'acquisition non saisie) |
+| BSPCE | Informatif, conforme LF 2025 (gain d'exercice 12,8 % si ancienneté ≥ 3 ans, barème sinon ; cession PFU) | Ancienneté non saisie |
+| Cryptomonnaies | PFU | Franchise de 305 € (cumul annuel) : note seule |
+| Métaux précieux (argent, platine), et Or (physique) | Exonération si prix ≤ 5 000 € (150 VJ) ; sinon choix taxe forfaitaire 11,5 % / plus-value réelle 36,2 % avec abattement 5 %/an après 2 ans | — |
+
+### Fiscalité par nature — épargne et assurance-vie
+
+Natures : contrat d'assurance-vie, assurance-vie luxembourgeoise (fiscalité française pour un résident), contrat vie-génération (990 I bis), PEP assurance vie (fermé), bons et contrats de capitalisation (français, luxembourgeois — dans la succession, sans clause).
+
+**Rachat** (`lib/patrimoine/regimeFiscalAssuranceVie.ts::computeRachatsAssuranceVie`, appelé pour tout le foyer par `hooks/useRachatsAssuranceVie.ts` dans l'arborescence et le détail des plus-values ; gain latent traité comme un rachat total) :
+- Primes depuis le 27/09/2017 : < 8 ans 12,8 % ; ≥ 8 ans 7,5 % sur la fraction du gain correspondant à 150 000 € de primes (par souscripteur, tous contrats confondus), 12,8 % au-delà.
+- Primes antérieures : 35 % avant 4 ans, 15 % de 4 à 8 ans, 7,5 % après.
+- Abattement du foyer (4 600 €, 9 200 € pour un couple marié ou pacsé) sur les contrats de 8 ans ou plus, réparti au prorata de leurs gains.
+- PS 17,2 % (assurance-vie exclue de la hausse de CSG de la LFSS 2026) sur la seule part en unités de compte (`av_contract_details.part_unites_compte`) ; non saisie : sur tout le gain, avec note.
+- Primes et répartition avant / après 2017 lues dans les versements (`av_operations`) ; sans versements, contrat ouvert après le 27/09/2017 : primes = valeur d'acquisition ; contrat plus ancien : non déterminé.
+
+**Succession** (`lib/dmtg/assurance-vie.ts`, déjà en place) : 990 I (152 500 € par bénéficiaire, 20 % puis 31,25 % au-delà de 700 000 €, clause démembrée, vie-génération), 757 B (30 500 € global, primes seules), exonération conjoint / PACS / fratrie, contrats antérieurs au 20/11/1991 et primes antérieures au 13/10/1998, assuré tiers, avance déduite. **PS au décès** : 17,2 % des produits de la part en unités de compte (capital − versements nets), retenus par l'assureur et déduits du capital versé, assiette du 990 I comprise (`transmissionHelpers.ts::buildAVContracts`, `psDecesDeduits`, signalé dans les explications) ; part UC non saisie ou aucun versement : rien n'est déduit.
+
+Non modélisé : rachats partiels (quote-part de gain par rachat), option pour le barème, fiscalité des rentes viagères, gain réel versement par versement (réparti au prorata des primes).
+
+### Fiscalité par nature — épargne salariale
+
+PEE et PEI (mêmes règles ; PERCO/PERCOI en épargne retraite). Plus-value (`regimeFiscalPlusValue.ts`) : gains exonérés d'IR à l'échéance comme en déblocage anticipé légal, prélèvements sociaux seuls à 18,6 % (épargne salariale concernée par la hausse de CSG de la LFSS 2026), gain = valeur − versements, abondement compris. Succession : actif successoral de droit commun à la valeur au jour du décès ; note dans les explications (déblocage anticipé par le décès, gains exonérés d'IR, PS dus au déblocage, non déduits). Non modélisé : taux historiques de PS sur les gains anciens, arbitrages entre FCPE.
+
+### Fiscalité par nature — épargne retraite
+
+Sortie (`lib/patrimoine/regimeFiscalRetraite.ts`, appelé en premier par `assetFiscalRegime.ts`). Prélèvements sociaux à 18,6 % pour tous les PER, bancaires comme assurantiels (hausse de CSG de la LFSS 2026 appliquée à tous les retraits, position de l'administration).
+
+| Nature | En place | Non modélisé |
+|---|---|---|
+| PER individuel, PER entreprise collectif | Capital (`mode_sortie` Capital, Mixte ou vide) : gains au PFU 31,4 % ; capital issu des versements déduits (`versements_deduits_pct`, migration `20261018170000`) signalé au barème, non chiffré (« Hors capital imposé au barème ») ; part déduite non renseignée : non déterminé. Rente : informatif (RVTG pour la part déduite, RVTO sinon) | Compartiments (épargne salariale du PER collectif : note seule), chiffrage au barème, déblocages anticipés (note) |
+| PER entreprise obligatoire | Informatif : rente uniquement (RVTG) | — |
+| PERCO / PERCOI | Capital : IR exonéré, PS 18,6 % sur les gains ; rente : informatif (RVTO) | — |
+| PERP, Madelin, Madelin agricole, article 83, Préfon, retraite mutualiste du combattant | Informatif (RVTG ; PERP : 20 % de capital possible ou 100 % pour une première résidence principale ; mutualiste : exonérée dans la limite du plafond) | Chiffrage des rentes |
+| Contrat article 82 | Capital : calcul de rachat de l'assurance-vie (`useRachatsAssuranceVie`, au niveau du foyer) ; rente : informatif (RVTO) | — |
+| Régimes de retraite étrangers | Non déterminé | Hors périmètre |
+
+Succession (déjà en place) : PER assurantiel 990 I / 757 B selon l'âge au décès, PER bancaire dans l'actif successoral, contrats de retraite par rente selon la garantie décès (990 I al. 2), article 82 par sa clause. PS au décès sur les unités de compte étendus au PER assurantiel (18,6 %) et à l'article 82 (17,2 %), même calcul que l'assurance-vie.
+
+### Fiscalité par nature — prévoyance
+
+Temporaire décès et prévoyance individuelle : sans valeur de rachat, pas de plus-value. Vie entière : rachat au régime de l'assurance-vie (`useRachatsAssuranceVie`, au niveau du foyer). Succession (déjà en place) : capital transmis par la clause, assiette 990 I = fraction rachetable + primes de la dernière année, 757 B sur les primes après 70 ans.
+
+### Fiscalité par nature — épargne bancaire / liquidités
+
+Pas de plus-value (`NATURES_WITHOUT_ACQUISITION`). Fiscalité des intérêts affichée sur la fiche de l'actif (`NOTES_FISCALITE_INTERETS`, `AssetDetailsDialog.tsx`) : livrets réglementés exonérés ; CSL, compte à terme, bons de caisse au PFU 31,4 % ; PEL et CEL 12,8 % + 17,2 % (exclus de la hausse de CSG) ; PEP bancaire exonéré d'IR après 8 ans, PS 17,2 % ; dépôt de garantie = créance. Succession : droit commun ; note sur la présomption de propriété par moitié des comptes joints (art. 753 CGI) pour une liquidité détenue par le couple ou en indivision. Non modélisé : intérêts courus au décès.
+
+### Fiscalité par nature — actifs corporels
+
+`regimeFiscalPVI.ts::computeCorporelRegime`, appelé par `assetFiscalRegime.ts`. Meubles meublants et véhicules : exonérés (150 UA II 1°). Bijoux, montres, objets d'art, de collection et antiquités : exonérés si prix ≤ 5 000 €, sinon choix entre taxe forfaitaire de 6,5 % du prix (150 VI) et plus-value réelle 36,2 % avec abattement de 5 %/an après 2 ans. Vins et spiritueux, sacs de luxe (classés biens meubles ordinaires, décision du 18/10/2026), matériel informatique et sportif : biens meubles (150 UA), exonérés ≤ 5 000 €, sinon plus-value réelle avec le même abattement. Or physique : régime des métaux précieux (cf. placements financiers). Succession (déjà en place) : forfait mobilier de 5 %, plancher de 60 % de la valeur assurée (764 II).
+
+### Fiscalité par nature — actifs professionnels
+
+`regimeFiscalPlusValue.ts::computeFiscalRegime`. Droits sociaux et parts de holding : PFU 31,4 % ; `cession_depart_retraite` (migration `20261018180000`, étape « Particularités ») applique l'abattement fixe de 500 000 € sur l'assiette de l'IR (150-0 D ter), PS sur toute la plus-value ; notes : abattements pour durée de détention sur option barème (titres d'avant 2018), report 150-0 B ter, purge par donation, plus-values professionnelles d'une société de personnes. Entreprise individuelle et autres biens professionnels : informatif (plus-values professionnelles, exonérations 151 septies, 238 quindecies, 151 septies A, non chiffrées). Compte courant d'associé : pas de plus-value, note « Fiscalité des intérêts » sur la fiche (PFU, valeur nominale en succession). Succession : Dutreil (787 B) appliqué seulement aux titres rattachés à une société du module Sociétés ; note pour des droits sociaux ou parts de holding non rattachés ; 787 C pour l'entreprise individuelle (déjà en place). Non modélisé : chiffrage des plus-values professionnelles, décote d'illiquidité des titres non cotés.
+
+### Fiscalité par nature — créances et autres
+
+Créances (prêt à un proche, reconnaissance de dette, soulte ou prix de vente à recevoir) : pas de plus-value ; note « Fiscalité des intérêts » sur la fiche (PFU, déclaration 2062 au-delà de 5 000 €, requalification en donation) ; en succession, note : valeur saisie, imputation sur la part d'un héritier débiteur (non modélisée), remise de dette = donation rapportable. Droits de propriété littéraire ou artistique : informatif (revenus d'auteur, pas de plus-value) ; en succession, note sur l'usufruit légal du conjoint sur le droit d'exploitation (L123-6 CPI, non modélisé dans le partage). Droits à royalties : mis de côté (ci-dessous), même note en succession.
+
+### 🗂️ Mis de côté — régimes de plus-value à reprendre personnellement
+
+Natures dont la plus-value reste « Non déterminé » (décision du 18/10/2026, à trancher par l'utilisateur) :
+- **Objets numériques (NFT, etc.)** : actif numérique (PFU, art. 150 VH bis) ou bien meuble (150 UA) selon la qualification de l'objet.
+- **Autres placements divers** : contenu hétérogène, aucun régime présumé.
+- **Matières premières (pétrole, blé…)** : traitées au PFU (trackers, ETC, contrats), alors que le formulaire propose `lieu_stockage` et `quantite` (détention physique, qui relèverait des biens meubles). Choix à faire : champ « physique / financier », ou retrait des deux champs.
+- **Actions gratuites** : taux de PS du gain d'acquisition indiqué à 17,2 % dans la note — à vérifier depuis la LFSS 2026 (18,6 % probable).
+- **Droits à royalties** : régime dépendant de la forme de l'actif (droits acquis comme placement, brevets, catalogue musical via une plateforme…) — plus-value non déterminée.
+- **Fonds de private equity (LBO, growth, venture)** : régime dépendant de la forme de l'investissement (FCPR fiscal / non fiscal, FPCI, SCR, détention directe ou via holding, carried interest…). Le code applique aujourd'hui PFU avant 5 ans et PS seuls après (fonds fiscal présumé) — à revoir.
+- **Parts de sociétés d'épargne forestière** : plus-value de cession non déterminée (régime à confirmer sur la documentation du fonds).
+
 ## 3. Dette identifiée
 
 ### ✅ Corrigé (commit à venir)
@@ -95,7 +203,7 @@ Réalisé du 01/09/2026 au 02/09/2026 (audits par famille de natures + implémen
 - `CORPS_NATURES_CHAMPS` (famille "actifs corporels") : `certificat_expertise` + `certificat_expertise_reference` conditionnel (Objets d'art et antiquités, Montres, Objets de collection, Bijoux et pierres précieuses, Sacs et accessoires de luxe), `numero_serie` (Montres uniquement), `quantite_millesime` (Vins & spiritueux d'investissement). Les 5 autres natures de la famille (Meubles meublants, Véhicules motorisés, Matériel informatique/audiovisuel, Matériel sportif, Autres placements divers) n'affichent aucun champ additionnel.
 - **Sous-type PER** (`sous_type_per`, Bancaire/Assurantiel) : obligatoire pour les 3 natures PER (`assetSchema.ts`, `superRefine` sur `isPERNonQualifie` ; validé à l'étape « Particularités » du wizard), avec aide à la saisie (assurantiel = contrat d'assurance de groupe avec clause bénéficiaire ; bancaire = compte-titres). « PER entreprise obligatoire » : figé et enregistré en Assurantiel. Détermine si le PER sort de la succession (cf. `docs/transmission.md`).
 - **Contrats de retraite par rente** (PERP, Madelin ×2, article 83, Préfon, retraite mutualiste du combattant) : `garantie_deces` obligatoire (Oui/Non, `assetSchema.ts`, étape « Particularités » du wizard) ; si Oui, `conditions_exoneration_990i` (conditions remplies par défaut pour Madelin et article 83). Détermine le traitement en transmission (cf. `docs/transmission.md`).
-- **Biens ruraux, groupements fonciers, bois et forêts** (« Bois & forêts », « Parts de groupements fonciers », « Terrains agricoles », `NATURES_RURALES`) : pour un groupement foncier, `type_groupement` informatif (GFA, GAF, GFV, GFR, GFF, GFI — `TYPES_GROUPEMENT_FONCIER`) qui propose le régime (agricole pour GFA / GAF / GFV / GFR, forestier pour GFF, aucun pour GFI) ; `regime_exoneration_rural` obligatoire (forestier / agricole / aucun ; imposé forestier pour « Bois & forêts », régime dominant pour un GFR), puis `conditions_exoneration_rural` (remplies / non) hors régime « aucun » — étape « Particularités ». Sans ces champs, le calcul de transmission est bloqué (cf. `docs/transmission.md`).
+- **Biens ruraux, groupements fonciers, bois et forêts** (« Bois & forêts », « Parts de groupements fonciers », « Terrains agricoles », « Parts de sociétés d'épargne forestière », `NATURES_RURALES`) : pour un groupement foncier, `type_groupement` informatif (GFA, GAF, GFV, GFR, GFF, GFI — `TYPES_GROUPEMENT_FONCIER`) qui propose le régime (agricole pour GFA / GAF / GFV / GFR, forestier pour GFF et GFI — groupement forestier d'investissement) ; `regime_exoneration_rural` obligatoire (forestier / agricole / aucun ; imposé forestier pour « Bois & forêts », régime dominant pour un GFR), puis `conditions_exoneration_rural` (remplies / non) hors régime « aucun » — étape « Particularités ». Sans ces champs, le calcul de transmission est bloqué (cf. `docs/transmission.md`).
 - `RETRAITE_PREVOYANCE_NATURES_CHAMPS` (familles "épargne retraite" et "prévoyance") : `capital_garanti` (Temporaire décès, Vie entière, Contrat prévoyance individuelle), `beneficiaire_designe` n'est plus proposé (colonne conservée) : la clause d'un PER assurantiel, d'un contrat de prévoyance décès ou d'un article 82 se saisit dans Transmission → Assurance-vie, cf. `docs/transmission.md` ; les 3 natures de prévoyance et l'article 82 affichent un renvoi vers cet écran, `mode_sortie` (Rente/Capital/Mixte, sur les 12 natures d'épargne retraite par versements — PER×3, PERCO/PERCOI, PERP, Madelin×2, article 82/83, Préfon, retraite mutualiste du combattant, régimes de retraite étrangers).
 - Champs de qualification successorale ajoutés à la fiche (pill « Caractéristiques », migration
   `20261014160000`) : `conditions_787c` (« Entreprise individuelle », « Autres biens professionnels »,

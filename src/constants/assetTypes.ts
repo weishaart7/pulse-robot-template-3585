@@ -430,20 +430,25 @@ export const PARTS_FONCIERES_NATURES = [
 // - 'forestier' : bois, forêts, groupements forestiers — 3/4 sans plafond ;
 // - 'agricole' : GFA, GAF, GFV, biens ruraux loués par bail à long terme — 3/4 jusqu'à
 //   600 000 € par bénéficiaire, 1/2 au-delà ;
-// - 'aucun' : pas d'exonération (groupement foncier immobilier, terre non louée…).
-// GFR (forêts et terres agricoles) : régime dominant.
+// - 'aucun' : pas d'exonération (terre non louée par bail à long terme…).
+// GFR (forêts et terres agricoles) : régime dominant. Sociétés d'épargne forestière : régime
+// forestier au prorata de la fraction de l'actif éligible (assets.fraction_eligible_rural).
 export type RegimeExonerationRurale = 'forestier' | 'agricole' | 'aucun';
 
 export const NATURES_RURALES = [
   "Bois & forêts",
   "Parts de groupements fonciers",
   "Terrains agricoles",
+  "Parts de sociétés d'épargne forestière",
 ] as const;
 
 // Régime imposé par la nature (« Bois & forêts ») ou proposé par défaut (GFA), modifiable.
 export const REGIME_RURAL_IMPOSE: Record<string, RegimeExonerationRurale> = {
   "Bois & forêts": 'forestier',
+  "Parts de sociétés d'épargne forestière": 'forestier',
 };
+
+export const NATURE_SEF = "Parts de sociétés d'épargne forestière";
 
 // Type de groupement foncier (assets.type_groupement, informatif) : propose le régime
 // d'exonération par défaut, toujours modifiable. GFR : régime dominant à choisir (agricole proposé).
@@ -453,7 +458,8 @@ export const TYPES_GROUPEMENT_FONCIER = [
   { value: 'GFV', label: 'Groupement foncier viticole (GFV)', regime: 'agricole' },
   { value: 'GFR', label: 'Groupement foncier rural (GFR)', regime: 'agricole' },
   { value: 'GFF', label: 'Groupement forestier (GFF)', regime: 'forestier' },
-  { value: 'GFI', label: 'Groupement foncier immobilier (GFI)', regime: 'aucun' },
+  // GFI : groupement forestier d'investissement (offre au public, société de gestion agréée AMF).
+  { value: 'GFI', label: "Groupement forestier d'investissement (GFI)", regime: 'forestier' },
 ] as const satisfies readonly { value: string; label: string; regime: RegimeExonerationRurale }[];
 export type TypeGroupementFoncier = (typeof TYPES_GROUPEMENT_FONCIER)[number]['value'];
 export const NATURE_GROUPEMENT_FONCIER = "Parts de groupements fonciers";
@@ -465,15 +471,24 @@ type BienRuralInput = {
   nature?: string | null;
   regime_exoneration_rural?: string | null;
   conditions_exoneration_rural?: boolean | null;
+  fraction_eligible_rural?: number | null;
 };
 
-// Régime ou conditions non renseignés (les conditions sont sans objet en régime 'aucun').
+// Régime ou conditions non renseignés (les conditions sont sans objet en régime 'aucun'), ou
+// société d'épargne forestière exonérée sans fraction éligible saisie.
 export const isBienRuralNonQualifie = (asset: BienRuralInput): boolean =>
   isNatureRurale(asset.nature) && (
     !asset.regime_exoneration_rural
     || (asset.regime_exoneration_rural !== 'aucun'
       && asset.conditions_exoneration_rural !== true && asset.conditions_exoneration_rural !== false)
+    || (asset.nature === NATURE_SEF && asset.conditions_exoneration_rural === true
+      && asset.fraction_eligible_rural == null)
   );
+
+// Fraction (0 à 1) de la valeur à laquelle s'applique l'exonération rurale : 1, sauf pour une
+// société d'épargne forestière (part de l'actif investie en bois, forêts et groupements éligibles).
+export const getFractionEligibleRurale = (asset: BienRuralInput): number =>
+  asset.nature === NATURE_SEF ? Math.min(1, Math.max(0, (asset.fraction_eligible_rural ?? 0) / 100)) : 1;
 
 // Régime d'exonération effectivement applicable (conditions remplies), sinon null.
 export const getExonerationRurale = (asset: BienRuralInput): 'forestier' | 'agricole' | null =>
@@ -646,6 +661,31 @@ export const getAssetCategory = (nature: string): string => {
 };
 
 // Natures pour lesquelles les champs d'acquisition (date, valeur, frais) et plus-values n'ont pas de sens
+// Fiscalité des intérêts des liquidités (taux au 01/01/2026), affichée sur la fiche de l'actif :
+// ces placements produisent des intérêts, pas de plus-value. PEL, CEL et PEP restent à 17,2 %
+// de prélèvements sociaux (exclus de la hausse de CSG de la LFSS 2026).
+const LIVRET_REGLEMENTE = "Intérêts exonérés d'impôt sur le revenu et de prélèvements sociaux, dans la limite du plafond du livret.";
+const INTERETS_PFU = "Intérêts au PFU de 31,4 % (12,8 % d'IR + 18,6 % de prélèvements sociaux), ou au barème sur option.";
+export const NOTES_FISCALITE_INTERETS: Record<string, string> = {
+  "Comptes courants": "Compte non rémunéré en général ; intérêts éventuels au PFU de 31,4 %.",
+  "Comptes sur livret (CSL)": INTERETS_PFU,
+  "Livret A": LIVRET_REGLEMENTE,
+  "Livret Bleu": LIVRET_REGLEMENTE,
+  "Livret de développement durable et solidaire (LDDS)": LIVRET_REGLEMENTE,
+  "Livret d'épargne populaire (LEP)": LIVRET_REGLEMENTE,
+  "Livret Jeune": LIVRET_REGLEMENTE,
+  "CEL": "Intérêts : 12,8 % d'IR et 17,2 % de prélèvements sociaux (CEL exclu de la hausse de CSG).",
+  "PEL": "Intérêts : 12,8 % d'IR (PEL ouvert depuis le 01/01/2018, imposé chaque année ; avant, exonéré d'IR jusqu'à 12 ans) et 17,2 % de prélèvements sociaux (exclu de la hausse de CSG).",
+  "Compte à terme": INTERETS_PFU,
+  "Bons de caisse (ou bon d'épargne)": INTERETS_PFU,
+  "PEP Bancaire": "Intérêts exonérés d'impôt sur le revenu après 8 ans (PFU sinon) ; prélèvements sociaux à 17,2 % (PEP exclu de la hausse de CSG).",
+  "Dépôt de garantie": "Créance sur le bailleur, restituée à la sortie du logement : ni intérêts ni plus-value.",
+  "Prêt consenti à un proche": "Intérêts éventuels au PFU de 31,4 % ; prêt de plus de 5 000 € à déclarer (formulaire 2062). Un prêt sans intérêt ou une remise de dette peut être requalifié en donation.",
+  "Créance sur un tiers (reconnaissance de dette)": "Intérêts éventuels au PFU de 31,4 % ; reconnaissance de dette de plus de 5 000 € à déclarer (formulaire 2062).",
+  "Soulte ou prix de vente à recevoir": "Créance sans plus-value : la plus-value de la vente ou du partage est imposée à sa date, pas au paiement. Intérêts éventuels au PFU de 31,4 %.",
+  "Compte courant d'associé": "Créance sur la société, sans plus-value : intérêts au PFU de 31,4 % (déductibles pour la société dans la limite du taux légal). En succession, retenu pour sa valeur nominale, sauf créance irrécouvrable.",
+};
+
 export const NATURES_WITHOUT_ACQUISITION: string[] = [
   "Comptes courants",
   "Comptes sur livret (CSL)",

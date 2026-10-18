@@ -36,7 +36,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE } from '../../constants/assetTypes';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
@@ -946,9 +946,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // ne matchait jamais aucune donnée réelle (diagnostic du 2026-07-17).
   // isResidencePrincipale ne dépend que du libellé exact "Résidence
   // principale" (pas de la catégorie générale) : abattement -20% (art. 764
-  // bis CGI, dmtg/assets.ts) appliqué dès la saisie de ce libellé, sans
-  // condition d'occupation (hypothèse simplificatrice actée, cohérente avec
-  // l'abattement IFI équivalent).
+  // bis CGI, dmtg/assets.ts), sous condition d'occupation présumée (cf.
+  // abattementRPApplicable ci-dessous).
   //
   // valeurVenale est pondérée par getFractionSuccessorale
   // (lib/patrimoine/succession.ts::getPartSuccessorale — régime matrimonial /
@@ -1013,6 +1012,14 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
+  if (avContracts.some(c => (c.psDecesDeduits || 0) > 0)) {
+    successionLegaleResult.explicationsTexte.push(
+      `Prélèvements sociaux au décès (17,2 % ; 18,6 % pour un PER) sur les produits des unités de compte : ` +
+      `${avContracts.filter(c => (c.psDecesDeduits || 0) > 0).map(c => `${c.label || 'un contrat'} ${Math.round(c.psDecesDeduits!).toLocaleString('fr-FR')} €`).join(', ')}, ` +
+      `retenus par l'assureur et déduits du capital versé (assiette du prélèvement 990 I). Gain estimé au prorata ` +
+      `de la part en unités de compte saisie ; ceux du fonds euros ont déjà été prélevés chaque année.`
+    );
+  }
   if (avContracts.some(c => (c.avanceDeduite || 0) > 0)) {
     successionLegaleResult.explicationsTexte.push(
       `Avance en cours sur ${avContracts.filter(c => (c.avanceDeduite || 0) > 0).map(c => c.label || 'un contrat').join(', ')} : ` +
@@ -1136,7 +1143,72 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     successionLegaleResult.explicationsTexte.push(
       `Stock-options (${stockOptions.map(a => a.denomination || a.nature).join(', ')}) : retenues pour leur valeur saisie. ` +
       `Des options non levées au décès sont exerçables par les héritiers dans les 6 mois ; leur inclusion dans l'actif ` +
-      `taxable (exclusion, ou valeur intrinsèque : cours moins prix d'exercice) est discutée — à faire confirmer par le notaire.`
+      `taxable (exclusion, ou valeur intrinsèque : cours moins prix d'exercice) est discutée — à faire confirmer par le notaire. ` +
+      `Levées dans ce délai, le gain de levée est exonéré d'impôt sur le revenu (art. 80 bis I CGI).`
+    );
+  }
+
+  // Droits sociaux / holding non rattachés à une société : le Dutreil n'est jamais appliqué.
+  const titresNonRattaches = (rawAssets || []).filter(a => (a.nature === 'Droits sociaux' || a.nature === 'Parts de holding')
+    && !a.societe_id && getFractionSuccessorale(a) > 0);
+  if (titresNonRattaches.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${titresNonRattaches.map(a => a.denomination || a.nature).join(', ')} : titres non rattachés à une société du module Sociétés, ` +
+      `retenus pour leur valeur saisie sans exonération Dutreil (art. 787 B, 75 %). Rattachez la société pour l'appliquer si un ` +
+      `engagement de conservation existe. Une décote d'illiquidité des titres non cotés n'est pas appliquée.`
+    );
+  }
+
+  // Créances sur un proche ou un tiers : imputation sur la part d'un héritier débiteur.
+  const creancesPret = (rawAssets || []).filter(a => (a.nature === 'Prêt consenti à un proche' || a.nature === 'Créance sur un tiers (reconnaissance de dette)')
+    && getFractionSuccessorale(a) > 0);
+  if (creancesPret.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${creancesPret.map(a => a.denomination || a.nature).join(', ')} : créance retenue pour sa valeur saisie (capital restant dû et ` +
+      `intérêts courus au décès). Si le débiteur est un héritier, la dette s'impute sur sa part (non modélisé) ; une remise de dette ` +
+      `consentie de son vivant par le défunt vaut donation, à rapporter.`
+    );
+  }
+
+  // Droits d'auteur : usufruit légal du conjoint sur le droit d'exploitation.
+  const droitsAuteur = (rawAssets || []).filter(a => (a.nature === 'Droits de propriété littéraire ou artistique' || a.nature === 'Droits à royalties')
+    && getFractionSuccessorale(a) > 0);
+  if (droitsAuteur.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${droitsAuteur.map(a => a.denomination || a.nature).join(', ')} : valeur saisie (en général capitalisation des revenus). ` +
+      `Pour des droits d'auteur, le conjoint survivant dispose d'un usufruit légal sur le droit d'exploitation (art. L123-6 CPI), ` +
+      `en plus de ses droits successoraux : non modélisé dans le partage. Le droit moral se transmet sans valeur.`
+    );
+  }
+
+  // Comptes joints (art. 753 CGI) : présumés appartenir pour moitié à chaque cotitulaire.
+  const comptesJoints = (rawAssets || []).filter(a => getAssetCategory(a.nature || '') === 'épargne bancaire / liquidités'
+    && (['common', 'commun', 'couple', 'le couple'].includes((a.detenteur || '').toLowerCase()) || a.qualification_bien === 'Indivision') && getFractionSuccessorale(a) > 0);
+  if (comptesJoints.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${comptesJoints.map(a => a.denomination || a.nature).join(', ')} : un compte joint est présumé appartenir pour moitié ` +
+      `à chaque cotitulaire (art. 753 CGI), sauf preuve contraire (origine des fonds). Retenu ici selon la qualification saisie.`
+    );
+  }
+
+  // Épargne salariale : le décès est un cas de déblocage anticipé.
+  const plansEpargneSalariale = (rawAssets || []).filter(a => (a.nature === 'PEE' || a.nature === 'PEI') && getFractionSuccessorale(a) > 0);
+  if (plansEpargneSalariale.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${plansEpargneSalariale.map(a => a.denomination || a.nature).join(', ')} : le décès permet le déblocage anticipé des avoirs, ` +
+      `qui entrent dans l'actif successoral pour leur valeur au jour du décès. Les gains restent exonérés d'impôt sur le revenu ; ` +
+      `les prélèvements sociaux (18,6 %) sont dus au déblocage (non déduits ici).`
+    );
+  }
+
+  // PEA / PEA-PME : clôturés par le décès, le gain reste exonéré d'IR mais supporte les
+  // prélèvements sociaux, quelle que soit l'ancienneté du plan.
+  const plansPEA = (rawAssets || []).filter(a => (a.nature === 'PEA' || a.nature === 'PEA-PME') && getFractionSuccessorale(a) > 0);
+  if (plansPEA.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${plansPEA.map(a => a.denomination || a.nature).join(', ')} : le plan est clôturé par le décès. Le gain réalisé depuis ` +
+      `l'ouverture est exonéré d'impôt sur le revenu mais supporte les prélèvements sociaux (18,6 %), dus par la succession ` +
+      `(non déduits ici). Les titres entrent dans l'actif pour leur valeur au jour du décès.`
     );
   }
 
@@ -1207,6 +1279,7 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
         ? (ctx.dutreilPartsNonAffectees?.[asset.societe_id] ?? 0) / 100
         : undefined,
       exonerationRurale: getExonerationRurale(asset) ?? undefined,
+      fractionEligibleRurale: getFractionEligibleRurale(asset),
       isExonere787C: isExonere787C(asset),
       isMeublesMeublants: asset.nature === 'Meubles meublants',
       detteImputee: ctx.passifsParBien?.[asset.id],

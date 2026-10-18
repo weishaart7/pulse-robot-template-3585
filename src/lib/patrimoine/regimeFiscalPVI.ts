@@ -3,9 +3,10 @@ import { formatCurrency } from './utils';
 
 /**
  * Moteur de régime fiscal des plus-values immobilières (PVI), nature par
- * nature (taux au 01/01/2026). Ne couvre que les 4 groupes ci-dessous ;
- * `computePVIRegime` retourne `null` pour toute autre nature, auquel cas
- * l'appelant conserve le comportement "Non déterminé".
+ * nature (taux au 01/01/2026) : régime général, parts (150 UB), LMNP, LMP
+ * (informatif), biens meubles (maison mobile non fixée). `computePVIRegime`
+ * retourne `null` pour toute autre nature (régimes mobiliers, cf.
+ * regimeFiscalPlusValue.ts), ou "Non déterminé" à défaut.
  */
 
 const PVI_IR_RATE = 0.19;
@@ -21,38 +22,53 @@ const PVI_TOTAL_LABEL = `${((PVI_IR_RATE + PVI_PS_RATE) * 100).toFixed(1).replac
 // 15 % pour travaux après 5 ans de détention (immeubles bâtis uniquement).
 const FORFAIT_FRAIS_ACQUISITION = 0.075;
 const FORFAIT_TRAVAUX = 0.15;
-const NATURES_NON_BATIES = ['Terrains', 'Parking / Garage / Box', 'Parts de SCPI'];
-
+// Immeubles non bâtis : pas de forfait travaux de 15 %.
+const NATURES_NON_BATIES = ['Terrains', 'Terrains agricoles', 'Bois & forêts', 'Parking / Garage / Box'];
 const NATURE_RESIDENCE_PRINCIPALE = 'Résidence principale';
+// Cession de parts de sociétés à prépondérance immobilière soumises à l'IR (art. 150 UB CGI) :
+// mêmes taux et abattements, mais ni forfait de 7,5 % ni forfait travaux de 15 % (réservés aux
+// cessions d'immeubles), ni exonération des cessions ≤ 15 000 € (150 U II 6°, cessions de biens).
+const NATURES_PARTS = ['Parts de SCPI', 'Parts de SCI', 'Parts de groupements fonciers'];
+export const NATURE_SCI = 'Parts de SCI';
+const NATURE_MAISON_MOBILE = 'Maison mobile (péniche, etc.)';
+const NATURE_BOIS = 'Bois & forêts';
+const NATURE_LMP = 'Immeubles locatifs (LMP)';
+// Exonération des cessions dont le prix n'excède pas 15 000 € (art. 150 U II 6° CGI).
+const SEUIL_EXONERATION_PRIX = 15000;
+// Bois et forêts : impôt sur le revenu réduit de 10 € par hectare et par année de détention
+// (art. 150 VF III CGI, BOI-RFPI-PVI-30-30-10) — IR seulement, pas les prélèvements sociaux.
+const REDUCTION_FORESTIERE_HA_AN = 10;
 
 // --- Régime général PVI ---
-// Immeubles locatifs (loués nus), immeubles professionnels, autres immeubles
-// de rapport, résidence secondaire, maison mobile, parking/garage/box,
-// autres biens d'usage, SCPI détenue en direct, terrains.
-//
-// "Terrains à bâtir" (point 3 de la demande) n'existe pas comme nature ni
-// comme champ distinct dans l'application (seules "Terrains" et "Terrains
-// agricoles" existent, et aucun champ ne marque un terrain comme
-// constructible). Faute de donnée pour les distinguer, "Terrains" applique
-// systématiquement le régime général ci-dessous (avec surtaxe), sans jamais
-// appliquer l'exclusion de surtaxe propre aux terrains à bâtir. Décision
-// validée explicitement : fusion avec le régime général plutôt que d'inventer
-// un champ.
+// Immeubles locatifs (loués nus), immeubles professionnels, résidence secondaire,
+// parking/garage/box, autres biens d'usage, terrains (agricoles ou non), bois et forêts,
+// maison mobile fixée au sol, et parts (SCPI, SCI à l'IR, groupements fonciers) sans forfaits.
+// Les SCI à l'IS ne passent pas ici : cf. assetFiscalRegime.ts (PFU).
 const NATURES_REGIME_GENERAL = [
   'Immeubles locatifs (loués nus)',
   'Immeubles professionnels (hors LMP)',
   'Résidences secondaires',
-  'Maison mobile (péniche, etc.)',
   'Parking / Garage / Box',
   'Autres biens d\'usage',
-  'Parts de SCPI',
   'Terrains',
+  'Terrains agricoles',
+  NATURE_BOIS,
+  ...NATURES_PARTS,
 ];
+
+// Notes informatives par nature (conditions non saisies dans l'application).
+const NOTES_NATURE: Record<string, string> = {
+  'Résidences secondaires': "Première cession d'un logement autre que la résidence principale exonérée si le cédant n'a pas été propriétaire de sa résidence principale dans les 4 ans précédents et remploie le prix dans les 24 mois pour l'acquérir (art. 150 U II 1° bis) : non appliqué ici.",
+  'Immeubles locatifs (loués nus)': "Bien sous dispositif de défiscalisation (Pinel, Denormandie, Loc'Avantages…) : une cession avant la fin de l'engagement de location entraîne la reprise de la réduction d'impôt, non comptée ici. Travaux réels retenus seulement s'ils n'ont pas été déduits des revenus fonciers.",
+  'Immeubles professionnels (hors LMP)': "Régime des particuliers : suppose que l'immeuble relève du patrimoine privé. Inscrit à l'actif d'une entreprise, il relève des plus-values professionnelles.",
+  'Terrains agricoles': "Bien inscrit à l'actif d'une exploitation agricole : plus-values professionnelles (art. 151 septies), non calculées ici.",
+  'Parts de SCPI': "Impôt calculé et prélevé par la société de gestion à la cession. Parts de SCPI fiscale cédées avant la fin de l'engagement : reprise de l'avantage fiscal, non comptée ici.",
+  'Parts de SCI': "SCI à l'IR : prix d'acquisition des parts à corriger des bénéfices imposés et non distribués, non pris en compte ici.",
+  'Parts de groupements fonciers': "Réduction IR à la souscription (groupements forestiers) reprise en cas de cession anticipée, non comptée ici.",
+};
 
 // --- LMNP ---
 const NATURE_LMNP = 'Immeubles locatifs (LMNP)';
-// "Immeubles locatifs (LMP)" (loueur meublé PROFESSIONNEL) n'est pas dans le
-// périmètre demandé : reste "Non déterminé".
 
 // Abattement pour durée de détention à l'IR : 0% avant 6 ans, puis 6%/an de
 // la 6e à la 21e année (16 ans à 6% = 96%), puis 4% la 22e année → 100% à 22
@@ -96,6 +112,13 @@ const surtaxe = (pvImposableIR: number): number => {
 
 const formatPct = (rate: number): string => `${(rate * 100).toFixed(1).replace(/\.0$/, '')}%`;
 
+// --- Biens meubles (art. 150 UA CGI) ---
+// Maison mobile non fixée au sol (péniche, mobil-home) : bien meuble. Exonération si le prix de
+// cession n'excède pas 5 000 €, abattement de 5 % par année de détention au-delà de la 2e
+// (exonération à 22 ans), 19 % + 17,2 %, sans forfaits ni surtaxe.
+const SEUIL_EXONERATION_MEUBLES = 5000;
+const abattementMeubles = (years: number): number => Math.min(Math.max(years - 2, 0) * 0.05, 1);
+
 export interface ComputePVIRegimeInput {
   nature: string;
   // Plus-value latente économique (valeur estimée − prix − frais réels).
@@ -110,6 +133,18 @@ export interface ComputePVIRegimeInput {
   // 50 000 € de la surtaxe s'apprécie par cédant (BOI-RFPI-TPVIE-20 :
   // indivisaires, époux pour un bien de communauté, partenaires de PACS).
   partsCedants?: number[];
+  // Prix de cession (valeur estimée, ou prix net simulé) à la part du foyer : seuils
+  // d'exonération de 15 000 € (immeubles) et 5 000 € (biens meubles). Apprécié sur
+  // la part du foyer, pas par époux (un bien commun est cédé d'un seul tenant).
+  prixCession?: number;
+  // Terrains : terrain à bâtir, exclu de la surtaxe (art. 1609 nonies G CGI).
+  terrainConstructible?: boolean;
+  // Bois & forêts : surface boisée (ha), pour la réduction de 10 €/ha/an.
+  surfaceBoiseeHa?: number;
+  // Maison mobile fixée au sol à demeure : immeuble (régime général).
+  fixeAuSol?: boolean;
+  // LMNP : résidence étudiante, seniors ou EHPAD (pas de réintégration des amortissements).
+  residenceServices?: boolean;
   // Optionnels, pour une cession simulée (Immobilier → « Simuler une revente ») :
   // - dateCession : date à laquelle s'apprécie la durée de détention (aujourd'hui sinon) ;
   // - travauxReels : dépenses d'amélioration, construction ou agrandissement
@@ -129,8 +164,7 @@ export interface ComputePVIRegimeInput {
 /**
  * Plus-value FISCALE : prix d'acquisition majoré du plus favorable entre
  * frais réels et forfait 7,5 % (onéreux), et du forfait travaux 15 % au-delà
- * de 5 ans (bâti). Les travaux réels ne sont pas repris (champs du module
- * Immobilier, possiblement déjà déduits des revenus fonciers).
+ * de 5 ans (bâti). Aucun forfait sur les cessions de parts (150 UB).
  */
 const computePlusValueFiscale = (
   plusValue: number,
@@ -143,18 +177,64 @@ const computePlusValueFiscale = (
   amortissementsReintegres = 0,
 ): number => {
   if (valeurAcquisition === undefined) return plusValue;
+  const isParts = NATURES_PARTS.includes(nature);
   const frais = fraisAcquisition ?? 0;
-  const fraisRetenus = acquisitionOnereuse
+  const fraisRetenus = acquisitionOnereuse && !isParts
     ? Math.max(frais, valeurAcquisition * FORFAIT_FRAIS_ACQUISITION)
     : frais;
-  const forfaitTravaux = years > 5 && !NATURES_NON_BATIES.includes(nature)
+  const forfaitTravaux = years > 5 && !NATURES_NON_BATIES.includes(nature) && !isParts
     ? valeurAcquisition * FORFAIT_TRAVAUX
     : 0;
   // Travaux réels (justifiés, non déduits) ou forfait 15 % : le plus favorable, jamais les deux.
-  const travaux = Math.max(forfaitTravaux, Math.max(0, travauxReels));
+  const travaux = isParts ? 0 : Math.max(forfaitTravaux, Math.max(0, travauxReels));
   // plusValue = valeurEstimee − valeurAcquisition − frais : on remplace les
   // frais réels par les frais retenus et on retire le forfait travaux.
   return plusValue + frais - fraisRetenus - travaux + Math.max(0, amortissementsReintegres);
+};
+
+const exonere = (badge: string, note?: string): FiscalRegimeResult => ({
+  badge, tone: 'exonere_total', ir: 0, ps: 0, total: 0, note,
+});
+
+const NOTE_MAISON_MOBILE = "Maison mobile non fixée au sol (péniche, mobil-home) : bien meuble (art. 150 UA CGI) — abattement de 5 % par an au-delà de la 2e année, sans forfaits ni surtaxe.";
+
+const computeBiensMeubles = (
+  plusValue: number,
+  years: number | null,
+  prixCession?: number,
+  noteRegime: string = NOTE_MAISON_MOBILE,
+): FiscalRegimeResult => {
+  if (prixCession !== undefined && prixCession <= SEUIL_EXONERATION_MEUBLES) {
+    return exonere('Bien meuble — prix ≤ 5 000 €', 'Bien meuble (art. 150 UA CGI) : cession exonérée, prix inférieur ou égal à 5 000 €.');
+  }
+  if (years === null) {
+    return {
+      badge: 'Bien meuble — durée inconnue', tone: 'non_determine', ir: null, ps: null, total: null,
+      note: "Date d'acquisition non renseignée : impossible de calculer l'abattement pour durée de détention.",
+    };
+  }
+  if (plusValue <= 0) return exonere('Moins-value — aucun impôt');
+  const abattement = abattementMeubles(years);
+  const base = plusValue * (1 - abattement);
+  const ir = base * PVI_IR_RATE;
+  const ps = base * PVI_PS_RATE;
+  return {
+    badge: abattement >= 1 ? 'Bien meuble — exonéré (22 ans)' : `Bien meuble ${PVI_TOTAL_LABEL}`,
+    tone: abattement >= 1 ? 'exonere_total' : 'pfu',
+    ir, ps, total: ir + ps,
+    irDetail: `Abattement ${formatPct(abattement)}`,
+    psDetail: `Abattement ${formatPct(abattement)}`,
+    note: noteRegime,
+  };
+};
+
+const LMP_RESULT: FiscalRegimeResult = {
+  badge: 'LMP — plus-values professionnelles',
+  tone: 'informatif',
+  ir: null,
+  ps: null,
+  total: null,
+  note: "Plus-values professionnelles : court terme à hauteur des amortissements (barème + cotisations sociales), long terme au-delà (12,8 % + 17,2 %). Exonération totale si les recettes sont inférieures à 90 000 € et partielle jusqu'à 126 000 €, après 5 ans d'activité (art. 151 septies CGI). Non calculé : recettes moyennes, ancienneté d'activité et amortissements pratiqués ne sont pas saisis.",
 };
 
 export const computePVIRegime = ({
@@ -165,26 +245,32 @@ export const computePVIRegime = ({
   fraisAcquisition,
   acquisitionOnereuse,
   partsCedants = [1],
+  prixCession,
+  terrainConstructible,
+  surfaceBoiseeHa,
+  fixeAuSol,
+  residenceServices,
   dateCession,
   travauxReels,
   amortissementsReintegres,
 }: ComputePVIRegimeInput): FiscalRegimeResult | null => {
   if (nature === NATURE_RESIDENCE_PRINCIPALE) {
-    return {
-      badge: 'Résidence principale — exonérée',
-      tone: 'exonere_total',
-      ir: 0,
-      ps: 0,
-      total: 0,
-      note: 'Exonération totale (IR + PS), sans condition de durée de détention.',
-    };
+    return exonere('Résidence principale — exonérée', 'Exonération totale (IR + PS), sans condition de durée de détention.');
+  }
+  if (nature === NATURE_LMP) return LMP_RESULT;
+  if (nature === NATURE_MAISON_MOBILE && !fixeAuSol) {
+    return computeBiensMeubles(plusValueLatente, getHoldingYears(dateAcquisition, dateCession), prixCession);
   }
 
-  const isRegimeGeneral = NATURES_REGIME_GENERAL.includes(nature);
+  const isRegimeGeneral = NATURES_REGIME_GENERAL.includes(nature) || nature === NATURE_MAISON_MOBILE;
   const isLMNP = nature === NATURE_LMNP;
-
   if (!isRegimeGeneral && !isLMNP) {
     return null;
+  }
+  const isParts = NATURES_PARTS.includes(nature);
+
+  if (!isParts && prixCession !== undefined && prixCession > 0 && prixCession <= SEUIL_EXONERATION_PRIX) {
+    return exonere('PVI — prix ≤ 15 000 €', "Cession exonérée : prix inférieur ou égal à 15 000 € (art. 150 U II 6° CGI).");
   }
 
   const years = getHoldingYears(dateAcquisition, dateCession);
@@ -200,58 +286,67 @@ export const computePVIRegime = ({
   }
 
   const plusValue = computePlusValueFiscale(plusValueLatente, nature, years, valeurAcquisition, fraisAcquisition, acquisitionOnereuse, travauxReels, amortissementsReintegres);
-  const forfaitNote = valeurAcquisition !== undefined
-    ? `Plus-value imposable ${formatCurrency(Math.max(plusValue, 0))} après forfaits (frais d'acquisition 7,5 % si plus favorable${
-      (travauxReels ?? 0) > 0
-        ? years > 5 && !NATURES_NON_BATIES.includes(nature)
-          ? ', travaux réels ou forfait 15 %, le plus favorable'
-          : ', travaux réels'
-        : years > 5 && !NATURES_NON_BATIES.includes(nature) ? ', travaux 15 %' : ''
-    }).`
-    : undefined;
+  const avecForfaitTravaux = years > 5 && !NATURES_NON_BATIES.includes(nature) && !isParts;
+  const forfaitNote = valeurAcquisition === undefined
+    ? undefined
+    : isParts
+      ? `Plus-value imposable ${formatCurrency(Math.max(plusValue, 0))} : cession de parts, sans forfaits de frais ni de travaux (art. 150 UB CGI).`
+      : `Plus-value imposable ${formatCurrency(Math.max(plusValue, 0))} après forfaits (frais d'acquisition 7,5 % si plus favorable${
+        (travauxReels ?? 0) > 0
+          ? avecForfaitTravaux ? ', travaux réels ou forfait 15 %, le plus favorable' : ', travaux réels'
+          : avecForfaitTravaux ? ', travaux 15 %' : ''
+      }).`;
+  const notes: string[] = forfaitNote ? [forfaitNote] : [];
+  if (NOTES_NATURE[nature]) notes.push(NOTES_NATURE[nature]);
 
   if (plusValue <= 0) {
-    return {
-      badge: 'Moins-value — aucun impôt',
-      tone: 'exonere_total',
-      ir: 0,
-      ps: 0,
-      total: 0,
-      note: forfaitNote,
-    };
+    return exonere('Moins-value — aucun impôt', notes.length > 0 ? notes.join(' ') : undefined);
   }
 
   const tauxAbattementIR = abattementIR(years);
   const tauxAbattementPS = abattementPS(years);
   const pvImposableIR = plusValue * (1 - tauxAbattementIR);
   const pvImposablePS = plusValue * (1 - tauxAbattementPS);
-  const irDue = pvImposableIR * PVI_IR_RATE;
+  const irBrut = pvImposableIR * PVI_IR_RATE;
+  // Bois et forêts : réduction de 10 € par hectare et par année de détention, sur l'IR seul.
+  const reductionForestiere = nature === NATURE_BOIS && (surfaceBoiseeHa ?? 0) > 0
+    ? Math.min(irBrut, Math.floor(surfaceBoiseeHa!) * years * REDUCTION_FORESTIERE_HA_AN)
+    : 0;
+  const irDue = irBrut - reductionForestiere;
   const psDue = pvImposablePS * PVI_PS_RATE;
-  // Les terrains à bâtir sont exclus par la loi de la surtaxe, mais faute de
-  // pouvoir les distinguer des autres terrains (voir commentaire plus haut),
-  // la surtaxe s'applique ici à "Terrains" comme au reste du régime général.
-  // Seuil apprécié par cédant, sur sa quote-part de plus-value imposable.
-  const surtaxeDue = partsCedants.reduce((sum, part) => sum + surtaxe(pvImposableIR * part), 0);
+  // Terrains à bâtir exclus de la surtaxe. Seuil apprécié par cédant, sur sa quote-part.
+  const surtaxeDue = terrainConstructible && nature === 'Terrains'
+    ? 0
+    : partsCedants.reduce((sum, part) => sum + surtaxe(pvImposableIR * part), 0);
   const total = irDue + psDue + surtaxeDue;
-
   const isExonereTotal = tauxAbattementIR >= 1 && tauxAbattementPS >= 1;
 
-  const notes: string[] = forfaitNote ? [forfaitNote] : [];
-  if (isLMNP && amortissementsReintegres !== undefined) {
+  if (isLMNP && residenceServices) {
+    notes.push('Résidence étudiante, seniors ou EHPAD : amortissements non réintégrés.');
+  } else if (isLMNP && amortissementsReintegres !== undefined) {
     notes.push(
       `Amortissements déduits réintégrés : ${formatCurrency(amortissementsReintegres)} (cessions depuis le 15/02/2025, hors résidences étudiantes, seniors et EHPAD). Forfait de 7,5 % calculé sur le prix d'acquisition avant réintégration : point non tranché par les textes consultés.`
     );
   } else if (isLMNP) {
     notes.push(
-      "Depuis 2025, les amortissements déduits pendant la détention doivent être réintégrés dans le calcul (ils réduisent la valeur d'acquisition prise en compte, donc majorent la plus-value imposable). Ce montant cumulé n'est pas un champ du formulaire actif : à renseigner/estimer manuellement, il n'est pas ajouté ici. La plus-value réellement imposable est donc probablement supérieure à celle affichée."
+      "Depuis le 15/02/2025, les amortissements déduits sont réintégrés dans la plus-value (hors résidences étudiantes, seniors et EHPAD) : non ajoutés ici, la plus-value imposable est donc probablement supérieure. Le simulateur de revente (Immobilier) les estime."
     );
+  }
+  if (nature === NATURE_BOIS) {
+    notes.push(reductionForestiere > 0
+      ? `Réduction forestière de ${formatCurrency(reductionForestiere)} sur l'IR (10 € par hectare et par année de détention, art. 150 VF III CGI).`
+      : "Réduction de 10 € par hectare et par année de détention sur l'IR (art. 150 VF III CGI) : surface boisée non renseignée.");
+  }
+  if (nature === 'Terrains') {
+    notes.push(terrainConstructible
+      ? "Terrain à bâtir : exclu de la surtaxe. Première cession après classement en zone constructible : taxes sur les terrains devenus constructibles (art. 1529 et 1605 nonies CGI), non calculées ici."
+      : "Terrain non déclaré constructible : surtaxe appliquée le cas échéant (un terrain à bâtir en est exclu).");
   }
   if (surtaxeDue > 0) {
     notes.push("Surtaxe progressive incluse (quote-part de plus-value imposable à l'IR d'au moins un cédant supérieure à 50 000 €).");
   }
 
   const badgeBase = `${isLMNP ? 'LMNP' : 'PVI'} ${PVI_TOTAL_LABEL}`;
-
   return {
     badge: isExonereTotal ? `${badgeBase} — exonéré (22/30 ans)` : badgeBase,
     tone: isExonereTotal ? 'exonere_total' : 'pfu',
@@ -262,5 +357,59 @@ export const computePVIRegime = ({
     psDetail: `Abattement ${formatPct(tauxAbattementPS)}`,
     totalDetail: surtaxeDue > 0 ? `Dont surtaxe ${formatCurrency(surtaxeDue)}` : undefined,
     note: notes.length > 0 ? notes.join(' ') : undefined,
+  };
+};
+
+// --- Actifs corporels (art. 150 UA et 150 VI CGI) ---
+// Meubles meublants et véhicules : exonérés (150 UA II 1°). Bijoux, montres, objets d'art, de
+// collection et antiquités : taxe forfaitaire de 6,5 % du prix (6 % + 0,5 % de CRDS) au-delà de
+// 5 000 €, ou option pour la plus-value réelle (régime des biens meubles). Autres biens meubles :
+// régime des biens meubles. L'or physique relève de regimeFiscalPlusValue.ts (métaux précieux).
+const NATURES_CORPORELS_EXONERES = ['Meubles meublants', 'Véhicules motorisés'];
+const NATURES_OBJETS_PRECIEUX = ["Objets d'art et antiquités", 'Montres', 'Objets de collection', 'Bijoux et pierres précieuses'];
+const NATURES_BIENS_MEUBLES = [
+  'Sacs et accessoires de luxe',
+  'Matériel informatique ou audiovisuel haut de gamme',
+  'Matériel sportif de valeur',
+  "Vins & spiritueux d'investissement",
+];
+const TAUX_TAXE_OBJETS_PRECIEUX = 0.065;
+
+export const computeCorporelRegime = (
+  nature: string,
+  plusValue: number,
+  valeurEstimee: number,
+  dateAcquisition?: string,
+): FiscalRegimeResult | null => {
+  if (NATURES_CORPORELS_EXONERES.includes(nature)) {
+    return exonere('Exonéré', "Meubles meublants et véhicules : plus-value de cession exonérée (art. 150 UA II 1° CGI).");
+  }
+  const years = getHoldingYears(dateAcquisition);
+  if (NATURES_BIENS_MEUBLES.includes(nature)) {
+    return computeBiensMeubles(plusValue, years, valeurEstimee,
+      "Bien meuble (art. 150 UA CGI) : exonéré si le prix de cession n'excède pas 5 000 €, sinon plus-value réelle avec abattement de 5 % par an au-delà de la 2e année (exonération à 22 ans), 19 % + 17,2 %.");
+  }
+  if (!NATURES_OBJETS_PRECIEUX.includes(nature)) return null;
+  if (valeurEstimee > 0 && valeurEstimee <= SEUIL_EXONERATION_MEUBLES) {
+    return exonere('Prix ≤ 5 000 € — exonéré', "Bijoux, objets d'art, de collection ou antiquités : cession exonérée si le prix n'excède pas 5 000 € (art. 150 VJ CGI).");
+  }
+  const alternatives = [{ label: 'Taxe forfaitaire 6,5 % (prix de vente, sans justificatif)', total: valeurEstimee * TAUX_TAXE_OBJETS_PRECIEUX }];
+  if (years !== null && plusValue > 0) {
+    const abattement = abattementMeubles(years);
+    alternatives.push({
+      label: abattement >= 1
+        ? 'Option plus-value réelle (exonérée après 22 ans de détention)'
+        : `Option plus-value réelle ${PVI_TOTAL_LABEL} (abattement ${(abattement * 100).toFixed(0)}% pour ${years} an${years > 1 ? 's' : ''} de détention)`,
+      total: plusValue * (1 - abattement) * (PVI_IR_RATE + PVI_PS_RATE),
+    });
+  }
+  return {
+    badge: 'Objet précieux — choix',
+    tone: 'choix',
+    ir: null,
+    ps: null,
+    total: null,
+    note: "Deux régimes au choix : taxe forfaitaire de 6,5 % sur le prix de cession (art. 150 VI CGI), ou option pour la plus-value réelle (justificatif de prix et de date d'acquisition requis).",
+    alternatives,
   };
 };

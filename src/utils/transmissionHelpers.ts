@@ -9,11 +9,12 @@ import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcqu
 import { RecompenseCalcInput, CreanceCalcInput } from '@/lib/patrimoine/recompensesCreances';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
-import { getExonerationRurale, isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie, isContratNonTransmis, isRetraiteEtrangereNonQualifiee, NATURE_RETRAITE_ETRANGERE, isPrevoyanceDeces, isPrevoyanceNonQualifiee, NATURE_PREVOYANCE_RACHETABLE, NATURE_ARTICLE_82, getCapitalDecesContrat } from '@/constants/assetTypes';
+import { getExonerationRurale, isContratHorsSuccession, isPER, isPERAssurantiel, isPERNonQualifie, isRetraiteRente, isRetraiteRenteNonQualifie, isRetraiteRenteSansGarantie, isContratNonTransmis, isAssuranceVieHorsSuccession, isRetraiteEtrangereNonQualifiee, NATURE_RETRAITE_ETRANGERE, isPrevoyanceDeces, isPrevoyanceNonQualifiee, NATURE_PREVOYANCE_RACHETABLE, NATURE_ARTICLE_82, getCapitalDecesContrat } from '@/constants/assetTypes';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { getAgeAtDate, getDemembrementPct, getDecedentRole } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
+import { psDecesAssuranceVie } from '@/lib/patrimoine/regimeFiscalAssuranceVie';
 import { isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { AssetDemembrement } from '@/services/assetDemembrementService';
@@ -457,6 +458,9 @@ export interface AVContractRawRow {
   // le conjoint, sous régime de communauté.
   origineFonds?: string | null;
   operations: AVOperationRow[];
+  // av_contract_details.part_unites_compte (%) : prélèvements sociaux retenus par l'assureur au
+  // décès sur les produits des unités de compte (non saisie : aucun prélèvement compté).
+  partUniteCompte?: number | null;
   // Structure identique à ClauseStructuree (av/ClauseBeneficiaireBuilder.tsx),
   // dupliquée ici en type minimal pour ne pas faire dépendre utils/ d'un
   // composant. Tous les niveaux sont désormais repris (cascade de
@@ -551,9 +555,21 @@ export function buildAVContracts(
       // Avance non remboursée : déduite par l'assureur du capital versé aux
       // bénéficiaires — assiette 990 I nette (avance excédant le capital : non
       // modélisé, l'assureur réclamerait le solde à la succession).
-      const capitalDeces = Math.max(0,
+      const capitalAvantPS = Math.max(0,
         getCapitalDecesContrat({ nature: row.nature, valeur_estimee: row.valeurEstimee, capital_garanti: row.capitalGaranti })
         - (Number(row.avanceEnCours) || 0));
+      // Assurance-vie : prélèvements sociaux (17,2 %) retenus par l'assureur au dénouement sur les
+      // produits des unités de compte (ceux du fonds euros le sont chaque année) — capital versé,
+      // assiette du 990 I, net de ces prélèvements. Primes nettes = versements − rachats.
+      const primesNettes = Math.max(0, row.operations.reduce((s, op) =>
+        s + (op.type_operation === 'versement' ? 1 : op.type_operation === 'rachat' ? -1 : 0) * (Number(op.montant) || 0), 0));
+      // Étendu au PER assurantiel (18,6 %) et au contrat article 82 (17,2 %, assurance-vie).
+      const estPERAssurantiel = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer });
+      const psDeces = (isAssuranceVieHorsSuccession(row.nature) || estPERAssurantiel || row.nature === NATURE_ARTICLE_82)
+        && row.operations.length > 0
+        ? psDecesAssuranceVie(capitalAvantPS, primesNettes, row.partUniteCompte, estPERAssurantiel ? 0.186 : undefined)
+        : 0;
+      const capitalDeces = capitalAvantPS - psDeces;
       // Prévoyance décès : assiette 990 I fixée ici (fraction rachetable +
       // primes de la dernière année), cf. splitPrimesPrevoyance.
       const prevoyance = isPrevoyanceDeces(row.nature)
@@ -649,7 +665,8 @@ export function buildAVContracts(
         nature: row.nature || undefined,
         exonere990I: isRetraiteRente(row.nature) && row.conditionsExoneration990I === true,
         ...(prevoyance ? { assiette990I: prevoyance.assiette990I } : {}),
-        ...((Number(row.avanceEnCours) || 0) > 0 ? { avanceDeduite: Number(row.avanceEnCours) } : {})
+        ...((Number(row.avanceEnCours) || 0) > 0 ? { avanceDeduite: Number(row.avanceEnCours) } : {}),
+        ...(psDeces > 0 ? { psDecesDeduits: Math.round(psDeces) } : {})
       };
     });
 }

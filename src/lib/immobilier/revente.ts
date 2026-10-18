@@ -122,7 +122,10 @@ export type ResultatRevente =
 
 export function simulerRevente(asset: Asset, emprunts: Emprunt[], h: HypothesesRevente): ResultatRevente {
   if (asset.nature === NATURE_LMP) {
-    return { statut: 'hors_perimetre', message: 'Bien en LMP : la vente relève des plus-values professionnelles (exonération de l’art. 151 septies), non modélisées.' };
+    return { statut: 'hors_perimetre', message: 'Bien en LMP : la vente relève des plus-values professionnelles (court terme / long terme, exonération de l’art. 151 septies si recettes < 90 000 €, partielle jusqu’à 126 000 €, après 5 ans d’activité), non modélisées : recettes et ancienneté d’activité ne sont pas saisies.' };
+  }
+  if (asset.nature === 'Parts de SCI') {
+    return { statut: 'hors_perimetre', message: 'Parts de SCI : le régime de la plus-value dépend de l’imposition de la société (IR ou IS), suivie dans le module Sociétés.' };
   }
   if (asset.mode_detention === 'Usufruit' || asset.mode_detention === 'Nue-propriété') {
     return { statut: 'hors_perimetre', message: 'Bien démembré : la cession d’un usufruit ou d’une nue-propriété (ventilation du prix) n’est pas modélisée.' };
@@ -144,12 +147,17 @@ export function simulerRevente(asset: Asset, emprunts: Emprunt[], h: HypothesesR
     fraisAcquisition: frais * partFoyer,
     acquisitionOnereuse: !origines || origines.length === 0 || !origines.some((o) => ORIGINES_PROPRES.includes(o)),
     partsCedants,
+    prixCession: prixNetTotal * partFoyer,
+    terrainConstructible: asset.terrain_constructible ?? undefined,
+    surfaceBoiseeHa: asset.surface_boisee_ha ?? undefined,
+    fixeAuSol: asset.fixe_au_sol ?? undefined,
+    residenceServices: isLMNP ? h.residenceServices : undefined,
     dateCession: h.dateVente,
     travauxReels: h.travauxReels * partFoyer,
     amortissementsReintegres: isLMNP ? (reintegration ? h.amortissementsDeduits * partFoyer : 0) : undefined,
   });
   if (!regime) {
-    return { statut: 'hors_perimetre', message: `Plus-value non modélisée pour la nature « ${asset.nature} » (groupements fonciers et forestiers, terrains agricoles…).` };
+    return { statut: 'hors_perimetre', message: `Plus-value non modélisée pour la nature « ${asset.nature} ».` };
   }
 
   const credits: CreditARembourser[] = creditsBien(asset, emprunts).map((c) => {
@@ -167,7 +175,6 @@ export function simulerRevente(asset: Asset, emprunts: Emprunt[], h: HypothesesR
   const prixNet = prixNetTotal * partFoyer;
 
   const notes: string[] = [];
-  if (isLMNP && h.residenceServices) notes.push('Résidence étudiante, seniors ou EHPAD : amortissements non réintégrés.');
   if (regime.total === null) notes.push('Impôt non calculable (date d’acquisition manquante) : compté pour 0 dans le net perçu.');
 
   return {

@@ -377,6 +377,13 @@ export type Database = {
           statut_bien: string | null
           support_investissement: string | null
           surface_m2: number | null
+          terrain_constructible: boolean | null
+          residence_services: boolean | null
+          surface_boisee_ha: number | null
+          fixe_au_sol: boolean | null
+          fraction_eligible_rural: number | null
+          versements_deduits_pct: number | null
+          cession_depart_retraite: boolean | null
           taux_remuneration: number | null
           transfert_immobilier: boolean | null
           transfert_societe: boolean | null
@@ -468,6 +475,13 @@ export type Database = {
           statut_bien?: string | null
           support_investissement?: string | null
           surface_m2?: number | null
+          terrain_constructible?: boolean | null
+          residence_services?: boolean | null
+          surface_boisee_ha?: number | null
+          fixe_au_sol?: boolean | null
+          fraction_eligible_rural?: number | null
+          versements_deduits_pct?: number | null
+          cession_depart_retraite?: boolean | null
           taux_remuneration?: number | null
           transfert_immobilier?: boolean | null
           transfert_societe?: boolean | null
@@ -559,6 +573,13 @@ export type Database = {
           statut_bien?: string | null
           support_investissement?: string | null
           surface_m2?: number | null
+          terrain_constructible?: boolean | null
+          residence_services?: boolean | null
+          surface_boisee_ha?: number | null
+          fixe_au_sol?: boolean | null
+          fraction_eligible_rural?: number | null
+          versements_deduits_pct?: number | null
+          cession_depart_retraite?: boolean | null
           taux_remuneration?: number | null
           transfert_immobilier?: boolean | null
           transfert_societe?: boolean | null
