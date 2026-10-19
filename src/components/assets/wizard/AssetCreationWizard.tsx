@@ -6,7 +6,7 @@ import { useAssetWizard } from '@/hooks/useAssetWizard';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { AssetSaisieExtras } from '@/hooks/useAssetForm';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
-import { ChargeForm } from '@/components/assets/ChargeForm';
+import { ChargeForm, debiteurDepuisDetention } from '@/components/assets/ChargeForm';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { ActifFormFrame } from '@/components/assets/ActifFormFrame';
 import { WizardConfirmDialog } from './WizardConfirmDialog';
@@ -291,6 +291,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
       {showChargeForm && (
         <ChargeForm
           charge={editingCharge || undefined}
+          debiteurParDefaut={debiteurDepuisDetention(form.getValues('detenteur'), form.getValues('qualification_bien'), familyData)}
           onSubmit={handleChargeSubmit}
           onCancel={() => {
             setShowChargeForm(false);

@@ -9,12 +9,18 @@ export function OptionToggle({ checked, onChange, children, help, id }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   children: React.ReactNode;
-  /** Aide (FieldHelp) affichée après la pastille. */
+  /** Aide (FieldHelp) affichée dans le rectangle, après le libellé. */
   help?: React.ReactNode;
   id?: string;
 }) {
   return (
-    <span className="inline-flex items-center">
+    <span className={cn(
+      'inline-flex h-8 items-center rounded-[2px] border transition-colors',
+      help ? 'pr-2' : '',
+      checked
+        ? 'border-foreground bg-foreground/[0.04] text-foreground'
+        : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+    )}>
       <button
         id={id}
         type="button"
@@ -22,11 +28,9 @@ export function OptionToggle({ checked, onChange, children, help, id }: {
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          'inline-flex h-8 items-center gap-1.5 rounded-[2px] border px-3 text-[12.5px] transition-colors',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          checked
-            ? 'border-foreground bg-foreground/[0.04] text-foreground'
-            : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+          'inline-flex h-full items-center gap-1.5 rounded-[2px] text-[12.5px]',
+          help ? 'pl-3' : 'px-3',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
         )}
       >
         <span className={cn(

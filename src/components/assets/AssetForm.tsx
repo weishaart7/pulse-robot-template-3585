@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { Asset, AssetCharge } from '@/services/assetService';
-import { ChargeForm } from './ChargeForm';
+import { ChargeForm, debiteurDepuisDetention } from './ChargeForm';
 import { NATURES_WITHOUT_ACQUISITION, isAssuranceVieHorsSuccession, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useAssetForm } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
@@ -360,6 +360,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       {showChargeForm && (
         <ChargeForm
           charge={editingCharge || undefined}
+          debiteurParDefaut={debiteurDepuisDetention(form.getValues('detenteur'), form.getValues('qualification_bien'), familyData)}
           onSubmit={handleChargeSubmit}
           onCancel={() => {
             setShowChargeForm(false);

@@ -7,7 +7,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
+import { cn } from '@/lib/utils';
 import { RevenusDistribuesInput } from '@/components/immobilier/parts/RevenusDistribuesInput';
 import { AssetFormValues, SITUATION_PARTICULIERE_OPTIONS } from '@/schemas/assetSchema';
 import {
@@ -48,6 +48,7 @@ import { useSocietes } from '@/hooks/useSocietes';
 
 // Valeur du choix « Aucune » de la liste Société liée (une SelectItem ne peut pas valoir '').
 const AUCUNE_SOCIETE = 'aucune';
+import { OptionToggle } from '@/components/ui/option-toggle';
 import { FieldHelp } from '@/components/ui/field-help';
 
 interface CaracteristiquesFieldsProps {
@@ -233,6 +234,54 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           </FormItem>
         )} />}
 
+        {!isEpargneAV && !isPrevoyanceDeces(watchedNature) && !isCreance(watchedNature) && (
+          <FormField
+            control={form.control}
+            name="attachement_emotionnel"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex h-[18px] items-end">
+                  <FormLabel>Attachement émotionnel</FormLabel>
+                  <FieldHelp>
+                    De 0 (aucun attachement) à 10 (attachement très fort)
+                  </FieldHelp>
+                </div>
+                <FormControl>
+                  {/* Échelle en cases, alignée sur la hauteur des menus voisins. */}
+                  <div role="radiogroup" className="!mt-[10px] grid h-9 grid-cols-11 gap-[3px]">
+                    {Array.from({ length: 11 }, (_, n) => {
+                      const valeur = field.value || 0;
+                      const active = n === Math.round(valeur);
+                      const remplie = n > 0 && n <= valeur;
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => field.onChange(n)}
+                          className={cn(
+                            'rounded-[2px] border text-[12px] tabular-nums transition-colors',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            active
+                              ? 'border-lagon-ink bg-lagon-ink font-medium text-white'
+                              : remplie
+                                ? 'border-lagon/40 bg-lagon-soft text-lagon-ink'
+                                : 'border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground'
+                          )}
+                        >
+                          {n}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         {showNumeroSerie && (
           <FormField control={form.control} name="numero_serie" render={({ field }) => (
             <FormItem>
@@ -297,22 +346,17 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           control={form.control}
           name="bien_etranger"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="flex items-center leading-none">
-                <FormLabel className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                  Bien situé à l'étranger
-                </FormLabel>
-                <FieldHelp>
+            <FormItem className="space-y-0">
+              <OptionToggle
+                checked={!!field.value}
+                onChange={field.onChange}
+                help={<FieldHelp>
                   Impact fiscal : déclaration spécifique (formulaire 3916 pour les comptes, conventions fiscales, IFI sur immobilier étranger). À traiter au cas par cas.
-                </FieldHelp>
-              </div>
+                </FieldHelp>}
+              >
+                <Globe className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Bien situé à l'étranger
+              </OptionToggle>
             </FormItem>
           )}
         />
@@ -1290,39 +1334,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             </FormItem>
           )} />
         </div>
-      )}
-
-      {!isEpargneAV && !isPrevoyanceDeces(watchedNature) && !isCreance(watchedNature) && (
-        <FormField
-          control={form.control}
-          name="attachement_emotionnel"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Attachement émotionnel</FormLabel>
-              <FieldHelp>
-                De 0 (aucun attachement) à 10 (attachement très fort)
-              </FieldHelp>
-              <FormControl>
-                <div className="max-w-md space-y-2 pt-1">
-                  <Slider
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    value={[field.value || 0]}
-                    onValueChange={(vals) => field.onChange(vals[0])}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Aucun</span>
-                    <span className="font-medium text-foreground">{field.value || 0} / 10</span>
-                    <span>Très fort</span>
-                  </div>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       )}
     </div>
   );
