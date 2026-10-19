@@ -160,8 +160,9 @@ describe('actualiserEmprunt', () => {
     expect(e.mensualite).toBeCloseTo(1170.22, 2);
   });
 
-  it('garde la mensualité saisie', () => {
-    expect(actualiserEmprunt({ ...base, mensualite: 1_200 }, new Date(2020, 0, 15)).mensualite).toBe(1_200);
+  it('contrat complet : ignore une mensualité saisie qui le contredit (capital seul, sans intérêts)', () => {
+    // 200 000 € sur 240 mois : 833,33 € de capital seul, alors que l'échéance réelle est de 1 170,22 €.
+    expect(actualiserEmprunt({ ...base, mensualite: 833.33 }, new Date(2020, 0, 15)).mensualite).toBeCloseTo(1170.22, 2);
   });
 
   it('contrat incomplet : saisie manuelle inchangée', () => {

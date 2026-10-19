@@ -1,4 +1,4 @@
-import { actualiserEmprunt, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
+import { actualiserEmprunt, contratDepuisEmprunt } from '@/lib/credit/contrat';
 import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -330,14 +330,9 @@ export const usePassifEmpruntForm = ({
         };
         // Contrat complet : capital restant dû et durée restante enregistrés à leur valeur calculée du
         // jour (instantané cohérent en base ; ils sont recalculés à chaque lecture).
-        // La fiche relue est actualisée : une mensualité vide y apparaît à sa valeur calculée. Si elle
-        // n'a pas été modifiée, elle reste non saisie (elle suit alors le contrat).
+        // La mensualité suit alors le contrat : jamais enregistrée, recalculée à chaque lecture.
         const contrat = contratDepuisEmprunt(empruntData);
-        if (contrat && empruntData.mensualite != null
-          && Math.abs(empruntData.mensualite - Math.round(construireTableau(contrat).mensualiteHorsAssurance * 100) / 100) < 0.005) {
-          empruntData.mensualite = null;
-        }
-        Object.assign(empruntData, actualiserEmprunt(empruntData), contrat && empruntData.mensualite == null ? { mensualite: null } : {});
+        Object.assign(empruntData, actualiserEmprunt(empruntData), contrat ? { mensualite: null } : {});
 
         if (item && isEmpruntRecord(item)) {
           await updateEmprunt(item.id, empruntData);

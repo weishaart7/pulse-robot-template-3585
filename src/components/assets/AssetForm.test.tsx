@@ -242,3 +242,22 @@ describe('AssetForm — champs obligatoires en modification', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
+
+describe('AssetForm — surface du bien', () => {
+  it('enregistre la surface saisie', async () => {
+    const user = userEvent.setup();
+    vi.mocked(familyService.getFamilyProfile).mockResolvedValueOnce({ prenom: 'Camille' } as never);
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    const bien = {
+      id: 'a4', nature: 'Résidence principale', denomination: 'Maison', detenteur: 'user',
+      date_acquisition: '2020-05-01', valeur_acquisition: 100000, mode_detention: 'Pleine propriété',
+      origine_actif: ['Acquisition à titre onéreux'],
+    } as unknown as Asset;
+    render(<AssetForm asset={bien} onSubmit={onSubmit} onCancel={() => {}} />);
+    await waitFor(() => expect(screen.getByDisplayValue('Maison')).toBeInTheDocument());
+    await user.type(screen.getByLabelText('Surface'), '120');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].surface_m2).toBe(120);
+  });
+});

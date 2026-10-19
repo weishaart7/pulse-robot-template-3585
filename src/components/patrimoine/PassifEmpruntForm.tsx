@@ -274,11 +274,10 @@ export const PassifEmpruntForm = ({
                       ? <CalculatedValue label="Durée restante" value={`${apercu.dureeRestante} mois`} />
                       : numberField('duree_restante', 'Durée restante', { suffix: 'mois', integer: true })}
                     {numberField('taux_interet', "Taux d'intérêt", { suffix: '%', step: '0.01', help: 'Taux nominal. Un taux variable est projeté au taux actuel, supposé constant.' })}
-                    {numberField('mensualite', 'Mensualité', {
-                      help: apercu
-                        ? `Hors assurance emprunteur. Laissée vide, la mensualité calculée (${formatCurrency(apercu.mensualite)}) est retenue.`
-                        : 'Hors assurance emprunteur.',
-                    })}
+                    {/* Contrat complet : mensualité du tableau d'amortissement (capital + intérêts), non modifiable. */}
+                    {apercu
+                      ? <CalculatedValue label="Mensualité hors assurance" value={formatCurrency(apercu.mensualite)} />
+                      : numberField('mensualite', 'Mensualité', { help: 'Hors assurance emprunteur, intérêts compris.' })}
                   </>
                 ) : (
                   numberField('montant_du', 'Montant dû')

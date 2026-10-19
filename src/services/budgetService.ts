@@ -349,7 +349,7 @@ export const budgetService = {
     if (error) throw error;
 
     return (data || []).flatMap(brut => {
-      // Contrat complet : mensualité (si non saisie) et fin issues du tableau d'amortissement.
+      // Contrat complet : mensualité (hors assurance) et fin issues du tableau d'amortissement.
       const item = actualiserEmprunt(brut);
       const contrat = contratDepuisEmprunt(item);
       const part = partFoyerEmprunt(item);

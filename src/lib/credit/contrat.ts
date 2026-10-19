@@ -167,10 +167,11 @@ export function contratDepuisEmprunt(e: ChampsContrat): ContratCredit | null {
 }
 
 /**
- * Emprunt actualisé à la date : quand le contrat est complet, capital restant dû et durée restante
- * viennent du tableau d'amortissement (ils font foi partout : Patrimoine, Budget, Transmission,
- * Immobilier) ; la mensualité calculée ne remplace que la mensualité non saisie. Sans contrat complet,
- * l'emprunt est renvoyé tel quel (saisie manuelle).
+ * Emprunt actualisé à la date : quand le contrat est complet, capital restant dû, durée restante et
+ * mensualité (hors assurance, intérêts compris) viennent du tableau d'amortissement et font foi partout
+ * (Patrimoine, Budget, Transmission, Immobilier) — une mensualité saisie à la main est ignorée : elle
+ * pouvait contredire le contrat (capital seul, sans les intérêts). Sans contrat complet, l'emprunt est
+ * renvoyé tel quel (saisie manuelle).
  */
 export function actualiserEmprunt<T extends ChampsContrat & Pick<Emprunt, 'capital_restant_du' | 'duree_restante' | 'mensualite'>>(
   e: T,
@@ -183,6 +184,6 @@ export function actualiserEmprunt<T extends ChampsContrat & Pick<Emprunt, 'capit
     ...e,
     capital_restant_du: Math.round(capitalRestantDuAu(tableau, contrat.capitalInitial, date) * 100) / 100,
     duree_restante: echeancesRestantes(tableau, date),
-    mensualite: e.mensualite && e.mensualite > 0 ? e.mensualite : Math.round(tableau.mensualiteHorsAssurance * 100) / 100,
+    mensualite: Math.round(tableau.mensualiteHorsAssurance * 100) / 100,
   };
 }
