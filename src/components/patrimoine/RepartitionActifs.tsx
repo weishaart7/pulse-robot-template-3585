@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { PanelTitle } from '@/components/layout/workspace-panel';
 import { SectorsDonut } from '@/components/ui/sectors-donut';
 import { Treemap } from '@/components/ui/treemap';
 import { cn } from '@/lib/utils';
@@ -91,15 +90,16 @@ export function RepartitionActifs({
 
   return (
     <div className="border-b border-border px-8 py-6">
-      <PanelTitle action={categoriesBrutes.length > 0 ? (
-        <div className="flex items-center gap-3">
-          {nette && <Pastilles label="Valeur affichée" options={MODES} value={mode} onChange={changerMode} />}
-          {nette && <span aria-hidden="true" className="h-4 w-px bg-border" />}
-          <Pastilles label="Type de graphique" options={VUES} value={vue} onChange={changerVue} />
+      {/* Titre suivi de la bascule Brut / Net ; type de graphique à droite. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4">
+          <h3 className="text-[14.5px] font-medium tracking-[-0.01em] text-foreground">Répartition des actifs</h3>
+          {nette && categoriesBrutes.length > 0 && (
+            <Pastilles label="Valeur affichée" options={MODES} value={mode} onChange={changerMode} />
+          )}
         </div>
-      ) : undefined}>
-        Répartition des actifs
-      </PanelTitle>
+        {categoriesBrutes.length > 0 && <Pastilles label="Type de graphique" options={VUES} value={vue} onChange={changerVue} />}
+      </div>
 
       {categoriesBrutes.length === 0 ? (
         <p className="mt-3 text-[13px] text-muted-foreground">Aucun actif valorisé.</p>
