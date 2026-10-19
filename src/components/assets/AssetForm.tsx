@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { isAssuranceVieHorsSuccession, isCreance, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isAssuranceVieHorsSuccession, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useAssetForm } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Info, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -22,7 +22,7 @@ import { PlusValueBlock } from './fields/PlusValueBlock';
 import { ValeurEstimeeFields } from './fields/ValeurEstimeeFields';
 import { PrimeFields } from './fields/PrimeFields';
 import { ValorisationDemembreeBlock } from './fields/ValorisationDemembreeBlock';
-import { OrigineQualificationFields } from './fields/OrigineQualificationFields';
+import { OrigineFields, QualificationFields } from './fields/OrigineQualificationFields';
 import { DetentionFields } from './fields/DetentionFields';
 import { CaracteristiquesFields } from './fields/CaracteristiquesFields';
 import { ChargesListFields } from './fields/ChargesListFields';
@@ -33,6 +33,8 @@ import { hasDetailImmobilier, isRentalPropertyType } from '@/schemas/immobilierP
 import type { Emprunt } from '@/services/passifService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import { RequiredMark } from '@/components/ui/required-mark';
+import { PanelSection } from '@/components/immobilier/property/PanelSection';
+import { champsObligatoiresVisibles } from '@/schemas/assetSchema';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -105,6 +107,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   };
 
   const watchedNature = form.watch('nature');
+  const watchedDetenteur = form.watch('detenteur');
   // À la création, tant que la nature n'est pas renseignée, les onglets
   // autres que "essentiel" sont verrouillés (rien à qualifier avant ça).
   // En édition, l'actif existe déjà avec une nature : pas de verrouillage.
@@ -161,25 +164,22 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     </div>
   );
 
+  // Onglet Propriété en sections de panneau (PanelSection : titre à repère, filets bord à bord), dans
+  // l'ordre où se construit la qualification : acquisition, prix, détention, puis qualification qui en
+  // découle (avec le rappel du régime matrimonial), et crédit du bien. Une section sans objet pour la
+  // nature n'est pas affichée.
   const renderProprieteSection = () => {
-    const proprieteRappel = isInCouple(maritalContext.statutCouple) ? (
-      <div className="rounded-[2px] border border-border bg-secondary/50 p-4 text-sm text-muted-foreground">
-        <p>
-          Régime matrimonial : <span className="font-medium text-foreground">{maritalContext.regimeMatrimonial || 'Non renseigné'}</span>
-        </p>
-        <p>
-          {maritalContext.statutCouple === 'Pacsé(e)' ? 'Date de PACS' : 'Date de mariage'} :{' '}
-          <span className="font-medium text-foreground">
-            {(maritalContext.statutCouple === 'Pacsé(e)' ? maritalContext.datePacs : maritalContext.dateMariage) || 'Non renseignée'}
-          </span>
-        </p>
-      </div>
-    ) : null;
+    const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature);
+    const prixVisible = champsObligatoiresVisibles({ nature: watchedNature, detenteur: watchedDetenteur }).valeur_acquisition;
+    const qualificationVisible = !sansAcquisition && !isPrevoyanceSansRachat(watchedNature);
+    const enCouple = isInCouple(maritalContext.statutCouple);
+    const pacs = maritalContext.statutCouple === 'Pacsé(e)';
+    const dateUnion = pacs ? maritalContext.datePacs : maritalContext.dateMariage;
 
     return (
-    <div className="space-y-6">
+    <div>
       {isAVHorsSuccession && (
-        <div className="flex items-center gap-2 rounded-[2px] border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
+        <div className="mt-6 flex items-center gap-2 rounded-[2px] border border-border bg-secondary/50 px-4 py-3 text-sm text-muted-foreground">
           <Info className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
           <p>
             Sans effet sur la transmission
@@ -190,29 +190,56 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         </div>
       )}
 
-      {proprieteRappel}
+      {!sansAcquisition && (
+        <PanelSection title="Acquisition" grid={false}>
+          <div className="space-y-5">
+            <OrigineFields form={form} maritalContext={maritalContext} section="origine" />
+          </div>
+        </PanelSection>
+      )}
 
-      <OrigineQualificationFields
-        form={form}
-        maritalContext={maritalContext}
-        qualificationRaison={qualificationRaison}
-      />
+      {prixVisible && (
+        <PanelSection title="Prix" grid={false}>
+          <div className="space-y-5">
+            <OrigineFields form={form} maritalContext={maritalContext} section="prix" />
+          </div>
+        </PanelSection>
+      )}
 
-      <DetentionFields
-        form={form}
-        detenteurOptions={detenteurOptions}
-        familyData={familyData}
-        familyMembers={familyMembers}
-        maritalContext={maritalContext}
-        indivisaires={indivisaires}
-        setIndivisaires={setIndivisaires}
-        demembrements={demembrements}
-        setDemembrements={setDemembrements}
-      />
+      <PanelSection title="Détention" grid={false}>
+        <div className="space-y-5">
+          <DetentionFields
+            form={form}
+            detenteurOptions={detenteurOptions}
+            familyData={familyData}
+            familyMembers={familyMembers}
+            maritalContext={maritalContext}
+            indivisaires={indivisaires}
+            setIndivisaires={setIndivisaires}
+            demembrements={demembrements}
+            setDemembrements={setDemembrements}
+          />
+        </div>
+      </PanelSection>
+
+      {qualificationVisible && (
+        <PanelSection
+          title="Qualification"
+          grid={false}
+          description={enCouple ? (
+            <>
+              {maritalContext.regimeMatrimonial || 'Régime non renseigné'}
+              <span className="mx-1.5 text-muted-foreground/50">·</span>
+              {dateUnion ? `${pacs ? 'PACS' : 'Mariage'} le ${new Date(`${dateUnion.slice(0, 10)}T00:00:00`).toLocaleDateString('fr-FR')}` : `Date de ${pacs ? 'PACS' : 'mariage'} non renseignée`}
+            </>
+          ) : undefined}
+        >
+          <QualificationFields form={form} qualificationRaison={qualificationRaison} />
+        </PanelSection>
+      )}
 
       {asset?.id && hasDetailImmobilier(watchedNature) && (
-        <div className="space-y-2 border-t border-border pt-5">
-          <p className="text-[13px] font-medium text-foreground">Crédit</p>
+        <PanelSection title="Crédit" grid={false} description="Les crédits se saisissent et se modifient dans Patrimoine → Passifs.">
           {empruntsRelies.length > 0 ? (
             <ul className="divide-y divide-border border-y border-border text-[13px]">
               {empruntsRelies.map((e) => (
@@ -227,7 +254,6 @@ export const AssetForm: React.FC<AssetFormProps> = ({
           ) : (
             <p className="text-[12.5px] text-muted-foreground">Aucun crédit relié à ce bien.</p>
           )}
-          <p className="text-[12px] text-muted-foreground">Les crédits se saisissent et se modifient dans Patrimoine → Passifs.</p>
           {onAjouterCredit && (
             form.formState.isDirty ? (
               <p className="text-[12px] text-muted-foreground">Enregistrez d'abord vos modifications pour ajouter un crédit.</p>
@@ -237,7 +263,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               </Button>
             )
           )}
-        </div>
+        </PanelSection>
       )}
     </div>
     );
