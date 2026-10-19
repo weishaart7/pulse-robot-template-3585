@@ -40,18 +40,16 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
 
   return (
     <section className="border-y border-border py-4 animate-fade-in">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[13px] font-medium text-foreground">{positif ? 'Plus-value latente' : 'Moins-value latente'}</p>
-        <span className={cn(
-          'inline-flex h-6 items-center gap-1.5 rounded-[2px] px-2 text-[12.5px] font-medium tabular-nums',
-          positif ? 'bg-positive/10 text-positive' : 'bg-destructive/10 text-destructive'
-        )}>
-          {positif ? '+' : ''}{formatEur(plusValue)}
-          <span className="font-normal opacity-80">{formatPct(pct)}</span>
+      {/* Résultat en tête, à gauche : libellé, puis montant et taux sur une ligne. */}
+      <p className="text-[12px] text-muted-foreground">{positif ? 'Plus-value latente' : 'Moins-value latente'}</p>
+      <p className="mt-0.5 flex items-baseline gap-2 tabular-nums">
+        <span className={cn('text-[22px] font-medium leading-tight tracking-[-0.02em]', positif ? 'text-positive' : 'text-destructive')}>
+          {positif ? '+' : '−'}{formatEur(Math.abs(plusValue))}
         </span>
-      </div>
+        <span className="text-[12.5px] text-muted-foreground">{formatPct(pct).replace('-', '−')} du coût total</span>
+      </p>
 
-      <div className="mt-4">
+      <div className="mt-3">
         {/* Repère annoté de la valeur actuelle */}
         <div className="relative h-9">
           <div
