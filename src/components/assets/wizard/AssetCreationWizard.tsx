@@ -22,9 +22,9 @@ import { LocationFields } from '@/components/assets/fields/LocationFields';
 // Phrase d'introduction de chaque étape, sous son titre.
 const STEP_INTROS: Record<string, string> = {
   quoi: 'Ce que vous possédez et comment vous l\'appelez.',
-  origine: 'D\'où vient le bien et à qui il appartient — la qualification en découle.',
+  origine: 'D\'où vient le bien, à qui il appartient et comment — la qualification en découle.',
   prix: 'Ce que le bien a coûté à l\'acquisition.',
-  droitsvaleur: 'Les droits détenus (pleine propriété, usufruit…) et la valeur actuelle.',
+  droitsvaleur: 'Ce que vaut le bien aujourd\'hui.',
   location: 'Comment le bien est loué. Les autres revenus et charges se gèrent ensuite dans Immobilier.',
   particularites: 'Situations spécifiques utiles au conseil.',
   charges: 'Facultatif : dépenses récurrentes liées au bien, à ajouter maintenant ou plus tard.',
@@ -148,6 +148,8 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             maritalContext={maritalContext}
             indivisaires={indivisaires}
             setIndivisaires={setIndivisaires}
+            demembrements={demembrements}
+            setDemembrements={setDemembrements}
             qualificationRaison={qualificationRaison}
           />
         );

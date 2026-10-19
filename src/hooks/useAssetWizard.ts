@@ -48,7 +48,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
   {
     id: 'origine',
     label: 'Origine et propriété',
-    fields: ['date_acquisition', 'origine_actif', 'clause_entree_communaute', 'clause_remploi', 'est_propre_par_nature', 'detenteur', 'qualification_bien', 'pourcentage_utilisateur', 'pourcentage_conjoint', 'licitation_acquereur', 'part_licitation_personnelle'],
+    fields: ['date_acquisition', 'origine_actif', 'clause_entree_communaute', 'clause_remploi', 'est_propre_par_nature', 'mode_detention', 'detenteur', 'qualification_bien', 'pourcentage_utilisateur', 'pourcentage_conjoint', 'licitation_acquereur', 'part_licitation_personnelle'],
     // Toujours visible : pour une nature sans acquisition ou un bien en
     // indivision hors couple, seuls détenteur, quote-part et licitation
     // restent affichés (cf. WizardStepOrigine.tsx).
@@ -62,8 +62,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
   },
   {
     id: 'droitsvaleur',
-    label: 'Droits et valeur',
-    fields: ['mode_detention', 'valeur_estimee', 'date_estimation', 'capital_garanti'],
+    label: 'Valeur',
+    fields: ['valeur_estimee', 'date_estimation', 'capital_garanti'],
     isVisible: () => true,
   },
   {
@@ -86,7 +86,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
     label: 'Charges',
     fields: [],
     // Une créance n'a pas de dépenses récurrentes ; la prime d'un contrat de prévoyance se
-    // saisit dans « Droits et valeur » (PrimeFields).
+    // saisit dans « Valeur » (PrimeFields).
     isVisible: (values) => !isCreance(values.nature) && !isPrevoyanceDeces(values.nature),
   },
   {

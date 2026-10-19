@@ -5,6 +5,11 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 import { AssetCreationWizard } from './AssetCreationWizard';
 
+// Radix Select (mode de détention) a besoin de ces API absentes de jsdom.
+Element.prototype.hasPointerCapture = () => false;
+Element.prototype.releasePointerCapture = () => {};
+Element.prototype.scrollIntoView = () => {};
+
 global.ResizeObserver = class {
   observe() {}
   unobserve() {}
@@ -64,7 +69,7 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     expect(screen.getByText('Détenteur')).toBeInTheDocument();
   });
 
-  it("enchaîne les étapes dans l'ordre : origine et propriété, prix, droits et valeur", async () => {
+  it("enchaîne les étapes dans l'ordre : origine et propriété (avec le mode de détention), prix, valeur", async () => {
     const user = userEvent.setup();
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
@@ -72,9 +77,9 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
 
     const etapes = [
-      { label: 'Origine et propriété', champs: ["Date d'acquisition", 'Détenteur', 'Qualification du bien'] },
+      { label: 'Origine et propriété', champs: ["Date d'acquisition", 'Mode de détention', 'Détenteur', 'Qualification du bien'] },
       { label: 'Prix', champs: ["Valeur d'achat / réception", "Frais d'acquisition"] },
-      { label: 'Droits et valeur', champs: ['Mode de détention', 'Valeur actuelle estimée'] },
+      { label: 'Valeur', champs: ['Valeur actuelle estimée'] },
     ];
     for (const { label, champs } of etapes) {
       await user.click(screen.getByRole('button', { name: 'Suivant' }));
@@ -84,6 +89,8 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
         expect(screen.queryByText(/Valeur d'achat \/ réception/)).not.toBeInTheDocument();
         // Champs obligatoires de l'étape, remplis pour pouvoir avancer.
         await user.type(screen.getByPlaceholderText('jj/mm/aaaa'), '01/01/2020');
+        await user.click(screen.getByRole('combobox', { name: /Mode de détention/ }));
+        await user.click(await screen.findByRole('option', { name: 'Pleine propriété' }));
       }
       if (label === 'Prix') await user.type(screen.getByLabelText(/Valeur d'achat/), '1000');
     }

@@ -6,7 +6,8 @@ import { FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { OrigineFields, QualificationFields } from '@/components/assets/fields/OrigineQualificationFields';
-import { DetenteurFields, IndivisairesFields, LicitationPacsFields, QuotePartFields } from '@/components/assets/fields/DetentionFields';
+import { DemembrementFields, DetenteurFields, IndivisairesFields, LicitationPacsFields, ModeDetentionField, QuotePartFields } from '@/components/assets/fields/DetentionFields';
+import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 
 interface WizardStepOrigineProps {
   form: UseFormReturn<AssetFormValues>;
@@ -16,13 +17,16 @@ interface WizardStepOrigineProps {
   maritalContext: MaritalContext;
   indivisaires: IndivisaireDraft[];
   setIndivisaires: (value: IndivisaireDraft[]) => void;
+  demembrements: DemembrementDraft[];
+  setDemembrements: (value: DemembrementDraft[]) => void;
   qualificationRaison?: string;
   assetId?: string;
 }
 
 // Étape "Origine et propriété" : d'où vient le bien (date, origine, clauses
-// qui déterminent sa qualification), à qui il appartient (détenteur,
-// indivision, co-indivisaires), la qualification qui en résulte — affichée
+// qui déterminent sa qualification), à qui il appartient et comment (mode de
+// détention, détenteur, indivision, contreparties de démembrement,
+// co-indivisaires), la qualification qui en résulte — affichée
 // juste à côté pour que toute incohérence soit visible et corrigeable sur
 // place — puis ce qui en découle (quote-part, licitation PACS).
 //
@@ -37,6 +41,8 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
   maritalContext,
   indivisaires,
   setIndivisaires,
+  demembrements,
+  setDemembrements,
   qualificationRaison,
   assetId
 }) => {
@@ -48,10 +54,20 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
     <div className="space-y-6">
       {!sansAcquisition && <OrigineFields form={form} maritalContext={maritalContext} section="origine" />}
 
+      {/* Détention et qualification ensemble, comme dans l'onglet Propriété du formulaire de
+          modification : mode de détention et détenteur côte à côte, la qualification juste dessous. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ModeDetentionField form={form} />
         <DetenteurFields form={form} detenteurOptions={detenteurOptions} maritalContext={maritalContext} assetId={assetId} />
-        <QualificationFields form={form} qualificationRaison={qualificationRaison} />
       </div>
+      <QualificationFields form={form} qualificationRaison={qualificationRaison} />
+
+      <DemembrementFields
+        form={form}
+        familyMembers={familyMembers}
+        demembrements={demembrements}
+        setDemembrements={setDemembrements}
+      />
 
       <IndivisairesFields
         form={form}

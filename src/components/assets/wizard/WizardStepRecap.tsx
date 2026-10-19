@@ -111,7 +111,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
   onEditStep
 }) => {
   const values = form.watch();
-  // Contrat de prévoyance : capital garanti repris dans « Droits et valeur », pas d'origine ni de
+  // Contrat de prévoyance : capital garanti repris dans « Valeur », pas d'origine ni de
   // mode de détention, et rappel de ce qui reste à saisir dans Transmission.
   const isPrevoyance = isPrevoyanceDeces(values.nature);
   const estCreance = isCreance(values.nature);
@@ -140,7 +140,8 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       <RecapSection title="Origine et propriété" onEdit={() => onEditStep('origine')}>
         {values.detenteur !== 'Indivision' && formatDate(values.date_acquisition) && <Row label={isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : "Date d'acquisition"} value={formatDate(values.date_acquisition)} />}
         {values.detenteur !== 'Indivision' && !isPrevoyance && values.origine_actif?.[0] && <Row label="Origine" value={(estCreance ? getOrigineCreanceLabel : getOrigineActifLabel)(values.origine_actif[0])} />}
-        {values.detenteur && <Row label="Détenteur / Souscripteur" value={values.detenteur} />}
+        {!isPrevoyance && values.mode_detention && <Row label="Mode de détention" value={values.mode_detention} />}
+        {values.detenteur && <Row label="Détenteur / Souscripteur" value={values.detenteur === 'Indivision' ? 'En indivision avec un tiers' : values.detenteur} />}
         {values.detenteur === 'Indivision' && (
           <Row
             label="Co-indivisaires"
@@ -175,10 +176,9 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
         </RecapSection>
       )}
 
-      {(isPrevoyance || values.mode_detention || values.valeur_estimee !== undefined || formatDate(values.date_estimation)) && (
-        <RecapSection title="Droits et valeur" onEdit={() => onEditStep('droitsvaleur')}>
+      {(isPrevoyance || values.valeur_estimee !== undefined || formatDate(values.date_estimation)) && (
+        <RecapSection title="Valeur" onEdit={() => onEditStep('droitsvaleur')}>
           {isPrevoyance && <Row label="Capital garanti" value={formatEur(values.capital_garanti ?? 0)} />}
-          {!isPrevoyance && values.mode_detention && <Row label="Mode de détention" value={values.mode_detention} />}
           {values.valeur_estimee !== undefined && (
             <Row label={values.nature === NATURE_PREVOYANCE_RACHETABLE ? 'Valeur de rachat' : estCreance ? 'Montant restant dû' : 'Valeur estimée'} value={formatEur(values.valeur_estimee)} />
           )}
