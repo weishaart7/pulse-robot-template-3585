@@ -26,7 +26,8 @@ pour les charges :
 2. **`asset_revenus`/`asset_charges` avec `impact_budget = true`** — lignes saisies dans Patrimoine
    (`AssetDetailsDialog.tsx`, onglet Charges de `AssetForm`/`ChargeForm.tsx`) ou dans Immobilier
    (`ImmobilierGestionDialog`, `LMNPDetailView`) sur un actif donné, republiées ici en lecture seule dès
-   que la case « Impact sur le budget » est cochée à la source.
+   que la case « Impact sur le budget » est cochée à la source (cochée par défaut pour une nouvelle charge
+   saisie dans `ChargeForm.tsx`).
 3. **`emprunts` avec `reporter_budget = true`, côté charges uniquement** — mensualités (capital + intérêts
    + assurance emprunteur du mois, cf. `assuranceMensuelleAu` et docs/patrimoine.md) des emprunts réels
    de Patrimoine, republiées en lecture seule dans la catégorie « Emprunts & Crédits », dès que le champ
