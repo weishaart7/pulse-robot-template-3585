@@ -120,12 +120,11 @@ export const ImmobilierOverview: React.FC<ImmobilierOverviewProps> = ({ assets, 
             // génériques d'acquisition (valeur_acquisition/frais_acquisition) — un actif créé
             // via le formulaire générique Patrimoine n'a jamais les champs détaillés. Même
             // repli, et frais_acquisition non pondéré par la fraction, qu'au Résumé Patrimoine
-            // (calculatePlusValue dans PatrimoinePlusValues.tsx).
+            // (calculatePlusValue dans PatrimoinePlusValues.tsx). Les frais du crédit (dossier,
+            // garantie) n'entrent pas dans le coût d'acquisition d'une plus-value.
             const coutDetaille = (asset.montant_immeuble || 0)
               + (asset.frais_agence || 0)
               + (asset.frais_notaire || 0)
-              + (asset.frais_bancaires || 0)
-              + (asset.frais_hypotheque || 0)
               + (asset.travaux_renovation || 0)
               + (asset.travaux_construction || 0)
               + (asset.meubles || 0);

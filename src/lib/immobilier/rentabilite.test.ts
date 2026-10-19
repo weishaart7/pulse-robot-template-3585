@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
+import type { Emprunt } from '@/services/passifService';
 import {
   annualiserCharge,
   annualiserRevenu,
@@ -9,6 +10,7 @@ import {
   computeLoyersAnnuels,
   computeMicroBicLMNP,
   computePrixAcquisitionTotal,
+  fraisCreditBien,
   computeQuotePart,
   estimerFraisNotaire,
   repartirDeficitFoncier,
@@ -92,6 +94,18 @@ describe('computePrixAcquisitionTotal', () => {
       valeur_acquisition: 999_999, // ne doit pas être utilisé
     });
     expect(computePrixAcquisitionTotal(asset)).toBe(231_500);
+  });
+
+  it("reprend les frais du crédit de l'emprunt relié, à la place des anciennes colonnes de l'actif", () => {
+    const asset = makeAsset({ id: 'bien-1', montant_immeuble: 200_000, frais_notaire: 0, frais_bancaires: 1_000, frais_hypotheque: 500 });
+    const emprunts = [
+      { asset_id: 'bien-1', frais_dossier: 800, frais_garantie: 2_200 },
+      { asset_id: 'autre-bien', frais_dossier: 5_000, frais_garantie: 5_000 },
+    ] as Emprunt[];
+    expect(fraisCreditBien(asset, emprunts)).toBe(3_000);
+    expect(computePrixAcquisitionTotal(asset, emprunts)).toBe(203_000);
+    // Sans emprunt relié : repli sur les colonnes de l'actif.
+    expect(fraisCreditBien(asset, [])).toBe(1_500);
   });
 });
 

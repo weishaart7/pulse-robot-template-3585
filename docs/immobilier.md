@@ -21,7 +21,11 @@ Patrimoine (étapes « Le bien » et « Prix », cf. `docs/patrimoine.md`), le p
 `montant_immeuble`. Le **coût de revient est en lecture seule dans la fiche du bien**
 ([PropertyCostSection.tsx](src/components/immobilier/property/PropertyCostSection.tsx)) et se modifie dans
 Patrimoine (onglet Propriété) : prix et frais y alimentent aussi la plus-value et la qualification, un seul
-lieu de saisie évite qu'ils divergent. Pour un bien locatif, type de location, régime fiscal et loyer
+lieu de saisie évite qu'ils divergent. Les frais du crédit (dossier ou courtier, garantie) sont repris des emprunts
+reliés au bien (`fraisCreditBien`, [rentabilite.ts](src/lib/immobilier/rentabilite.ts) : `frais_dossier` +
+`frais_garantie`, repli sur les anciennes colonnes `frais_bancaires` / `frais_hypotheque` de l'actif s'il
+n'a pas d'emprunt relié) : ils comptent dans le coût de revient (rentabilité), pas dans le coût
+d'acquisition de la plus-value. Pour un bien locatif, type de location, régime fiscal et loyer
 mensuel facultatif (créé comme revenu « Loyers hors charges », mensuel, à la date du jour, report au budget
 au choix) sont aussi saisis à la création (étape « Location ») ; la fiche permet toujours de modifier type
 et régime. La case « Bien financé par un crédit » de l'étape « Prix » ne renseigne pas les champs
@@ -149,7 +153,7 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
     charges annualisés / mensualisés selon la périodicité (périodicité inconnue : annuelle pour un revenu,
     exclue pour une charge — convention propre à ces indicateurs, cf. §3), crédit + assurance emprunteur
     via `computeAmortissement`, le tout × quote-part. Rentabilités brute et nette rapportées au **prix de
-    revient** (`computePrixRevient` : `computePrixAcquisitionTotal`, soit immeuble + frais + travaux, comme
+    revient** (`computePrixRevient` : `computePrixAcquisitionTotal`, soit immeuble + frais + frais du crédit + travaux, comme
     le simulateur de la fiche ; repli sur `valeur_acquisition + frais_acquisition` quand le coût de revient
     détaillé est vide) — un bien affiche donc la même rentabilité brute dans « Mes biens » et dans son
     simulateur (vérifié : 2,79 % / 2,8 % sur le bien loué nu de l'aperçu). La Vue d'ensemble applique `computeIndicateurs` à la

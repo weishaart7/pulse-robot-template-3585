@@ -214,8 +214,6 @@ export const assetSchema = z.object({
   statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).optional(),
   frais_agence: z.number().finite().nonnegative().optional(),
   frais_notaire: z.number().finite().nonnegative().optional(),
-  frais_bancaires: z.number().finite().nonnegative().optional(),
-  frais_hypotheque: z.number().finite().nonnegative().optional(),
   travaux_renovation: z.number().finite().nonnegative().optional(),
   travaux_construction: z.number().finite().nonnegative().optional(),
   meubles: z.number().finite().nonnegative().optional(),

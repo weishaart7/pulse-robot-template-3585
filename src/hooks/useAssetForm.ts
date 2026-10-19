@@ -306,8 +306,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         statut_bien: (asset.statut_bien as AssetFormValues['statut_bien']) ?? undefined,
         frais_agence: asset.frais_agence ?? undefined,
         frais_notaire: asset.frais_notaire ?? undefined,
-        frais_bancaires: asset.frais_bancaires ?? undefined,
-        frais_hypotheque: asset.frais_hypotheque ?? undefined,
         travaux_renovation: asset.travaux_renovation ?? undefined,
         travaux_construction: asset.travaux_construction ?? undefined,
         meubles: asset.meubles ?? undefined,

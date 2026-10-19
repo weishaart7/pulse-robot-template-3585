@@ -94,12 +94,11 @@ export const hasDetailImmobilier = (nature: string | null | undefined): boolean 
   isResidenceType(nature) || isRentalPropertyType(nature);
 
 // Frais du coût de revient détaillé, dans l'ordre de la fiche Immobilier. Leur somme alimente
-// `frais_acquisition` (plus-value, qualification) pour éviter une double saisie divergente.
+// `frais_acquisition` (plus-value, qualification) pour éviter une double saisie divergente. Les frais
+// du crédit (dossier, garantie) n'y figurent pas : saisis sur l'emprunt relié (fraisCreditBien).
 export const FRAIS_DETAILLES = [
   { name: 'frais_notaire', label: 'Frais de notaire' },
   { name: 'frais_agence', label: "Frais d'agence" },
-  { name: 'frais_bancaires', label: 'Frais bancaires ou de courtier' },
-  { name: 'frais_hypotheque', label: "Frais d'hypothèque ou de caution" },
   { name: 'travaux_renovation', label: 'Travaux de rénovation' },
   { name: 'travaux_construction', label: 'Travaux de construction' },
   { name: 'meubles', label: 'Meubles' },

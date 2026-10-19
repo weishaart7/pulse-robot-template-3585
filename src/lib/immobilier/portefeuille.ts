@@ -14,8 +14,8 @@ import { isPartsFoncieres } from '@/lib/immobilier/partsFoncieres';
  * qu'un bien affiche la même rentabilité partout. Repli sur les champs génériques de Patrimoine
  * (valeur_acquisition + frais_acquisition) pour un actif dont le coût de revient détaillé est vide.
  */
-export const computePrixRevient = (asset: Asset): number => {
-  const detaille = computePrixAcquisitionTotal(asset);
+export const computePrixRevient = (asset: Asset, emprunts: Emprunt[] = []): number => {
+  const detaille = computePrixAcquisitionTotal(asset, emprunts);
   return detaille > 0 ? detaille : (asset.valeur_acquisition || 0) + (asset.frais_acquisition || 0);
 };
 
@@ -59,7 +59,7 @@ export const computeFluxBien = (
   emprunts: Emprunt[] = [],
 ): FluxBien => {
   const quotePart = computeQuotePart(asset) / 100;
-  const prixRevient = computePrixRevient(asset) * quotePart;
+  const prixRevient = computePrixRevient(asset, emprunts) * quotePart;
 
   let loyerAnnuel = 0;
   let revenusMensuels = 0;

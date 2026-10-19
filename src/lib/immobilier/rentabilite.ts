@@ -116,13 +116,26 @@ export function estimerFraisNotaire(prixAchat: number): number {
   return Number.isFinite(prixAchat) && prixAchat > 0 ? Math.round(prixAchat * TAUX_FRAIS_NOTAIRE_ESTIME) : 0;
 }
 
-export function computePrixAcquisitionTotal(asset: Asset): number {
+/**
+ * Frais du crédit d'un bien (dossier ou courtier, garantie) : repris des emprunts Patrimoine reliés au
+ * bien, seule saisie depuis que le formulaire d'actif ne les demande plus. Repli sur les anciennes
+ * colonnes de l'actif (frais_bancaires, frais_hypotheque) pour un bien sans emprunt relié.
+ */
+export function fraisCreditBien(asset: Asset, emprunts: Emprunt[] = []): number {
+  const relies = emprunts.filter((e) => e.asset_id === asset.id);
+  if (relies.length > 0) {
+    return relies.reduce((somme, e) => somme + (e.frais_dossier || 0) + (e.frais_garantie || 0), 0);
+  }
+  return (asset.frais_bancaires || 0) + (asset.frais_hypotheque || 0);
+}
+
+/** Coût de revient (rentabilité) : prix, frais d'acquisition, frais du crédit et travaux. */
+export function computePrixAcquisitionTotal(asset: Asset, emprunts: Emprunt[] = []): number {
   return (
     (asset.montant_immeuble || 0) +
     (asset.frais_agence || 0) +
     (asset.frais_notaire || 0) +
-    (asset.frais_bancaires || 0) +
-    (asset.frais_hypotheque || 0) +
+    fraisCreditBien(asset, emprunts) +
     (asset.travaux_renovation || 0) +
     (asset.travaux_construction || 0)
   );
@@ -240,7 +253,7 @@ export function creditsBien(asset: Asset, emprunts: Emprunt[] = []): CreditBien[
     asset,
     emprunts,
     computeQuotePart(asset),
-    Math.max(0, computePrixAcquisitionTotal(asset) - (asset.financement_apport || 0)),
+    Math.max(0, computePrixAcquisitionTotal(asset, emprunts) - (asset.financement_apport || 0)),
   );
 }
 
@@ -289,7 +302,7 @@ export function computeRentabilite(
   emprunts: Emprunt[] = [],
 ): RentabiliteResult {
   const facteur = quotePart / 100;
-  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset) * facteur;
+  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset, emprunts) * facteur;
   const loyersAnnuels = computeLoyersAnnuels(revenus) * facteur;
   const chargesAnnuelles = computeChargesAnnuelles(charges) * facteur;
   const amortissement = creditAnnuelBien(asset, emprunts, facteur, true);
@@ -551,7 +564,7 @@ export function computeRentabiliteLMNP(
   tmi: number,
   emprunts: Emprunt[] = [],
 ): RentabiliteLMNPResult {
-  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
+  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset, emprunts);
   const loyersAnnuels = computeLoyersAnnuels(revenus);
   const chargesAnnuelles = computeChargesAnnuelles(charges);
   // LMNP/LMP : aucune pondération par quote-part dans ces simulateurs (convention existante).
@@ -706,7 +719,7 @@ export function computeRentabiliteLMP(
   tauxCotisationsSociales: number,
   emprunts: Emprunt[] = [],
 ): RentabiliteLMPResult {
-  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset);
+  const prixAcquisitionTotal = computePrixAcquisitionTotal(asset, emprunts);
   const loyersAnnuels = computeLoyersAnnuels(revenus);
   const chargesAnnuelles = computeChargesAnnuelles(charges);
   // LMNP/LMP : aucune pondération par quote-part dans ces simulateurs (convention existante).
