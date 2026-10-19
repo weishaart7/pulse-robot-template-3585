@@ -11,6 +11,7 @@ import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
+import { FRAIS_DETAILLES, hasDetailImmobilier, isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
 import { NATURE_PREVOYANCE_RACHETABLE, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 
 interface WizardStepRecapProps {
@@ -113,6 +114,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
   // mode de détention, et rappel de ce qui reste à saisir dans Transmission.
   const isPrevoyance = isPrevoyanceDeces(values.nature);
   const estCreance = isCreance(values.nature);
+  const detailImmobilier = hasDetailImmobilier(values.nature);
 
   const chargesAvecImpact = charges
     .map((c) => ({ charge: c, impact: computeImpactMensuel(c) }))
@@ -129,6 +131,9 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       <RecapSection title="Le bien" onEdit={() => onEditStep('quoi')}>
         <Row label="Nature" value={values.nature || '—'} />
         {values.denomination && <Row label="Dénomination" value={values.denomination} />}
+        {detailImmobilier && values.typologie_bien && <Row label="Typologie" value={values.typologie_bien} />}
+        {detailImmobilier && values.surface_m2 !== undefined && <Row label="Surface" value={`${values.surface_m2.toLocaleString('fr-FR')} m²`} />}
+        {detailImmobilier && values.statut_bien && <Row label="Statut" value={values.statut_bien} />}
       </RecapSection>
 
       <RecapSection title="Origine et propriété" onEdit={() => onEditStep('origine')}>
@@ -153,7 +158,19 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       {(values.valeur_acquisition !== undefined || values.frais_acquisition !== undefined) && (
         <RecapSection title="Prix" onEdit={() => onEditStep('prix')}>
           {values.valeur_acquisition !== undefined && <Row label="Valeur d'achat" value={formatEur(values.valeur_acquisition)} />}
-          {values.frais_acquisition !== undefined && <Row label="Frais d'acquisition" value={formatEur(values.frais_acquisition)} />}
+          {detailImmobilier && FRAIS_DETAILLES.map(({ name, label }) => values[name] !== undefined && (
+            <Row key={name} label={label} value={formatEur(values[name] as number)} />
+          ))}
+          {values.frais_acquisition !== undefined && <Row label={detailImmobilier ? 'Total des frais' : "Frais d'acquisition"} value={formatEur(values.frais_acquisition)} />}
+          {detailImmobilier && values.finance_par_credit && <Row label="Crédit" value="À saisir dans Passifs après la création" />}
+        </RecapSection>
+      )}
+
+      {isRentalPropertyType(values.nature) && (
+        <RecapSection title="Location" onEdit={() => onEditStep('location')}>
+          <Row label="Type de location" value={values.type_location || '—'} />
+          {values.regime_location && <Row label="Régime fiscal" value={values.regime_location} />}
+          {values.loyer_mensuel ? <Row label="Loyer mensuel" value={`${formatEur(values.loyer_mensuel)}${values.loyer_budget ? ' · reporté au budget' : ''}`} /> : null}
         </RecapSection>
       )}
 

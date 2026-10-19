@@ -4,12 +4,14 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { AssetFormValues } from '@/schemas/assetSchema';
+import { DescriptionBienFields } from '@/components/assets/fields/BienImmobilierFields';
 
 interface WizardStepQuoiProps {
   form: UseFormReturn<AssetFormValues>;
 }
 
-// Étape "Le bien" : nature et dénomination. La valeur estimée est demandée à
+// Étape "Le bien" : nature, dénomination et, pour une résidence ou un bien locatif, sa
+// description (typologie, surface, statut). La valeur estimée est demandée à
 // l'étape "Valeur", avec la plus-value et la valorisation démembrée.
 export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
   <div className="space-y-6">
@@ -34,5 +36,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
         </FormItem>
       )} />
     </div>
+
+    <DescriptionBienFields form={form} />
   </div>
 );

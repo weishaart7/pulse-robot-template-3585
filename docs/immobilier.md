@@ -15,7 +15,21 @@
 ## 1. Vue d'ensemble
 
 Le module Immobilier ne saisit pas d'actifs : il **republie** les actifs de nature immobilière déjà
-créés dans Patrimoine (`assets`, cf. `docs/patrimoine.md`) et ajoute une couche de gestion spécifique :
+créés dans Patrimoine (`assets`, cf. `docs/patrimoine.md`). Pour une résidence ou un bien locatif, la
+description (typologie, surface, statut) et le coût de revient détaillé sont saisis dès la création dans
+Patrimoine (étapes « Le bien » et « Prix », cf. `docs/patrimoine.md`), le prix d'achat étant recopié dans
+`montant_immeuble`. Le **coût de revient est en lecture seule dans la fiche du bien**
+([PropertyCostSection.tsx](src/components/immobilier/property/PropertyCostSection.tsx)) et se modifie dans
+Patrimoine (onglet Propriété) : prix et frais y alimentent aussi la plus-value et la qualification, un seul
+lieu de saisie évite qu'ils divergent. Pour un bien locatif, type de location, régime fiscal et loyer
+mensuel facultatif (créé comme revenu « Loyers hors charges », mensuel, à la date du jour, report au budget
+au choix) sont aussi saisis à la création (étape « Location ») ; la fiche permet toujours de modifier type
+et régime. La case « Bien financé par un crédit » de l'étape « Prix » ne renseigne pas les champs
+`financement_*` : après la création, Patrimoine propose de saisir l'emprunt dans Passifs, prérempli et
+relié au bien (`PassifEmpruntForm`, prop `preset`), source qui fait foi. Les champs `financement_*` de la
+fiche restent pour les biens sans emprunt relié. **Écart connu** : la date d'achat et la valeur estimée,
+modifiables dans la fiche, n'y déclenchent pas le recalcul de la qualification (seul le formulaire de
+Patrimoine le fait). Le module ajoute une couche de gestion spécifique :
 détail des coûts d'acquisition, financement déclaratif, type/régime de location, et pour les biens
 meublés, un calculateur d'amortissement LMNP/LMP avec revenus et charges dédiés. Le transfert
 (`transfert_immobilier = true`) est **automatique** dès que la nature appartient à

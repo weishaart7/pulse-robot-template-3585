@@ -72,7 +72,7 @@ export const ImmobilierPropertyDetailView: React.FC<ImmobilierPropertyDetailView
           <Form {...form}>
             <form id="immobilier-property-form" onSubmit={handleSubmit}>
               <PropertyGeneralSection form={form} showStatutField={isResidence} />
-              <PropertyCostSection form={form} showMeublesField={isRentalProperty} />
+              <PropertyCostSection asset={asset} showMeublesField={isRentalProperty} />
               {isRentalProperty && (
                 <>
                   <PropertyFinancingSection form={form} empruntsRelies={empruntsRelies} />

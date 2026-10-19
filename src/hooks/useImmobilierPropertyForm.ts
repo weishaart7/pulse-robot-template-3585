@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { estimerFraisNotaire } from '@/lib/immobilier/rentabilite';
 import { Asset, assetService } from '@/services/assetService';
 import { 
   immobilierPropertySchema, 
@@ -36,20 +35,6 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
     }
   }, [asset, form]);
 
-  // Frais de notaire pré-remplis (estimerFraisNotaire) quand l'utilisateur modifie le prix de
-  // l'immeuble — seul abonnement de ce type sur le formulaire (plus de doublon dans PropertyCostSection).
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'montant_immeuble' && value.montant_immeuble) {
-        const frais = estimerFraisNotaire(Number(value.montant_immeuble));
-        if (frais > 0) {
-          form.setValue('frais_notaire', frais);
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
   const handleSubmit = async (data: ImmobilierPropertyFormValues) => {
     if (!asset) return;
 
@@ -68,14 +53,7 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
         date_acquisition: data.date_acquisition ? format(data.date_acquisition, 'yyyy-MM-dd') : null,
         valeur_estimee: numOrNull(data.valeur_estimee),
         statut_bien: data.statut_bien || null,
-        montant_immeuble: numOrNull(data.montant_immeuble),
-        frais_agence: numOrNull(data.frais_agence),
-        frais_notaire: numOrNull(data.frais_notaire),
-        frais_bancaires: numOrNull(data.frais_bancaires),
-        frais_hypotheque: numOrNull(data.frais_hypotheque),
-        travaux_renovation: numOrNull(data.travaux_renovation),
-        travaux_construction: numOrNull(data.travaux_construction),
-        meubles: numOrNull(data.meubles),
+        // Coût de revient : en lecture seule ici, saisi dans Patrimoine (PropertyCostSection).
         financement_actif: data.financement_actif || false,
         financement_duree_mois: numOrNull(data.financement_duree_mois),
         financement_apport: numOrNull(data.financement_apport),

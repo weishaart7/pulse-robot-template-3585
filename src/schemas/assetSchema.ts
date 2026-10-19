@@ -77,11 +77,11 @@ export const NATURES_LIQUIDITES_FR: string[] = [
 
 // Schema
 // Note : ce schéma couvre le socle générique patrimoine du formulaire d'actif.
-// Les champs "immobilier étendu" (typologie_bien, surface_m2, financement_*,
-// etc.), utilisés uniquement pour les natures immobilières et consommés par
-// le module Immobilier, ne sont pas saisis ici : ils vivent dans le type
-// `Asset` (src/services/assetService.ts, section "Champs immobilier étendu")
-// et sont gérés par les formulaires du module Immobilier.
+// Les champs "immobilier étendu" consommés par le module Immobilier vivent dans
+// le type `Asset` (src/services/assetService.ts, section "Champs immobilier
+// étendu"). Seuls la description du bien et le détail du coût de revient
+// (résidences et biens locatifs, cf. hasDetailImmobilier) sont saisis ici, dès
+// la création ; financement et location restent dans le module Immobilier.
 export const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   denomination: z.string().optional(),
@@ -172,6 +172,27 @@ export const assetSchema = z.object({
   sous_jacent: z.string().optional(),
   lieu_stockage: z.string().optional(),
   quantite: z.string().optional(),
+  // Description et coût de revient détaillé d'un bien immobilier (cf. hasDetailImmobilier).
+  // Le prix d'achat reste `valeur_acquisition`, recopié dans `montant_immeuble` à
+  // l'enregistrement ; `frais_acquisition` devient la somme des frais détaillés.
+  typologie_bien: z.enum(['Appartement', 'Maison']).optional(),
+  surface_m2: z.number().finite().nonnegative().optional(),
+  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).optional(),
+  frais_agence: z.number().finite().nonnegative().optional(),
+  frais_notaire: z.number().finite().nonnegative().optional(),
+  frais_bancaires: z.number().finite().nonnegative().optional(),
+  frais_hypotheque: z.number().finite().nonnegative().optional(),
+  travaux_renovation: z.number().finite().nonnegative().optional(),
+  travaux_construction: z.number().finite().nonnegative().optional(),
+  meubles: z.number().finite().nonnegative().optional(),
+  // Location d'un bien locatif (cf. isRentalPropertyType), saisie dès la création.
+  type_location: z.enum(['Location nue', 'Location meublée non professionnelle (LMNP)', 'Location meublée professionnelle (LMP)']).optional(),
+  regime_location: z.enum(['Micro-foncier', 'Réel', 'Micro-BIC', 'BIC']).optional(),
+  // Champs de saisie seulement, jamais écrits dans `assets` (retirés par useAssetForm) : loyer
+  // enregistré comme revenu du bien, et crédit à saisir ensuite dans Passifs.
+  loyer_mensuel: z.number().finite().nonnegative().optional(),
+  loyer_budget: z.boolean().optional(),
+  finance_par_credit: z.boolean().optional(),
 }).superRefine((values, ctx) => {
   // PER : le sous-type détermine si le contrat sort de la succession (assurantiel)
   // ou y reste (bancaire) — obligatoire, sauf PER obligatoire (toujours assurantiel,

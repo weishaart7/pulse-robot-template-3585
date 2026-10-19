@@ -1,5 +1,5 @@
 import { actualiserEmprunt, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { passifEmpruntSchema, PassifEmpruntFormValues, getDefaultPassifEmpruntValues } from '@/schemas/passifEmpruntSchema';
@@ -15,6 +15,8 @@ export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'lib
 
 interface UsePassifEmpruntFormProps {
   item?: Emprunt | Passif;
+  /** Création depuis l'ajout d'un bien : emprunt prérempli avec sa nature et relié à ce bien. */
+  preset?: { nature: string; asset_id: string };
   onSuccess: () => void;
   // Injectées par le parent (PatrimoinePassifs), qui détient l'unique instance
   // de useEmprunts()/usePassifs() : évite qu'une instance privée au formulaire
@@ -28,6 +30,7 @@ interface UsePassifEmpruntFormProps {
 
 export const usePassifEmpruntForm = ({
   item,
+  preset,
   onSuccess,
   createEmprunt,
   updateEmprunt,
@@ -144,6 +147,17 @@ export const usePassifEmpruntForm = ({
       });
     }
   }, [item, familyData, form]);
+
+  // Création préréglée : nature et bien relié, une fois l'actif chargé (le choix du bien préremplit
+  // aussi détenteur et quote-part, cf. l'effet suivant).
+  const presetApplique = useRef(false);
+  useEffect(() => {
+    if (item || !preset || presetApplique.current || !familyData.userFirstName) return;
+    if (!assets.some((a) => a.id === preset.asset_id)) return;
+    presetApplique.current = true;
+    form.setValue('nature', preset.nature);
+    form.setValue('asset_id', preset.asset_id);
+  }, [item, preset, assets, familyData, form]);
 
   // Préremplissage détenteur/quote-part depuis l'actif lié (point 2) — reste
   // modifiable ensuite, pas de verrouillage.

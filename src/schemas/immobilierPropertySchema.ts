@@ -87,3 +87,51 @@ export const DETENTEUR_OPTIONS = [
   { value: 'spouse', label: 'Conjoint' },
   { value: 'common', label: 'Le couple' }
 ];
+
+// Natures dont la fiche Immobilier porte description et coût de revient détaillé :
+// ces champs sont alors saisis dès le formulaire d'actif de Patrimoine.
+export const hasDetailImmobilier = (nature: string | null | undefined): boolean =>
+  isResidenceType(nature) || isRentalPropertyType(nature);
+
+// Frais du coût de revient détaillé, dans l'ordre de la fiche Immobilier. Leur somme alimente
+// `frais_acquisition` (plus-value, qualification) pour éviter une double saisie divergente.
+export const FRAIS_DETAILLES = [
+  { name: 'frais_notaire', label: 'Frais de notaire' },
+  { name: 'frais_agence', label: "Frais d'agence" },
+  { name: 'frais_bancaires', label: 'Frais bancaires ou de courtier' },
+  { name: 'frais_hypotheque', label: "Frais d'hypothèque ou de caution" },
+  { name: 'travaux_renovation', label: 'Travaux de rénovation' },
+  { name: 'travaux_construction', label: 'Travaux de construction' },
+  { name: 'meubles', label: 'Meubles' },
+] as const;
+
+export type FraisDetailleName = typeof FRAIS_DETAILLES[number]['name'];
+
+export type TypeLocation = 'Location nue' | 'Location meublée non professionnelle (LMNP)' | 'Location meublée professionnelle (LMP)';
+export type RegimeLocation = 'Micro-foncier' | 'Réel' | 'Micro-BIC' | 'BIC';
+
+export const TYPE_LOCATION_OPTIONS: TypeLocation[] = [
+  'Location nue',
+  'Location meublée non professionnelle (LMNP)',
+  'Location meublée professionnelle (LMP)',
+];
+
+// Régimes fiscaux selon le type de location (et non la nature du bien) : revenus fonciers pour la
+// location nue, BIC pour le meublé.
+export const regimesPour = (type: TypeLocation | null | undefined): RegimeLocation[] =>
+  type === 'Location nue' ? ['Micro-foncier', 'Réel'] : ['Micro-BIC', 'BIC'];
+
+// Types de location possibles selon la nature : un bien de nature « loués nus » ne peut être qu'en
+// location nue ; les autres natures locatives peuvent être louées nues ou meublées.
+export const typesLocationPour = (nature: string | null | undefined): TypeLocation[] =>
+  nature === 'Immeubles locatifs (loués nus)' ? ['Location nue'] : TYPE_LOCATION_OPTIONS;
+
+// Type proposé d'office à la création, quand la nature le désigne.
+export const typeLocationParDefaut = (nature: string | null | undefined): TypeLocation | undefined => {
+  switch (nature) {
+    case 'Immeubles locatifs (loués nus)': return 'Location nue';
+    case 'Immeubles locatifs (LMNP)': return 'Location meublée non professionnelle (LMNP)';
+    case 'Immeubles locatifs (LMP)': return 'Location meublée professionnelle (LMP)';
+    default: return undefined;
+  }
+};

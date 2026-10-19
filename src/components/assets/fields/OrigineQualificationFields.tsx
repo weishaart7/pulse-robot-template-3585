@@ -13,6 +13,8 @@ import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, 
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
+import { hasDetailImmobilier } from '@/schemas/immobilierPropertySchema';
+import { FraisDetaillesFields } from './BienImmobilierFields';
 
 // Sections du bloc Origine : "origine" = date, origine et clauses qui
 // déterminent la qualification (entrée/exclusion de communauté, remploi, bien
@@ -47,6 +49,8 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   // Contrat de prévoyance : souscrit, ni acheté ni reçu — seule la date de souscription est
   // demandée (date_acquisition, lue comme telle par useAVContracts), sans origine ni clauses.
   const isPrevoyance = isPrevoyanceDeces(watchedNature);
+  // Résidence ou bien locatif : frais détaillés à la place du champ global (cf. FraisDetaillesFields).
+  const fraisDetailles = hasDetailImmobilier(watchedNature);
   const isIndivisionHorsCouple = watchedDetenteur === 'Indivision';
   const showClauseEntreeCommunaute = !isPrevoyance && (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   // Sous communauté universelle (art. 1526) ou, pour un bien meuble
@@ -143,7 +147,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
+            {!fraisDetailles && <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
               <FormItem>
                 <FormLabel>Frais d'acquisition</FormLabel>
                 <FieldHelp>Notaire, agence, droits d'enregistrement, etc.</FieldHelp>
@@ -152,7 +156,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )} />
+            )} />}
           </>
         )}
       </div>
@@ -206,6 +210,8 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           )}
         />
       )}
+
+      {showPrixSection && fraisDetailles && <FraisDetaillesFields form={form} />}
 
       {showPrixSection && !isPrevoyance && showFinancementMixte && (
         <FormField control={form.control} name="financement_mixte_apport_propre" render={({ field }) => (

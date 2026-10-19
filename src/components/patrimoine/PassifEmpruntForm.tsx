@@ -23,6 +23,8 @@ import { formatCurrency } from '@/lib/patrimoine/utils';
 
 interface PassifEmpruntFormProps {
   item?: Emprunt | Passif;
+  /** Création depuis l'ajout d'un bien : nature et bien relié préremplis. */
+  preset?: { nature: string; asset_id: string };
   onCancel: () => void;
   onSubmit: () => void;
   createEmprunt: (data: Omit<Emprunt, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => Promise<Emprunt>;
@@ -93,6 +95,7 @@ const FormSection = ({ title, intro, children }: { title: string; intro?: string
 
 export const PassifEmpruntForm = ({
   item,
+  preset,
   onCancel,
   onSubmit,
   createEmprunt,
@@ -108,7 +111,7 @@ export const PassifEmpruntForm = ({
     assets,
     originalIsEmprunt,
     handleSubmit,
-  } = usePassifEmpruntForm({ item, onSuccess: onSubmit, createEmprunt, updateEmprunt, createPassif, updatePassif });
+  } = usePassifEmpruntForm({ item, preset, onSuccess: onSubmit, createEmprunt, updateEmprunt, createPassif, updatePassif });
 
   const watchedNature = form.watch('nature');
   const watchedDetenteur = form.watch('detenteur');

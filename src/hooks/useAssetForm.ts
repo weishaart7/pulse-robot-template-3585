@@ -16,6 +16,10 @@ import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/In
 import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { DemembrementDraft, draftsFromDemembrements } from '@/components/assets/DemembrementSection';
 import { isPartsSocieteNature } from '@/lib/patrimoine/societeTransfer';
+import { FRAIS_DETAILLES, FraisDetailleName, hasDetailImmobilier, isRentalPropertyType, typeLocationParDefaut } from '@/schemas/immobilierPropertySchema';
+import { estimerFraisNotaire } from '@/lib/immobilier/rentabilite';
+
+const FRAIS_DETAILLES_NAMES: string[] = FRAIS_DETAILLES.map((f) => f.name);
 
 // Types d'actifs qui nécessitent le champ "Établissement"
 export const NATURES_WITH_ETABLISSEMENT = [
@@ -30,9 +34,17 @@ export const NATURES_WITH_ETABLISSEMENT = [
   ...PARTS_FONCIERES_NATURES,
 ];
 
+// Saisies de la création qui ne sont pas des colonnes de `assets` : enregistrées à part par le
+// parent (loyer → revenu du bien) ou proposées après coup (crédit → Passifs).
+export interface AssetSaisieExtras {
+  loyerMensuel?: number;
+  loyerBudget?: boolean;
+  financeParCredit?: boolean;
+}
+
 interface UseAssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: AssetFormValues, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<any>;
+  onSubmit: (asset: AssetFormValues, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => Promise<any>;
 }
 
 export interface MaritalContext {
@@ -289,6 +301,18 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         sous_jacent: asset.sous_jacent || undefined,
         lieu_stockage: asset.lieu_stockage || undefined,
         quantite: asset.quantite ?? undefined,
+        typologie_bien: (asset.typologie_bien as AssetFormValues['typologie_bien']) ?? undefined,
+        surface_m2: asset.surface_m2 ?? undefined,
+        statut_bien: (asset.statut_bien as AssetFormValues['statut_bien']) ?? undefined,
+        frais_agence: asset.frais_agence ?? undefined,
+        frais_notaire: asset.frais_notaire ?? undefined,
+        frais_bancaires: asset.frais_bancaires ?? undefined,
+        frais_hypotheque: asset.frais_hypotheque ?? undefined,
+        travaux_renovation: asset.travaux_renovation ?? undefined,
+        travaux_construction: asset.travaux_construction ?? undefined,
+        meubles: asset.meubles ?? undefined,
+        type_location: (asset.type_location as AssetFormValues['type_location']) ?? undefined,
+        regime_location: (asset.regime_location as AssetFormValues['regime_location']) ?? undefined,
       });
     }
     // `indivisaires` est chargé de façon asynchrone par l'effet précédent
@@ -416,6 +440,37 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
     return () => subscription.unsubscribe();
   }, [form, familyData, indivisaires]);
 
+  // Résidence ou bien locatif : les frais détaillés remplacent le champ global, qui devient leur
+  // somme (plus-value, qualification). Recalculé seulement quand l'utilisateur touche un frais
+  // détaillé : un actif ancien avec des frais globaux et sans détail garde ses frais à l'ouverture.
+  // Frais de notaire estimés au changement du prix d'un achat, tant qu'ils n'ont pas été saisis.
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (!name) return;
+      // Création : type de location proposé d'office quand la nature le désigne (LMNP, LMP, loués nus).
+      if (name === 'nature' && !asset) {
+        form.setValue('type_location', typeLocationParDefaut(value.nature));
+        form.setValue('regime_location', undefined);
+        return;
+      }
+      if (!hasDetailImmobilier(value.nature)) return;
+      if (name === 'valeur_acquisition'
+        && (value.origine_actif || []).includes('Acquisition à titre onéreux')
+        && !form.getFieldState('frais_notaire').isDirty) {
+        const frais = estimerFraisNotaire(Number(value.valeur_acquisition));
+        form.setValue('frais_notaire', frais > 0 ? frais : undefined);
+        return;
+      }
+      if (FRAIS_DETAILLES_NAMES.includes(name)) {
+        const montants = FRAIS_DETAILLES_NAMES
+          .map((n) => value[n as FraisDetailleName])
+          .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+        form.setValue('frais_acquisition', montants.length > 0 ? montants.reduce((a, b) => a + b, 0) : undefined);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, asset]);
+
   const handleSubmit = async (values: AssetFormValues) => {
     setIsLoading(true);
     try {
@@ -482,7 +537,32 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         transfert_societe: !!societeId,
       };
 
-      const formattedValues = dbValues;
+      // Description et coût détaillé : enregistrés pour une résidence ou un bien locatif (prix
+      // d'achat recopié dans montant_immeuble, lu par la fiche Immobilier), jamais pour une autre
+      // nature — les colonnes existantes ne sont alors pas touchées.
+      const champsImmobilier = ['typologie_bien', 'surface_m2', 'statut_bien', ...FRAIS_DETAILLES_NAMES] as const;
+      const formattedValues: Record<string, unknown> = { ...dbValues };
+      if (hasDetailImmobilier(values.nature)) {
+        for (const champ of champsImmobilier) formattedValues[champ] = values[champ as keyof AssetFormValues] ?? null;
+        formattedValues.montant_immeuble = values.valeur_acquisition ?? null;
+      } else {
+        for (const champ of champsImmobilier) delete formattedValues[champ];
+      }
+      if (isRentalPropertyType(values.nature)) {
+        formattedValues.type_location = values.type_location ?? null;
+        formattedValues.regime_location = values.regime_location ?? null;
+      } else {
+        delete formattedValues.type_location;
+        delete formattedValues.regime_location;
+      }
+      delete formattedValues.loyer_mensuel;
+      delete formattedValues.loyer_budget;
+      delete formattedValues.finance_par_credit;
+      const extras: AssetSaisieExtras = {
+        loyerMensuel: isRentalPropertyType(values.nature) && values.loyer_mensuel ? values.loyer_mensuel : undefined,
+        loyerBudget: !!values.loyer_budget,
+        financeParCredit: hasDetailImmobilier(values.nature) && !!values.finance_par_credit,
+      };
 
       const finalIndivisaires = dbDetenteur === 'Indivision' ? indivisaires : [];
       const finalDemembrements = ['Usufruit', 'Nue-propriété'].includes(values.mode_detention || '') ? demembrements : [];
@@ -494,7 +574,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         ...deletedChargeIds,
         ...charges.filter((c) => primeVide(c) && c.id && !c.id.startsWith('temp-')).map((c) => c.id!),
       ];
-      const saved = await onSubmit(formattedValues as any, charges.filter((c) => !primeVide(c)), finalIndivisaires, finalDemembrements);
+      const saved = await onSubmit(formattedValues as any, charges.filter((c) => !primeVide(c)), finalIndivisaires, finalDemembrements, extras);
       if (saved !== false && chargesASupprimer.length > 0) {
         const results = await Promise.allSettled(chargesASupprimer.map((id) => assetService.deleteAssetCharge(id)));
         if (results.some((r) => r.status === 'rejected')) toast.error("Une charge supprimée n'a pas pu être effacée");

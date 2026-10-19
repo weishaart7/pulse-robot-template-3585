@@ -1,57 +1,40 @@
 import React from 'react';
-import { UseFormReturn } from 'react-hook-form';
 import { PanelSection } from './PanelSection';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
+import { Asset } from '@/services/assetService';
+import { FRAIS_DETAILLES } from '@/schemas/immobilierPropertySchema';
+import { formatCurrency } from '@/lib/patrimoine/utils';
 
 interface PropertyCostSectionProps {
-  form: UseFormReturn<ImmobilierPropertyFormValues>;
+  asset: Asset;
   showMeublesField?: boolean;
 }
 
-type NumericFieldNames = 'montant_immeuble' | 'frais_agence' | 'frais_notaire' | 'frais_bancaires' | 'frais_hypotheque' | 'travaux_renovation' | 'travaux_construction' | 'meubles';
-
-export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({
-  form,
-  showMeublesField = false,
-}) => {
-  const renderNumberField = (
-    name: NumericFieldNames,
-    label: string,
-    placeholder: string
-  ) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <FormControl>
-            <Input
-              type="number"
-              step="0.01"
-              placeholder={placeholder}
-              value={field.value || ''}
-              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : '')}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
+// Coût de revient en lecture seule : il se saisit dans le formulaire d'actif de Patrimoine, qui
+// tient en un seul endroit le prix d'achat, les frais détaillés et leur somme (frais d'acquisition),
+// entrées de la plus-value et de la qualification du bien.
+export const PropertyCostSection: React.FC<PropertyCostSectionProps> = ({ asset, showMeublesField = false }) => {
+  const prixAchat = asset.montant_immeuble ?? asset.valeur_acquisition;
+  const lignes: { label: string; valeur: number | null | undefined }[] = [
+    { label: "Prix d'achat du bien", valeur: prixAchat },
+    ...FRAIS_DETAILLES
+      .filter((f) => f.name !== 'meubles' || showMeublesField)
+      .map((f) => ({ label: f.label, valeur: asset[f.name] })),
+  ];
 
   return (
-    <PanelSection title="Coût de revient">
-        {renderNumberField('montant_immeuble', "Prix d'achat du bien (€)", "Prix d'achat du bien")}
-        {renderNumberField('frais_agence', "Frais d'agence (€)", "Frais d'agence")}
-        {renderNumberField('frais_notaire', 'Frais de notaire (€)', 'Frais de notaire (calculé automatiquement à 7,5%)')}
-        {renderNumberField('frais_bancaires', 'Frais bancaires ou de courtier (€)', 'Frais bancaires')}
-        {renderNumberField('frais_hypotheque', "Frais d'hypothèque ou de caution (€)", "Frais d'hypothèque")}
-        {renderNumberField('travaux_renovation', 'Travaux de rénovation (€)', 'Travaux de rénovation')}
-        {renderNumberField('travaux_construction', 'Travaux de construction (€)', 'Travaux de construction')}
-        {showMeublesField && renderNumberField('meubles', 'Meubles (€)', 'Meubles')}
-      </PanelSection>
+    <PanelSection
+      title="Coût de revient"
+      grid={false}
+      description="Se modifie dans Patrimoine → Actifs → ce bien, onglet Propriété : le prix et les frais y servent aussi à la plus-value et à la qualification du bien."
+    >
+      <dl className="-mx-2 grid grid-cols-1 border-y border-border md:grid-cols-2 md:gap-x-6">
+        {lignes.map(({ label, valeur }) => (
+          <div key={label} className="flex items-baseline justify-between gap-4 border-b border-border px-2 py-2.5 text-[13px] last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="tabular-nums text-foreground">{valeur != null ? formatCurrency(valeur) : '—'}</dd>
+          </div>
+        ))}
+      </dl>
+    </PanelSection>
   );
 };

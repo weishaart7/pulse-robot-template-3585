@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { AssetFormValues } from '@/schemas/assetSchema';
 import { NATURES_WITHOUT_ACQUISITION, isCreance, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
 import { useAssetForm } from './useAssetForm';
+import { isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
 import { AssetCharge } from '@/services/assetService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
+import { AssetSaisieExtras } from '@/hooks/useAssetForm';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 
-export type WizardStepId = 'quoi' | 'origine' | 'prix' | 'droitsvaleur' | 'particularites' | 'charges' | 'recapitulatif';
+export type WizardStepId = 'quoi' | 'origine' | 'prix' | 'droitsvaleur' | 'location' | 'particularites' | 'charges' | 'recapitulatif';
 
 interface WizardStepDef {
   id: WizardStepId;
@@ -65,6 +67,13 @@ const WIZARD_STEPS: WizardStepDef[] = [
     isVisible: () => true,
   },
   {
+    id: 'location',
+    label: 'Location',
+    fields: ['type_location', 'regime_location', 'loyer_mensuel'],
+    // Biens locatifs seulement (RENTAL_PROPERTY_TYPES), comme la section Location de la fiche Immobilier.
+    isVisible: (values) => isRentalPropertyType(values.nature),
+  },
+  {
     id: 'particularites',
     label: 'Particularités',
     // sous_type_per (PER), garantie_deces (retraite par rente) et régime
@@ -89,7 +98,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
 ];
 
 interface UseAssetWizardProps {
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<boolean | void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => Promise<boolean | void>;
 }
 
 // Pilote le wizard de création d'un actif au-dessus de useAssetForm (instance

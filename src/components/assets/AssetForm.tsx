@@ -12,6 +12,7 @@ import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Info, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IndivisaireDraft } from './IndivisairesSection';
+import { AssetSaisieExtras } from '@/hooks/useAssetForm';
 import { DemembrementDraft } from './DemembrementSection';
 import { isInCouple } from '@/lib/patrimoine/qualification';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
@@ -26,10 +27,13 @@ import { DetentionFields } from './fields/DetentionFields';
 import { CaracteristiquesFields } from './fields/CaracteristiquesFields';
 import { ChargesListFields } from './fields/ChargesListFields';
 import { FieldHelp } from '@/components/ui/field-help';
+import { DescriptionBienFields } from './fields/BienImmobilierFields';
+import { LocationFields } from './fields/LocationFields';
+import { isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
 
 interface AssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<boolean | void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => Promise<boolean | void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
 }
@@ -110,6 +114,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         )} />
       </div>
 
+      <DescriptionBienFields form={form} />
+
       <ValeurEstimeeFields form={form} />
 
       {isPrevoyanceDeces(watchedNature) && (
@@ -127,7 +133,12 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     </div>
   );
 
-  const renderCaracteristiquesSection = () => <CaracteristiquesFields form={form} />;
+  const renderCaracteristiquesSection = () => (
+    <div className="space-y-6">
+      {isRentalPropertyType(watchedNature) && <LocationFields form={form} />}
+      <CaracteristiquesFields form={form} />
+    </div>
+  );
 
   const renderProprieteSection = () => {
     const proprieteRappel = isInCouple(maritalContext.statutCouple) ? (

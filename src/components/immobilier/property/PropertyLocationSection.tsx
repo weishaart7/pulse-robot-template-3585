@@ -3,19 +3,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
-
-type TypeLocation = NonNullable<ImmobilierPropertyFormValues['type_location']>;
-type RegimeLocation = NonNullable<ImmobilierPropertyFormValues['regime_location']>;
-
-const TYPE_LOCATION_OPTIONS: TypeLocation[] = [
-  'Location nue',
-  'Location meublée non professionnelle (LMNP)',
-  'Location meublée professionnelle (LMP)',
-];
-
-const regimesPour = (type: TypeLocation | null | undefined): RegimeLocation[] =>
-  type === 'Location nue' ? ['Micro-foncier', 'Réel'] : ['Micro-BIC', 'BIC'];
+import { ImmobilierPropertyFormValues, TypeLocation, regimesPour, typesLocationPour } from '@/schemas/immobilierPropertySchema';
 
 interface PropertyLocationSectionProps {
   form: UseFormReturn<ImmobilierPropertyFormValues>;
@@ -28,14 +16,8 @@ export const PropertyLocationSection: React.FC<PropertyLocationSectionProps> = (
 }) => {
   const typeLocation = form.watch('type_location');
 
-  // Un bien de nature « loués nus » ne peut être qu'en location nue ; les autres natures locatives
-  // (immeubles professionnels, de rapport, parkings) peuvent être louées nues ou meublées.
-  const typeOptions = assetNature === 'Immeubles locatifs (loués nus)'
-    ? TYPE_LOCATION_OPTIONS.filter((t) => t === 'Location nue')
-    : TYPE_LOCATION_OPTIONS;
+  const typeOptions = typesLocationPour(assetNature);
 
-  // Régimes fiscaux selon le type de location choisi (et non la nature du bien) : revenus fonciers
-  // pour la location nue, BIC pour le meublé.
   const regimeOptions = regimesPour(typeLocation);
 
   const handleTypeChange = (value: string, onChange: (v: string) => void) => {

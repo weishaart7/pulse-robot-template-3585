@@ -4,6 +4,8 @@ import { AssetFormValues } from '@/schemas/assetSchema';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
 import { OrigineFields } from '@/components/assets/fields/OrigineQualificationFields';
+import { CreditFields } from '@/components/assets/fields/LocationFields';
+import { hasDetailImmobilier } from '@/schemas/immobilierPropertySchema';
 
 interface WizardStepPrixProps {
   form: UseFormReturn<AssetFormValues>;
@@ -31,6 +33,8 @@ export const WizardStepPrix: React.FC<WizardStepPrixProps> = ({ form, maritalCon
   return (
     <div className="space-y-6">
       <OrigineFields form={form} maritalContext={maritalContext} section="prix" />
+
+      {hasDetailImmobilier(form.watch('nature')) && <CreditFields form={form} />}
 
       {qualificationDependDuPrix && (
         <div className="max-w-2xl border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">

@@ -14,12 +14,28 @@ import { assetValorisationService } from '@/services/assetValorisationService';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
+import { AssetSaisieExtras } from '@/hooks/useAssetForm';
+import { PassifEmpruntForm } from './PassifEmpruntForm';
+import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
+import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
+
+// Nature d'emprunt proposée pour le crédit d'un bien créé avec « Bien financé par un crédit ».
+const natureEmpruntPour = (natureBien: string): string => {
+  if (natureBien === 'Résidence principale') return 'Prêt immobilier (résidence principale)';
+  if (natureBien === 'Résidences secondaires') return 'Prêt immobilier (résidences secondaires)';
+  return 'Prêt immobilier locatif (investissement locatif)';
+};
 
 export const PatrimoineActifs = () => {
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
+  const { createEmprunt, updateEmprunt } = useEmprunts();
+  const { createPassif, updatePassif } = usePassifs();
+  // Bien créé avec « Bien financé par un crédit » : proposition, puis saisie de l'emprunt relié.
+  const [creditAProposer, setCreditAProposer] = useState<Asset | null>(null);
+  const [creditEnSaisie, setCreditEnSaisie] = useState<Asset | null>(null);
 
   // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
   const syncValorisationFromAsset = async (savedAsset: Asset, previousValeurEstimee: number | undefined): Promise<boolean> => {
@@ -36,7 +52,7 @@ export const PatrimoineActifs = () => {
     }
   };
 
-  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => {
+  const handleAssetSubmit = async (assetData: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => {
     const previousValeurEstimee = editingAsset?.valeur_estimee;
     let savedAsset: Asset;
 
@@ -133,6 +149,25 @@ export const PatrimoineActifs = () => {
       );
     }
 
+    // Loyer saisi à la création : revenu du bien, mensuel, à partir d'aujourd'hui.
+    if (!editingAsset && extras?.loyerMensuel) {
+      try {
+        await assetService.createAssetRevenu({
+          asset_id: savedAsset.id!,
+          nature: 'Loyers hors charges',
+          montant: extras.loyerMensuel,
+          periodicite: 'Mensuelle',
+          date_debut: format(new Date(), 'yyyy-MM-dd'),
+          impact_budget: !!extras.loyerBudget,
+        });
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Loyer non enregistré:', error);
+        stepErrors.push("le loyer n'a pas pu être enregistré");
+      }
+    }
+
+    if (!editingAsset && extras?.financeParCredit) setCreditAProposer(savedAsset);
+
     setShowAssetForm(false);
     setEditingAsset(null);
 
@@ -144,6 +179,33 @@ export const PatrimoineActifs = () => {
       );
     }
   };
+
+  if (creditEnSaisie) {
+    const fermer = () => setCreditEnSaisie(null);
+    return (
+      <PassifEmpruntForm
+        preset={{ nature: natureEmpruntPour(creditEnSaisie.nature), asset_id: creditEnSaisie.id! }}
+        onCancel={fermer}
+        onSubmit={fermer}
+        createEmprunt={createEmprunt}
+        updateEmprunt={updateEmprunt}
+        createPassif={createPassif}
+        updatePassif={updatePassif}
+      />
+    );
+  }
+
+  const propositionCredit = (
+    <WizardConfirmDialog
+      open={creditAProposer !== null}
+      title="Ajouter le crédit de ce bien ?"
+      description="Le crédit se saisit dans Passifs, relié à ce bien : il alimente le cashflow, les simulateurs et la transmission. Vous pourrez aussi l'ajouter plus tard depuis Patrimoine → Passifs."
+      confirmLabel="Ajouter le crédit"
+      cancelLabel="Plus tard"
+      onConfirm={() => { setCreditEnSaisie(creditAProposer); setCreditAProposer(null); }}
+      onCancel={() => setCreditAProposer(null)}
+    />
+  );
 
   if (showAssetForm) {
     const handleCancel = () => {
@@ -170,6 +232,8 @@ export const PatrimoineActifs = () => {
   }
 
   return (
+    <>
+    {propositionCredit}
     <PatrimoinePanel
       trail="Actifs"
       title="Actifs"
@@ -206,5 +270,6 @@ export const PatrimoineActifs = () => {
       />
       </div>
     </PatrimoinePanel>
+    </>
   );
 };

@@ -4,6 +4,7 @@ import { Form } from '@/components/ui/form';
 import { AssetCharge } from '@/services/assetService';
 import { useAssetWizard } from '@/hooks/useAssetWizard';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
+import { AssetSaisieExtras } from '@/hooks/useAssetForm';
 import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 import { ChargeForm } from '@/components/assets/ChargeForm';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
@@ -16,6 +17,7 @@ import { WizardStepDroitsValeur } from './WizardStepDroitsValeur';
 import { WizardStepParticularites } from './WizardStepParticularites';
 import { WizardStepCharges } from './WizardStepCharges';
 import { WizardStepRecap } from './WizardStepRecap';
+import { LocationFields } from '@/components/assets/fields/LocationFields';
 
 // Phrase d'introduction de chaque étape, sous son titre.
 const STEP_INTROS: Record<string, string> = {
@@ -23,13 +25,14 @@ const STEP_INTROS: Record<string, string> = {
   origine: 'D\'où vient le bien et à qui il appartient — la qualification en découle.',
   prix: 'Ce que le bien a coûté à l\'acquisition.',
   droitsvaleur: 'Les droits détenus (pleine propriété, usufruit…) et la valeur actuelle.',
+  location: 'Comment le bien est loué. Les autres revenus et charges se gèrent ensuite dans Immobilier.',
   particularites: 'Situations spécifiques utiles au conseil.',
   charges: 'Facultatif : dépenses récurrentes liées au bien, à ajouter maintenant ou plus tard.',
   recapitulatif: 'Vérifiez avant de créer l\'actif : rien n\'est enregistré avant validation.',
 };
 
 interface AssetCreationWizardProps {
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<boolean | void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => Promise<boolean | void>;
   onCancel: () => void;
 }
 
@@ -162,6 +165,8 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             setCharges={setCharges}
           />
         );
+      case 'location':
+        return <LocationFields form={form} creation />;
       case 'particularites':
         return <WizardStepParticularites form={form} />;
       case 'charges':

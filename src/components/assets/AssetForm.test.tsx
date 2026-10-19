@@ -127,3 +127,94 @@ describe('AssetForm — indivision hors couple masque origine/clauses', () => {
     expect(screen.queryByText(/Sans effet pour un bien en indivision hors couple/)).not.toBeInTheDocument();
   });
 });
+
+describe('AssetForm — coût de revient détaillé d\'un bien immobilier', () => {
+  const residence = {
+    id: 'a1',
+    nature: 'Résidence principale',
+    denomination: 'Appartement Lyon',
+    detenteur: 'user',
+    valeur_acquisition: 300000,
+    frais_acquisition: 8000,
+  } as unknown as Asset;
+
+  const submitted = () => {
+    // Le formulaire ne se pré-remplit qu'une fois le prénom de l'utilisateur chargé.
+    vi.mocked(familyService.getFamilyProfile).mockResolvedValueOnce({ prenom: 'Camille' } as never);
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    return onSubmit;
+  };
+
+  it('garde les frais globaux d\'un actif sans détail tant qu\'aucun frais détaillé n\'est touché', async () => {
+    const user = userEvent.setup();
+    const onSubmit = submitted();
+    render(<AssetForm asset={residence} onSubmit={onSubmit} onCancel={() => {}} />);
+    await waitFor(() => expect(screen.getByDisplayValue('Appartement Lyon')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.frais_acquisition).toBe(8000);
+    expect(payload.montant_immeuble).toBe(300000);
+  });
+
+  it('remplace les frais globaux par la somme des frais détaillés', async () => {
+    const user = userEvent.setup();
+    const onSubmit = submitted();
+    render(<AssetForm asset={residence} onSubmit={onSubmit} onCancel={() => {}} />);
+    await waitFor(() => expect(screen.getByDisplayValue('Appartement Lyon')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Propriété' }));
+    expect(screen.queryByLabelText("Frais d'acquisition")).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText("Frais d'agence"), '5000');
+    await user.type(screen.getByLabelText('Travaux de rénovation'), '10000');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.frais_agence).toBe(5000);
+    expect(payload.travaux_renovation).toBe(10000);
+    expect(payload.frais_acquisition).toBe(15000);
+    expect(payload.frais_notaire).toBeNull();
+  });
+
+  it('n\'envoie pas les champs immobiliers pour une autre nature', async () => {
+    const user = userEvent.setup();
+    const onSubmit = submitted();
+    render(<AssetForm asset={{ ...residence, nature: 'Compte bancaire' } as Asset} onSubmit={onSubmit} onCancel={() => {}} />);
+    await waitFor(() => expect(screen.getByDisplayValue('Appartement Lyon')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload).not.toHaveProperty('surface_m2');
+    expect(payload).not.toHaveProperty('montant_immeuble');
+  });
+});
+
+describe('AssetForm — location d\'un bien locatif', () => {
+  it('enregistre type et régime, sans champs de saisie seule', async () => {
+    const user = userEvent.setup();
+    vi.mocked(familyService.getFamilyProfile).mockResolvedValueOnce({ prenom: 'Camille' } as never);
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    const bien = {
+      id: 'a2', nature: 'Immeubles locatifs (loués nus)', denomination: 'Studio Nantes', detenteur: 'user',
+      type_location: 'Location nue', regime_location: 'Réel',
+    } as unknown as Asset;
+    render(<AssetForm asset={bien} onSubmit={onSubmit} onCancel={() => {}} />);
+    await waitFor(() => expect(screen.getByDisplayValue('Studio Nantes')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Caractéristiques' }));
+    expect(screen.getByText('Type de location')).toBeInTheDocument();
+    expect(screen.queryByText('Loyer mensuel hors charges')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const [payload, , , , extras] = onSubmit.mock.calls[0];
+    expect(payload.type_location).toBe('Location nue');
+    expect(payload.regime_location).toBe('Réel');
+    expect(payload).not.toHaveProperty('loyer_mensuel');
+    expect(payload).not.toHaveProperty('finance_par_credit');
+    expect(extras.loyerMensuel).toBeUndefined();
+    expect(extras.financeParCredit).toBe(false);
+  });
+});
