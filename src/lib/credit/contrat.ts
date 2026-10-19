@@ -187,3 +187,29 @@ export function actualiserEmprunt<T extends ChampsContrat & Pick<Emprunt, 'capit
     mensualite: Math.round(tableau.mensualiteHorsAssurance * 100) / 100,
   };
 }
+
+/**
+ * Assurance emprunteur du mois (mode et valeur saisis sur l'emprunt). Contrat complet : assurance de
+ * l'échéance du mois en cours dans le tableau (ou de la prochaine ; 0 une fois le prêt remboursé).
+ * Sans contrat : montant mensuel saisi, ou taux annuel appliqué au capital emprunté (taux sur capital
+ * initial) ou au capital restant dû (taux sur CRD) quand ils sont connus.
+ */
+export function assuranceMensuelleAu(
+  e: ChampsContrat & Pick<Emprunt, 'capital_restant_du'>,
+  date: Date = new Date(),
+): number {
+  const contrat = contratDepuisEmprunt(e);
+  if (contrat) {
+    const mois = startOfMonth(date).getTime();
+    const ligne = construireTableau(contrat).lignes.find((l) => l.date.getTime() >= mois);
+    return ligne ? ligne.assurance : 0;
+  }
+  const valeur = e.assurance_valeur || 0;
+  if (valeur <= 0) return 0;
+  switch (e.assurance_mode) {
+    case 'montant': return valeur;
+    case 'taux_capital_initial': return ((e.capital_initial || 0) * valeur) / 100 / 12;
+    case 'taux_crd': return ((e.capital_restant_du || 0) * valeur) / 100 / 12;
+    default: return 0;
+  }
+}

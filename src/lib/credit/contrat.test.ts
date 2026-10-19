@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   actualiserEmprunt,
+  assuranceMensuelleAu,
   capitalRestantDuAu,
   construireTableau,
   contratDepuisEmprunt,
@@ -169,5 +170,29 @@ describe('actualiserEmprunt', () => {
     const e = { ...base, capital_initial: null };
     expect(actualiserEmprunt(e)).toBe(e);
     expect(contratDepuisEmprunt({ ...base, date_premiere_echeance: null })).toBeNull();
+  });
+});
+
+describe('assuranceMensuelleAu', () => {
+  const emprunt = {
+    capital_initial: 200_000, date_premiere_echeance: '2020-01-05', duree_totale_mois: 240, taux_interet: 3.6,
+    mode_amortissement: 'Amortissable', differe_mois: null, differe_type: null,
+    assurance_mode: 'taux_capital_initial', assurance_valeur: 0.3,
+    frais_dossier: null, frais_garantie: null, capital_restant_du: 150_000,
+  } as const;
+
+  it("contrat complet : assurance de l'échéance du mois", () => {
+    expect(assuranceMensuelleAu(emprunt, new Date(2021, 5, 10))).toBeCloseTo(50, 6);
+  });
+
+  it('prêt remboursé : plus d\'assurance', () => {
+    expect(assuranceMensuelleAu(emprunt, new Date(2045, 0, 1))).toBe(0);
+  });
+
+  it('sans contrat : montant saisi, ou taux sur le capital restant dû', () => {
+    const sansContrat = { ...emprunt, capital_initial: null };
+    expect(assuranceMensuelleAu({ ...sansContrat, assurance_mode: 'montant', assurance_valeur: 42 })).toBe(42);
+    expect(assuranceMensuelleAu({ ...sansContrat, assurance_mode: 'taux_crd', assurance_valeur: 0.24 })).toBeCloseTo(30, 6);
+    expect(assuranceMensuelleAu({ ...sansContrat, assurance_mode: null })).toBe(0);
   });
 });

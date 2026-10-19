@@ -4,7 +4,7 @@ import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, FamilyInfo } from '@/lib/patrimoine/utils';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { partFoyerEmprunt, estimateEmpruntFin } from '@/lib/budget/emprunts';
-import { actualiserEmprunt, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
+import { actualiserEmprunt, assuranceMensuelleAu, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
 import { format } from 'date-fns';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
@@ -349,18 +349,20 @@ export const budgetService = {
     if (error) throw error;
 
     return (data || []).flatMap(brut => {
-      // Contrat complet : mensualité (hors assurance) et fin issues du tableau d'amortissement.
+      // Contrat complet : mensualité et fin issues du tableau d'amortissement. Le budget reprend ce que
+      // le foyer paie chaque mois : mensualité (capital + intérêts) plus assurance emprunteur du mois.
       const item = actualiserEmprunt(brut);
       const contrat = contratDepuisEmprunt(item);
       const part = partFoyerEmprunt(item);
-      if (part === null || !item.mensualite || item.mensualite <= 0) return [];
+      const mensualiteTotale = (item.mensualite || 0) + assuranceMensuelleAu(item);
+      if (part === null || mensualiteTotale <= 0) return [];
       return [{
         id: item.id,
         user_id: user.id,
         nature: mapEmpruntNatureToBudgetCategory(item.nature),
         libelle: item.libelle,
         debiteur: mapDetenteurToDisplay(item.detenteur, familyInfo),
-        montant: Math.round(item.mensualite * part * 100) / 100,
+        montant: Math.round(mensualiteTotale * part * 100) / 100,
         periodicite: 'mensuel',
         date_fin: contrat ? format(construireTableau(contrat).dateFin, 'yyyy-MM-dd') : estimateEmpruntFin(item.updated_at, item.duree_restante),
         created_at: item.created_at,

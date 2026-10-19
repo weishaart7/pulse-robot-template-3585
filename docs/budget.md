@@ -27,7 +27,8 @@ pour les charges :
    (`AssetDetailsDialog.tsx`, onglet Charges de `AssetForm`/`ChargeForm.tsx`) ou dans Immobilier
    (`ImmobilierGestionDialog`, `LMNPDetailView`) sur un actif donné, republiées ici en lecture seule dès
    que la case « Impact sur le budget » est cochée à la source.
-3. **`emprunts` avec `reporter_budget = true`, côté charges uniquement** — mensualités des emprunts réels
+3. **`emprunts` avec `reporter_budget = true`, côté charges uniquement** — mensualités (capital + intérêts
+   + assurance emprunteur du mois, cf. `assuranceMensuelleAu` et docs/patrimoine.md) des emprunts réels
    de Patrimoine, republiées en lecture seule dans la catégorie « Emprunts & Crédits », dès que le champ
    « reporter au budget » est coché sur l'emprunt.
 
