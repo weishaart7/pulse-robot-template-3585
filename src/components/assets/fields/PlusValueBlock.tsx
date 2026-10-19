@@ -1,63 +1,58 @@
 import React from 'react';
-import { Info, TrendingUp, TrendingDown } from 'lucide-react';
 import { UseFormReturn } from 'react-hook-form';
 import { AssetFormValues } from '@/schemas/assetSchema';
 import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
 import { calculatePlusValue } from '@/lib/patrimoine/utils';
+import { cn } from '@/lib/utils';
 
 const formatEur = (n: number) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
+const formatPct = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1).replace('.', ',')} %`;
 
 interface PlusValueBlockProps {
   form: UseFormReturn<AssetFormValues>;
 }
 
-// Affiche la plus/moins-value latente dès que la valeur d'achat et la valeur
-// actuelle sont renseignées, pour toute nature hors NATURES_WITHOUT_ACQUISITION.
+const Ligne = ({ label, children, total = false }: { label: string; children: React.ReactNode; total?: boolean }) => (
+  <div className={cn('flex items-baseline justify-between gap-4 py-1.5 text-[13px]', total && 'border-t border-border pt-2')}>
+    <span className="text-muted-foreground">{label}</span>
+    <span className={cn('tabular-nums text-foreground', total && 'font-medium')}>{children}</span>
+  </div>
+);
+
+// Plus / moins-value latente dès que la valeur d'achat et la valeur actuelle sont renseignées, pour
+// toute nature hors NATURES_WITHOUT_ACQUISITION. Bandeau à filet lagon, lignes libellé / valeur
+// (gabarit des panneaux) : le détail prix + frais explique l'écart, rapporté au coût d'acquisition.
 export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
-  const watchedNature = form.watch('nature');
-  const watchedValeurAcquisition = form.watch('valeur_acquisition');
-  const watchedValeurEstimee = form.watch('valeur_estimee');
-  const watchedFraisAcquisition = form.watch('frais_acquisition');
+  const nature = form.watch('nature');
+  const valeurAchat = form.watch('valeur_acquisition');
+  const valeurActuelle = form.watch('valeur_estimee');
+  const frais = form.watch('frais_acquisition') || 0;
 
-  const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
-  const showPlusValue = !hideAcquisition && watchedValeurAcquisition && watchedValeurEstimee;
+  if (NATURES_WITHOUT_ACQUISITION.includes(nature) || !valeurAchat || !valeurActuelle) return null;
 
-  if (!showPlusValue) return null;
-
-  const { plusValue: plusValueLive } = calculatePlusValue(watchedValeurEstimee, watchedValeurAcquisition, watchedFraisAcquisition);
-  const plusValuePct = watchedValeurAcquisition && watchedValeurAcquisition > 0
-    ? (plusValueLive / watchedValeurAcquisition) * 100
-    : 0;
+  const { plusValue } = calculatePlusValue(valeurActuelle, valeurAchat, frais);
+  const cout = valeurAchat + frais;
+  const pct = cout > 0 ? (plusValue / cout) * 100 : 0;
+  const positif = plusValue >= 0;
 
   return (
-    <div className="rounded-[2px] border border-border p-5 animate-fade-in">
-      <div className="flex items-center gap-2 mb-3">
-        <Info className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-        <p className="text-[13.5px] font-medium tracking-[-0.01em] text-foreground">Plus / moins-value latente</p>
+    <div className="border-l-2 border-lagon bg-lagon-soft/40 px-4 py-3 animate-fade-in">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="text-[12px] text-lagon-ink">{positif ? 'Plus-value latente' : 'Moins-value latente'}</p>
+        <p className={cn('text-[15px] font-medium tabular-nums', positif ? 'text-positive' : 'text-destructive')}>
+          {positif ? '+' : ''}{formatEur(plusValue)}
+          <span className="ml-2 text-[12px] font-normal opacity-80">{formatPct(pct)}</span>
+        </p>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="mt-2 grid grid-cols-1 gap-x-8 md:grid-cols-2">
         <div>
-          <p className="text-[11px] text-muted-foreground/60">Valeur d'achat</p>
-          <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurAcquisition || 0)}</p>
+          <Ligne label="Valeur d'achat">{formatEur(valeurAchat)}</Ligne>
+          {frais > 0 && <Ligne label="Frais d'acquisition">{formatEur(frais)}</Ligne>}
+          {frais > 0 && <Ligne label="Coût d'acquisition" total>{formatEur(cout)}</Ligne>}
         </div>
         <div>
-          <p className="text-[11px] text-muted-foreground/60">Valeur actuelle</p>
-          <p className="text-[15px] font-semibold text-foreground tabular-nums mt-0.5">{formatEur(watchedValeurEstimee || 0)}</p>
-        </div>
-        <div>
-          <p className="text-[11px] text-muted-foreground/60">Différence</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            {plusValueLive >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-emerald-500" strokeWidth={2} />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-rose-500" strokeWidth={2} />
-            )}
-            <p className={`text-[15px] font-bold tabular-nums ${plusValueLive >= 0 ? 'text-emerald-600 ' : 'text-rose-600 '}`}>
-              {plusValueLive >= 0 ? '+' : ''}{formatEur(plusValueLive)}
-              <span className="text-[11px] font-medium ml-1.5 opacity-70">({plusValuePct >= 0 ? '+' : ''}{plusValuePct.toFixed(1)}%)</span>
-            </p>
-          </div>
+          <Ligne label="Valeur actuelle">{formatEur(valeurActuelle)}</Ligne>
         </div>
       </div>
     </div>
