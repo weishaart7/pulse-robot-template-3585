@@ -13,20 +13,11 @@ interface PlusValueBlockProps {
   form: UseFormReturn<AssetFormValues>;
 }
 
-const Terme = ({ signe, label, valeur, fort = false }: { signe?: string; label: string; valeur: number; fort?: boolean }) => (
-  <div className="min-w-0 py-3 md:px-4 md:first:pl-0">
-    <p className="truncate text-[11.5px] text-muted-foreground">{label}</p>
-    <p className={cn('mt-0.5 whitespace-nowrap text-[14px] tabular-nums text-foreground', fort && 'font-medium')}>
-      {signe && <span className="mr-1.5 text-muted-foreground/70">{signe}</span>}
-      {formatEur(valeur)}
-    </p>
-  </div>
-);
-
 // Plus / moins-value latente dès que la valeur d'achat et la valeur actuelle sont renseignées, pour
-// toute nature hors NATURES_WITHOUT_ACQUISITION. Bande filetée (gabarit des panneaux) : le calcul se
-// lit comme une opération — prix + frais = coût total, face à la valeur actuelle — puis une jauge
-// situe la valeur actuelle dans le coût décomposé, avec l'écart en étiquette.
+// toute nature hors NATURES_WITHOUT_ACQUISITION. La jauge porte la lecture : le coût total décomposé
+// (prix d'achat, frais) sur toute la largeur, la valeur actuelle en repère annoté au-dessus, l'écart
+// teinté entre les deux (hachures rouges en moins-value, lagon foncé au-delà du coût en plus-value).
+// Palette des graphiques : prix d'achat lagon, frais citron.
 export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
   const nature = form.watch('nature');
   const valeurAchat = form.watch('valeur_acquisition');
@@ -39,10 +30,13 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
   const cout = valeurAchat + frais;
   const pct = cout > 0 ? (plusValue / cout) * 100 : 0;
   const positif = plusValue >= 0;
-  // Jauge : le coût décomposé (prix, puis frais) et un repère à la valeur actuelle ; la plus grande
-  // des deux bornes occupe toute la largeur. Au-delà du coût, la plus-value prolonge la jauge en lagon.
+
+  // La plus grande des deux bornes (coût, valeur) occupe toute la largeur.
   const echelle = Math.max(cout, valeurActuelle);
-  const pctDe = (n: number) => (n / echelle) * 100;
+  const pos = (n: number) => (n / echelle) * 100;
+  const posValeur = pos(valeurActuelle);
+  // Étiquette du repère : ancrée à droite du trait dans la moitié droite, pour rester dans le cadre.
+  const etiquetteADroite = posValeur > 55;
 
   return (
     <section className="border-y border-border py-4 animate-fade-in">
@@ -57,29 +51,52 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
         </span>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 divide-border md:grid-cols-4 md:divide-x">
-        <Terme label="Prix d'achat" valeur={valeurAchat} />
-        <Terme signe="+" label="Frais" valeur={frais} />
-        <Terme signe="=" label="Coût total" valeur={cout} fort />
-        <Terme label="Valeur actuelle" valeur={valeurActuelle} fort />
-      </div>
-
-      <div className="mt-1" aria-hidden="true">
-        <div className="relative h-2 w-full">
-          <div className="absolute inset-y-0 left-0 rounded-l-[1px] bg-foreground/25" style={{ width: `${pctDe(valeurAchat)}%` }} />
-          <div className="absolute inset-y-0 bg-foreground/10" style={{ left: `${pctDe(valeurAchat)}%`, width: `${pctDe(frais)}%` }} />
-          {positif && <div className="absolute inset-y-0 rounded-r-[1px] bg-lagon" style={{ left: `${pctDe(cout)}%`, width: `${pctDe(plusValue)}%` }} />}
-          {!positif && <div className="absolute inset-y-0 rounded-r-[1px] bg-destructive/25" style={{ left: `${pctDe(valeurActuelle)}%`, width: `${pctDe(-plusValue)}%` }} />}
+      <div className="mt-4">
+        {/* Repère annoté de la valeur actuelle */}
+        <div className="relative h-9">
           <div
-            className={cn('absolute -inset-y-1 w-[2px]', positif ? 'bg-lagon-ink' : 'bg-destructive')}
-            style={{ left: `calc(${pctDe(valeurActuelle)}% - 1px)` }}
+            className={cn('absolute bottom-0 flex flex-col whitespace-nowrap pb-1.5', etiquetteADroite ? 'items-end' : 'items-start')}
+            style={etiquetteADroite ? { right: `${100 - posValeur}%` } : { left: `${posValeur}%` }}
+          >
+            <span className="text-[11px] text-muted-foreground">Valeur actuelle</span>
+            <span className="text-[13px] font-medium tabular-nums text-foreground">{formatEur(valeurActuelle)}</span>
+          </div>
+        </div>
+
+        <div className="relative h-3" aria-hidden="true">
+          <div className="absolute inset-0 flex gap-[2px]">
+            <div className="h-full rounded-l-[2px] bg-lagon" style={{ width: `${pos(valeurAchat)}%` }} />
+            {frais > 0 && <div className="h-full bg-citron" style={{ width: `${pos(frais)}%` }} />}
+            {positif && plusValue > 0 && <div className="h-full rounded-r-[2px] bg-lagon-ink" style={{ width: `${pos(plusValue)}%` }} />}
+          </div>
+          {!positif && (
+            <div
+              className="absolute inset-y-0 rounded-r-[2px] bg-[repeating-linear-gradient(135deg,hsl(var(--destructive)/0.55)_0_2px,hsl(var(--background)/0.6)_2px_5px)]"
+              style={{ left: `${posValeur}%`, width: `${pos(-plusValue)}%` }}
+            />
+          )}
+          <div
+            className={cn('absolute -top-2 -bottom-1 w-[2px] rounded-full', positif ? 'bg-lagon-ink' : 'bg-destructive')}
+            style={{ left: `calc(${posValeur}% - 1px)` }}
           />
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-[1px] bg-foreground/25" />Prix d'achat</span>
-          <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-[1px] bg-foreground/10" />Frais</span>
-          <span className="inline-flex items-center gap-1.5"><span className={cn('h-2 w-2 rounded-[1px]', positif ? 'bg-lagon' : 'bg-destructive/25')} />{positif ? 'Plus-value' : 'Moins-value'}</span>
-          <span className="inline-flex items-center gap-1.5"><span className={cn('h-2.5 w-[2px]', positif ? 'bg-lagon-ink' : 'bg-destructive')} />Valeur actuelle</span>
+
+        {/* Décomposition du coût sous la jauge */}
+        <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-[12px] tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+            <span className="h-2 w-2 rounded-[1px] bg-lagon" />
+            Prix d'achat <span className="text-foreground">{formatEur(valeurAchat)}</span>
+          </span>
+          <span className="inline-flex flex-wrap items-center gap-x-1.5 text-muted-foreground">
+            {frais > 0 && (
+              <>
+                <span className="h-2 w-2 rounded-[1px] bg-citron" />
+                Frais <span className="text-foreground">{formatEur(frais)}</span>
+                <span className="mx-1 text-muted-foreground/50">·</span>
+              </>
+            )}
+            Coût total <span className="font-medium text-foreground">{formatEur(cout)}</span>
+          </span>
         </div>
       </div>
     </section>
