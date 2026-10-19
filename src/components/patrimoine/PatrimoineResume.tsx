@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { PanelDivider, PanelTitle, SummaryRow, panelLinkClass } from '@/components/layout/workspace-panel';
 import RangeNavigator from '@/components/ui/range-navigator';
 import { PATRIMOINE } from '@/lib/palette';
-import { computePatrimoineBreakdown } from './PatrimoineChart';
+import { computePatrimoineBreakdown, computeRepartitionNette } from './PatrimoineChart';
 import { PlusValuesCard } from './PlusValuesCard';
 import { RepartitionActifs } from './RepartitionActifs';
 import { useAssets } from '@/hooks/useAssets';
@@ -97,6 +97,11 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
     const total = items.reduce((sum, i) => sum + i.value, 0);
     return items.map(i => ({ ...i, pct: total > 0 ? (i.value / total) * 100 : 0 }));
   }, [assets, passifs, emprunts, assetDemembrements, demembrementCtx]);
+
+  const repartitionNette = useMemo(
+    () => computeRepartitionNette(assets, passifs, emprunts, assetDemembrements, demembrementCtx),
+    [assets, passifs, emprunts, assetDemembrements, demembrementCtx]
+  );
 
   // Variation du patrimoine net sur 12 mois (ou depuis le premier point d'historique s'il est plus récent).
   const variation = useMemo(() => {
@@ -200,6 +205,7 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
 
       <RepartitionActifs
         categories={composition.map(c => ({ name: c.name, value: c.value, pct: c.pct, color: c.color }))}
+        nette={repartitionNette}
         formatCurrency={formatCurrency}
       />
 

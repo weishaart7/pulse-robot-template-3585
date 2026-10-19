@@ -82,3 +82,49 @@ export function computePatrimoineBreakdown(
   }
   return actifData.sort((a, b) => b.value - a.value);
 }
+
+/**
+ * Répartition du patrimoine net par catégorie : valeur de la catégorie (même calcul que
+ * computePatrimoineBreakdown) moins le capital restant dû des emprunts reliés à ses actifs, en part
+ * du foyer. Les dettes sans actif relié (dettes, emprunts non reliés) ne sont imputées à aucune
+ * catégorie : elles sont renvoyées à part. Emprunts de société exclus (déjà dans la valeur des parts).
+ * Somme des catégories − dettes non affectées = patrimoine net.
+ */
+export function computeRepartitionNette(
+  assets: Asset[],
+  passifs: Passif[],
+  emprunts: Emprunt[],
+  assetDemembrements: AssetDemembrement[] = [],
+  demembrementCtx: DemembrementFractionContext = {}
+): { categories: { name: string; value: number; color: string }[]; dettesNonAffectees: number } {
+  const partFoyer = (item: SuccessionAssetInput): number => {
+    try {
+      const { user, spouse } = getRepartitionFoyer(item);
+      return user + spouse;
+    } catch (error) {
+      if (error instanceof BienNonQualifieError) return 0;
+      throw error;
+    }
+  };
+  const brutes = computePatrimoineBreakdown(assets, passifs, emprunts, assetDemembrements, demembrementCtx)
+    .filter((i) => i.type === 'actif');
+  const categorieDeLActif = new Map<string, string>();
+  brutes.forEach((c) => c.assets.forEach((a) => { if (a.id) categorieDeLActif.set(a.id, c.name); }));
+
+  const dettesParCategorie = new Map<string, number>();
+  let dettesNonAffectees = passifs.reduce((sum, p) => sum + (p.montant_du || 0) * partFoyer(p), 0);
+  emprunts.filter((e) => !e.societe_id).forEach((e) => {
+    const montant = (e.capital_restant_du || 0) * partFoyer(e);
+    const categorie = e.asset_id ? categorieDeLActif.get(e.asset_id) : undefined;
+    if (categorie) dettesParCategorie.set(categorie, (dettesParCategorie.get(categorie) || 0) + montant);
+    else dettesNonAffectees += montant;
+  });
+
+  return {
+    categories: brutes
+      .map((c) => ({ name: c.name, color: c.color, value: c.value - (dettesParCategorie.get(c.name) || 0) }))
+      .filter((c) => Math.abs(c.value) > 0.005)
+      .sort((a, b) => b.value - a.value),
+    dettesNonAffectees,
+  };
+}

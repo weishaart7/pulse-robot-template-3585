@@ -20,6 +20,12 @@ const VUES: { id: Vue; label: string }[] = [
   { id: 'treemap', label: 'Treemap' },
 ];
 const VUE_STORAGE_KEY = 'patrimoine.resume.vueRepartition';
+type Mode = 'brut' | 'net';
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'brut', label: 'Brut' },
+  { id: 'net', label: 'Net' },
+];
+const MODE_STORAGE_KEY = 'patrimoine.resume.modeRepartition';
 const CHART_HEIGHT = 232;
 
 const formatCompact = (value: number) =>
@@ -33,12 +39,38 @@ const formatPct = (pct: number) => `${pct.toFixed(1).replace('.', ',')} %`;
  * même catégorie en avant des deux côtés.
  */
 export function RepartitionActifs({
-  categories,
+  categories: categoriesBrutes,
+  nette,
   formatCurrency,
 }: {
   categories: CategorieActif[];
+  /** Répartition nette (computeRepartitionNette) : catégories nettes des emprunts reliés, dettes à part. */
+  nette?: { categories: Omit<CategorieActif, 'pct'>[]; dettesNonAffectees: number };
   formatCurrency: (value: number) => string;
 }) {
+  const [mode, setMode] = useState<Mode>(() => {
+    try { return localStorage.getItem(MODE_STORAGE_KEY) === 'net' ? 'net' : 'brut'; } catch { return 'brut'; }
+  });
+  const changerMode = (m: Mode) => {
+    setMode(m);
+    try { localStorage.setItem(MODE_STORAGE_KEY, m); } catch { /* stockage indisponible */ }
+  };
+  const enNet = mode === 'net' && !!nette;
+  // Net : le graphique ne dessine que les catégories positives (une part négative n'a pas de forme),
+  // pourcentages rapportés à leur somme ; la légende garde tout, négatifs et dettes non affectées.
+  const legende: (CategorieActif & { negatif?: boolean })[] = enNet
+    ? (() => {
+        const positives = nette!.categories.filter(c => c.value > 0);
+        const sommePositive = positives.reduce((s, c) => s + c.value, 0);
+        return nette!.categories.map(c => ({
+          ...c,
+          pct: c.value > 0 && sommePositive > 0 ? (c.value / sommePositive) * 100 : 0,
+          negatif: c.value <= 0,
+        }));
+      })()
+    : categoriesBrutes;
+  const categories = legende.filter(c => !c.negatif);
+  const dettesNonAffectees = enNet ? nette!.dettesNonAffectees : 0;
   // Vue choisie mémorisée par navigateur (simple confort, repli sur l'anneau).
   const [vue, setVue] = useState<Vue>(() => {
     try {
@@ -55,15 +87,21 @@ export function RepartitionActifs({
 
   const [active, setActive] = useState<string | null>(null);
   const activeIndex = active === null ? null : categories.findIndex(c => c.name === active);
-  const total = categories.reduce((s, c) => s + c.value, 0);
+  const total = legende.reduce((s, c) => s + c.value, 0) - dettesNonAffectees;
 
   return (
     <div className="border-b border-border px-8 py-6">
-      <PanelTitle action={categories.length > 0 ? <VueSwitch value={vue} onChange={changerVue} /> : undefined}>
+      <PanelTitle action={categoriesBrutes.length > 0 ? (
+        <div className="flex items-center gap-3">
+          {nette && <Pastilles label="Valeur affichée" options={MODES} value={mode} onChange={changerMode} />}
+          {nette && <span aria-hidden="true" className="h-4 w-px bg-border" />}
+          <Pastilles label="Type de graphique" options={VUES} value={vue} onChange={changerVue} />
+        </div>
+      ) : undefined}>
         Répartition des actifs
       </PanelTitle>
 
-      {categories.length === 0 ? (
+      {categoriesBrutes.length === 0 ? (
         <p className="mt-3 text-[13px] text-muted-foreground">Aucun actif valorisé.</p>
       ) : (
         <div className="mt-5 grid grid-cols-1 items-center gap-x-12 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
@@ -73,7 +111,7 @@ export function RepartitionActifs({
                 sectors={categories.map(c => ({ label: c.name, pct: c.pct, value: c.value, color: c.color }))}
                 formatValue={formatCompact}
                 centerLabel={formatCompact(total)}
-                centerCaption="Actifs bruts"
+                centerCaption={enNet ? 'Patrimoine net' : 'Actifs bruts'}
                 showLegend={false}
                 active={activeIndex}
                 onActiveChange={i => setActive(i === null ? null : categories[i]?.name ?? null)}
@@ -95,7 +133,7 @@ export function RepartitionActifs({
 
           <div>
             <ul>
-              {categories.map(c => (
+              {legende.map(c => (
                 <li key={c.name}>
                   <button
                     type="button"
@@ -111,16 +149,24 @@ export function RepartitionActifs({
                   >
                     <span className="h-2.5 w-2.5 shrink-0 translate-y-[1px] rounded-[2px]" style={{ backgroundColor: c.color }} />
                     <span className="min-w-0 flex-1 truncate text-[13px] text-foreground" title={c.name}>{c.name}</span>
-                    <span className="shrink-0 text-[13px] font-medium tabular-nums text-foreground">{formatCurrency(c.value)}</span>
-                    <span className="w-12 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground">{formatPct(c.pct)}</span>
+                    <span className={cn('shrink-0 text-[13px] font-medium tabular-nums', c.negatif ? 'text-destructive' : 'text-foreground')}>{formatCurrency(c.value)}</span>
+                    <span className="w-14 shrink-0 whitespace-nowrap text-right text-[12px] tabular-nums text-muted-foreground">{c.negatif ? '—' : formatPct(c.pct)}</span>
                   </button>
                 </li>
               ))}
+              {enNet && dettesNonAffectees > 0 && (
+                <li className="flex items-baseline gap-3 py-[7px]" title="Dettes et emprunts reliés à aucun actif : imputés à aucune catégorie">
+                  <span className="h-2.5 w-2.5 shrink-0 translate-y-[1px] rounded-[2px] border border-border" />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">Dettes non affectées</span>
+                  <span className="shrink-0 text-[13px] font-medium tabular-nums text-destructive">{formatCurrency(-dettesNonAffectees)}</span>
+                  <span className="w-14 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground">—</span>
+                </li>
+              )}
             </ul>
             <div className="mt-1 flex items-baseline gap-3 border-t border-border pt-2.5">
-              <span className="flex-1 text-[12px] text-muted-foreground">Total des actifs</span>
-              <span className="text-[13px] font-semibold tabular-nums text-foreground">{formatCurrency(total)}</span>
-              <span className="w-12 text-right text-[12px] tabular-nums text-muted-foreground">100 %</span>
+              <span className="flex-1 text-[12px] text-muted-foreground">{enNet ? 'Patrimoine net' : 'Total des actifs'}</span>
+              <span className="whitespace-nowrap text-[13px] font-semibold tabular-nums text-foreground">{formatCurrency(total)}</span>
+              <span className="w-14 whitespace-nowrap text-right text-[12px] tabular-nums text-muted-foreground">{enNet ? '' : '100 %'}</span>
             </div>
           </div>
         </div>
@@ -168,24 +214,31 @@ const BarreEmpilee = ({ categories, active, onActiveChange }: {
   );
 };
 
-// Sélecteur de vue : mêmes pastilles que les périodes du graphique d'évolution.
-const VueSwitch = ({ value, onChange }: { value: Vue; onChange: (v: Vue) => void }) => (
-  <div role="tablist" aria-label="Type de graphique" className="flex gap-1">
-    {VUES.map(v => (
-      <button
-        key={v.id}
-        type="button"
-        role="tab"
-        aria-selected={value === v.id}
-        onClick={() => onChange(v.id)}
-        className={cn(
-          'rounded-[2px] px-2.5 py-1 text-[11px] font-medium transition-colors duration-150',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          value === v.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
-        )}
-      >
-        {v.label}
-      </button>
-    ))}
-  </div>
-);
+// Sélecteurs (vue, brut / net) : mêmes pastilles que les périodes du graphique d'évolution.
+function Pastilles<T extends string>({ label, options, value, onChange }: {
+  label: string;
+  options: { id: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div role="tablist" aria-label={label} className="flex gap-1">
+      {options.map(o => (
+        <button
+          key={o.id}
+          type="button"
+          role="tab"
+          aria-selected={value === o.id}
+          onClick={() => onChange(o.id)}
+          className={cn(
+            'rounded-[2px] px-2.5 py-1 text-[11px] font-medium transition-colors duration-150',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            value === o.id ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { computePatrimoineBreakdown } from './PatrimoineChart';
+import { computePatrimoineBreakdown, computeRepartitionNette } from './PatrimoineChart';
 import { usePatrimoineCalculations } from '@/hooks/usePatrimoineCalculations';
 import { Asset } from '@/services/assetService';
 import { Passif, Emprunt } from '@/services/passifService';
@@ -60,5 +60,32 @@ describe('plus-value d\'un actif démembré', () => {
   it("sans date d'acquisition : plus-value non calculée", () => {
     const { result } = renderHook(() => usePatrimoineCalculations({ assets: np(undefined), passifs: [], emprunts: [], assetDemembrements }));
     expect(result.current.plusValuesSummary.assetsWithPlusValue).toHaveLength(0);
+  });
+});
+
+describe('computeRepartitionNette', () => {
+  const dette = [{ id: 'p2', nature: 'Dette', montant_du: 8000, qualification_bien: 'Bien commun', detenteur: 'common' }] as unknown as Passif[];
+
+  it("retire l'emprunt relié de sa catégorie, garde les dettes non reliées à part, et retombe sur le net", () => {
+    const relie = [{ ...emprunts[0], asset_id: 'a1' }] as Emprunt[];
+    const r = computeRepartitionNette(assets, dette, relie);
+    expect(r.categories.find(c => c.name === 'Actifs immobiliers')?.value).toBeCloseTo(400000 + 90000 - 100000);
+    expect(r.dettesNonAffectees).toBeCloseTo(8000);
+
+    const { result } = renderHook(() => usePatrimoineCalculations({ assets, passifs: dette, emprunts: relie, statutCouple: 'Marié' }));
+    const net = r.categories.reduce((s, c) => s + c.value, 0) - r.dettesNonAffectees;
+    expect(net).toBeCloseTo(result.current.financialSummary.patrimoineNet);
+  });
+
+  it('emprunt non relié : dette non affectée, catégorie à sa valeur brute', () => {
+    const r = computeRepartitionNette(assets, [], emprunts);
+    expect(r.categories.find(c => c.name === 'Actifs immobiliers')?.value).toBeCloseTo(490000);
+    expect(r.dettesNonAffectees).toBeCloseTo(100000);
+  });
+
+  it('catégorie plus endettée qu\'elle ne vaut : valeur nette négative', () => {
+    const lourd = [{ ...emprunts[0], asset_id: 'a1', capital_restant_du: 600000 }] as Emprunt[];
+    const r = computeRepartitionNette(assets, [], lourd);
+    expect(r.categories.find(c => c.name === 'Actifs immobiliers')?.value).toBeCloseTo(-110000);
   });
 });
