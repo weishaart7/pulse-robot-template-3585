@@ -34,7 +34,7 @@ export function verifierDatesRegime(d: DatesRegime): ErreurDateRegime[] {
     erreurs.push({ path: 'dateJugementSeparationCorps', message: 'Le jugement doit être postérieur au mariage' });
   }
 
-  const messageDonation = 'La donation doit dater du mariage ou d\'après';
+  const messageDonation = `Antérieure au mariage du ${format(d.dateMariage, 'dd/MM/yyyy')}`;
   if (d.donationDernierVivantPersonne && d.dateDonationPersonne && jour(d.dateDonationPersonne) < mariage) {
     erreurs.push({ path: 'dateDonationPersonne', message: messageDonation });
   }

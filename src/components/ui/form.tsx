@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
+import { AlertCircle } from "lucide-react"
 import {
   Controller,
   ControllerProps,
@@ -155,10 +156,16 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn("text-sm font-medium text-destructive", className)}
+      data-erreur={error ? '' : undefined}
+      className={cn(
+        "flex items-start gap-1.5 text-[12.5px] leading-snug text-destructive",
+        error && "animate-in fade-in-0 slide-in-from-top-1 duration-200",
+        className
+      )}
       {...props}
     >
-      {body}
+      {error && <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />}
+      <span>{body}</span>
     </p>
   )
 })

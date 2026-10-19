@@ -476,3 +476,33 @@
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
+
+/* Champ en erreur (message sous le champ, `data-erreur` posé par FormMessage) : contour
+   rouge tant que l'erreur dure. À l'enregistrement ou à la sortie du champ
+   (lib/ui/signalerChampInvalide.ts), bref tremblement et halo rouge en plus. Animations
+   coupées si l'utilisateur les réduit (le contour reste). */
+:has(> [data-erreur]) > * input,
+:has(> [data-erreur]) > * textarea,
+:has(> [data-erreur]) > * button[role="combobox"],
+:has(> [data-erreur]) > input,
+:has(> [data-erreur]) > textarea {
+  border-color: hsl(var(--destructive));
+}
+@keyframes champ-tremble {
+  0%, 100% { transform: none; }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+@keyframes champ-contour {
+  0% { box-shadow: 0 0 0 0 hsl(var(--destructive) / 0.4); }
+  100% { box-shadow: 0 0 0 6px hsl(var(--destructive) / 0); }
+}
+.champ-invalide { animation: champ-tremble 0.4s ease-in-out; }
+.champ-invalide input,
+.champ-invalide textarea,
+.champ-invalide button[role="combobox"] {
+  animation: champ-contour 0.9s ease-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  .champ-invalide, .champ-invalide input, .champ-invalide textarea { animation: none; }
+}

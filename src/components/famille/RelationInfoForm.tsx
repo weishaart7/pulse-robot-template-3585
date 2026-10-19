@@ -29,7 +29,8 @@ import { buildRelationInfoPayload } from "@/lib/family/relationInfoPayload";
 import { useAssets } from "@/hooks/useAssets";
 import { calculerRequalifications, compositionSocieteAcquets, libellePerimetre, Requalification } from "@/lib/patrimoine/requalification";
 import { appliquerRequalifications } from "@/services/requalificationService";
-import { verifierDatesRegime } from "@/lib/family/datesRegime";
+import { verifierDatesRegime, ErreurDateRegime } from "@/lib/family/datesRegime";
+import { signalerChampInvalide } from "@/lib/ui/signalerChampInvalide";
 import { CATEGORIES_SOCIETE_ACQUETS, clausesAvecPerimetre, lirePerimetreDesClauses, PerimetreSocieteAcquets } from "@/lib/patrimoine/societeAcquets";
 import { RequalificationDialog } from "@/components/famille/matrimonial/RequalificationDialog";
 
@@ -175,6 +176,35 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
     }
   }, [maritalData, form]);
 
+  // Contrôle des dates à la sortie du champ (pas seulement à l'enregistrement) : l'erreur
+  // s'affiche sous le champ, qui est signalé sur place. Une saisie incomplète (texte, pas
+  // encore une date) n'est pas contrôlée.
+  type ChampDate = ErreurDateRegime['path'];
+  const controlerDates = (champs: ChampDate[], conteneur?: HTMLElement) => {
+    if (relationStatus !== 'Marié(e)') return;
+    const v = form.getValues();
+    const date = (d: unknown) => (d instanceof Date && !isNaN(d.getTime()) ? d : undefined);
+    const erreurs = verifierDatesRegime({
+      ...v,
+      dateMariage: date(v.dateMariage),
+      dateJugementSeparationCorps: date(v.dateJugementSeparationCorps),
+      dateDonationPersonne: date(v.dateDonationPersonne),
+      dateDonationConjoint: date(v.dateDonationConjoint),
+    });
+    let enErreur = false;
+    for (const champ of champs) {
+      const erreur = erreurs.find(e => e.path === champ);
+      if (erreur) { form.setError(champ, { type: 'custom', message: erreur.message }); enErreur = true; }
+      else if (form.getFieldState(champ).error?.type === 'custom') form.clearErrors(champ);
+    }
+    if (enErreur && conteneur) signalerChampInvalide(conteneur, { ramener: false });
+  };
+  const quitterChamp = (champs: ChampDate[]) => (e: React.FocusEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    controlerDates(champs, e.currentTarget);
+  };
+  const tousLesChampsDates: ChampDate[] = ['dateJugementSeparationCorps', 'dateDonationPersonne', 'dateDonationConjoint'];
+
   const onSubmit = async (data: FormData) => {
     // Cohérence des dates (mariage uniquement : les colonnes d'un ancien statut,
     // conservées en base, ne doivent pas bloquer un PACS ou un concubinage).
@@ -246,13 +276,9 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
       setActiveSection(targetSection);
     }
 
-    toast({
-      title: "Erreur de saisie",
-      description: targetSection
-        ? `Veuillez corriger les champs invalides dans l'onglet « ${SECTION_LABELS[targetSection]} ».`
-        : "Veuillez corriger les champs invalides avant d'enregistrer.",
-      variant: "destructive",
-    });
+    // Pas de notification : le champ fautif est amené à l'écran et signalé sur place,
+    // son message d'erreur étant déjà affiché dessous.
+    signalerChampInvalide();
   };
 
   // Appelé à chaque sélection dans le <Select> du régime (et par la case
@@ -399,7 +425,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                         control={form.control}
                         name="dateMariage"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) controlerDates(tousLesChampsDates); }}>
                             <div className="relative w-full flex flex-col gap-1">
                               <FormLabel>Date du mariage</FormLabel>
                               <SmartDateInput
@@ -551,7 +577,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                             control={form.control}
                             name="dateJugementSeparationCorps"
                             render={({ field }) => (
-                              <FormItem className="max-w-xs">
+                              <FormItem className="max-w-xs" onBlur={quitterChamp(['dateJugementSeparationCorps'])}>
                                 <div className="relative w-full flex flex-col gap-1">
                                   <FormLabel>Date du jugement de séparation de corps</FormLabel>
                                   <SmartDateInput
@@ -618,7 +644,8 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
 
             {activeSection === 'donation' && (
               <div className="divide-y divide-border">
-                <div className="px-8 py-7">
+                {/* Message d'erreur posé sous le champ : la section s'allonge d'autant, en douceur. */}
+                <div className="px-8 py-7 transition-[padding] duration-200 ease-out has-[[data-erreur]]:pb-12">
                   <SectionHeader icon={Gift} title="Donation consentie au conjoint" />
                   <div>
                     <div className="grid grid-cols-1 items-end gap-x-6 gap-y-3 md:grid-cols-2">
@@ -638,7 +665,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                           control={form.control}
                           name="dateDonationPersonne"
                           render={({ field }) => (
-                            <FormItem className="min-w-[200px]">
+                            <FormItem className="relative min-w-[200px]" onBlur={quitterChamp(['dateDonationPersonne'])}>
                               <div className="relative w-full flex flex-col gap-1">
                                 <FormLabel>Date de l'acte</FormLabel>
                                 <SmartDateInput
@@ -647,7 +674,8 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                                   className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                                 />
                               </div>
-                              <FormMessage />
+                              {/* Sous le champ, hors du flux : la grille est alignée en bas (items-end). */}
+                              <FormMessage className="absolute left-0 top-full mt-1.5" />
                             </FormItem>
                           )}
                         />
@@ -656,7 +684,8 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                   </div>
                 </div>
 
-                <div className="px-8 py-7">
+                {/* Message d'erreur posé sous le champ : la section s'allonge d'autant, en douceur. */}
+                <div className="px-8 py-7 transition-[padding] duration-200 ease-out has-[[data-erreur]]:pb-12">
                   <SectionHeader icon={Gift} title="Donation reçue du conjoint" />
                   <div>
                     <div className="grid grid-cols-1 items-end gap-x-6 gap-y-3 md:grid-cols-2">
@@ -676,7 +705,7 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                           control={form.control}
                           name="dateDonationConjoint"
                           render={({ field }) => (
-                            <FormItem className="min-w-[200px]">
+                            <FormItem className="relative min-w-[200px]" onBlur={quitterChamp(['dateDonationConjoint'])}>
                               <div className="relative w-full flex flex-col gap-1">
                                 <FormLabel>Date de l'acte</FormLabel>
                                 <SmartDateInput
@@ -685,7 +714,8 @@ export function RelationInfoForm({ relationStatus, title, summary, onSuccess }: 
                                   className="bg-background border-border shadow-none rounded-md focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/20"
                                 />
                               </div>
-                              <FormMessage />
+                              {/* Sous le champ, hors du flux : la grille est alignée en bas (items-end). */}
+                              <FormMessage className="absolute left-0 top-full mt-1.5" />
                             </FormItem>
                           )}
                         />
