@@ -8,6 +8,9 @@ import { DemembrementFields, ModeDetentionField } from '@/components/assets/fiel
 import { ValeurEstimeeFields } from '@/components/assets/fields/ValeurEstimeeFields';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
+import { PrimeFields } from '@/components/assets/fields/PrimeFields';
+import { AssetCharge } from '@/services/assetService';
+import { isPrevoyanceDeces } from '@/constants/assetTypes';
 
 interface WizardStepDroitsValeurProps {
   form: UseFormReturn<AssetFormValues>;
@@ -15,6 +18,8 @@ interface WizardStepDroitsValeurProps {
   familyMembers: FamilyMember[];
   demembrements: DemembrementDraft[];
   setDemembrements: (value: DemembrementDraft[]) => void;
+  charges: AssetCharge[];
+  setCharges: React.Dispatch<React.SetStateAction<AssetCharge[]>>;
 }
 
 // Étape "Droits et valeur" : ce que détient réellement le propriétaire (pleine
@@ -28,7 +33,9 @@ export const WizardStepDroitsValeur: React.FC<WizardStepDroitsValeurProps> = ({
   familyData,
   familyMembers,
   demembrements,
-  setDemembrements
+  setDemembrements,
+  charges,
+  setCharges
 }) => (
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -41,6 +48,9 @@ export const WizardStepDroitsValeur: React.FC<WizardStepDroitsValeurProps> = ({
       setDemembrements={setDemembrements}
     />
     <ValeurEstimeeFields form={form} />
+    {isPrevoyanceDeces(form.watch('nature')) && (
+      <PrimeFields form={form} charges={charges} setCharges={setCharges} familyData={familyData} />
+    )}
     <PlusValueBlock form={form} />
     <ValorisationDemembreeBlock
       form={form}

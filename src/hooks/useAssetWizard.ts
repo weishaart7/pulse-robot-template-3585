@@ -76,8 +76,9 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: 'charges',
     label: 'Charges',
     fields: [],
-    // Une créance n'a pas de dépenses récurrentes.
-    isVisible: (values) => !isCreance(values.nature),
+    // Une créance n'a pas de dépenses récurrentes ; la prime d'un contrat de prévoyance se
+    // saisit dans « Droits et valeur » (PrimeFields).
+    isVisible: (values) => !isCreance(values.nature) && !isPrevoyanceDeces(values.nature),
   },
   {
     id: 'recapitulatif',
@@ -88,7 +89,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
 ];
 
 interface UseAssetWizardProps {
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<boolean | void>;
 }
 
 // Pilote le wizard de création d'un actif au-dessus de useAssetForm (instance

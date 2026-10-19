@@ -3,7 +3,7 @@ import { AlertTriangle, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isPrevoyanceDeces } from '@/constants/assetTypes';
 
 interface Props {
   assets: Asset[];
@@ -17,6 +17,13 @@ interface MissingInfo {
 
 const checkMissing = (a: Asset): string[] => {
   const m: string[] = [];
+  // Prévoyance : valeur à 0 normale (pas de rachat, hors vie entière) ; c'est le capital
+  // garanti qui compte. Ni mode de détention ni date d'estimation (contrat non démembrable).
+  if (isPrevoyanceDeces(a.nature)) {
+    if (!a.capital_garanti || a.capital_garanti <= 0) m.push('capital garanti');
+    if (!a.detenteur) m.push('souscripteur');
+    return m;
+  }
   if (!a.valeur_estimee || a.valeur_estimee <= 0) m.push('valeur actuelle');
   if (!a.detenteur) m.push('détenteur');
   // Mode de détention et date d'estimation non exigés pour les natures sans

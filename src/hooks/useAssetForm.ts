@@ -4,11 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { assetSchema, AssetFormValues, getDefaultAssetValues } from '@/schemas/assetSchema';
-import { Asset, AssetCharge } from '@/services/assetService';
+import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
-import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isContratSouscrit, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 import { lirePerimetreDesClauses, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
@@ -83,6 +83,19 @@ export interface FamilyMember {
 
 export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   const [charges, setCharges] = useState<AssetCharge[]>([]);
+  // Charges déjà en base retirées de la liste : supprimées à l'enregistrement (pas avant,
+  // pour qu'« Annuler » ne perde rien).
+  const [deletedChargeIds, setDeletedChargeIds] = useState<string[]>([]);
+
+  // Modification : charges existantes chargées dans le formulaire (onglet Charges, bloc Prime).
+  useEffect(() => {
+    if (!asset?.id) return;
+    let cancelled = false;
+    assetService.getAssetCharges(asset.id)
+      .then((data) => { if (!cancelled) setCharges(data); })
+      .catch((error) => { if (import.meta.env.DEV) console.error('Charges non chargées:', error); });
+    return () => { cancelled = true; };
+  }, [asset?.id]);
   const [showChargeForm, setShowChargeForm] = useState(false);
   const [editingCharge, setEditingCharge] = useState<AssetCharge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -334,7 +347,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       const detenteurIndividuel =
         value.detenteur === familyData.userFirstName || value.detenteur === 'Vous' ||
         value.detenteur === familyData.partnerFirstName || value.detenteur === 'Conjoint';
-      if (qualification === 'Bien commun' && detenteurIndividuel) {
+      // Exception : un contrat (assurance-vie, retraite, prévoyance) garde un souscripteur unique
+      // même commun — la communauté porte sur sa valeur de rachat, pas sur la qualité de
+      // souscripteur / assuré, que le calcul de transmission lit via le détenteur.
+      if (qualification === 'Bien commun' && detenteurIndividuel && !isContratSouscrit(value.nature)) {
         setTimeout(() => {
           form.setValue('detenteur', 'Le couple');
           form.setValue('pourcentage_utilisateur', 50);
@@ -471,7 +487,19 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       const finalIndivisaires = dbDetenteur === 'Indivision' ? indivisaires : [];
       const finalDemembrements = ['Usufruit', 'Nue-propriété'].includes(values.mode_detention || '') ? demembrements : [];
 
-      await onSubmit(formattedValues as any, charges, finalIndivisaires, finalDemembrements);
+      // false = actif non enregistré : les charges retirées ne sont alors pas supprimées.
+      // Prime de prévoyance laissée vide (ou vidée) : pas de charge à 0 €, supprimée si elle existait.
+      const primeVide = (c: AssetCharge) => c.denomination === DENOMINATION_PRIME && !(c.montant > 0);
+      const chargesASupprimer = [
+        ...deletedChargeIds,
+        ...charges.filter((c) => primeVide(c) && c.id && !c.id.startsWith('temp-')).map((c) => c.id!),
+      ];
+      const saved = await onSubmit(formattedValues as any, charges.filter((c) => !primeVide(c)), finalIndivisaires, finalDemembrements);
+      if (saved !== false && chargesASupprimer.length > 0) {
+        const results = await Promise.allSettled(chargesASupprimer.map((id) => assetService.deleteAssetCharge(id)));
+        if (results.some((r) => r.status === 'rejected')) toast.error("Une charge supprimée n'a pas pu être effacée");
+        setDeletedChargeIds([]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -494,6 +522,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
   const handleChargeDelete = (chargeId: string) => {
     setCharges(prev => prev.filter(c => c.id !== chargeId));
+    if (!chargeId.startsWith('temp-')) setDeletedChargeIds(prev => [...prev, chargeId]);
   };
 
   const handleChargeEdit = (charge: AssetCharge) => {
@@ -504,6 +533,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
   return {
     form,
     charges,
+    setCharges,
     showChargeForm,
     setShowChargeForm,
     editingCharge,

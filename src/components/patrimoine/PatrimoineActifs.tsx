@@ -48,7 +48,7 @@ export const PatrimoineActifs = () => {
         : await createAsset(assetData, { silent: true });
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error saving asset:', error);
-      return;
+      return false;
     }
 
     // Les étapes suivantes sont annexes : l'actif est déjà enregistré, donc

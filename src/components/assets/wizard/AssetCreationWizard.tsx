@@ -29,7 +29,7 @@ const STEP_INTROS: Record<string, string> = {
 };
 
 interface AssetCreationWizardProps {
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<boolean | void>;
   onCancel: () => void;
 }
 
@@ -41,6 +41,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
   const {
     form,
     charges,
+    setCharges,
     showChargeForm,
     setShowChargeForm,
     editingCharge,
@@ -157,6 +158,8 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             familyMembers={familyMembers}
             demembrements={demembrements}
             setDemembrements={setDemembrements}
+            charges={charges}
+            setCharges={setCharges}
           />
         );
       case 'particularites':
@@ -165,7 +168,6 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
         return (
           <WizardStepCharges
             charges={charges}
-            nature={form.watch('nature')}
             onAdd={() => setShowChargeForm(true)}
             onEdit={handleChargeEdit}
             onDelete={handleChargeDelete}

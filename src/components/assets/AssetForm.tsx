@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { isAssuranceVieHorsSuccession, isCreance } from '@/constants/assetTypes';
+import { isAssuranceVieHorsSuccession, isCreance, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { useAssetForm } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Info, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -19,6 +19,7 @@ import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { ActifFormFrame } from './ActifFormFrame';
 import { PlusValueBlock } from './fields/PlusValueBlock';
 import { ValeurEstimeeFields } from './fields/ValeurEstimeeFields';
+import { PrimeFields } from './fields/PrimeFields';
 import { ValorisationDemembreeBlock } from './fields/ValorisationDemembreeBlock';
 import { OrigineQualificationFields } from './fields/OrigineQualificationFields';
 import { DetentionFields } from './fields/DetentionFields';
@@ -28,7 +29,7 @@ import { FieldHelp } from '@/components/ui/field-help';
 
 interface AssetFormProps {
   asset?: Asset;
-  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<void>;
+  onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[]) => Promise<boolean | void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
 }
@@ -51,6 +52,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const {
     form,
     charges,
+    setCharges,
     showChargeForm,
     setShowChargeForm,
     editingCharge,
@@ -109,6 +111,10 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       </div>
 
       <ValeurEstimeeFields form={form} />
+
+      {isPrevoyanceDeces(watchedNature) && (
+        <PrimeFields form={form} charges={charges} setCharges={setCharges} familyData={familyData} assetId={asset?.id} />
+      )}
 
       <PlusValueBlock form={form} />
 
@@ -214,7 +220,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         <form id="asset-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="flex flex-col items-start gap-1.5">
             <div className="inline-flex flex-wrap gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
-              {FORM_TABS.filter((tab) => !(tab.id === 'charges' && isCreance(watchedNature))).map((tab) => {
+              {FORM_TABS.filter((tab) => !(tab.id === 'charges' && (isCreance(watchedNature) || isPrevoyanceDeces(watchedNature)))).map((tab) => {
                 const locked = isTabLocked(tab.id);
                 return (
                   <button

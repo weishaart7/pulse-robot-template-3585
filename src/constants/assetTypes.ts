@@ -467,6 +467,10 @@ export const isContratSouscrit = (nature: string | null | undefined): boolean =>
 export const isCreance = (nature: string | null | undefined): boolean =>
   !!nature && (ASSET_CATEGORIES['créances'] as readonly string[]).includes(nature);
 
+// Libellé qui identifie la charge « prime » d'un contrat de prévoyance parmi ses charges
+// (PrimeFields.tsx).
+export const DENOMINATION_PRIME = "Prime d'assurance";
+
 export const isPrevoyanceSansRachat = (nature: string | null | undefined): boolean =>
   isPrevoyanceDeces(nature) && nature !== NATURE_PREVOYANCE_RACHETABLE;
 
