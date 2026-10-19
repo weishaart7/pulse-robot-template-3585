@@ -11,6 +11,7 @@ import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
+import { RenvoisImmobilier, renvoisImmobilier } from '@/components/assets/fields/LocationFields';
 import { FRAIS_DETAILLES, hasDetailImmobilier, isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
 import { NATURE_PREVOYANCE_RACHETABLE, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 
@@ -217,6 +218,12 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
               Sans les primes, le capital transmis au décès ne peut pas être taxé (art. 990 I et 757 B).
             </p>
           </div>
+        </div>
+      )}
+
+      {renvoisImmobilier(values).length > 0 && (
+        <div className="py-4">
+          <RenvoisImmobilier titre="Reste à faire après la création" renvois={renvoisImmobilier(values)} />
         </div>
       )}
 

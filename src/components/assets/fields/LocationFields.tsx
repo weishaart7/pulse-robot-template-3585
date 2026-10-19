@@ -6,7 +6,7 @@ import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FieldHelp } from '@/components/ui/field-help';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { TypeLocation, regimesPour, typesLocationPour } from '@/schemas/immobilierPropertySchema';
+import { TypeLocation, hasDetailImmobilier, isRentalPropertyType, regimesPour, typesLocationPour } from '@/schemas/immobilierPropertySchema';
 
 interface LocationFieldsProps {
   form: UseFormReturn<AssetFormValues>;
@@ -74,7 +74,7 @@ export const LocationFields: React.FC<LocationFieldsProps> = ({ form, creation =
           <FormField control={form.control} name="loyer_mensuel" render={({ field }) => (
             <FormItem>
               <FormLabel>Loyer mensuel hors charges</FormLabel>
-              <FieldHelp>Facultatif. Enregistré comme revenu du bien ; les autres revenus et charges se gèrent ensuite dans Immobilier → Mes biens → Revenus et charges.</FieldHelp>
+              <FieldHelp>Facultatif. Enregistré comme revenu du bien.</FieldHelp>
               <FormControl>
                 <EuroInput className="bg-background border-border shadow-none" step="0.01" min="0" value={field.value ?? ''} onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
               </FormControl>
@@ -94,6 +94,8 @@ export const LocationFields: React.FC<LocationFieldsProps> = ({ form, creation =
           </FormItem>
         )} />
       )}
+
+      {creation && <RenvoisImmobilier renvois={renvoisImmobilier(form.watch()).filter((r) => !r.startsWith('Le crédit'))} />}
     </div>
   );
 };
@@ -115,3 +117,35 @@ export const CreditFields: React.FC<{ form: UseFormReturn<AssetFormValues> }> = 
     </FormItem>
   )} />
 );
+
+const NATURES_MEUBLEES = ['Immeubles locatifs (LMNP)', 'Immeubles locatifs (LMP)'];
+
+// Ce qui reste à saisir ailleurs pour un bien immobilier, selon sa nature et la saisie en cours :
+// renvois affichés dans l'étape Location et en pied du récapitulatif.
+export const renvoisImmobilier = (values: Partial<AssetFormValues>): string[] => {
+  const renvois: string[] = [];
+  if (hasDetailImmobilier(values.nature) && values.finance_par_credit) {
+    renvois.push('Le crédit : dans Patrimoine → Passifs, relié à ce bien (proposé juste après la création).');
+  }
+  if (!isRentalPropertyType(values.nature)) return renvois;
+  if (NATURES_MEUBLEES.includes(values.nature || '')) {
+    renvois.push('Zone géographique, part du terrain et amortissement : Immobilier → Mes biens → fiche du bien.');
+  }
+  if (values.type_location === 'Location nue') {
+    renvois.push('Déficits fonciers reportés des années passées : Immobilier → Vue d\'ensemble → Synthèse foncière.');
+  }
+  renvois.push('Autres revenus et charges (taxe foncière, copropriété, assurance…) : Immobilier → Mes biens → menu ⋯ → Revenus et charges.');
+  return renvois;
+};
+
+export const RenvoisImmobilier: React.FC<{ renvois: string[]; titre?: string }> = ({ renvois, titre = 'À compléter ailleurs' }) => {
+  if (renvois.length === 0) return null;
+  return (
+    <div className="rounded-[2px] border border-border bg-secondary/50 px-4 py-3 text-[13px]">
+      <p className="font-medium text-foreground">{titre}</p>
+      <ul className="mt-1 space-y-1 text-muted-foreground">
+        {renvois.map((r) => <li key={r}>{r}</li>)}
+      </ul>
+    </div>
+  );
+};
