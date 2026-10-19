@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { AssetFormValues } from '@/schemas/assetSchema';
 import { DescriptionBienFields } from '@/components/assets/fields/BienImmobilierFields';
+import { RequiredMark } from '@/components/ui/required-mark';
 
 interface WizardStepQuoiProps {
   form: UseFormReturn<AssetFormValues>;
@@ -18,7 +19,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <FormField control={form.control} name="nature" render={({ field }) => (
         <FormItem>
-          <FormLabel>Nature *</FormLabel>
+          <FormLabel>Nature<RequiredMark /></FormLabel>
           <FormControl>
             <NaturePicker value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none" />
           </FormControl>
@@ -28,7 +29,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
 
       <FormField control={form.control} name="denomination" render={({ field }) => (
         <FormItem>
-          <FormLabel>Dénomination</FormLabel>
+          <FormLabel>Dénomination<RequiredMark /></FormLabel>
           <FormControl>
             <Input className="bg-background border-border shadow-none" {...field} />
           </FormControl>

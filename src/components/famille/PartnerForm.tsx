@@ -19,6 +19,7 @@ import { SectionHeader } from "@/components/family/SectionHeader";
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { WorkspaceHeader } from "@/components/layout/workspace-panel";
 import { isCoupleStatus } from '@/lib/family/maritalStatus';
+import { RequiredMark } from '@/components/ui/required-mark';
 
 const formSchema = z.object({
   statutCouple: z.enum(['Célibataire', 'Concubinage', 'Pacsé(e)', 'Marié(e)', 'Divorcé(e)', 'Veuf/Veuve']).optional(),
@@ -212,7 +213,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                     render={({ field }) => (
                       <FormItem className="flex flex-col items-start gap-3 space-y-0">
                         <FormLabel>
-                          Civilité <span className="text-destructive">*</span>
+                          Civilité <RequiredMark />
                         </FormLabel>
                         <FormControl>
                           <div role="radiogroup" className="inline-grid grid-cols-4 gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
@@ -307,7 +308,7 @@ export function PartnerForm({ onSuccess, onBack, title, summary }: PartnerFormPr
                         <FormItem>
                           <div className="relative w-full flex flex-col gap-1">
                             <FormLabel>
-                              Date de naissance <span className="text-destructive">*</span>
+                              Date de naissance <RequiredMark />
                             </FormLabel>
                             <SmartDateInput
                               value={field.value}

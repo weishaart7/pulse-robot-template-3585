@@ -12,6 +12,7 @@ import { FamilyInfo } from '@/lib/patrimoine/utils';
 import { IndivisairesSection, IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { DemembrementSection, DemembrementDraft } from '@/components/assets/DemembrementSection';
 import { FieldHelp } from '@/components/ui/field-help';
+import { RequiredMark } from '@/components/ui/required-mark';
 
 type AssetForm = UseFormReturn<AssetFormValues>;
 
@@ -27,7 +28,7 @@ type AssetForm = UseFormReturn<AssetFormValues>;
 export const ModeDetentionField: React.FC<{ form: AssetForm }> = ({ form }) => isPrevoyanceDeces(form.watch('nature')) ? null : (
   <FormField control={form.control} name="mode_detention" render={({ field }) => (
     <FormItem>
-      <FormLabel>Mode de détention</FormLabel>
+      <FormLabel>Mode de détention<RequiredMark /></FormLabel>
       <Select onValueChange={field.onChange} defaultValue={field.value}>
         <FormControl>
           <SelectTrigger className="bg-background border-border shadow-none" size="lg">

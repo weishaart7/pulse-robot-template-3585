@@ -136,6 +136,9 @@ describe('AssetForm — coût de revient détaillé d\'un bien immobilier', () =
     detenteur: 'user',
     valeur_acquisition: 300000,
     frais_acquisition: 8000,
+    date_acquisition: '2020-05-01',
+    origine_actif: ['Acquisition à titre onéreux'],
+    mode_detention: 'Pleine propriété',
   } as unknown as Asset;
 
   const submitted = () => {
@@ -199,6 +202,7 @@ describe('AssetForm — location d\'un bien locatif', () => {
     const bien = {
       id: 'a2', nature: 'Immeubles locatifs (loués nus)', denomination: 'Studio Nantes', detenteur: 'user',
       type_location: 'Location nue', regime_location: 'Réel',
+      date_acquisition: '2020-05-01', valeur_acquisition: 150000, mode_detention: 'Pleine propriété',
     } as unknown as Asset;
     render(<AssetForm asset={bien} onSubmit={onSubmit} onCancel={() => {}} />);
     await waitFor(() => expect(screen.getByDisplayValue('Studio Nantes')).toBeInTheDocument());
@@ -216,5 +220,25 @@ describe('AssetForm — location d\'un bien locatif', () => {
     expect(payload).not.toHaveProperty('finance_par_credit');
     expect(extras.loyerMensuel).toBeUndefined();
     expect(extras.financeParCredit).toBe(false);
+  });
+});
+
+describe('AssetForm — champs obligatoires en modification', () => {
+  it("ouvre l'onglet du champ manquant et n'enregistre pas", async () => {
+    const user = userEvent.setup();
+    vi.mocked(familyService.getFamilyProfile).mockResolvedValueOnce({ prenom: 'Camille' } as never);
+    const onSubmit = vi.fn().mockResolvedValue(true);
+    const ancien = {
+      id: 'a3', nature: 'Compte bancaire', denomination: 'Compte joint', detenteur: 'user',
+      date_acquisition: '2018-01-01', valeur_acquisition: 0,
+    } as unknown as Asset;
+    render(<AssetForm asset={ancien} onSubmit={onSubmit} onCancel={() => {}} />);
+    await waitFor(() => expect(screen.getByDisplayValue('Compte joint')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    expect(await screen.findByText('Choisissez un mode de détention')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Propriété' })).toHaveAttribute('aria-pressed', 'true');
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

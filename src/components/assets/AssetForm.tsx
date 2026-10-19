@@ -30,6 +30,7 @@ import { FieldHelp } from '@/components/ui/field-help';
 import { DescriptionBienFields } from './fields/BienImmobilierFields';
 import { LocationFields } from './fields/LocationFields';
 import { isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
+import { RequiredMark } from '@/components/ui/required-mark';
 
 interface AssetFormProps {
   asset?: Asset;
@@ -83,6 +84,18 @@ export const AssetForm: React.FC<AssetFormProps> = ({
     }
   };
 
+  // Champ en erreur dans un onglet masqué : on ouvre l'onglet qui le porte (les champs non listés
+  // sont dans Caractéristiques, où vivent les champs conditionnés à la nature).
+  const handleInvalid = (errors: Record<string, unknown>) => {
+    const champs = Object.keys(errors);
+    const ongletDe = (champ: string) =>
+      ['nature', 'denomination', 'valeur_estimee', 'date_estimation', 'capital_garanti'].includes(champ) ? 'essentiel'
+        : ['date_acquisition', 'origine_actif', 'valeur_acquisition', 'frais_acquisition', 'mode_detention', 'detenteur', 'qualification_bien', 'financement_mixte_apport_propre', 'pourcentage_utilisateur', 'pourcentage_conjoint'].includes(champ) ? 'propriete'
+        : 'caracteristiques';
+    const onglets: string[] = champs.map(ongletDe);
+    if (onglets.length > 0 && !onglets.includes(activeTab)) setActiveTab(onglets[0]);
+  };
+
   const watchedNature = form.watch('nature');
   // À la création, tant que la nature n'est pas renseignée, les onglets
   // autres que "essentiel" sont verrouillés (rien à qualifier avant ça).
@@ -95,7 +108,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField control={form.control} name="nature" render={({ field }) => (
           <FormItem>
-            <FormLabel>Nature *</FormLabel>
+            <FormLabel>Nature<RequiredMark /></FormLabel>
             <FormControl>
               <NaturePicker value={field.value} onChange={field.onChange} className="bg-background border-border shadow-none" />
             </FormControl>
@@ -105,7 +118,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
         <FormField control={form.control} name="denomination" render={({ field }) => (
           <FormItem>
-            <FormLabel>Dénomination</FormLabel>
+            <FormLabel>Dénomination<RequiredMark /></FormLabel>
             <FormControl>
               <Input className="bg-background border-border shadow-none" {...field} />
             </FormControl>
@@ -228,7 +241,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         }
       >
       <Form {...form}>
-        <form id="asset-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <form id="asset-form" onSubmit={form.handleSubmit(handleSubmit, handleInvalid)} className="space-y-6">
           <div className="flex flex-col items-start gap-1.5">
             <div className="inline-flex flex-wrap gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
               {FORM_TABS.filter((tab) => !(tab.id === 'charges' && (isCreance(watchedNature) || isPrevoyanceDeces(watchedNature)))).map((tab) => {

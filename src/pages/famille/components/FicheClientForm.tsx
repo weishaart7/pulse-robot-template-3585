@@ -18,6 +18,7 @@ import { CaseRepere } from '@/components/family/CaseRepere';
 import { SectionHeader } from '@/components/family/SectionHeader';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { WorkspaceHeader } from '@/components/layout/workspace-panel';
+import { RequiredMark } from '@/components/ui/required-mark';
 
 
 const formSchema = z.object({
@@ -183,7 +184,7 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                 render={({ field }) => (
                   <FormItem className="flex flex-col items-start gap-3 space-y-0">
                     <FormLabel>
-                      Civilité <span className="text-destructive">*</span>
+                      Civilité <RequiredMark />
                     </FormLabel>
                     <FormControl>
                       <div role="radiogroup" className="inline-grid grid-cols-4 gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
@@ -257,7 +258,7 @@ export function FicheClientForm({ onSuccess, onBack, title, summary }: FicheClie
                     <FormItem>
                       <div className="relative w-full flex flex-col gap-1">
                         <FormLabel>
-                          Date de naissance <span className="text-destructive">*</span>
+                          Date de naissance <RequiredMark />
                         </FormLabel>
                         <SmartDateInput
                           value={field.value}

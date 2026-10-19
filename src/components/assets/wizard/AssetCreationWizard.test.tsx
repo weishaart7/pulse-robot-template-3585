@@ -57,6 +57,7 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     expect(screen.getByRole('heading', { name: 'Le bien' })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
 
     expect(await screen.findByRole('heading', { name: 'Origine et propriété' })).toBeInTheDocument();
@@ -68,6 +69,7 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
 
     const etapes = [
       { label: 'Origine et propriété', champs: ["Date d'acquisition", 'Détenteur', 'Qualification du bien'] },
@@ -77,10 +79,13 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     for (const { label, champs } of etapes) {
       await user.click(screen.getByRole('button', { name: 'Suivant' }));
       expect(await screen.findByRole('heading', { name: label })).toBeInTheDocument();
-      champs.forEach((champ) => expect(screen.getByText(champ)).toBeInTheDocument());
+      champs.forEach((champ) => expect(screen.getByText((_, el) => el?.tagName === 'LABEL' && el.textContent?.replace('*', '').trim() === champ)).toBeInTheDocument());
       if (label === 'Origine et propriété') {
-        expect(screen.queryByText("Valeur d'achat / réception")).not.toBeInTheDocument();
+        expect(screen.queryByText(/Valeur d'achat \/ réception/)).not.toBeInTheDocument();
+        // Champs obligatoires de l'étape, remplis pour pouvoir avancer.
+        await user.type(screen.getByPlaceholderText('jj/mm/aaaa'), '01/01/2020');
       }
+      if (label === 'Prix') await user.type(screen.getByLabelText(/Valeur d'achat/), '1000');
     }
   });
 
@@ -89,6 +94,7 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
     expect(await screen.findByText(/Étape 2/)).toBeInTheDocument();
 
@@ -136,6 +142,7 @@ describe('AssetCreationWizard — confirmations intégrées (pas de window.confi
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
     await screen.findByText(/Étape 2/);
     await user.click(screen.getByRole('button', { name: 'Précédent' }));
@@ -152,6 +159,7 @@ describe('AssetCreationWizard — confirmations intégrées (pas de window.confi
     render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
 
     await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
     await user.click(screen.getByRole('button', { name: 'Suivant' }));
     await screen.findByText(/Étape 2/);
     await user.click(screen.getByRole('button', { name: 'Précédent' }));
@@ -164,3 +172,29 @@ describe('AssetCreationWizard — confirmations intégrées (pas de window.confi
   });
 });
 
+describe('AssetCreationWizard — champs obligatoires', () => {
+  it("bloque l'étape 1 sans dénomination et le signale sur le champ", async () => {
+    const user = userEvent.setup();
+    render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
+
+    await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.click(screen.getByRole('button', { name: 'Suivant' }));
+
+    expect(await screen.findByText('Donnez un nom à cet actif')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Le bien' })).toBeInTheDocument();
+  });
+
+  it("bloque l'étape Origine sans date d'acquisition", async () => {
+    const user = userEvent.setup();
+    render(<AssetCreationWizard onSubmit={noop} onCancel={() => {}} />);
+
+    await user.type(screen.getByLabelText('nature'), 'Compte bancaire');
+    await user.type(screen.getByLabelText(/Dénomination/), 'Compte courant');
+    await user.click(screen.getByRole('button', { name: 'Suivant' }));
+    await screen.findByRole('heading', { name: 'Origine et propriété' });
+    await user.click(screen.getByRole('button', { name: 'Suivant' }));
+
+    expect(await screen.findByText('Indiquez la date')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Origine et propriété' })).toBeInTheDocument();
+  });
+});

@@ -15,6 +15,7 @@ import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
 import { hasDetailImmobilier } from '@/schemas/immobilierPropertySchema';
 import { FraisDetaillesFields } from './BienImmobilierFields';
+import { RequiredMark } from '@/components/ui/required-mark';
 
 // Sections du bloc Origine : "origine" = date, origine et clauses qui
 // déterminent la qualification (entrée/exclusion de communauté, remploi, bien
@@ -98,7 +99,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="date_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>{isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}</FormLabel>
+                <FormLabel>{isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}<RequiredMark /></FormLabel>
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>
@@ -108,7 +109,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 
             {!isPrevoyance && <FormField control={form.control} name="origine_actif" render={({ field }) => (
               <FormItem>
-                <FormLabel>{estCreance ? 'Origine de la créance' : "Origine de l'actif"}</FormLabel>
+                <FormLabel>{estCreance ? 'Origine de la créance' : "Origine de l'actif"}<RequiredMark /></FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange([value])}
                   value={field.value?.[0] || 'Acquisition à titre onéreux'}
@@ -138,7 +139,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>Valeur d'achat / réception</FormLabel>
+                <FormLabel>Valeur d'achat / réception<RequiredMark /></FormLabel>
                 <FieldHelp>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FieldHelp>
                 <FormControl>
                   <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />

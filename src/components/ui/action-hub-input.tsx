@@ -5,6 +5,7 @@ import { Loader2Icon, CheckCircle2Icon, XCircleIcon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { RequiredMark } from '@/components/ui/required-mark';
 
 interface ActionHubInputAction {
   icon: JSX.Element
@@ -110,7 +111,7 @@ export default function ActionHubInput({
     <div className={`relative w-full flex flex-col gap-1 ${className}`}>
       {label && (
         <Label htmlFor={id} className="text-xs">
-          {label} {required && <span className="text-destructive">*</span>}
+          {label} {required && <RequiredMark />}
         </Label>
       )}
       <div className="relative flex items-center">

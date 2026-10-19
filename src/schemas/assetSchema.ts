@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { isBienRuralNonQualifie, isBien787CNonQualifie, isRetraiteEtrangereNonQualifiee, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isCreance, isPrevoyanceDeces, isBienRuralNonQualifie, isBien787CNonQualifie, isRetraiteEtrangereNonQualifiee, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
 
 // Constants
 // Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
@@ -82,6 +82,40 @@ export const NATURES_LIQUIDITES_FR: string[] = [
 // étendu"). Seuls la description du bien et le détail du coût de revient
 // (résidences et biens locatifs, cf. hasDetailImmobilier) sont saisis ici, dès
 // la création ; financement et location restent dans le module Immobilier.
+// Champs obligatoires du formulaire d'actif, exigés seulement quand ils sont affichés (mêmes
+// conditions que OrigineFields et ModeDetentionField) : pas de date ni d'origine pour une nature
+// sans acquisition (livrets, comptes) ou un bien en indivision hors couple, pas d'origine pour un
+// contrat de prévoyance, pas de prix pour une prévoyance ou une créance, pas de mode de détention
+// pour une prévoyance.
+export const champsObligatoiresVisibles = (values: { nature?: string; detenteur?: string }) => {
+  const nature = values.nature || '';
+  const prevoyance = isPrevoyanceDeces(nature);
+  const creance = isCreance(nature);
+  const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(nature) && !creance;
+  const origineVisible = !sansAcquisition && values.detenteur !== 'Indivision';
+  return {
+    denomination: true,
+    date_acquisition: origineVisible,
+    origine_actif: origineVisible && !prevoyance,
+    valeur_acquisition: !NATURES_WITHOUT_ACQUISITION.includes(nature) && !prevoyance && !creance,
+    mode_detention: !prevoyance,
+  };
+};
+
+const champsObligatoiresManquants = (values: {
+  nature?: string; detenteur?: string; denomination?: string; date_acquisition?: Date;
+  origine_actif?: string[]; valeur_acquisition?: number; mode_detention?: string;
+}) => {
+  const visibles = champsObligatoiresVisibles(values);
+  const manquants: { champ: string; message: string }[] = [];
+  if (!values.denomination?.trim()) manquants.push({ champ: 'denomination', message: 'Donnez un nom à cet actif' });
+  if (visibles.date_acquisition && !values.date_acquisition) manquants.push({ champ: 'date_acquisition', message: 'Indiquez la date' });
+  if (visibles.origine_actif && !values.origine_actif?.length) manquants.push({ champ: 'origine_actif', message: "Indiquez l'origine de l'actif" });
+  if (visibles.valeur_acquisition && values.valeur_acquisition === undefined) manquants.push({ champ: 'valeur_acquisition', message: "Indiquez la valeur d'achat ou de réception" });
+  if (visibles.mode_detention && !values.mode_detention) manquants.push({ champ: 'mode_detention', message: 'Choisissez un mode de détention' });
+  return manquants;
+};
+
 export const assetSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   denomination: z.string().optional(),
@@ -194,6 +228,9 @@ export const assetSchema = z.object({
   loyer_budget: z.boolean().optional(),
   finance_par_credit: z.boolean().optional(),
 }).superRefine((values, ctx) => {
+  for (const { champ, message } of champsObligatoiresManquants(values)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: [champ], message });
+  }
   // PER : le sous-type détermine si le contrat sort de la succession (assurantiel)
   // ou y reste (bancaire) — obligatoire, sauf PER obligatoire (toujours assurantiel,
   // cf. constants/assetTypes.ts::isPERAssurantiel).
