@@ -56,6 +56,10 @@ function squarify(areas: number[], rect: Rect): Rect[] {
 }
 
 const GAP = 2;
+// Part en deçà de laquelle une tuile serait illisible : ces éléments sont regroupés en
+// une tuile « Autres » (dès qu'il y en a au moins deux) ; la légende de l'appelant garde le détail.
+const PART_MIN_AUTRES = 0.04;
+const COULEUR_AUTRES = '#b8b2aa';
 
 /**
  * Treemap : chaque élément est une tuile dont la surface est proportionnelle
@@ -93,8 +97,18 @@ export function Treemap({
     return () => ro.disconnect();
   }, []);
 
-  const sorted = items.filter((i) => i.value > 0).sort((a, b) => b.value - a.value);
-  const total = sorted.reduce((s, i) => s + i.value, 0);
+  const positifs = items.filter((i) => i.value > 0).sort((a, b) => b.value - a.value);
+  const total = positifs.reduce((s, i) => s + i.value, 0);
+  const petits = positifs.filter((i) => i.value / total < PART_MIN_AUTRES);
+  const regroupes = petits.length >= 2 ? petits : [];
+  const sorted: TreemapItem[] = regroupes.length > 0
+    ? [
+        ...positifs.filter((i) => !regroupes.includes(i)),
+        { label: 'Autres', value: regroupes.reduce((s, i) => s + i.value, 0), color: COULEUR_AUTRES },
+      ].sort((a, b) => b.value - a.value)
+    : positifs;
+  // Un élément regroupé mis en avant (survol de la légende) allume la tuile « Autres ».
+  const activeTuile = active !== null && regroupes.some((i) => i.label === active) ? 'Autres' : active;
   const rects = width > 0 && total > 0
     ? squarify(sorted.map((i) => (i.value / total) * width * height), { x: 0, y: 0, w: width, h: height })
     : [];
@@ -103,7 +117,7 @@ export function Treemap({
   const sansLibelle = rects
     .map((r, idx) => ({ r, item: sorted[idx] }))
     .filter(({ r }) => !(r.w - GAP >= 120 && r.h - GAP >= 60))
-    .map(({ item }) => item);
+    .flatMap(({ item }) => (item.label === 'Autres' && regroupes.length > 0 ? regroupes : [item]));
 
   return (
     <div className={className}>
@@ -119,16 +133,18 @@ export function Treemap({
         return (
           <motion.div
             key={item.label}
-            title={`${item.label} · ${formatValue ? formatValue(item.value) + ' · ' : ''}${pct.toFixed(1).replace('.', ',')} %`}
+            title={item.label === 'Autres' && regroupes.length > 0
+              ? regroupes.map((i) => `${i.label} · ${((i.value / total) * 100).toFixed(1).replace('.', ',')} %`).join('\n')
+              : `${item.label} · ${formatValue ? formatValue(item.value) + ' · ' : ''}${pct.toFixed(1).replace('.', ',')} %`}
             className={cn(
               'absolute overflow-hidden rounded-[1px] p-2.5',
               dark ? 'text-white' : 'text-[#0c0a09]'
             )}
             style={{ left: r.x, top: r.y, width: Math.max(0, w), height: Math.max(0, h), backgroundColor: item.color }}
-            onMouseEnter={() => onActiveChange?.(item.label)}
+            onMouseEnter={() => onActiveChange?.(item.label === 'Autres' && regroupes.length > 0 ? null : item.label)}
             onMouseLeave={() => onActiveChange?.(null)}
             initial={{ opacity: reduced ? 1 : 0 }}
-            animate={{ opacity: active === null || active === item.label ? 1 : 0.25 }}
+            animate={{ opacity: activeTuile === null || activeTuile === item.label ? 1 : 0.25 }}
             transition={reduced ? { duration: 0 } : { duration: 0.35, delay: 0.05 * idx }}
           >
             {showFull && (
