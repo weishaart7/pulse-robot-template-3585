@@ -261,7 +261,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
   const watchedDetenteurCouple = form.watch('detenteur') === 'Le couple';
   // Bien du couple hors indivision : 50/50 fixé par la loi, rappelé ici plutôt que dans un encadré à part.
   const repartition = familyData?.hasPartner && watchedDetenteurCouple && watchedQualificationBien !== 'Indivision'
-    ? `Réparti 50 % / 50 % entre ${familyData.userFirstName || 'vous'} et ${familyData.partnerFirstName || 'votre conjoint(e)'}, part fixée par la loi.`
+    ? `50 / 50 entre ${familyData.userFirstName || 'vous'} et ${familyData.partnerFirstName || 'votre conjoint(e)'}`
     : null;
 
   // Prévoyance sans valeur de rachat : qualification sans objet (rien à partager entre époux).
@@ -281,14 +281,14 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
         {watchedQualificationAuto !== false && !showQualificationOverride ? (
           <div className="border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">
             <div className="space-y-1">
-              <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <p className="flex flex-wrap items-baseline gap-x-2 text-sm font-medium text-foreground">
                 {watchedQualificationBien || 'Non calculable'}
+                {repartition && <span className="text-[12.5px] font-normal text-muted-foreground">· {repartition}</span>}
                 <span className="text-[11.5px] font-normal text-lagon-ink">calculée</span>
               </p>
               {qualificationRaison && (
                 <p className="text-[12.5px] leading-snug text-muted-foreground">{qualificationRaison}</p>
               )}
-              {repartition && <p className="text-[12.5px] leading-snug text-muted-foreground">{repartition}</p>}
               <Button
                 type="button"
                 variant="link"
