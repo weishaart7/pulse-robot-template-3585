@@ -1,7 +1,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isCreance } from '@/constants/assetTypes';
 import { FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
@@ -41,7 +41,8 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
   assetId
 }) => {
   const watchedNature = form.watch('nature');
-  const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
+  // Créance : origine et date demandées malgré l'absence de prix (cf. OrigineFields).
+  const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature);
 
   return (
     <div className="space-y-6">

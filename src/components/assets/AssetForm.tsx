@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm } from './ChargeForm';
-import { isAssuranceVieHorsSuccession } from '@/constants/assetTypes';
+import { isAssuranceVieHorsSuccession, isCreance } from '@/constants/assetTypes';
 import { useAssetForm } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Info, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -214,7 +214,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         <form id="asset-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
           <div className="flex flex-col items-start gap-1.5">
             <div className="inline-flex flex-wrap gap-[3px] rounded-[5px] border border-border bg-muted/40 p-[3px]">
-              {FORM_TABS.map((tab) => {
+              {FORM_TABS.filter((tab) => !(tab.id === 'charges' && isCreance(watchedNature))).map((tab) => {
                 const locked = isTabLocked(tab.id);
                 return (
                   <button

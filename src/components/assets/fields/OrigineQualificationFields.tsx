@@ -8,8 +8,8 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -39,7 +39,10 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const watchedOrigineActif = form.watch('origine_actif');
   const watchedClauseRemploi = form.watch('clause_remploi');
 
-  const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature);
+  // Créance : pas de prix, mais date et origine demandées (elles fixent sa qualification).
+  const estCreance = isCreance(watchedNature);
+  const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !estCreance;
+  const origineOptions = estCreance ? ORIGINE_CREANCE_OPTIONS : ORIGINE_ACTIF_OPTIONS;
   const isDateOuverture = NATURES_DATE_OUVERTURE.includes(watchedNature);
   // Contrat de prévoyance : souscrit, ni acheté ni reçu — seule la date de souscription est
   // demandée (date_acquisition, lue comme telle par useAVContracts), sans origine ni clauses.
@@ -65,7 +68,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const isAchat = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
   const isEchange = (watchedOrigineActif || []).includes('Échange');
   const showClauseRemploi = !isPrevoyance && (isAchat || isEchange);
-  const showEstPropreParNature = !isPrevoyance && isInCouple(maritalContext.statutCouple);
+  const showEstPropreParNature = !isPrevoyance && !estCreance && isInCouple(maritalContext.statutCouple);
   // Financement mixte (art. 1436) : ne se pose qu'en régime communautaire,
   // pour un achat (pas un échange), et n'a plus de sens si le remploi total
   // est déjà acté (clause_remploi couvre alors la totalité du prix).
@@ -91,7 +94,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="date_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>{isPrevoyance ? 'Date de souscription' : isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}</FormLabel>
+                <FormLabel>{isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}</FormLabel>
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>
@@ -101,7 +104,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 
             {!isPrevoyance && <FormField control={form.control} name="origine_actif" render={({ field }) => (
               <FormItem>
-                <FormLabel>Origine de l'actif</FormLabel>
+                <FormLabel>{estCreance ? 'Origine de la créance' : "Origine de l'actif"}</FormLabel>
                 <Select
                   onValueChange={(value) => field.onChange([value])}
                   value={field.value?.[0] || 'Acquisition à titre onéreux'}
@@ -112,11 +115,11 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {ORIGINE_ACTIF_OPTIONS.map((option) => (
+                    {origineOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
                     ))}
                     {/* Valeur retirée de la liste mais encore portée par un actif existant. */}
-                    {field.value?.[0] && !ORIGINE_ACTIF_OPTIONS.some((option) => option.value === field.value?.[0]) && (
+                    {field.value?.[0] && !origineOptions.some((option) => option.value === field.value?.[0]) && (
                       <SelectItem value={field.value[0]}>{getOrigineActifLabel(field.value[0])}</SelectItem>
                     )}
                   </SelectContent>
@@ -127,7 +130,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           </>
         )}
 
-        {showPrixSection && !isPrevoyance && (
+        {showPrixSection && !isPrevoyance && !estCreance && (
           <>
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
@@ -194,7 +197,9 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
               <div className="flex items-center leading-none">
                 <FormLabel>Clause de remploi actée</FormLabel>
                 <FieldHelp>
-                  Ce bien a été acheté avec des fonds propres réemployés, ou reçu en échange d'un bien propre : il reste propre malgré l'acquisition pendant l'union.
+                  {estCreance
+                    ? "La somme prêtée provenait de fonds propres, ou la créance est née de la vente d'un bien propre : elle reste propre malgré sa naissance pendant l'union."
+                    : "Ce bien a été acheté avec des fonds propres réemployés, ou reçu en échange d'un bien propre : il reste propre malgré l'acquisition pendant l'union."}
                 </FieldHelp>
               </div>
             </FormItem>
@@ -261,7 +266,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
   const watchedQualificationBien = form.watch('qualification_bien');
 
   // Prévoyance sans valeur de rachat : qualification sans objet (rien à partager entre époux).
-  if (NATURES_WITHOUT_ACQUISITION.includes(watchedNature) || isPrevoyanceSansRachat(watchedNature)) return null;
+  if ((NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature)) || isPrevoyanceSansRachat(watchedNature)) return null;
 
   return (
     <FormField control={form.control} name="qualification_bien" render={({ field }) => (

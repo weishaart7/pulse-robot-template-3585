@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -25,7 +25,7 @@ import { getTrancheDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { passifService, Emprunt } from '@/services/passifService';
 import { formatCurrency as formatCurrencyUtil, isDetenteurCommon } from '@/lib/patrimoine/utils';
 import { format } from 'date-fns';
-import { getOrigineActifLabel } from '@/schemas/assetSchema';
+import { getOrigineActifLabel, getOrigineCreanceLabel } from '@/schemas/assetSchema';
 
 const NATURE_DROITS_A_ROYALTIES = 'Droits à royalties';
 
@@ -166,7 +166,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <Coins className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{isPrevoyanceDeces(asset.nature) ? 'Capital garanti' : 'Valeur estimée'}</span>
+                <span className="text-sm text-muted-foreground">{isPrevoyanceDeces(asset.nature) ? 'Capital garanti' : isCreance(asset.nature) ? 'Montant restant dû' : 'Valeur estimée'}</span>
               </div>
               <div className="text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums text-foreground">
                 {formatCurrency(isPrevoyanceDeces(asset.nature) ? asset.capital_garanti : asset.valeur_estimee)}
@@ -336,18 +336,18 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
           <Separator />
 
           {/* Informations d'acquisition - masquées pour les actifs liquides */}
-          {!NATURES_WITHOUT_ACQUISITION.includes(asset.nature) && (
+          {(!NATURES_WITHOUT_ACQUISITION.includes(asset.nature) || isCreance(asset.nature)) && (
             <div>
               <h3 className="text-[14.5px] font-medium tracking-[-0.01em] mb-3 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                {isPrevoyanceDeces(asset.nature) ? 'Souscription' : 'Acquisition'}
+                {isPrevoyanceDeces(asset.nature) ? 'Souscription' : isCreance(asset.nature) ? 'Créance' : 'Acquisition'}
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm text-muted-foreground">{isPrevoyanceDeces(asset.nature) ? 'Date de souscription' : "Date d'acquisition"}</span>
+                  <span className="text-sm text-muted-foreground">{isPrevoyanceDeces(asset.nature) ? 'Date de souscription' : isCreance(asset.nature) ? 'Date de la créance' : "Date d'acquisition"}</span>
                   <p className="font-medium">{formatDate(asset.date_acquisition)}</p>
                 </div>
-                {!isPrevoyanceDeces(asset.nature) && (
+                {!isPrevoyanceDeces(asset.nature) && !isCreance(asset.nature) && (
                   <div>
                     <span className="text-sm text-muted-foreground">Valeur d'acquisition</span>
                     <p className="font-medium">{formatCurrency(asset.valeur_acquisition)}</p>
@@ -468,10 +468,10 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
               <div className="space-y-3">
                 {asset.origine_actif && asset.origine_actif.length > 0 && !isPrevoyanceDeces(asset.nature) && (
                   <div>
-                    <span className="text-sm text-muted-foreground">Origine de l'actif</span>
+                    <span className="text-sm text-muted-foreground">{isCreance(asset.nature) ? 'Origine de la créance' : "Origine de l'actif"}</span>
                     <div className="flex flex-wrap gap-2 mt-1">
                       {asset.origine_actif.map((origine, index) => (
-                        <Chip key={index}>{getOrigineActifLabel(origine)}</Chip>
+                        <Chip key={index}>{(isCreance(asset.nature) ? getOrigineCreanceLabel : getOrigineActifLabel)(origine)}</Chip>
                       ))}
                     </div>
                   </div>

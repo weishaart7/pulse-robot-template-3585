@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isCreance, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
 import { useAssetForm } from './useAssetForm';
 import { AssetCharge } from '@/services/assetService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
@@ -76,7 +76,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: 'charges',
     label: 'Charges',
     fields: [],
-    isVisible: () => true,
+    // Une créance n'a pas de dépenses récurrentes.
+    isVisible: (values) => !isCreance(values.nature),
   },
   {
     id: 'recapitulatif',

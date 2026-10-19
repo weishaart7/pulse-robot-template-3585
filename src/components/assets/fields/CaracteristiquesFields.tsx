@@ -34,6 +34,7 @@ import {
   QUALIFICATIONS_NFT,
   isEpargneAssuranceVie,
   isPrevoyanceDeces,
+  isCreance,
   isNatureRurale,
   REGIME_RURAL_IMPOSE,
   TYPES_GROUPEMENT_FONCIER,
@@ -210,7 +211,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           )} />
         )}
 
-        <FormField control={form.control} name="situation_particuliere" render={({ field }) => (
+        {!isCreance(watchedNature) && <FormField control={form.control} name="situation_particuliere" render={({ field }) => (
           <FormItem>
             <FormLabel>Situation particulière</FormLabel>
             <Select
@@ -230,7 +231,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             </Select>
             <FormMessage />
           </FormItem>
-        )} />
+        )} />}
 
         {showNumeroSerie && (
           <FormField control={form.control} name="numero_serie" render={({ field }) => (
@@ -1291,7 +1292,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {!isEpargneAV && !isPrevoyanceDeces(watchedNature) && (
+      {!isEpargneAV && !isPrevoyanceDeces(watchedNature) && !isCreance(watchedNature) && (
         <FormField
           control={form.control}
           name="attachement_emotionnel"

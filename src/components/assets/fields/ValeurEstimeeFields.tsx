@@ -5,7 +5,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { EuroInput } from '@/components/ui/euro-input';
 import { AssetFormValues } from '@/schemas/assetSchema';
 import { FieldHelp } from '@/components/ui/field-help';
-import { NATURE_PREVOYANCE_RACHETABLE, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { NATURE_PREVOYANCE_RACHETABLE, isCreance, isPrevoyanceDeces } from '@/constants/assetTypes';
 
 interface ValeurEstimeeFieldsProps {
   form: UseFormReturn<AssetFormValues>;
@@ -54,9 +54,11 @@ export const ValeurEstimeeFields: React.FC<ValeurEstimeeFieldsProps> = ({ form }
 
       <FormField control={form.control} name="valeur_estimee" render={({ field }) => (
         <FormItem>
-          <FormLabel>{isPrevoyance && !sansRachat ? 'Valeur de rachat' : 'Valeur actuelle estimée'}</FormLabel>
+          <FormLabel>{isPrevoyance && !sansRachat ? 'Valeur de rachat' : isCreance(watchedNature) ? 'Montant restant dû' : 'Valeur actuelle estimée'}</FormLabel>
           <FieldHelp>
-            {sansRachat
+            {isCreance(watchedNature)
+              ? 'Somme encore due à ce jour, intérêts échus compris. C\'est elle qui est utilisée dans le calcul du patrimoine.'
+              : sansRachat
               ? "Ce contrat n'a pas de valeur de rachat : il compte pour 0 dans le patrimoine."
               : isPrevoyance
                 ? 'Montant récupérable en cas de rachat, à ce jour. C\'est lui qui est utilisé dans le calcul du patrimoine.'

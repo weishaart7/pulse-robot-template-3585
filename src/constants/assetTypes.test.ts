@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ASSET_CATEGORIES, NATURE_SOUS_GROUPES, isContratSouscrit, isPrevoyanceSansRachat } from './assetTypes';
+import { ASSET_CATEGORIES, NATURE_SOUS_GROUPES, isContratSouscrit, isCreance, isPrevoyanceSansRachat } from './assetTypes';
 
 describe('NATURE_SOUS_GROUPES', () => {
   it.each(Object.entries(NATURE_SOUS_GROUPES))('couvre exactement les natures de « %s »', (categorie, sousGroupes) => {
@@ -22,5 +22,13 @@ describe('contrats souscrits et prévoyance', () => {
     expect(isPrevoyanceSansRachat('Temporaire décès')).toBe(true);
     expect(isPrevoyanceSansRachat('Contrat prévoyance individuelle')).toBe(true);
     expect(isPrevoyanceSansRachat('Vie entière')).toBe(false);
+  });
+});
+
+describe('isCreance', () => {
+  it('reconnaît les 3 natures de créance, pas le dépôt de garantie', () => {
+    expect(isCreance('Prêt consenti à un proche')).toBe(true);
+    expect(isCreance('Soulte ou prix de vente à recevoir')).toBe(true);
+    expect(isCreance('Dépôt de garantie')).toBe(false);
   });
 });

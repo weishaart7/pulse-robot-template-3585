@@ -462,6 +462,11 @@ export const isContratSouscrit = (nature: string | null | undefined): boolean =>
 
 // Prévoyance sans valeur de rachat (temporaire décès, prévoyance individuelle) : rien à
 // partager entre époux, la qualification commun / propre est sans objet (art. L132-16 C. ass.).
+// Créances (prêt à un proche, créance sur un tiers, soulte ou prix à recevoir) : sans prix
+// d'achat, mais avec une origine et une date qui en fixent la qualification (commune ou propre).
+export const isCreance = (nature: string | null | undefined): boolean =>
+  !!nature && (ASSET_CATEGORIES['créances'] as readonly string[]).includes(nature);
+
 export const isPrevoyanceSansRachat = (nature: string | null | undefined): boolean =>
   isPrevoyanceDeces(nature) && nature !== NATURE_PREVOYANCE_RACHETABLE;
 

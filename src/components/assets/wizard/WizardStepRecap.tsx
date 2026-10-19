@@ -2,7 +2,7 @@ import React from 'react';
 import { panelLinkClass } from '@/components/layout/workspace-panel';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { AssetFormValues, getOrigineActifLabel } from '@/schemas/assetSchema';
+import { AssetFormValues, getOrigineActifLabel, getOrigineCreanceLabel } from '@/schemas/assetSchema';
 import { AssetCharge } from '@/services/assetService';
 import { FamilyMember } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -11,7 +11,7 @@ import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
-import { NATURE_PREVOYANCE_RACHETABLE, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURE_PREVOYANCE_RACHETABLE, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 
 interface WizardStepRecapProps {
   form: UseFormReturn<AssetFormValues>;
@@ -112,6 +112,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
   // Contrat de prévoyance : capital garanti repris dans « Droits et valeur », pas d'origine ni de
   // mode de détention, et rappel de ce qui reste à saisir dans Transmission.
   const isPrevoyance = isPrevoyanceDeces(values.nature);
+  const estCreance = isCreance(values.nature);
 
   const chargesAvecImpact = charges
     .map((c) => ({ charge: c, impact: computeImpactMensuel(c) }))
@@ -131,8 +132,8 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
       </RecapSection>
 
       <RecapSection title="Origine et propriété" onEdit={() => onEditStep('origine')}>
-        {values.detenteur !== 'Indivision' && formatDate(values.date_acquisition) && <Row label={isPrevoyance ? 'Date de souscription' : "Date d'acquisition"} value={formatDate(values.date_acquisition)} />}
-        {values.detenteur !== 'Indivision' && !isPrevoyance && values.origine_actif?.[0] && <Row label="Origine" value={getOrigineActifLabel(values.origine_actif[0])} />}
+        {values.detenteur !== 'Indivision' && formatDate(values.date_acquisition) && <Row label={isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : "Date d'acquisition"} value={formatDate(values.date_acquisition)} />}
+        {values.detenteur !== 'Indivision' && !isPrevoyance && values.origine_actif?.[0] && <Row label="Origine" value={(estCreance ? getOrigineCreanceLabel : getOrigineActifLabel)(values.origine_actif[0])} />}
         {values.detenteur && <Row label="Détenteur / Souscripteur" value={values.detenteur} />}
         {values.detenteur === 'Indivision' && (
           <Row
@@ -161,7 +162,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
           {isPrevoyance && <Row label="Capital garanti" value={formatEur(values.capital_garanti ?? 0)} />}
           {!isPrevoyance && values.mode_detention && <Row label="Mode de détention" value={values.mode_detention} />}
           {values.valeur_estimee !== undefined && (
-            <Row label={values.nature === NATURE_PREVOYANCE_RACHETABLE ? 'Valeur de rachat' : 'Valeur estimée'} value={formatEur(values.valeur_estimee)} />
+            <Row label={values.nature === NATURE_PREVOYANCE_RACHETABLE ? 'Valeur de rachat' : estCreance ? 'Montant restant dû' : 'Valeur estimée'} value={formatEur(values.valeur_estimee)} />
           )}
           {formatDate(values.date_estimation) && <Row label="Date d'estimation" value={formatDate(values.date_estimation)} />}
         </RecapSection>
@@ -175,7 +176,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
         </RecapSection>
       )}
 
-      <RecapSection title="Charges" onEdit={() => onEditStep('charges')}>
+      {!estCreance && <RecapSection title="Charges" onEdit={() => onEditStep('charges')}>
         {charges.length === 0 ? (
           <p className="text-sm text-muted-foreground">Aucune charge ajoutée</p>
         ) : (
@@ -188,7 +189,7 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
             )}
           </>
         )}
-      </RecapSection>
+      </RecapSection>}
 
       {isPrevoyance && (
         <div className="py-4">

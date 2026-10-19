@@ -15,6 +15,17 @@ export const ORIGINE_ACTIF_OPTIONS = [
   { value: 'Création', label: 'Création (œuvre, brevet, entreprise…)' },
 ] as const;
 
+// Origines proposées pour une créance : mêmes valeurs stockées (lues telles quelles par
+// qualifierBien()), libellés propres. Des fonds propres se signalent par la clause de remploi.
+export const ORIGINE_CREANCE_OPTIONS = [
+  { value: 'Acquisition à titre onéreux', label: 'Prêt ou vente consenti par le foyer' },
+  { value: 'Héritage', label: 'Reçue par héritage ou partage successoral' },
+  { value: 'Donation', label: 'Reçue par donation' },
+] as const;
+
+export const getOrigineCreanceLabel = (value: string): string =>
+  ORIGINE_CREANCE_OPTIONS.find((option) => option.value === value)?.label ?? getOrigineActifLabel(value);
+
 // Valeurs retirées de la liste proposée mais encore comprises par le moteur de
 // qualification : un actif qui les porterait continue de s'afficher.
 const ORIGINE_ACTIF_LEGACY_LABELS: Record<string, string> = {
