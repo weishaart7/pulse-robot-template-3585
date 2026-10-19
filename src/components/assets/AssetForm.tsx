@@ -234,7 +234,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             </>
           ) : undefined}
         >
-          <QualificationFields form={form} qualificationRaison={qualificationRaison} />
+          <QualificationFields form={form} qualificationRaison={qualificationRaison} sansLibelle />
         </PanelSection>
       )}
 

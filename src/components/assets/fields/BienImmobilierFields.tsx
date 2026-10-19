@@ -82,7 +82,7 @@ export const FraisDetaillesFields: React.FC<BienImmobilierFieldsProps> = ({ form
 
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between border-b border-border pb-2">
+      <div className="flex items-baseline justify-between">
         <p className="text-[13px] font-medium text-foreground">
           Frais et travaux
           <FieldHelp>

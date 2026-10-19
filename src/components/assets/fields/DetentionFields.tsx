@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
-import { Checkbox } from '@/components/ui/checkbox';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -95,34 +94,20 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
 
   return (
     <>
-      {!isContrat && <FormItem className="flex flex-row items-center space-x-3 space-y-0 col-span-full">
-        <FormControl>
-          <Checkbox
-            checked={watchedDetenteur === 'Indivision'}
-            onCheckedChange={(checked) => {
-              if (checked) {
-                form.setValue('detenteur', 'Indivision');
-              } else if (watchedDetenteur === 'Indivision') {
-                form.setValue('detenteur', '');
-              }
-            }}
-          />
-        </FormControl>
-        <div className="flex items-center leading-none">
-          <FormLabel>Ce bien est détenu en indivision avec un tiers (hors couple)</FormLabel>
-          <FieldHelp>
-            Dans ce cas, la qualification du bien est directement "Indivision", quel que soit le régime matrimonial ou l'origine du bien.
-          </FieldHelp>
-        </div>
-      </FormItem>}
 
-      {watchedDetenteur !== 'Indivision' && (
+      {/* L'indivision avec un tiers est un choix de la liste (valeur « Indivision », ex-case à cocher). */}
+      {(
         <FormField control={form.control} name="detenteur" render={({ field }) => (
           <FormItem>
             {/* "Souscripteur" pour les contrats (assurance-vie, retraite, prévoyance) : vocabulaire
                 assurantiel, même colonne `detenteur` (cf. constants/assetTypes.ts). */}
             <FormLabel>{isContrat ? 'Souscripteur' : 'Détenteur'}</FormLabel>
-            {qualifiePropre && !coupleRequalifie && (
+            {field.value === 'Indivision' && (
+              <FieldHelp>
+                En indivision avec un tiers (hors couple), la qualification du bien est directement « Indivision », quels que soient le régime matrimonial et l'origine du bien.
+              </FieldHelp>
+            )}
+            {field.value !== 'Indivision' && qualifiePropre && !coupleRequalifie && (
               <FieldHelp>
                 "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
               </FieldHelp>
@@ -137,6 +122,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
                 {filteredDetenteurOptions.map(option => (
                   <SelectItem key={option} value={option}>{option}</SelectItem>
                 ))}
+                {!isContrat && <SelectItem value="Indivision">En indivision avec un tiers</SelectItem>}
               </SelectContent>
             </Select>
             <FormMessage />

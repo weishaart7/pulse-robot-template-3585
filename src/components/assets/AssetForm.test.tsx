@@ -99,32 +99,34 @@ describe('AssetForm — verrouillage des onglets', () => {
 });
 
 describe('AssetForm — indivision hors couple masque origine/clauses', () => {
-  it('masque "Origine de l\'actif" et "Bien propre par nature" quand la case est cochée, les réaffiche au décoché', async () => {
-    const user = userEvent.setup();
-    // Statut "en couple" pour que "Bien propre par nature" soit affiché avant coche.
+  const enCouple = () => {
+    // Statut "en couple" pour que l'option "Propre par nature" soit proposée hors indivision.
     vi.mocked(familyService.getMaritalStatus).mockResolvedValueOnce({
       statut_couple: 'Marié(e)',
       regime_matrimonial: 'Communauté réduite aux acquêts',
       date_mariage: '2010-01-01',
     } as any);
-    const asset: Asset = { id: 'asset-1', nature: 'Compte bancaire' };
-    render(<AssetForm asset={asset} onSubmit={noop} onCancel={() => {}} />);
+    vi.mocked(familyService.getFamilyProfile).mockResolvedValueOnce({ prenom: 'Camille' } as never);
+  };
 
+  it("hors indivision : origine et clauses affichées", async () => {
+    const user = userEvent.setup();
+    enCouple();
+    render(<AssetForm asset={{ id: 'asset-1', nature: 'Compte bancaire', detenteur: 'user' }} onSubmit={noop} onCancel={() => {}} />);
     await user.click(screen.getByRole('button', { name: 'Propriété' }));
     expect(await screen.findByText("Origine de l'actif")).toBeInTheDocument();
-    expect(await screen.findByText('Bien propre par nature (art. 1404)')).toBeInTheDocument();
+    expect(await screen.findByRole('switch', { name: 'Propre par nature' })).toBeInTheDocument();
+    expect(screen.queryByText(/Sans effet pour un bien en indivision hors couple/)).not.toBeInTheDocument();
+  });
 
-    const indivisionCheckbox = screen.getByLabelText('Ce bien est détenu en indivision avec un tiers (hors couple)');
-    await user.click(indivisionCheckbox);
-
+  it('détenteur « en indivision avec un tiers » : origine et clauses masquées', async () => {
+    const user = userEvent.setup();
+    enCouple();
+    render(<AssetForm asset={{ id: 'asset-1', nature: 'Compte bancaire', detenteur: 'Indivision' }} onSubmit={noop} onCancel={() => {}} />);
+    await user.click(screen.getByRole('button', { name: 'Propriété' }));
     expect(await screen.findByText(/Sans effet pour un bien en indivision hors couple/)).toBeInTheDocument();
     expect(screen.queryByText("Origine de l'actif")).not.toBeInTheDocument();
-    expect(screen.queryByText('Bien propre par nature (art. 1404)')).not.toBeInTheDocument();
-
-    await user.click(indivisionCheckbox);
-
-    expect(await screen.findByText("Origine de l'actif")).toBeInTheDocument();
-    expect(screen.queryByText(/Sans effet pour un bien en indivision hors couple/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Propre par nature' })).not.toBeInTheDocument();
   });
 });
 

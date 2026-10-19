@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { panelLinkClass } from '@/components/layout/workspace-panel';
 import { UseFormReturn } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { DateInput } from '@/components/ui/date-input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -13,6 +12,7 @@ import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, 
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
+import { OptionToggle } from '@/components/ui/option-toggle';
 import { hasDetailImmobilier } from '@/schemas/immobilierPropertySchema';
 import { FraisDetaillesFields } from './BienImmobilierFields';
 import { RequiredMark } from '@/components/ui/required-mark';
@@ -162,64 +162,67 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
         )}
       </div>
 
-      {showOrigineSection && showClauseEntreeCommunaute && (
-        <FormField
-          control={form.control}
-          name="clause_entree_communaute"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="flex items-center leading-none">
-                <FormLabel>{inverseSensClause ? "Clause d'exclusion de communauté" : "Clause d'entrée en communauté"}</FormLabel>
-                <FieldHelp>
-                  {inverseSensClause
-                    ? "Par défaut, une donation ou succession reçue pendant le mariage tombe dans la communauté (art. 1526, ou art. 1498 al. 1 pour un bien meuble sous communauté de meubles et acquêts). Cochez si une clause réserve ce bien à l'époux bénéficiaire."
-                    : "Le donateur (ou le testateur) a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite."}
-                </FieldHelp>
-              </div>
-            </FormItem>
-          )}
-        />
-      )}
-
-      {showOrigineSection && showClauseRemploi && (
-        <FormField
-          control={form.control}
-          name="clause_remploi"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="flex items-center leading-none">
-                <FormLabel>Clause de remploi actée</FormLabel>
-                <FieldHelp>
-                  {estCreance
-                    ? "La somme prêtée provenait de fonds propres, ou la créance est née de la vente d'un bien propre : elle reste propre malgré sa naissance pendant l'union."
-                    : "Ce bien a été acheté avec des fonds propres réemployés, ou reçu en échange d'un bien propre : il reste propre malgré l'acquisition pendant l'union."}
-                </FieldHelp>
-              </div>
-            </FormItem>
-          )}
-        />
+      {/* Clauses : options compactes sur une ligne, à la place de cases à cocher isolées. */}
+      {showOrigineSection && (showClauseEntreeCommunaute || showClauseRemploi || showEstPropreParNature) && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium leading-none">Clauses</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {showClauseEntreeCommunaute && (
+              <FormField control={form.control} name="clause_entree_communaute" render={({ field }) => (
+                <OptionToggle
+                  checked={!!field.value}
+                  onChange={field.onChange}
+                  help={<FieldHelp>
+                    {inverseSensClause
+                      ? "Par défaut, une donation ou succession reçue pendant le mariage tombe dans la communauté (art. 1526, ou art. 1498 al. 1 pour un bien meuble sous communauté de meubles et acquêts). Activez si une clause réserve ce bien à l'époux bénéficiaire."
+                      : "Le donateur (ou le testateur) a explicitement choisi que ce bien tombe dans la communauté, malgré l'origine gratuite."}
+                  </FieldHelp>}
+                >
+                  {inverseSensClause ? "Exclusion de communauté" : "Entrée en communauté"}
+                </OptionToggle>
+              )} />
+            )}
+            {showClauseRemploi && (
+              <FormField control={form.control} name="clause_remploi" render={({ field }) => (
+                <OptionToggle
+                  checked={!!field.value}
+                  onChange={field.onChange}
+                  help={<FieldHelp>
+                    {estCreance
+                      ? "La somme prêtée provenait de fonds propres, ou la créance est née de la vente d'un bien propre : elle reste propre malgré sa naissance pendant l'union."
+                      : "Ce bien a été acheté avec des fonds propres réemployés, ou reçu en échange d'un bien propre : il reste propre malgré l'acquisition pendant l'union."}
+                  </FieldHelp>}
+                >
+                  Remploi
+                </OptionToggle>
+              )} />
+            )}
+            {showEstPropreParNature && (
+              <FormField control={form.control} name="est_propre_par_nature" render={({ field }) => (
+                <OptionToggle
+                  checked={!!field.value}
+                  onChange={field.onChange}
+                  help={<FieldHelp>
+                    Bien propre par nature (art. 1404) : vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession. Reste propre même en communauté (y compris universelle).
+                  </FieldHelp>}
+                >
+                  Propre par nature
+                </OptionToggle>
+              )} />
+            )}
+          </div>
+        </div>
       )}
 
       {showPrixSection && fraisDetailles && <FraisDetaillesFields form={form} />}
 
       {showPrixSection && !isPrevoyance && showFinancementMixte && (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FormField control={form.control} name="financement_mixte_apport_propre" render={({ field }) => (
           <FormItem>
-            <FormLabel>Financement mixte : contribution en fonds propres</FormLabel>
+            <FormLabel>Apport en fonds propres</FormLabel>
             <FieldHelp>
-              Montant financé par des fonds propres, à comparer au prix d'acquisition total renseigné ci-dessus. Si cette contribution couvre au moins la moitié du prix : bien propre (art. 1436), récompense due à la communauté pour le solde. Sinon : bien commun, récompense due à l'époux apporteur. Sans effet si la clause de remploi ci-dessus est cochée.
+              Financement mixte : montant financé par des fonds propres, à comparer au prix d'acquisition total renseigné ci-dessus. Si cette contribution couvre au moins la moitié du prix : bien propre (art. 1436), récompense due à la communauté pour le solde. Sinon : bien commun, récompense due à l'époux apporteur. Sans effet si la clause de remploi est activée.
             </FieldHelp>
             <FormControl>
               <EuroInput className="bg-background border-border shadow-none" type="number" min="0" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
@@ -227,30 +230,9 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
             <FormMessage />
           </FormItem>
         )} />
+        </div>
       )}
 
-      {showOrigineSection && showEstPropreParNature && (
-        <FormField
-          control={form.control}
-          name="est_propre_par_nature"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-              <div className="flex items-center leading-none">
-                <FormLabel>Bien propre par nature (art. 1404)</FormLabel>
-                <FieldHelp>
-                  Vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession : reste propre même en communauté (y compris universelle).
-                </FieldHelp>
-              </div>
-            </FormItem>
-          )}
-        />
-      )}
     </>
   );
 
@@ -260,12 +242,14 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 interface QualificationFieldsProps {
   form: UseFormReturn<AssetFormValues>;
   qualificationRaison?: string;
+  /** Sans libellé de champ, sous un titre de section qui le dit déjà (onglet Propriété). */
+  sansLibelle?: boolean;
 }
 
 // Bloc "Qualification du bien" de l'onglet Propriété : qualification calculée
 // (avec sa justification), correction manuelle et réactivation du calcul.
 // Masqué pour les natures sans notion d'acquisition.
-export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, qualificationRaison }) => {
+export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, qualificationRaison, sansLibelle = false }) => {
   const [showQualificationOverride, setShowQualificationOverride] = useState(false);
 
   const watchedNature = form.watch('nature');
@@ -278,12 +262,14 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
   return (
     <FormField control={form.control} name="qualification_bien" render={({ field }) => (
       <FormItem>
+        {!sansLibelle && (<>
         <FormLabel>Qualification du bien</FormLabel>
         <FieldHelp>
           {watchedQualificationAuto !== false
             ? "Calculée automatiquement à partir du régime matrimonial, de l'origine du bien, de la date d'acquisition et du détenteur."
             : "Qualification définie manuellement : le calcul automatique n'écrasera plus cette valeur."}
         </FieldHelp>
+        </>)}
         {watchedQualificationAuto !== false && !showQualificationOverride ? (
           <div className="border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">
             <div className="space-y-1">

@@ -31,18 +31,18 @@ afterEach(() => cleanup());
 describe('OrigineFields — clauses selon l\'origine', () => {
   it('un achat propose la clause de remploi et le financement mixte', () => {
     render(<Harness origine="Acquisition à titre onéreux" />);
-    expect(screen.getByText('Clause de remploi actée')).toBeInTheDocument();
-    expect(screen.getByText(/Financement mixte/)).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Remploi' })).toBeInTheDocument();
+    expect(screen.getByText("Apport en fonds propres")).toBeInTheDocument();
   });
 
   it('un échange propose la clause de remploi mais pas le financement mixte', () => {
     render(<Harness origine="Échange" />);
-    expect(screen.getByText('Clause de remploi actée')).toBeInTheDocument();
-    expect(screen.queryByText(/Financement mixte/)).not.toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Remploi' })).toBeInTheDocument();
+    expect(screen.queryByText("Apport en fonds propres")).not.toBeInTheDocument();
   });
 
   it("une donation ne propose pas la clause de remploi", () => {
     render(<Harness origine="Donation" />);
-    expect(screen.queryByText('Clause de remploi actée')).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch', { name: 'Remploi' })).not.toBeInTheDocument();
   });
 });
