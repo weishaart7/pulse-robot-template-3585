@@ -35,30 +35,35 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
   const echelle = Math.max(cout, valeurActuelle);
   const pos = (n: number) => (n / echelle) * 100;
   const posValeur = pos(valeurActuelle);
-  // Étiquette du repère : ancrée à droite du trait dans la moitié droite, pour rester dans le cadre.
+  // Étiquette du repère : au-dessus de la jauge, à gauche du trait, quand il est dans la moitié droite ;
+  // sinon sous la jauge, à droite du trait (au-dessus, elle chevaucherait le montant).
   const etiquetteADroite = posValeur > 55;
+
+  const etiquetteValeur = (
+    <div
+      className={cn('absolute flex flex-col whitespace-nowrap', etiquetteADroite ? 'bottom-0 items-end pb-1.5' : 'top-0 items-start pt-2')}
+      style={etiquetteADroite ? { right: `${100 - posValeur}%` } : { left: `${posValeur}%` }}
+    >
+      <span className="text-[11px] text-muted-foreground">Valeur actuelle</span>
+      <span className="text-[13px] font-medium tabular-nums text-foreground">{formatEur(valeurActuelle)}</span>
+    </div>
+  );
 
   return (
     <section className="border-y border-border py-4 animate-fade-in">
-      {/* Résultat en tête, à gauche : libellé, puis montant et taux sur une ligne. */}
       <p className="text-[12px] text-muted-foreground">{positif ? 'Plus-value latente' : 'Moins-value latente'}</p>
-      <p className="mt-0.5 flex items-baseline gap-2 tabular-nums">
-        <span className={cn('text-[22px] font-medium leading-tight tracking-[-0.02em]', positif ? 'text-positive' : 'text-destructive')}>
-          {positif ? '+' : '−'}{formatEur(Math.abs(plusValue))}
-        </span>
-        <span className="text-[12.5px] text-muted-foreground">{formatPct(pct).replace('-', '−')} du coût total</span>
-      </p>
 
-      <div className="mt-3">
-        {/* Repère annoté de la valeur actuelle */}
-        <div className="relative h-9">
-          <div
-            className={cn('absolute bottom-0 flex flex-col whitespace-nowrap pb-1.5', etiquetteADroite ? 'items-end' : 'items-start')}
-            style={etiquetteADroite ? { right: `${100 - posValeur}%` } : { left: `${posValeur}%` }}
-          >
-            <span className="text-[11px] text-muted-foreground">Valeur actuelle</span>
-            <span className="text-[13px] font-medium tabular-nums text-foreground">{formatEur(valeurActuelle)}</span>
-          </div>
+      <div>
+        {/* Montant centré verticalement entre le libellé et la jauge ; le repère annoté de la valeur
+            actuelle partage cette bande, posé sur la jauge. */}
+        <div className="relative flex h-14 items-center">
+          <p className="flex items-baseline gap-2 tabular-nums">
+            <span className={cn('text-[22px] font-medium leading-none tracking-[-0.02em]', positif ? 'text-positive' : 'text-destructive')}>
+              {positif ? '+' : '−'}{formatEur(Math.abs(plusValue))}
+            </span>
+            <span className="text-[12.5px] text-muted-foreground">{formatPct(pct).replace('-', '−')} du coût total</span>
+          </p>
+          {etiquetteADroite && etiquetteValeur}
         </div>
 
         <div className="relative h-3" aria-hidden="true">
@@ -78,6 +83,8 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
             style={{ left: `calc(${posValeur}% - 1px)` }}
           />
         </div>
+
+        {!etiquetteADroite && <div className="relative h-11">{etiquetteValeur}</div>}
 
         {/* Décomposition du coût sous la jauge */}
         <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-[12px] tabular-nums">
