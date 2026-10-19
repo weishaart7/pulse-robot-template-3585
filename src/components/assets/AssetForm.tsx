@@ -165,8 +165,8 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   );
 
   // Onglet Propriété en sections de panneau (PanelSection : titre à repère, filets bord à bord), dans
-  // l'ordre où se construit la qualification : acquisition, prix, détention, puis qualification qui en
-  // découle (avec le rappel du régime matrimonial), et crédit du bien. Une section sans objet pour la
+  // l'ordre où se construit la qualification : acquisition, prix, puis détention et qualification
+  // réunies (avec le rappel du régime matrimonial), et crédit du bien. Une section sans objet pour la
   // nature n'est pas affichée.
   const renderProprieteSection = () => {
     const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature);
@@ -206,7 +206,19 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         </PanelSection>
       )}
 
-      <PanelSection title="Détention" grid={false}>
+      {/* Détention et qualification ensemble : le détenteur est une entrée de qualifierBien(), la
+          qualification se lit juste sous le choix qui la détermine, avec le régime en rappel. */}
+      <PanelSection
+        title={qualificationVisible ? 'Détention et qualification' : 'Détention'}
+        grid={false}
+        description={qualificationVisible && enCouple ? (
+          <>
+            {maritalContext.regimeMatrimonial || 'Régime non renseigné'}
+            <span className="mx-1.5 text-muted-foreground/50">·</span>
+            {dateUnion ? `${pacs ? 'PACS' : 'Mariage'} le ${new Date(`${dateUnion.slice(0, 10)}T00:00:00`).toLocaleDateString('fr-FR')}` : `Date de ${pacs ? 'PACS' : 'mariage'} non renseignée`}
+          </>
+        ) : undefined}
+      >
         <div className="space-y-5">
           <DetentionFields
             form={form}
@@ -219,24 +231,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             demembrements={demembrements}
             setDemembrements={setDemembrements}
           />
+          {qualificationVisible && <QualificationFields form={form} qualificationRaison={qualificationRaison} />}
         </div>
       </PanelSection>
-
-      {qualificationVisible && (
-        <PanelSection
-          title="Qualification"
-          grid={false}
-          description={enCouple ? (
-            <>
-              {maritalContext.regimeMatrimonial || 'Régime non renseigné'}
-              <span className="mx-1.5 text-muted-foreground/50">·</span>
-              {dateUnion ? `${pacs ? 'PACS' : 'Mariage'} le ${new Date(`${dateUnion.slice(0, 10)}T00:00:00`).toLocaleDateString('fr-FR')}` : `Date de ${pacs ? 'PACS' : 'mariage'} non renseignée`}
-            </>
-          ) : undefined}
-        >
-          <QualificationFields form={form} qualificationRaison={qualificationRaison} sansLibelle />
-        </PanelSection>
-      )}
 
       {asset?.id && hasDetailImmobilier(watchedNature) && (
         <PanelSection title="Crédit" grid={false} description="Les crédits se saisissent et se modifient dans Patrimoine → Passifs.">
