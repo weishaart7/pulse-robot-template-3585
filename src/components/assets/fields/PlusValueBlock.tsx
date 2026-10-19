@@ -17,7 +17,7 @@ interface PlusValueBlockProps {
 // toute nature hors NATURES_WITHOUT_ACQUISITION. La jauge porte la lecture : le coût total décomposé
 // (prix d'achat, frais) sur toute la largeur, la valeur actuelle en repère annoté au-dessus, l'écart
 // teinté entre les deux (hachures rouges en moins-value, lagon foncé au-delà du coût en plus-value).
-// Palette des graphiques : prix d'achat lagon, frais citron.
+// Palette des graphiques : prix d'achat lagon, frais orange (#ffa451).
 export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
   const nature = form.watch('nature');
   const valeurAchat = form.watch('valeur_acquisition');
@@ -74,7 +74,7 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
         <div className="relative h-3" aria-hidden="true">
           <div className="absolute inset-0 flex gap-[2px]">
             <div className="h-full rounded-l-[2px] bg-lagon" style={{ width: `${pos(valeurAchat)}%` }} />
-            {frais > 0 && <div className="h-full bg-citron" style={{ width: `${pos(frais)}%` }} />}
+            {frais > 0 && <div className="h-full bg-[#ffa451]" style={{ width: `${pos(frais)}%` }} />}
             {positif && plusValue > 0 && <div className="h-full rounded-r-[2px] bg-lagon-ink" style={{ width: `${pos(plusValue)}%` }} />}
           </div>
           {!positif && (
@@ -100,7 +100,7 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
           <span className="inline-flex flex-wrap items-center gap-x-1.5 text-muted-foreground">
             {frais > 0 && (
               <>
-                <span className="h-2 w-2 rounded-[1px] bg-citron" />
+                <span className="h-2 w-2 rounded-[1px] bg-[#ffa451]" />
                 Frais <span className="text-foreground">{formatEur(frais)}</span>
                 <span className="mx-1 text-muted-foreground/50">·</span>
               </>
