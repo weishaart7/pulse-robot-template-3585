@@ -14,12 +14,13 @@ describe('verifierDatesRegime', () => {
   });
 
   it('donation au dernier vivant antérieure au mariage sans contrat : erreur', () => {
-    const e = verifierDatesRegime({ dateMariage: mariage, pasDeContrat: true, donationDernierVivantConjoint: true, dateDonationConjoint: new Date(2009, 0, 1) });
+    const e = verifierDatesRegime({ dateMariage: mariage, donationDernierVivantConjoint: true, dateDonationConjoint: new Date(2009, 0, 1) });
     expect(e.map(x => x.path)).toEqual(['dateDonationConjoint']);
   });
 
-  it('donation antérieure au mariage par contrat de mariage (art. 1093) : acceptée', () => {
-    expect(verifierDatesRegime({ dateMariage: mariage, pasDeContrat: false, donationDernierVivantPersonne: true, dateDonationPersonne: new Date(2010, 4, 1) })).toEqual([]);
+  it('donation antérieure au mariage, même avec contrat : erreur', () => {
+    const e = verifierDatesRegime({ dateMariage: mariage, donationDernierVivantPersonne: true, dateDonationPersonne: new Date(2010, 4, 1) });
+    expect(e.map(x => x.path)).toEqual(['dateDonationPersonne']);
   });
 
   it('sans date de mariage : aucun contrôle', () => {

@@ -459,8 +459,8 @@ soldés :
 - *[soldé 2026-10-18]* Dates du régime incohérentes — `verifierDatesRegime()`
   ([lib/family/datesRegime.ts](../src/lib/family/datesRegime.ts)) bloque l'enregistrement d'un mariage
   quand le jugement de séparation de corps n'est pas postérieur au mariage, ou quand une donation au
-  dernier vivant précède le mariage alors qu'il n'y a pas de contrat (une donation antérieure n'est
-  possible que par contrat de mariage, art. 1093 ; sinon art. 1096). Contrôle limité au statut
+  dernier vivant précède le mariage, avec ou sans contrat (art. 1096 ; la donation par contrat de
+  mariage, art. 1093, n'est pas saisie dans cette section). Contrôle limité au statut
   Marié(e), pour qu'une colonne conservée d'un ancien statut ne bloque pas un PACS.
 - *[soldé 2026-10-18]* « Renonce à la succession de » proposait le conjoint (ou les deux) pour un
   enfant du seul client — `renonciationsPossibles(enfant_de)` (`familyLinkRules.ts`) limite les choix
