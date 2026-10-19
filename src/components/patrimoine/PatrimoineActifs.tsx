@@ -31,7 +31,7 @@ export const PatrimoineActifs = () => {
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { assets, createAsset, updateAsset, deleteAsset } = useAssets();
-  const { createEmprunt, updateEmprunt } = useEmprunts();
+  const { emprunts, createEmprunt, updateEmprunt } = useEmprunts();
   const { createPassif, updatePassif } = usePassifs();
   // Bien créé avec « Bien financé par un crédit » : proposition, puis saisie de l'emprunt relié.
   const [creditAProposer, setCreditAProposer] = useState<Asset | null>(null);
@@ -220,6 +220,8 @@ export const PatrimoineActifs = () => {
             asset={editingAsset}
             onSubmit={handleAssetSubmit}
             onCancel={handleCancel}
+            empruntsRelies={emprunts.filter((e) => e.asset_id === editingAsset.id)}
+            onAjouterCredit={() => setCreditEnSaisie(editingAsset)}
           />
         ) : (
           <AssetCreationWizard

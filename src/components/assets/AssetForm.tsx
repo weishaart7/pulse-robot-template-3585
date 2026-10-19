@@ -29,7 +29,9 @@ import { ChargesListFields } from './fields/ChargesListFields';
 import { FieldHelp } from '@/components/ui/field-help';
 import { DescriptionBienFields } from './fields/BienImmobilierFields';
 import { LocationFields } from './fields/LocationFields';
-import { isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
+import { hasDetailImmobilier, isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
+import type { Emprunt } from '@/services/passifService';
+import { formatCurrency } from '@/lib/patrimoine/utils';
 import { RequiredMark } from '@/components/ui/required-mark';
 
 interface AssetFormProps {
@@ -37,6 +39,10 @@ interface AssetFormProps {
   onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => Promise<boolean | void>;
   onCancel: () => void;
   onDelete?: (assetId: string) => Promise<void>;
+  /** Emprunts Patrimoine reliés à cet actif (résidence ou bien locatif), affichés dans Propriété. */
+  empruntsRelies?: Emprunt[];
+  /** Ouvre la saisie d'un emprunt relié à cet actif (Passifs). */
+  onAjouterCredit?: () => void;
 }
 
 const FORM_TABS = [
@@ -50,7 +56,9 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   asset,
   onSubmit,
   onCancel,
-  onDelete
+  onDelete,
+  empruntsRelies = [],
+  onAjouterCredit,
 }) => {
   const [activeTab, setActiveTab] = useState('essentiel');
   const [showLockedTabHint, setShowLockedTabHint] = useState(false);
@@ -201,6 +209,36 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         demembrements={demembrements}
         setDemembrements={setDemembrements}
       />
+
+      {asset?.id && hasDetailImmobilier(watchedNature) && (
+        <div className="space-y-2 border-t border-border pt-5">
+          <p className="text-[13px] font-medium text-foreground">Crédit</p>
+          {empruntsRelies.length > 0 ? (
+            <ul className="divide-y divide-border border-y border-border text-[13px]">
+              {empruntsRelies.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                  <span className="text-foreground">{e.libelle || e.nature}</span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {e.capital_restant_du != null ? `${formatCurrency(e.capital_restant_du)} restant dû` : 'Capital restant dû non renseigné'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-[12.5px] text-muted-foreground">Aucun crédit relié à ce bien.</p>
+          )}
+          <p className="text-[12px] text-muted-foreground">Les crédits se saisissent et se modifient dans Patrimoine → Passifs.</p>
+          {onAjouterCredit && (
+            form.formState.isDirty ? (
+              <p className="text-[12px] text-muted-foreground">Enregistrez d'abord vos modifications pour ajouter un crédit.</p>
+            ) : (
+              <Button type="button" variant="outline" onClick={onAjouterCredit} className={panelButtonClass}>
+                Ajouter un crédit
+              </Button>
+            )
+          )}
+        </div>
+      )}
     </div>
     );
   };
