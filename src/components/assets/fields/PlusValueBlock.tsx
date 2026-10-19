@@ -51,7 +51,12 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
 
   return (
     <section className="border-y border-border py-4 animate-fade-in">
-      <p className="text-[12px] text-muted-foreground">{positif ? 'Plus-value latente' : 'Moins-value latente'}</p>
+      {/* Titre de section des formulaires (SectionHeader), sans sa marge basse : l'espacement vers le
+          montant est porté par la bande centrée ci-dessous. */}
+      <h3 className="flex items-center gap-2 text-[14.5px] font-medium tracking-[-0.01em] text-foreground">
+        <span aria-hidden className="h-3 w-[3px] rounded-full bg-lagon" />
+        {positif ? 'Plus-value latente' : 'Moins-value latente'}
+      </h3>
 
       <div>
         {/* Montant centré verticalement entre le libellé et la jauge ; le repère annoté de la valeur
