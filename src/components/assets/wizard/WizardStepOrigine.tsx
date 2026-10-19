@@ -60,7 +60,7 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
         <ModeDetentionField form={form} />
         <DetenteurFields form={form} detenteurOptions={detenteurOptions} maritalContext={maritalContext} assetId={assetId} />
       </div>
-      <QualificationFields form={form} qualificationRaison={qualificationRaison} />
+      <QualificationFields form={form} qualificationRaison={qualificationRaison} familyData={familyData} />
 
       <DemembrementFields
         form={form}

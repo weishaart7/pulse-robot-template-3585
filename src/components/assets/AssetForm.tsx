@@ -231,7 +231,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             demembrements={demembrements}
             setDemembrements={setDemembrements}
           />
-          {qualificationVisible && <QualificationFields form={form} qualificationRaison={qualificationRaison} />}
+          {qualificationVisible && <QualificationFields form={form} qualificationRaison={qualificationRaison} familyData={familyData} />}
         </div>
       </PanelSection>
 

@@ -12,6 +12,7 @@ import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, 
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
+import type { FamilyInfo } from '@/lib/patrimoine/utils';
 import { OptionToggle } from '@/components/ui/option-toggle';
 import { hasDetailImmobilier } from '@/schemas/immobilierPropertySchema';
 import { FraisDetaillesFields } from './BienImmobilierFields';
@@ -244,17 +245,24 @@ interface QualificationFieldsProps {
   qualificationRaison?: string;
   /** Sans libellé de champ, sous un titre de section qui le dit déjà (onglet Propriété). */
   sansLibelle?: boolean;
+  /** Prénoms du couple : rappel de la répartition 50/50 d'un bien du couple hors indivision. */
+  familyData?: FamilyInfo;
 }
 
 // Bloc "Qualification du bien" de l'onglet Propriété : qualification calculée
 // (avec sa justification), correction manuelle et réactivation du calcul.
 // Masqué pour les natures sans notion d'acquisition.
-export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, qualificationRaison, sansLibelle = false }) => {
+export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, qualificationRaison, sansLibelle = false, familyData }) => {
   const [showQualificationOverride, setShowQualificationOverride] = useState(false);
 
   const watchedNature = form.watch('nature');
   const watchedQualificationAuto = form.watch('qualification_auto');
   const watchedQualificationBien = form.watch('qualification_bien');
+  const watchedDetenteurCouple = form.watch('detenteur') === 'Le couple';
+  // Bien du couple hors indivision : 50/50 fixé par la loi, rappelé ici plutôt que dans un encadré à part.
+  const repartition = familyData?.hasPartner && watchedDetenteurCouple && watchedQualificationBien !== 'Indivision'
+    ? `Réparti 50 % / 50 % entre ${familyData.userFirstName || 'vous'} et ${familyData.partnerFirstName || 'votre conjoint(e)'}, part fixée par la loi.`
+    : null;
 
   // Prévoyance sans valeur de rachat : qualification sans objet (rien à partager entre époux).
   if ((NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature)) || isPrevoyanceSansRachat(watchedNature)) return null;
@@ -280,6 +288,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
               {qualificationRaison && (
                 <p className="text-[12.5px] leading-snug text-muted-foreground">{qualificationRaison}</p>
               )}
+              {repartition && <p className="text-[12.5px] leading-snug text-muted-foreground">{repartition}</p>}
               <Button
                 type="button"
                 variant="link"
@@ -311,6 +320,7 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
                 ))}
               </SelectContent>
             </Select>
+            {repartition && <p className="text-[12.5px] text-muted-foreground">{repartition}</p>}
             {watchedQualificationAuto === false && (
               <Button
                 type="button"

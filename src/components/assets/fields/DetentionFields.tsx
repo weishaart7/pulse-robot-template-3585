@@ -139,9 +139,9 @@ interface QuotePartFieldsProps {
 }
 
 // Quote-part : librement saisissable en indivision (elle dépend de ce que
-// chacun a réellement financé), mais figée à 50/50 pour un bien commun, où
-// la moitié revient de droit à chaque époux — cf. getPartSuccessorale, qui
-// retourne 0,5 en dur dans ce cas.
+// chacun a réellement financé). Pour un bien commun, elle est fixée à 50/50 par
+// la loi (cf. getPartSuccessorale, qui retourne 0,5 en dur) : rien à saisir, la
+// répartition est rappelée dans le bloc de qualification (QualificationFields).
 export const QuotePartFields: React.FC<QuotePartFieldsProps> = ({ form, familyData }) => {
   const watchedDetenteur = form.watch('detenteur');
   const watchedQualificationBien = form.watch('qualification_bien');
@@ -178,12 +178,7 @@ export const QuotePartFields: React.FC<QuotePartFieldsProps> = ({ form, familyDa
         </FormItem>
       );
     }} />
-  ) : (
-    <div className="col-span-full text-sm text-muted-foreground bg-secondary/50 rounded-[2px] px-3 py-2">
-      Réparti 50 % / 50 % entre {familyData.userFirstName || 'vous'} et {familyData.partnerFirstName || 'votre conjoint(e)'}
-      <FieldHelp>Bien commun : répartition fixée par la loi, non modifiable.</FieldHelp>
-    </div>
-  );
+  ) : null;
 };
 
 interface IndivisairesFieldsProps {
