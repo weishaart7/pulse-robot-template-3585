@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateInput } from '@/components/ui/date-input';
+import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -517,8 +519,8 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
         <PanelCardHeader>
           <PanelCardTitle>Identité et détention</PanelCardTitle>
         </PanelCardHeader>
-      <div className="grid max-w-3xl gap-4">
-        <div>
+      <div className="grid max-w-3xl grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+        <div className="md:col-span-2">
           <Label htmlFor="denomination">Dénomination sociale *</Label>
           <Input
             id="denomination"
@@ -640,14 +642,12 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="contents">
           <div>
             <Label htmlFor="dateCreation">Date de création</Label>
-            <Input
-              id="dateCreation"
-              type="date"
-              value={formData.dateCreation}
-              onChange={(e) => handleInputChange('dateCreation', e.target.value)}
+            <DateInput
+              value={formData.dateCreation ? new Date(`${formData.dateCreation}T00:00:00`) : undefined}
+              onChange={(d) => handleInputChange('dateCreation', d ? format(d, 'yyyy-MM-dd') : '')}
             />
           </div>
           <div>
@@ -675,7 +675,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </Label>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="contents">
           <div>
             <Label htmlFor="pourcentageIFI">% de parts soumises à l'IFI</Label>
             <Input
@@ -698,7 +698,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="contents">
           <div>
             <Label htmlFor="nombreTitres">Nombre de titres</Label>
             <Input
@@ -721,7 +721,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
 
         {/* Entrée du foyer dans la société : origine, date, montant et quotités, d'où la
             qualification des parts (calculée, modifiable à la main) et le détenteur. */}
-        <div className="space-y-4 border-t border-border pt-6">
+        <div className="space-y-4 border-t border-border pt-6 md:col-span-2">
           <div>
             <p className="text-sm font-medium">Votre entrée dans la société</p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -729,7 +729,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:col-span-2">
             <div>
               <Label htmlFor="origineEntree">Origine des parts *</Label>
               <Select value={formData.origineEntree || ''} onValueChange={(value) => handleInputChange('origineEntree', value)}>
@@ -748,11 +748,9 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
                 <Label htmlFor="dateSouscription">
                   {formData.origineEntree === 'Acquisition à titre onéreux' ? "Date d'achat des parts" : 'Date de réception des parts'}
                 </Label>
-                <Input
-                  id="dateSouscription"
-                  type="date"
-                  value={formData.dateSouscription || ''}
-                  onChange={(e) => handleInputChange('dateSouscription', e.target.value)}
+                <DateInput
+                  value={formData.dateSouscription ? new Date(`${formData.dateSouscription}T00:00:00`) : undefined}
+                  onChange={(d) => handleInputChange('dateSouscription', d ? format(d, 'yyyy-MM-dd') : '')}
                 />
               </div>
             ) : formData.origineEntree === 'Création' ? (
@@ -761,7 +759,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
 
           {formData.origineEntree && (
-            <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-end md:col-span-2">
               <div>
                 <Label htmlFor="montantEntree">{libelleMontantEntree}</Label>
                 <Input
@@ -890,7 +888,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           )}
         </div>
 
-        <div>
+        <div className="md:col-span-2">
           <Label>Date de clôture d'exercice</Label>
           <div className="grid grid-cols-2 gap-4 mt-2">
             <Select
