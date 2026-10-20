@@ -16,6 +16,7 @@ import {
 } from '@/services/deficitFoncierService';
 import {
   buildBienFoncierInput,
+  buildPartsFoncieresInput,
   computeFoyerFoncier,
   PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE,
   SEUIL_MICRO_FONCIER,
@@ -36,6 +37,7 @@ const formatPercent = (value: number | null): string => {
 export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] }) => {
   const { toast } = useToast();
   const [biensNus, setBiensNus] = useState<Asset[]>([]);
+  const [partsFoncieres, setPartsFoncieres] = useState<Asset[]>([]);
   const [revenusParBien, setRevenusParBien] = useState<Record<string, AssetRevenu[]>>({});
   const [chargesParBien, setChargesParBien] = useState<Record<string, AssetCharge[]>>({});
   const [deficits, setDeficits] = useState<DeficitFoncierReporteRecord[]>([]);
@@ -53,8 +55,12 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
   const load = async () => {
     setIsLoading(true);
     try {
-      const biens = await assetService.getBiensLocationNue();
+      const [biens, parts] = await Promise.all([
+        assetService.getBiensLocationNue(),
+        assetService.getPartsRevenusFonciers(),
+      ]);
       setBiensNus(biens);
+      setPartsFoncieres(parts);
 
       const ids = biens.map((b) => b.id).filter((id): id is string => !!id);
       const [revenus, charges, deficitsData] = await Promise.all([
@@ -89,9 +95,12 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
 
   const tmi = (parseFloat(tmiInput) || 0) / 100;
 
+  // Biens loués nus en direct, puis parts de société au régime des revenus fonciers (même ordre
+  // que `lignes` ci-dessous).
+  const lignes = useMemo(() => [...biensNus, ...partsFoncieres], [biensNus, partsFoncieres]);
   const biensInput: BienFoncierInput[] = useMemo(
-    () =>
-      biensNus.map((asset) =>
+    () => [
+      ...biensNus.map((asset) =>
         buildBienFoncierInput(
           asset,
           revenusParBien[asset.id!] || [],
@@ -100,7 +109,9 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
           emprunts,
         ),
       ),
-    [biensNus, revenusParBien, chargesParBien, renovationEnergetique, emprunts],
+      ...partsFoncieres.map(buildPartsFoncieresInput),
+    ],
+    [biensNus, partsFoncieres, revenusParBien, chargesParBien, renovationEnergetique, emprunts],
   );
 
   const result: FoyerFoncierResult = useMemo(
@@ -163,7 +174,7 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
     return null;
   }
 
-  if (biensNus.length === 0) {
+  if (lignes.length === 0) {
     return null;
   }
 
@@ -181,11 +192,23 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
       <div className="px-8 pt-6 pb-4">
         <PanelTitle>Synthèse foncière du foyer · location nue</PanelTitle>
         <p className="mt-1 max-w-3xl text-[12.5px] text-muted-foreground">
-          Agrège vos {biensNus.length} bien{biensNus.length > 1 ? 's' : ''} loué{biensNus.length > 1 ? 's' : ''} nu{biensNus.length > 1 ? 's' : ''} pour
+          Agrège vos {biensNus.length} bien{biensNus.length > 1 ? 's' : ''} loué{biensNus.length > 1 ? 's' : ''} nu{biensNus.length > 1 ? 's' : ''}
+          {partsFoncieres.length > 0 && <> et {partsFoncieres.length} placement{partsFoncieres.length > 1 ? 's' : ''} en parts (SCPI…)</>} pour
           appliquer les règles du régime réel au niveau du foyer fiscal : seuil micro-foncier, plafond du déficit
           imputable, report sur 10 ans.
+          {partsFoncieres.length > 0 && ' Parts : revenus distribués des 12 derniers mois, en approximation du revenu à déclarer (attestation fiscale de la société de gestion).'}
         </p>
-        {result.regimeReelObligatoire && (
+        {result.microFoncierFermeParts && (
+          <div className="mt-4 flex items-start gap-3 rounded-[2px] border border-spark/30 bg-spark/5 px-4 py-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-spark" strokeWidth={1.75} />
+            <p className="text-[13px] text-foreground">
+              <span className="font-medium">Régime réel obligatoire.</span>{' '}
+              Vos revenus fonciers proviennent uniquement de parts de société : sans immeuble loué nu détenu en
+              direct, le micro-foncier n'est pas ouvert (art. 32 CGI).
+            </p>
+          </div>
+        )}
+        {result.regimeReelObligatoire && !result.microFoncierFermeParts && (
           <div className="mt-4 flex items-start gap-3 rounded-[2px] border border-spark/30 bg-spark/5 px-4 py-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-spark" strokeWidth={1.75} />
             <p className="text-[13px] text-foreground">
@@ -253,23 +276,23 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
                 <span className="text-center" title="Rénovation énergétique (DPE E, F ou G)">Rénov. E/F/G</span>
               </div>
               <ul className="divide-y divide-border border-b border-border">
-                {biensNus.map((asset, index) => {
+                {lignes.map((asset, index) => {
                   const bien = biensInput[index];
                   return (
                     <li key={asset.id} className="grid grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,1fr))_5.5rem] items-center gap-x-4 py-2.5 text-[13px] tabular-nums">
                       <span className="truncate font-medium text-foreground">{asset.denomination || asset.nature}</span>
                       <span className="text-right">{formatCurrency(bien?.loyersBruts || 0)}</span>
-                      <span className="text-right">{formatCurrency(bien?.chargesHorsInterets || 0)}</span>
-                      <span className="text-right">{formatCurrency(bien?.interetsEtAssuranceEmprunt || 0)}</span>
+                      <span className="text-right">{bien?.revenusDistribues ? '—' : formatCurrency(bien?.chargesHorsInterets || 0)}</span>
+                      <span className="text-right">{bien?.revenusDistribues ? '—' : formatCurrency(bien?.interetsEtAssuranceEmprunt || 0)}</span>
                       <span className="text-right">{bien?.quotePart ?? 100} %</span>
                       <span className="flex justify-center">
-                        <Checkbox
+                        {bien?.revenusDistribues ? <span className="text-muted-foreground">—</span> : <Checkbox
                           aria-label={`Rénovation énergétique — ${asset.denomination || asset.nature}`}
                           checked={!!renovationEnergetique[asset.id!]}
                           onCheckedChange={(checked) =>
                             setRenovationEnergetique((prev) => ({ ...prev, [asset.id!]: !!checked }))
                           }
-                        />
+                        />}
                       </span>
                     </li>
                   );

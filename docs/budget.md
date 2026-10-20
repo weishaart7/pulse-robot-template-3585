@@ -18,17 +18,22 @@
 Le module Budget est **un pur agrégateur d'affichage** : il ne possède aucun moteur de calcul dans
 `src/lib/`, et sur ses deux tables propres (`revenus`, `charges`), il n'ajoute par ailleurs strictement
 rien à la saisie brute — pas de rapprochement bancaire, pas d'historique d'exécution, pas de moteur de
-prévision. Il fusionne trois sources hétérogènes en une seule liste affichée pour les revenus, quatre
+prévision. Il fusionne quatre sources hétérogènes en une seule liste affichée pour les revenus, quatre
 pour les charges :
 
 1. **Ses deux tables propres** `revenus` et `charges` — saisie manuelle libre, indépendante de tout actif
    (ex. salaire, loyer payé, courses). C'est la seule vraie saisie native du module.
-2. **`asset_revenus`/`asset_charges` avec `impact_budget = true`** — lignes saisies dans Patrimoine
+2. **Revenus distribués des parts** (SCPI, groupements fonciers… : `PARTS_FONCIERES_NATURES`) avec
+   `assets.revenus_distribues_budget = true` (colonne cochée par défaut, bascule « Reporter dans le Budget »
+   de la fiche des parts dans Immobilier) : `budgetService.getPartsRevenusForBudget`, une ligne annuelle
+   « Revenus distribués - {nom} » (`revenus_distribues_12m` × quote-part du foyer), `source: 'immobilier'`,
+   en lecture seule.
+3. **`asset_revenus`/`asset_charges` avec `impact_budget = true`** — lignes saisies dans Patrimoine
    (`AssetDetailsDialog.tsx`, onglet Charges de `AssetForm`/`ChargeForm.tsx`) ou dans Immobilier
    (`ImmobilierGestionDialog`, `LMNPDetailView`) sur un actif donné, republiées ici en lecture seule dès
    que la case « Impact sur le budget » est cochée à la source (cochée par défaut pour une nouvelle charge
    saisie dans `ChargeForm.tsx`).
-3. **`emprunts` avec `reporter_budget = true`, côté charges uniquement** — mensualités (capital + intérêts
+4. **`emprunts` avec `reporter_budget = true`, côté charges uniquement** — mensualités (capital + intérêts
    + assurance emprunteur du mois, cf. `assuranceMensuelleAu` et docs/patrimoine.md) des emprunts réels
    de Patrimoine, republiées en lecture seule dans la catégorie « Emprunts & Crédits », dès que le champ
    « reporter au budget » est coché sur l'emprunt.

@@ -374,6 +374,7 @@ export type Database = {
           regime_retraite_etrangere: string | null
           residence_services: boolean | null
           revenus_distribues_12m: number | null
+          revenus_distribues_budget: boolean
           situation_particuliere: string[] | null
           societe_id: string | null
           sous_jacent: string | null
@@ -474,6 +475,7 @@ export type Database = {
           regime_retraite_etrangere?: string | null
           residence_services?: boolean | null
           revenus_distribues_12m?: number | null
+          revenus_distribues_budget?: boolean
           situation_particuliere?: string[] | null
           societe_id?: string | null
           sous_jacent?: string | null
@@ -574,6 +576,7 @@ export type Database = {
           regime_retraite_etrangere?: string | null
           residence_services?: boolean | null
           revenus_distribues_12m?: number | null
+          revenus_distribues_budget?: boolean
           situation_particuliere?: string[] | null
           societe_id?: string | null
           sous_jacent?: string | null

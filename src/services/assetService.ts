@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { ASSET_CATEGORIES } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
 
 // Biens retenus par la synthèse foncière (location nue) : actifs transférés dans Immobilier, de nature
 // immobilière hors meublé — un meublé (LMNP ou LMP) relève des BIC, jamais des revenus fonciers.
@@ -100,6 +100,8 @@ export interface Asset {
   // Parts foncières/forestières non éligibles au module Sociétés (SCPI, groupements fonciers,
   // GFA/GAF/GFV/GFR, sociétés d'épargne forestière) — cf. PARTS_FONCIERES_NATURES.
   revenus_distribues_12m?: number;
+  /** Revenus distribués reportés dans le Budget (parts). */
+  revenus_distribues_budget?: boolean;
   regime_fiscal_parts?: string;
   // Champs additionnels "actifs corporels" — cf. CORPS_NATURES_CHAMPS.
   certificat_expertise?: boolean;
@@ -284,6 +286,24 @@ export const assetService = {
       .eq('type_location', 'Location nue')
       .eq('transfert_immobilier', true)
       .in('nature', NATURES_LOCATION_NUE)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as Asset[];
+  },
+
+  /** Parts de société (SCPI, groupements fonciers…) au régime des revenus fonciers : leurs revenus
+   * distribués entrent dans les revenus fonciers du foyer (seuil micro-foncier, résultat foncier). */
+  async getPartsRevenusFonciers(): Promise<Asset[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('regime_fiscal_parts', 'Revenus fonciers')
+      .in('nature', PARTS_FONCIERES_NATURES as unknown as string[])
       .order('created_at', { ascending: false });
 
     if (error) throw error;

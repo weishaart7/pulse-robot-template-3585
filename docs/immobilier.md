@@ -70,13 +70,21 @@ l'imputation réelle du déficit et son report, c'est la **synthèse foncière d
 foi, pas ce simulateur par bien.
 
 **Synthèse foncière du foyer** ([FoncierFoyerSection.tsx](src/components/immobilier/FoncierFoyerSection.tsx),
-onglet Vue d'ensemble, affichée dès qu'il existe au moins un bien en location nue) : contrairement au
+onglet Vue d'ensemble, affichée dès qu'il existe au moins un bien en location nue ou une part au régime des revenus fonciers) : contrairement au
 simulateur par bien ci-dessus, applique les règles du CGI **au niveau du foyer fiscal, tous biens loués nus
 confondus** — seules règles pertinentes pour une déclaration réelle. Moteur :
 [src/lib/immobilier/foncierFoyer.ts](src/lib/immobilier/foncierFoyer.ts) (`computeFoyerFoncier`, testé dans
 `foncierFoyer.test.ts`) :
-- Seuil micro-foncier à 15 000 € de loyers bruts foyer (`SEUIL_MICRO_FONCIER`) : au-delà, régime réel
-  obligatoire, affiché en bandeau.
+- Intègre aussi les parts de société au régime « Revenus fonciers » (`regime_fiscal_parts`, SCPI,
+  groupements fonciers… : `assetService.getPartsRevenusFonciers`, `buildPartsFoncieresInput`) : revenus
+  distribués des 12 derniers mois (`revenus_distribues_12m`) à la quote-part du foyer, sans charges ni
+  intérêts (déduits par la société), en approximation du revenu à déclarer (attestation fiscale du
+  gestionnaire, non saisie) ; affichées dans « Biens pris en compte » avec « — » pour charges, intérêts et
+  rénovation. La synthèse s'affiche dès qu'il existe un bien loué nu ou une telle part.
+- Seuil micro-foncier à 15 000 € de revenus fonciers bruts foyer, parts comprises (`SEUIL_MICRO_FONCIER`) :
+  au-delà, régime réel obligatoire, affiché en bandeau. Parts de société sans immeuble loué nu détenu en
+  direct (`estBienNuEnDirect` ; des parts de SCI louées nu comptent comme parts) : micro-foncier fermé
+  (art. 32 CGI, `microFoncierFermeParts`), bandeau dédié.
 - Impute les intérêts d'emprunt + assurance emprunteur **en priorité sur les loyers** (CGI art. 156-I-3°,
   notice 2044) : seule leur fraction non couverte par les loyers est un déficit d'intérêts, jamais
   imputable sur le revenu global ; le reste du déficit, issu des autres charges, l'est dans la limite du

@@ -5,6 +5,7 @@ import { Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
@@ -60,6 +61,7 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
   const [valeurEstimee, setValeurEstimee] = useState(toInput(asset.valeur_estimee));
   const [revenus12m, setRevenus12m] = useState(toInput(asset.revenus_distribues_12m));
   const [regimeFiscal, setRegimeFiscal] = useState(asset.regime_fiscal_parts ?? '');
+  const [revenusBudget, setRevenusBudget] = useState(asset.revenus_distribues_budget ?? true);
   const [isSaving, setIsSaving] = useState(false);
 
   const [demembrements, setDemembrements] = useState<AssetDemembrement[]>([]);
@@ -120,6 +122,7 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
         valeur_estimee: numOrNull(valeurEstimee),
         revenus_distribues_12m: numOrNull(revenus12m),
         regime_fiscal_parts: regimeFiscal || null,
+        revenus_distribues_budget: revenusBudget,
       });
       toast({ title: 'Enregistré', description: 'Les informations des parts ont été mises à jour.' });
       onUpdate();
@@ -222,6 +225,20 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="flex items-start gap-3 rounded-[2px] border border-border bg-secondary/40 px-4 py-3 md:col-span-2">
+              <Checkbox
+                id="revenus-budget"
+                checked={revenusBudget}
+                onCheckedChange={(checked) => setRevenusBudget(!!checked)}
+                className="mt-0.5"
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor="revenus-budget" className="cursor-pointer">Reporter dans le Budget</Label>
+                <p className="text-[12px] text-muted-foreground">
+                  Les revenus distribués apparaissent dans Budget → Revenus (montant annuel, part du foyer), en lecture seule.
+                </p>
+              </div>
             </div>
           </PanelSection>
 

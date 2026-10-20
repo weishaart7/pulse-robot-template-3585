@@ -31,11 +31,12 @@ export const useRevenus = () => {
   const query = useQuery({
     queryKey: key,
     queryFn: async () => {
-      const [classicRevenus, assetRevenus] = await Promise.all([
+      const [classicRevenus, assetRevenus, partsRevenus] = await Promise.all([
         budgetService.getRevenus(),
-        budgetService.getAssetRevenusForBudget()
+        budgetService.getAssetRevenusForBudget(),
+        budgetService.getPartsRevenusForBudget()
       ]);
-      return [...classicRevenus, ...assetRevenus];
+      return [...classicRevenus, ...assetRevenus, ...partsRevenus];
     },
     enabled: !!user,
     staleTime: BUDGET_STALE_TIME,

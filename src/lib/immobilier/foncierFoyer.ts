@@ -9,6 +9,7 @@ import {
   repartirDeficitFoncier,
   TAUX_PRELEVEMENTS_SOCIAUX,
 } from './rentabilite';
+import { estBienNuEnDirect } from './partsFoncieres';
 
 // Moteur foncier "location nue" au niveau du foyer fiscal : contrairement à
 // computeRentabilite() (rentabilite.ts), qui simule un bien isolé, les règles du
@@ -59,6 +60,29 @@ export interface BienFoncierInput {
   partCredit?: number;
   /** Le bien fait l'objet de travaux de rénovation énergétique le faisant sortir des classes E/F/G. */
   travauxRenovationEnergetique?: boolean;
+  /** Parts de société (SCPI, groupement foncier) au régime des revenus fonciers, et non un immeuble détenu en direct. */
+  partsSociete?: boolean;
+  /** Montants issus des revenus distribués d'une part (aucune charge ni intérêt saisi). */
+  revenusDistribues?: boolean;
+}
+
+/**
+ * Parts de société au régime des revenus fonciers (SCPI…) : revenus distribués des 12 derniers mois
+ * (`revenus_distribues_12m`), sans charges ni intérêts — la société les déduit avant distribution.
+ * Approximation : le revenu à déclarer est la quote-part du résultat foncier de la société
+ * (attestation fiscale du gestionnaire), non saisie dans l'application.
+ */
+export function buildPartsFoncieresInput(asset: Asset): BienFoncierInput {
+  return {
+    assetId: asset.id,
+    denomination: asset.denomination,
+    quotePart: computeQuotePart(asset),
+    loyersBruts: asset.revenus_distribues_12m || 0,
+    chargesHorsInterets: 0,
+    interetsEtAssuranceEmprunt: 0,
+    partsSociete: true,
+    revenusDistribues: true,
+  };
 }
 
 /** Construit un BienFoncierInput à partir des données brutes d'un bien (mêmes
@@ -84,6 +108,8 @@ export function buildBienFoncierInput(
     interetsEtAssuranceEmprunt: credit.interetsAnnee + credit.assuranceAnnee,
     partCredit: relie ? 100 : undefined,
     travauxRenovationEnergetique,
+    // Parts de SCI louées nu : parts de société au sens de l'art. 32 CGI (cf. partsFoncieres.ts).
+    partsSociete: !estBienNuEnDirect(asset),
   };
 }
 
@@ -91,8 +117,10 @@ export interface FoyerFoncierResult {
   loyersBrutsFoyer: number;
   chargesHorsInteretsFoyer: number;
   interetsFoyer: number;
-  /** true si le foyer reste sous le seuil de 15 000 € (micro-foncier possible, sur option pour le réel). */
+  /** true si le foyer reste sous le seuil de 15 000 € et n'est pas dans le cas ci-dessous (micro-foncier possible, sur option pour le réel). */
   eligibleMicroFoncier: boolean;
+  /** Foyer ne détenant que des parts de société, sans immeuble loué nu en direct : micro-foncier exclu (art. 32 CGI). */
+  microFoncierFermeParts: boolean;
   /** Inverse d'eligibleMicroFoncier : régime réel obligatoire au-delà du seuil. */
   regimeReelObligatoire: boolean;
   /** Loyers − charges hors intérêts/assurance emprunt (informatif : les intérêts s'imputant d'abord sur les loyers, ce n'est pas la base du déficit imputable, cf. repartirDeficitFoncier). */
@@ -134,7 +162,10 @@ export function computeFoyerFoncier(
   const chargesHorsInteretsFoyer = biens.reduce((s, b) => s + b.chargesHorsInterets * (b.quotePart / 100), 0);
   const interetsFoyer = biens.reduce((s, b) => s + b.interetsEtAssuranceEmprunt * ((b.partCredit ?? b.quotePart) / 100), 0);
 
-  const eligibleMicroFoncier = loyersBrutsFoyer <= SEUIL_MICRO_FONCIER;
+  // Art. 32 CGI : des parts de société n'ouvrent le micro-foncier que si le foyer loue aussi nu un
+  // immeuble détenu en direct.
+  const microFoncierFermeParts = biens.some((b) => b.partsSociete) && !biens.some((b) => !b.partsSociete);
+  const eligibleMicroFoncier = loyersBrutsFoyer <= SEUIL_MICRO_FONCIER && !microFoncierFermeParts;
 
   const plafondDeficitApplicable = biens.some((b) => b.travauxRenovationEnergetique)
     ? PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE
@@ -191,6 +222,7 @@ export function computeFoyerFoncier(
     chargesHorsInteretsFoyer,
     interetsFoyer,
     eligibleMicroFoncier,
+    microFoncierFermeParts,
     regimeReelObligatoire: !eligibleMicroFoncier,
     resultatAvantInterets,
     resultatFoncierGlobal,

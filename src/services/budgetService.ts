@@ -6,6 +6,8 @@ import { hasConjoint } from '@/lib/family/maritalStatus';
 import { partFoyerEmprunt, estimateEmpruntFin } from '@/lib/budget/emprunts';
 import { actualiserEmprunt, assuranceMensuelleAu, construireTableau, contratDepuisEmprunt } from '@/lib/credit/contrat';
 import { format } from 'date-fns';
+import { PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
+import { computeQuotePart } from '@/lib/immobilier/rentabilite';
 
 export type Periodicite = 'mensuel' | 'trimestriel' | 'semestriel' | 'annuel' | 'ponctuel';
 
@@ -190,6 +192,41 @@ export const budgetService = {
           asset_name: asset?.denomination || 'Bien immobilier'
         };
       });
+  },
+
+  /** Revenus distribués des parts (SCPI, groupements fonciers…) reportés dans le Budget : une ligne
+   * annuelle par placement, à la quote-part du foyer, en lecture seule (modifiable dans Immobilier). */
+  async getPartsRevenusForBudget(): Promise<Revenu[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const [{ data, error }, familyInfo] = await Promise.all([
+      supabase
+        .from('assets')
+        .select('id, denomination, nature, detenteur, revenus_distribues_12m, pourcentage_utilisateur, pourcentage_conjoint, created_at, updated_at')
+        .eq('user_id', user.id)
+        .eq('revenus_distribues_budget', true)
+        .in('nature', PARTS_FONCIERES_NATURES as unknown as string[])
+        .gt('revenus_distribues_12m', 0),
+      getFamilyInfoForDetenteur(),
+    ]);
+    if (error) throw error;
+
+    return (data || []).map(asset => ({
+      id: `parts-${asset.id}`,
+      user_id: user.id,
+      nature: 'Revenus de parts',
+      libelle: `Revenus distribués - ${asset.denomination || asset.nature}`,
+      beneficiaire: mapDetenteurToDisplay(asset.detenteur, familyInfo),
+      montant: (asset.revenus_distribues_12m || 0) * computeQuotePart(asset) / 100,
+      revenu_disponible: true,
+      periodicite: 'annuel',
+      created_at: asset.created_at,
+      updated_at: asset.updated_at,
+      source: 'immobilier' as const,
+      asset_id: asset.id,
+      asset_name: asset.denomination || asset.nature,
+    }));
   },
 
   async createRevenu(revenu: Omit<Revenu, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Revenu> {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Asset, AssetCharge, AssetRevenu } from '@/services/assetService';
 import {
   buildBienFoncierInput,
+  buildPartsFoncieresInput,
   computeFoyerFoncier,
   PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE,
   SEUIL_MICRO_FONCIER,
@@ -240,5 +241,29 @@ describe('computeFoyerFoncier — consommation des déficits reportés', () => {
     expect(result.resultatFoncierImposable).toBe(5_000);
     expect(result.impotRevenu).toBeCloseTo(1_500);
     expect(result.prelevementsSociaux).toBeCloseTo(5_000 * TAUX_PRELEVEMENTS_SOCIAUX);
+  });
+});
+
+describe('parts de société au régime des revenus fonciers (SCPI)', () => {
+  const direct = { quotePart: 100, loyersBruts: 6000, chargesHorsInterets: 1000, interetsEtAssuranceEmprunt: 0 };
+  const scpi = buildPartsFoncieresInput({ id: 's', nature: 'Parts de SCPI', revenus_distribues_12m: 3500, pourcentage_utilisateur: 50, pourcentage_conjoint: 50 } as never);
+
+  it('revenus distribués à la quote-part du foyer, sans charges ni intérêts', () => {
+    expect(scpi).toMatchObject({ loyersBruts: 3500, chargesHorsInterets: 0, interetsEtAssuranceEmprunt: 0, quotePart: 100, partsSociete: true, revenusDistribues: true });
+  });
+
+  it('avec un bien loué nu en direct : comptées dans le seuil, micro-foncier ouvert', () => {
+    const r = computeFoyerFoncier([direct, scpi], [], 0.3);
+    expect(r.loyersBrutsFoyer).toBe(9500);
+    expect(r.microFoncierFermeParts).toBe(false);
+    expect(r.eligibleMicroFoncier).toBe(true);
+  });
+
+  it('parts seules : micro-foncier fermé (art. 32 CGI), réel obligatoire', () => {
+    const r = computeFoyerFoncier([scpi], [], 0.3);
+    expect(r.microFoncierFermeParts).toBe(true);
+    expect(r.eligibleMicroFoncier).toBe(false);
+    expect(r.regimeReelObligatoire).toBe(true);
+    expect(r.resultatFoncierImposable).toBe(3500);
   });
 });
