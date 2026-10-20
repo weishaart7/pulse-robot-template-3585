@@ -4,7 +4,7 @@ import type { Emprunt } from '@/services/passifService';
 import { computePVIRegime } from '@/lib/patrimoine/regimeFiscalPVI';
 import type { FiscalRegimeResult } from '@/lib/patrimoine/regimeFiscalPlusValue';
 import { BienNonQualifieError, getRepartitionFoyer } from '@/lib/patrimoine/succession';
-import { ORIGINES_PROPRES } from '@/lib/patrimoine/qualification';
+import { ORIGINES_NON_ONEREUSES } from '@/lib/patrimoine/qualification';
 import { capitalRestantDuAu } from './credit';
 import {
   computeAmortissementImmeubleLMNP,
@@ -151,7 +151,7 @@ export function simulerRevente(asset: Asset, emprunts: Emprunt[], h: HypothesesR
     dateAcquisition: asset.date_acquisition,
     valeurAcquisition: prixAchat * partFoyer,
     fraisAcquisition: frais * partFoyer,
-    acquisitionOnereuse: !origines || origines.length === 0 || !origines.some((o) => ORIGINES_PROPRES.includes(o)),
+    acquisitionOnereuse: !origines || origines.length === 0 || !origines.some((o) => ORIGINES_NON_ONEREUSES.includes(o)),
     partsCedants,
     prixCession: prixNetTotal * partFoyer,
     terrainConstructible: asset.terrain_constructible ?? undefined,

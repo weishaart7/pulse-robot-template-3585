@@ -1,7 +1,7 @@
 import { FiscalRegimeResult, resolveEffectiveNature, computeFiscalRegime, PFU_IR, PFU_PS, PFU_RATE } from './regimeFiscalPlusValue';
 import { computePVIRegime, computeCorporelRegime, computeBienMeubleRegime, NATURE_SCI } from './regimeFiscalPVI';
 import { computeRetraiteRegime } from './regimeFiscalRetraite';
-import { ORIGINES_PROPRES } from './qualification';
+import { ORIGINES_NON_ONEREUSES } from './qualification';
 
 export interface ResolveAssetFiscalRegimeInput {
   nature: string;
@@ -83,7 +83,7 @@ const REGIME_IR = 'Impôt sur le revenu';
 // Acquisition à titre onéreux (forfait 7,5 % de frais applicable) : origine
 // non renseignée (défaut du formulaire) ou sans aucune origine gratuite.
 const isAcquisitionOnereuse = (origines?: string[] | null): boolean =>
-  !origines || origines.length === 0 || !origines.some((o) => ORIGINES_PROPRES.includes(o));
+  !origines || origines.length === 0 || !origines.some((o) => ORIGINES_NON_ONEREUSES.includes(o));
 
 // Séquence unique "nature effective → régime PVI → sinon régime générique",
 // utilisée par toutes les vues affichant un régime fiscal de plus-value

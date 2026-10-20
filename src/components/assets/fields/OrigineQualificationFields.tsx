@@ -204,7 +204,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                   checked={!!field.value}
                   onChange={field.onChange}
                   help={<FieldHelp>
-                    Bien propre par nature (art. 1404) : vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession. Reste propre même en communauté (y compris universelle).
+                    Bien propre par nature (art. 1404) : vêtements, actions en réparation d'un dommage corporel ou moral, créances et pensions incessibles, instruments de travail nécessaires à la profession, droit d'exploitation d'une œuvre de l'esprit créée par l'époux (art. L121-9 CPI). Reste propre même en communauté (y compris universelle).
                   </FieldHelp>}
                 >
                   Propre par nature

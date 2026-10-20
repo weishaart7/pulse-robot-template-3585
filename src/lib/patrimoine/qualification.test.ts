@@ -504,3 +504,42 @@ describe("qualifierBien — périmètre de la société d'acquêts", () => {
     expect(qualifierBien({ ...base, detenteur: 'Le couple', natureActif: 'Montres', societeAcquets: perimetre({}) }).qualification).toBe('Indivision');
   });
 });
+
+describe('qualifierBien — création et découverte : acquêts, pas des libéralités (art. 1401)', () => {
+  const marie = {
+    statutCouple: 'Marié(e)',
+    regimeMatrimonial: 'Communauté réduite aux acquêts',
+    dateMariage: '2015-06-01',
+    detenteur: 'user',
+  };
+
+  it.each(['Création', 'Découverte'])('%s pendant le mariage, régime légal : commun', (origine) => {
+    expect(qualifierBien({ ...marie, dateAcquisition: '2020-03-10', origineActif: [origine] }).qualification).toBe('Bien commun');
+  });
+
+  it.each(['Création', 'Découverte'])('%s avant le mariage, régime légal : propre', (origine) => {
+    expect(qualifierBien({ ...marie, dateAcquisition: '2010-03-10', origineActif: [origine] }).qualification).toBe('Bien propre');
+  });
+
+  it('création pendant le mariage, case propre par nature (œuvre de l\'esprit) : propre', () => {
+    expect(qualifierBien({ ...marie, dateAcquisition: '2020-03-10', origineActif: ['Création'], estPropreParNature: true }).qualification).toBe('Bien propre');
+  });
+
+  it("création pendant le mariage, société d'acquêts couvrant tous les acquêts : commun", () => {
+    const r = qualifierBien({
+      ...marie,
+      regimeMatrimonial: "Séparation de biens avec société d'acquêts",
+      dateAcquisition: '2020-03-10',
+      origineActif: ['Création'],
+      natureActif: 'Parts de SCI',
+      assetId: 'a1',
+      societeAcquets: { tousAcquets: true, categories: [], biensDesignes: [], biensExclus: [] },
+    });
+    expect(r.qualification).toBe('Bien commun');
+  });
+
+  it('découverte sous PACS-indivision : indivise (non listée à l\'art. 515-5-2)', () => {
+    const r = qualifierBien({ statutCouple: 'Pacsé(e)', conventionPacs: 'Indivision', dateAcquisition: '2020-03-10', origineActif: ['Découverte'], detenteur: 'user' });
+    expect(r.qualification).toBe('Indivision');
+  });
+});

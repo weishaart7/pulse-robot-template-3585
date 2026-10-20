@@ -80,14 +80,18 @@ export interface QualificationContext {
   dateJugementSeparationCorps?: string;
 }
 
-export const ORIGINES_PROPRES = [
+// Libéralités : biens reçus à titre gratuit, propres sous régime légal (art. 1405).
+export const ORIGINES_LIBERALITES = [
   'Donation',
   'Héritage',
   "Présent d'usage",
   'Acquisition à titre gratuit',
-  'Découverte',
-  'Création',
 ];
+
+// Origines non onéreuses (sans prix d'achat) : libéralités, plus création et découverte. Sert à
+// la fiscalité (pas de forfait de frais d'acquisition), PAS à la qualification : un bien créé
+// ou découvert pendant le mariage est un acquêt, commun en communauté (art. 1401).
+export const ORIGINES_NON_ONEREUSES = [...ORIGINES_LIBERALITES, 'Découverte', 'Création'];
 
 export const isInCouple = (statut?: string): boolean => {
   if (!statut) return false;
@@ -318,7 +322,7 @@ export const qualifierBien = (ctx: QualificationContext): {
         ? { qualification: 'Indivision' as const, raison: `${motif} Détenu par les deux époux : indivision selon la quote-part de chacun (art. 1538).` }
         : { qualification: 'Bien propre' as const, raison: `${motif} Propre à son acquéreur.` };
 
-    if ((origineActif || []).some((o) => ORIGINES_PROPRES.includes(o))) {
+    if ((origineActif || []).some((o) => ORIGINES_LIBERALITES.includes(o))) {
       return horsSociete('Bien reçu à titre gratuit : hors société d\'acquêts, qui ne contient que des acquêts.');
     }
     if (assetId && societeAcquets?.biensExclus.includes(assetId)) {
@@ -389,14 +393,18 @@ export const qualifierBien = (ctx: QualificationContext): {
   // notion de stipulation d'entrée en communauté (concept matrimonial sans
   // équivalent PACS, l'indivision n'ayant pas de "communauté" à intégrer).
   const origines = origineActif || [];
-  const estGratuit = origines.some((o) => ORIGINES_PROPRES.includes(o));
+  const estGratuit = origines.some((o) => ORIGINES_LIBERALITES.includes(o));
+  // PACS-indivision : les biens créés restent aussi personnels (art. 515-5-2) ; la découverte
+  // n'y figure pas. Hors PACS, création et découverte suivent la règle des acquêts (date).
+  if (pacsIndivision && (estGratuit || origines.includes('Création'))) {
+    return {
+      qualification: 'Bien personnel',
+      raison: estGratuit
+        ? 'Bien reçu à titre gratuit (donation, succession...) : exclu de l\'indivision du PACS (art. 515-5-2).'
+        : 'Bien créé par un partenaire : exclu de l\'indivision du PACS (art. 515-5-2).',
+    };
+  }
   if (estGratuit) {
-    if (pacsIndivision) {
-      return {
-        qualification: 'Bien personnel',
-        raison: 'Bien reçu à titre gratuit (donation, succession, création...) : exclu de l\'indivision du PACS (art. 515-5-2).',
-      };
-    }
 
     // Communauté universelle (art. 1526) : tous les biens, y compris ceux
     // reçus par succession ou libéralité pendant le mariage, tombent dans la
