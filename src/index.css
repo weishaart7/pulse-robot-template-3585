@@ -410,15 +410,24 @@
 */
 .landing-portal {
   --lp-blue: #007aff;
-  --lp-ink: #000000;
-  --lp-graphite: #3e3e3e;
-  --lp-smoke: #636363;
+  --lp-ink: #0c0a09;
+  --lp-graphite: #44403b;
+  --lp-smoke: #777169;
   --lp-white: #ffffff;
-  --lp-mist: #f7f7f7;
+  --lp-mist: #f5f3f1;
   --lp-gradient: linear-gradient(180deg, #4a7ff2 0%, #7b7ed8 30%, #c98ab5 65%, #e8a87c 100%);
   --lp-glow: 0 0 0 5px #f7f7f7;
   --lp-font-display: 'Playfair Display', ui-serif, Georgia, serif;
   --lp-font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* Sections sous le défilé de modules (référence fin.ai) */
+  --lp-paper: #f5f3f1;
+  --lp-panel: #fdfcfc;
+  --lp-line: #d8d2ca;
+  --lp-line-strong: #a59f97;
+  --lp-accent: #55b4bd; /* lagon */
+  --lp-accent-ink: #16707a;
+  --lp-citron: #d9fd86;
+  --lp-night: #1e1d19; /* noir chaud de la barre latérale */
   /* Fige l'ancien rayon : --radius de :root pilote le simulateur. */
   --radius: 0.375rem;
 
@@ -433,6 +442,27 @@
   color: var(--lp-ink);
   line-height: 1;
   font-weight: 400;
+}
+
+.landing-portal .lp-mono {
+  font-family: 'Geist Mono', 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lp-smoke);
+}
+
+.landing-portal .lp-split-heading {
+  font-family: 'Instrument Sans', 'Inter', ui-sans-serif, sans-serif;
+  font-weight: 400;
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.landing-portal .lp-serif {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0;
 }
 
 /* Surtitre technique (étapes de wizard, en-têtes de section) — Geist Mono en

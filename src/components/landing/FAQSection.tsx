@@ -1,3 +1,6 @@
+import { ChevronDown } from "lucide-react";
+import { FrameEyebrows, LandingFrame } from "./EditorialChecklistSection";
+
 const faqs = [
   {
     question: "Mes données sont-elles en sécurité ?",
@@ -23,28 +26,30 @@ const faqs = [
 
 export function FAQSection() {
   return (
-    <section className="bg-white px-6 py-16 sm:py-20">
-      <div className="mx-auto max-w-[720px]">
-        <h2 className="lp-display mb-10 text-[36px] leading-tight">
-          Questions fréquentes
-        </h2>
+    <section className="bg-[var(--lp-paper)] px-4 pb-4 sm:px-6 sm:pb-6">
+      <LandingFrame className="border-b">
+        <FrameEyebrows eyebrow="FAQ" tag="Questions fréquentes" />
+        <div className="grid grid-cols-1 gap-10 px-5 pt-14 pb-16 sm:px-8 sm:pt-20 sm:pb-24 md:grid-cols-[1fr_1.4fr]">
+          <h2 className="lp-split-heading text-[var(--lp-ink)]">
+            Vos questions,
+            <span className="block text-[var(--lp-smoke)]">nos réponses.</span>
+          </h2>
 
-        <div className="flex flex-col gap-4">
-          {faqs.map((faq) => (
-            <details
-              key={faq.question}
-              className="group rounded-[16px] border border-black/10 bg-white px-5 py-4 open:pb-4"
-            >
-              <summary className="cursor-pointer list-none text-[16px] font-medium text-[var(--lp-ink)]">
-                {faq.question}
-              </summary>
-              <p className="mt-3 text-sm leading-[1.35] text-[var(--lp-graphite)]">
-                {faq.answer}
-              </p>
-            </details>
-          ))}
+          <div className="border-t border-[var(--lp-line)]">
+            {faqs.map((faq) => (
+              <details key={faq.question} className="group border-b border-[var(--lp-line)]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-5 text-[16px] font-medium text-[var(--lp-ink)] [&::-webkit-details-marker]:hidden">
+                  {faq.question}
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <p className="max-w-[560px] pb-5 text-sm leading-[1.5] text-[var(--lp-smoke)]">
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
         </div>
-      </div>
+      </LandingFrame>
     </section>
   );
 }

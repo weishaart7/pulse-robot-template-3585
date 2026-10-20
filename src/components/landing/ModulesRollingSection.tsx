@@ -60,14 +60,14 @@ export function ModulesRollingSection() {
       className="px-6 py-8 sm:py-12"
       style={{
         background:
-          "linear-gradient(to bottom, var(--lp-white) 0%, var(--lp-mist) 160px, var(--lp-mist) 100%)",
+          "linear-gradient(to bottom, var(--lp-white) 0%, var(--lp-paper) 160px, var(--lp-paper) 100%)",
       }}
     >
       <div className="mx-auto grid max-w-[880px] grid-cols-1 items-center gap-8 md:grid-cols-[1fr_auto_1fr]">
         <h2
           className="lp-display max-w-[300px] text-[24px] lg:-ml-16 sm:text-[28px]"
           style={{
-            color: "#0d1b1e",
+            color: "var(--lp-ink)",
             fontFamily: "'Instrument Sans', 'Inter', ui-sans-serif, sans-serif",
             fontWeight: 500,
           }}
@@ -117,7 +117,7 @@ export function ModulesRollingSection() {
 
         <Link
           to="/login"
-          className="justify-self-start rounded-[4px] border border-[#0d1b1e] bg-transparent px-6 py-3.5 text-sm font-semibold text-[#0d1b1e] transition-opacity hover:opacity-70 sm:text-base md:justify-self-end"
+          className="justify-self-start rounded-[4px] border border-[var(--lp-ink)] bg-transparent px-6 py-3.5 text-sm font-semibold text-[var(--lp-ink)] transition-opacity hover:opacity-70 sm:text-base md:justify-self-end"
         >
           S'inscrire
         </Link>

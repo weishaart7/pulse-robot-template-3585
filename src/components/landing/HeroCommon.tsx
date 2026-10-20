@@ -20,7 +20,7 @@ export function HeroCommon() {
       <div className="relative z-10 mx-auto flex max-w-[720px] flex-col items-center gap-6">
         <span
           className="-my-2 text-lg"
-          style={{ color: "#0d1b1e", fontFamily: "'Schoolbell', cursive" }}
+          style={{ color: "var(--lp-ink)", fontFamily: "'Schoolbell', cursive" }}
         >
           Version Beta
         </span>
@@ -28,7 +28,7 @@ export function HeroCommon() {
         <h1
           className="lp-display text-[36px] sm:text-[48px]"
           style={{
-            color: "#0d1b1e",
+            color: "var(--lp-ink)",
             fontFamily: "'Instrument Sans', 'Inter', ui-sans-serif, sans-serif",
             fontWeight: 500,
           }}
@@ -39,13 +39,13 @@ export function HeroCommon() {
         <div className="mt-2 flex items-center gap-3">
           <Link
             to="/login"
-            className="rounded-[4px] border border-[#0d1b1e] bg-transparent px-6 py-3.5 text-sm font-semibold text-[#0d1b1e] transition-opacity hover:opacity-70 sm:text-base"
+            className="rounded-[4px] border border-[var(--lp-ink)] bg-transparent px-6 py-3.5 text-sm font-semibold text-[var(--lp-ink)] transition-opacity hover:opacity-70 sm:text-base"
           >
             S'inscrire
           </Link>
           <Link
             to="/login"
-            className="rounded-[4px] bg-[#0d1b1e] px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02] sm:text-base"
+            className="rounded-[4px] bg-[var(--lp-ink)] px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02] sm:text-base"
           >
             Se connecter
           </Link>

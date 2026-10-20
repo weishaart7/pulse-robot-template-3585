@@ -791,7 +791,7 @@ function ElevateNavbarDesktop({
                 }}
                 href={item.href}
                 className="relative flex items-center gap-1 whitespace-nowrap py-1.5 font-mono text-xs uppercase leading-none tracking-wider"
-                style={{ color: inactiveColor }}
+                style={{ color: activeColor }}
                 onMouseEnter={() => onNavItemEnter(index)}
                 onMouseLeave={() => onNavItemLeave(index)}
               >

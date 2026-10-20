@@ -1,19 +1,26 @@
-import { ShieldCheck, BookCheck, Sparkles, Compass } from "lucide-react";
 import { EditorialChecklistSection } from "./EditorialChecklistSection";
 
 export function CredibiliteSection() {
   return (
     <EditorialChecklistSection
-      heading="Rigoureux sur le fond, agréable à parcourir"
-      paragraphs={[
-        "Décidez l'esprit tranquille : chaque calcul de succession, d'IFI ou de fiscalité s'appuie sur des règles sourcées et testées à chaque mise à jour. Aucune approximation, aucune boîte noire.",
-        "Un sujet réputé aride, enfin agréable à parcourir : Aurevia transforme des données patrimoniales denses en une navigation claire.",
-      ]}
+      eyebrow="Méthode"
+      tag="Rigueur"
+      heading={["Rigoureux sur le fond.", "Agréable à parcourir."]}
+      paragraph="Chaque calcul de succession, d'IFI ou de fiscalité s'appuie sur des règles sourcées et testées à chaque mise à jour. Un sujet réputé aride, enfin lisible."
+      variant="points"
       items={[
-        { icon: ShieldCheck, color: "#007aff", label: "Règles fiscales sourcées" },
-        { icon: BookCheck, color: "#22c55e", label: "Calculs testés à chaque mise à jour" },
-        { icon: Sparkles, color: "#f59e0b", label: "Navigation claire et agréable" },
-        { icon: Compass, color: "#ec4899", label: "Aucune boîte noire" },
+        {
+          title: "Règles fiscales sourcées",
+          detail: "Chaque règle appliquée renvoie au texte qui la fonde.",
+        },
+        {
+          title: "Calculs testés à chaque mise à jour",
+          detail: "Des scénarios de référence vérifient les résultats avant chaque mise en ligne.",
+        },
+        {
+          title: "Aucune boîte noire",
+          detail: "Le détail de chaque montant est consultable, étape par étape.",
+        },
       ]}
     />
   );
