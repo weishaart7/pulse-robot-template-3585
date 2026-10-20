@@ -97,7 +97,8 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   usufruit valorisé à l'âge de l'Utilisateur. Option du survivant **commune aux deux ordres**
   (`marital_status.option_conjoint`, décision V1) : si elle n'est pas ouverte dans ce sens,
   `successionLegale.ts` retombe sur 1/4 PP ; mention affichée sous le sélecteur d'ordre. Au 2nd
-  décès, `addReunifiedFullOwnership` ajoute la PP reçue au patrimoine de l'Utilisateur veuf et
+  décès, `buildRecuEnNature` ajoute la PP reçue au patrimoine de l'Utilisateur veuf (voir « reçu du 1er
+  décès » ci-dessous) et
   `computeChainedTransmission` réunit l'usufruit hors taxation. Sans l'option (2nd décès de l'ordre
   normal), aucun survivant. Récompenses, créances et participation aux acquêts suivent déjà le sens
   du décès (`decedentRole`). Contrats d'assurance-vie / PER assurantiel : dans les deux ordres et
@@ -202,7 +203,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   lui). Seule une soulte due rend le net négatif : affiché « soulte à verser » dans `Synthese.tsx`
   (exclu du graphique et des pourcentages) et `Succession2ndDeces.tsx`. Frais de notaire et droit de
   partage répartis au prorata de `valeurRecue`. `netBreakdown` reçoit une entrée par personne (et
-  non plus par ligne de quote-part). `transmissionNette` ajoute les indemnités de réduction.
+  non plus par ligne de quote-part). `transmissionNette` ajoute les indemnités de réduction et retranche les frais funéraires (somme des `fraisFunerairesImputes`), comme `netBreakdown` par héritier : le total de l'en-tête égale la somme des parts nettes.
   « Héritage brut » de `ProcessusCalcul.tsx` = `valeurRecue`. Tests :
   `lib/transmission/phase3NotaireAudit.test.ts`.
 - **Règles notariales complémentaires (phase 4 de l'audit du 2026-09-29).**
@@ -411,11 +412,17 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
 - **2nd décès : reçu du 1er décès dans la succession du survivant.** Ce que le survivant a reçu en
   pleine propriété au 1er décès (lignes `pleine_propriete` de `heirs`, capitaux AV/PER assurantiel nets du
   990 I) entre dans sa succession, au civil ET au fiscal, dans les deux ordres. Source unique :
-  `computeRecuAuPremierDeces` (`transmissionHelpers.ts`), consommée par `buildSurvivingSpousePatrimony` /
-  `addReunifiedFullOwnership` (masse civile) et par `buildRecuAuPremierDecesRawAssets` (lignes d'actif
-  synthétiques ajoutées aux `rawAssets` du 2nd décès, sans quoi `computeTransmission` ne taxe que les
-  biens saisis du survivant). Hypothèse actée : reçu conservé tel quel jusqu'au 2nd décès, taxé comme un
-  actif financier (ni abattement résidence principale, ni frais de notaire immobiliers). L'usufruit éteint
+  `computeRecuAuPremierDeces` (`transmissionHelpers.ts`), ventilée par `buildRecuEnNature` dans les deux
+  ordres (`transmissionOrdreNormal.ts`, `Succession2ndDeces.tsx`) : avant partage, le survivant détient une
+  quote-part indivise r (= reçu net / actif net du prédécédé) de chaque bien et de chaque dette du
+  prédécédé. Une ligne par bien (`recu-1er-deces-{id}`, nature et caractéristiques fiscales conservées,
+  valeur brute × r) entre dans les `rawAssets` du 2nd décès — abattement de 20 % sur la part de résidence
+  principale reçue, forfait mobilier sur l'actif brut, frais de notaire immobiliers —, et r × dettes au
+  passif (civil et `passifsParBien`) ; au civil, brut − passif égale le reçu. Excédent du reçu sur l'actif
+  net des biens saisis (récompenses, créances) et capitaux décès : lignes de liquidités
+  (`buildRecuAuPremierDecesRawAssets`) ; actif net non positif : repli sur une seule ligne de liquidités.
+  Hypothèses : reçu conservé tel quel jusqu'au 2nd décès ; legs particulier au survivant réparti au
+  prorata au lieu d'être rattaché au bien légué. L'usufruit éteint
   reste hors taxation (art. 1133 CGI, `computeChainedTransmission`).
 - **Bénéficiaire prédécédé et clause caduque.** Un bénéficiaire `statut: 'decede'` a le même effet
   qu'un renonçant (`resolveEffectiveAVBeneficiaires`, `dmtg/assurance-vie.ts`) : sa part accroît aux
@@ -449,7 +456,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   du conjoint) − passif + donations ; les legs, déjà compris dans les biens, n'y sont pas ajoutés.
 - **Abattements restants (Synthèse)** : le libellé d'abattement légal compare le lien sans tenir
   compte de la casse (`family_links.lien_familial` est capitalisé : `Enfant`, `Parent`,
-  `Frère/Sœur`…) ; affichage seul, le résiduel vient toujours de `dmtg.perBeneficiary`.
+  `Frère/Sœur`…) ; affichage seul, le résiduel vient toujours de `dmtg.perBeneficiary`. « Consommé » = abattement utilisé par les donations des 15 ans (légal − `allowanceGeneralResidual`) + part utilisée par cette succession (assiette `baseApresFrais` + `forfaitMobilierImpute`, dans la limite du résiduel) ; « Restant » = ce qui reste après la succession. Le processus de calcul (étape 7) affiche par héritier l'assiette taxée (forfait mobilier inclus et détaillé) et le montant taxable après abattement.
 - **Âge du souscripteur résolu par contrat, plus par utilisateur principal pour tous les contrats
   indistinctement (09/09/2026).** `buildAVContracts` (`transmissionHelpers.ts`) calculait jusqu'ici la
   répartition avant/après 70 ans (art. 990 I/757 B) sur la seule date de naissance de l'utilisateur

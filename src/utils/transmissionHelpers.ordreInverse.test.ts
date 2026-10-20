@@ -8,7 +8,7 @@ import {
   buildFamilyGraph,
   buildSpouseAsDecedentFamilyGraph,
   widowFamilyGraph,
-  addReunifiedFullOwnership
+  computeRecuAuPremierDeces
 } from './transmissionHelpers';
 import { computeTransmission, computeChainedTransmission, TransmissionParams } from '@/lib/transmission';
 import { FamilyProfile, MaritalStatus, FamilyLink } from '@/services/familyService';
@@ -99,11 +99,12 @@ describe('Chaînage ordre inversé, bout en bout', () => {
       firstDeath,
       secondDeath: {
         family: widowFamilyGraph(familyUtilisateur, links),
-        patrimony: addReunifiedFullOwnership(
-          { date: REF, biensExistants: 800000, passifs: 0, assuranceVieTotal: 0 },
-          first,
-          familyUtilisateur.decedentId
-        ),
+        patrimony: {
+          date: REF,
+          biensExistants: 800000 + computeRecuAuPremierDeces(first, familyUtilisateur.decedentId).total,
+          passifs: 0,
+          assuranceVieTotal: 0
+        },
         liberalites: [],
         params,
         referenceDate: REF

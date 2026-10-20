@@ -994,7 +994,7 @@ export class SpouseSuccessionNonModelisableError extends Error {
  * `options.utilisateurSurvivant` : ordre inversé, le conjoint décède EN
  * PREMIER et l'Utilisateur lui survit. Miroir de buildFamilyGraph :
  * l'Utilisateur est ajouté comme conjoint survivant (id = familyProfile.id,
- * clé déjà attendue par addReunifiedFullOwnership), héritier s'il est marié
+ * clé déjà attendue par buildRecuEnNature), héritier s'il est marié
  * et non séparé de corps avec renonciation, simple partenaire (droit au
  * logement art. 515-6) s'il est pacsé ; les enfants `both_parents` sont
  * communs. Sans cette option (2nd décès de l'ordre normal, Utilisateur déjà
@@ -1398,7 +1398,7 @@ export function buildPatrimonySnapshot(
  * même personne peut apparaître plusieurs fois dans les parts effectives
  * d'un même contrat (ex. bénéficiaire d'une ligne et nu-propriétaire d'une
  * autre), d'où la sommation. Factorisé pour ne pas dupliquer cette
- * résolution entre `buildSurvivingSpousePatrimony` et `addReunifiedFullOwnership`.
+ * résolution entre `buildSurvivingSpousePatrimony` et `buildRecuEnNature`.
  */
 function capitalDecesNetPourBeneficiaire(
   avContracts: AVContract[],
@@ -1503,13 +1503,32 @@ export function buildSpouseRawAssets(
 ): RawAssetInput[] {
   return assets
     .filter(asset => !isContratHorsSuccession(asset))
-    .map(asset => {
-      const partConjoint = getPartConjointSuccession(asset, asset.denomination || asset.id);
+    .map(asset => toRawAssetPondere(
+      asset,
+      getPartConjointSuccession(asset, asset.denomination || asset.id),
+      assetDemembrements,
+      demembrementCtx
+    ));
+}
+
+/**
+ * Ligne `RawAssetInput` neutralisée (« Bien propre », sans détenteur ni
+ * démembrement) portant `part` de la valeur pondérée du bien, nature et
+ * caractéristiques fiscales conservées — cf. buildSpouseRawAssets.
+ */
+function toRawAssetPondere(
+  asset: Asset,
+  part: number,
+  assetDemembrements: AssetDemembrement[],
+  demembrementCtx: DemembrementFractionContext,
+  id: string = asset.id!
+): RawAssetInput {
+      const partConjoint = part;
 
       const valeurPonderee = getValeurEstimeePonderee(asset, assetDemembrements, demembrementCtx);
 
       return {
-        id: asset.id!,
+        id,
         denomination: asset.denomination,
         valeur_estimee: valeurPonderee * partConjoint,
         nature: asset.nature,
@@ -1526,7 +1545,77 @@ export function buildSpouseRawAssets(
         valeur_assuree: asset.valeur_assuree != null ? asset.valeur_assuree * partConjoint : null,
         assure_tiers: asset.assure_tiers ?? false
       };
-    });
+}
+
+export interface RecuEnNature {
+  /** Lignes fiscales du reçu en pleine propriété, bien par bien (nature conservée). */
+  rawAssets: RawAssetInput[];
+  /** Valeur brute de ces lignes (civil : à ajouter aux biens du survivant). */
+  brut: number;
+  /** Quote-part des dettes du prédécédé reprise par le survivant (à ajouter à son passif). */
+  passifs: number;
+  /** Mêmes dettes, par ligne reçue rattachée à un bien (art. 769 II CGI). */
+  passifsParBien: Record<string, number>;
+}
+
+/**
+ * Reçu du 1er décès en pleine propriété, ventilé bien par bien pour l'assiette
+ * du 2nd décès : avant partage, le survivant détient une quote-part indivise de
+ * chaque bien et de chaque dette de la succession (fraction r = reçu net / actif
+ * net du prédécédé). Chaque ligne garde sa nature (abattement résidence
+ * principale, exonérations rurales, frais de notaire immobiliers) et sa valeur
+ * brute (forfait mobilier sur l'actif brut), les dettes reprises étant déduites
+ * à part. Le net (brut − passifs) égale le reçu. Repli sur une ligne de
+ * liquidités si l'actif net du prédécédé n'est pas positif. Les capitaux décès
+ * restent une ligne financière (buildRecuAuPremierDecesRawAssets).
+ * Approximation : un legs particulier au survivant est réparti au prorata au lieu
+ * d'être rattaché au bien légué.
+ */
+export function buildRecuEnNature(
+  assets: Asset[],
+  passifLines: PassifLine[],
+  recu: RecuAuPremierDeces,
+  cotePredecede: 'user' | 'conjoint',
+  assetDemembrements: AssetDemembrement[] = [],
+  demembrementCtx: DemembrementFractionContext = {}
+): RecuEnNature {
+  const capitaux = buildRecuAuPremierDecesRawAssets({ ...recu, pleinePropriete: 0 });
+  const capitauxBrut = recu.capitauxDecesNets > 0 ? recu.capitauxDecesNets : 0;
+  const vide: RecuEnNature = { rawAssets: capitaux, brut: capitauxBrut, passifs: 0, passifsParBien: {} };
+  if (recu.pleinePropriete <= 0) return vide;
+
+  const part = (asset: Asset) => cotePredecede === 'user'
+    ? getPartSuccessorale(asset, asset.denomination || asset.id)
+    : getPartConjointSuccession(asset, asset.denomination || asset.id);
+  const biens = assets.filter(asset => !isContratHorsSuccession(asset));
+  const actifBrut = biens.reduce((t, a) => t + getValeurEstimeePonderee(a, assetDemembrements, demembrementCtx) * part(a), 0);
+  const passifParBien = buildPassifsParBien(passifLines, cotePredecede);
+  const passif = passifLines.reduce((t, p) => t + (p.montant_du || 0) * getFractionPassifParDetenteur(p, cotePredecede), 0);
+  const actifNet = actifBrut - passif;
+  if (actifNet <= 0) {
+    return { ...vide, rawAssets: buildRecuAuPremierDecesRawAssets(recu), brut: recu.total };
+  }
+
+  // Le reçu peut dépasser l'actif net des biens saisis (récompenses, créances) :
+  // r plafonné à 1, l'excédent reste une ligne de liquidités.
+  const r = Math.min(1, recu.pleinePropriete / actifNet);
+  const lignes = biens
+    .map(a => toRawAssetPondere(a, part(a) * r, assetDemembrements, demembrementCtx, `recu-1er-deces-${a.id}`))
+    .filter(l => (l.valeur_estimee || 0) > 0);
+  const excedent = recu.pleinePropriete - r * actifNet;
+  const lignesExcedent = excedent > 0.5
+    ? buildRecuAuPremierDecesRawAssets({ pleinePropriete: excedent, capitauxDecesNets: 0, total: excedent })
+    : [];
+  const passifsParBien: Record<string, number> = {};
+  for (const [assetId, montant] of Object.entries(passifParBien)) {
+    passifsParBien[`recu-1er-deces-${assetId}`] = montant * r;
+  }
+  return {
+    rawAssets: [...lignes, ...lignesExcedent, ...capitaux],
+    brut: r * actifBrut + Math.max(0, excedent) + capitauxBrut,
+    passifs: r * passif,
+    passifsParBien,
+  };
 }
 
 /**
@@ -1564,28 +1653,6 @@ export function buildSpouseOwnBasePatrimony(
   };
 }
 
-/**
- * Ajoute au patrimoine de base d'un survivant (`base`, déjà pondéré côté
- * Utilisateur OU côté conjoint selon l'ordre simulé — cette fonction est
- * agnostique du sens) ce qu'il reçoit en pleine propriété + son capital net
- * d'assurance-vie à l'issue du 1er décès de ce chaînage — sans l'usufruit
- * réuni (cf. buildSurvivingSpousePatrimony pour le détail du raisonnement).
- * Version générique de l'ajout déjà fait dans `buildSurvivingSpousePatrimony`,
- * pour l'ordre inversé (Utilisateur veuf, 2nd décès) sans dupliquer
- * `buildSurvivingSpousePatrimony` elle-même côté conjoint.
- */
-export function addReunifiedFullOwnership(
-  base: PatrimonySnapshot,
-  firstDeathResult: TransmissionResult,
-  survivorId: PersonId,
-  avContracts: AVContract[] = []
-): PatrimonySnapshot {
-  return {
-    ...base,
-    biensExistants: base.biensExistants + computeRecuAuPremierDeces(firstDeathResult, survivorId, avContracts).total
-  };
-}
-
 export interface RecuAuPremierDeces {
   // Héritage/legs/donations entre époux reçus en pleine propriété (lignes
   // 'pleine_propriete' du survivant, `partFinale`) — jamais l'usufruit, qui
@@ -1600,7 +1667,7 @@ export interface RecuAuPremierDeces {
 /**
  * Ce que le survivant a reçu en pleine propriété au 1er décès d'un chaînage,
  * et qui entre dans SA succession au 2nd décès. Source unique du civil
- * (buildSurvivingSpousePatrimony, addReunifiedFullOwnership) et du fiscal
+ * (buildSurvivingSpousePatrimony, buildRecuEnNature) et du fiscal
  * (buildRecuAuPremierDecesRawAssets), pour que les deux assiettes ne
  * puissent pas diverger.
  *

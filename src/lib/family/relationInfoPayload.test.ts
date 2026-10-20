@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildRelationInfoPayload, RelationInfoFormValues } from './relationInfoPayload';
+import { CHAMPS_MARIAGE, CHAMPS_PACS } from './maritalStatus';
 
 const baseData: RelationInfoFormValues = {
   regimeMatrimonial: 'Communauté réduite aux acquêts',
@@ -23,7 +24,7 @@ const baseData: RelationInfoFormValues = {
 };
 
 describe('buildRelationInfoPayload — Marié(e)', () => {
-  it("écrit les champs mariage, sans convention_pacs ni date_pacs", () => {
+  it("écrit les champs mariage et efface ceux du PACS", () => {
     const payload = buildRelationInfoPayload('Marié(e)', {
       ...baseData,
       regimeMatrimonial: 'Séparation de biens',
@@ -40,8 +41,9 @@ describe('buildRelationInfoPayload — Marié(e)', () => {
       imposition_distincte: true,
       residence_separee: true,
     });
-    expect(payload).not.toHaveProperty('convention_pacs');
-    expect(payload).not.toHaveProperty('date_pacs');
+    expect(payload).toMatchObject(CHAMPS_PACS);
+    // Régime sans société d'acquêts : la clause est retirée.
+    expect(payload.clauses_contrat).toBeNull();
   });
 
   it('conserve les champs donation et historique matrimonial', () => {
@@ -65,7 +67,7 @@ describe('buildRelationInfoPayload — Marié(e)', () => {
 });
 
 describe('buildRelationInfoPayload — Pacsé(e)', () => {
-  it("n'écrit que convention_pacs, date_pacs et les champs communs, sans regime_matrimonial ni donation", () => {
+  it("écrit convention_pacs, date_pacs et les champs communs, et efface ceux du mariage", () => {
     const payload = buildRelationInfoPayload('Pacsé(e)', {
       ...baseData,
       conventionPacs: 'Indivision',
@@ -75,6 +77,7 @@ describe('buildRelationInfoPayload — Pacsé(e)', () => {
     });
 
     expect(payload).toEqual({
+      ...CHAMPS_MARIAGE,
       imposition_distincte: true,
       residence_separee: true,
       convention_pacs: 'Indivision',
@@ -84,7 +87,7 @@ describe('buildRelationInfoPayload — Pacsé(e)', () => {
 });
 
 describe('buildRelationInfoPayload — Concubinage', () => {
-  it("n'écrit aucun champ, même avec des valeurs par défaut du schéma renseignées", () => {
+  it("efface mariage et PACS, sans écrire les valeurs par défaut du schéma", () => {
     const payload = buildRelationInfoPayload('Concubinage', {
       ...baseData,
       regimeMatrimonial: 'Communauté réduite aux acquêts',
@@ -92,7 +95,7 @@ describe('buildRelationInfoPayload — Concubinage', () => {
       impositionDistincte: true,
     });
 
-    expect(payload).toEqual({});
+    expect(payload).toEqual({ ...CHAMPS_MARIAGE, ...CHAMPS_PACS });
   });
 });
 
@@ -112,5 +115,21 @@ describe('buildRelationInfoPayload — dates vidées', () => {
       dateDonationPersonne: new Date(2021, 0, 1),
     });
     expect(payload.date_donation_personne).toBeNull();
+  });
+});
+
+describe('buildRelationInfoPayload — clause de société d\'acquêts', () => {
+  it('conservée (non écrite) pour une séparation avec société d\'acquêts sous contrat', () => {
+    const payload = buildRelationInfoPayload('Marié(e)', {
+      ...baseData, regimeMatrimonial: "Séparation de biens avec société d'acquêts", pasDeContrat: false,
+    });
+    expect(payload).not.toHaveProperty('clauses_contrat');
+  });
+
+  it('retirée si le contrat est déclaré absent', () => {
+    const payload = buildRelationInfoPayload('Marié(e)', {
+      ...baseData, regimeMatrimonial: "Séparation de biens avec société d'acquêts", pasDeContrat: true,
+    });
+    expect(payload.clauses_contrat).toBeNull();
   });
 });

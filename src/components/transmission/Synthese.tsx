@@ -888,7 +888,13 @@ export const Synthese = () => {
                 const abattementLegal = abattementInfo.montant;
                 const residuel = dmtgData?.allowanceGeneralResidual ?? abattementLegal;
                 const isExonere = abattementLegal === Infinity;
-                const consomme = isExonere ? 0 : Math.max(0, abattementLegal - (typeof residuel === 'number' && residuel !== Infinity ? residuel : abattementLegal));
+                // Consommé = donations des 15 dernières années (légal − résiduel avant décès)
+                // + part utilisée par cette succession (assiette taxable, dans la limite du résiduel).
+                const residuelAvantDeces = typeof residuel === 'number' && residuel !== Infinity ? residuel : abattementLegal;
+                const assietteSuccession = (dmtgData?.baseApresFrais || 0) + (dmtgData?.forfaitMobilierImpute || 0);
+                const consommeSuccession = Math.min(residuelAvantDeces, Math.max(0, assietteSuccession));
+                const consomme = isExonere ? 0 : Math.max(0, abattementLegal - residuelAvantDeces) + consommeSuccession;
+                const restant = Math.max(0, residuelAvantDeces - consommeSuccession);
                 const pctUtilise = isExonere ? 0 : abattementLegal > 0 ? (consomme / abattementLegal) * 100 : 0;
 
                 return {
@@ -896,7 +902,7 @@ export const Synthese = () => {
                   lien: lienFamilial,
                   qualite: abattementInfo.label,
                   abattementLegal: isExonere ? 'Exonéré' : formatCurrency(abattementLegal),
-                  residuel: isExonere ? 'Exonéré' : formatCurrency(typeof residuel === 'number' && residuel !== Infinity ? residuel : abattementLegal),
+                  residuel: isExonere ? 'Exonéré' : formatCurrency(restant),
                   consomme: isExonere ? '-' : formatCurrency(consomme),
                   pctUtilise: isExonere ? 0 : pctUtilise,
                   isExonere,

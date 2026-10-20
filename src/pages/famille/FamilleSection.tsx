@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
 import { LiensFamiliauxForm } from './components/LiensFamiliauxForm';
 import { ageEnAnnees } from '@/lib/family/age';
-import { childrenLinkedToSpouse, leavesCouple } from '@/lib/family/statutTransition';
+import { childrenLinkedToSpouse, donneesEffacees, leavesCouple, requiresConfirmation } from '@/lib/family/statutTransition';
 import { FamilyLink } from '@/services/familyService';
 import { Users } from 'lucide-react';
 import { getGroupeTone } from '@/components/famille/groupeTones';
@@ -69,7 +69,7 @@ const FamilleSection = () => {
   const hasPartner = isCoupleStatus(relationStatus);
 
   // Transition en attente de confirmation (sortie d'un statut en couple).
-  const [pendingStatut, setPendingStatut] = useState<{ statut: string; children: FamilyLink[] } | null>(null);
+  const [pendingStatut, setPendingStatut] = useState<{ statut: string; children: FamilyLink[]; quitteCouple: boolean; effacees: string[] } | null>(null);
 
   const applyStatut = async (statut: string) => {
     try {
@@ -81,8 +81,14 @@ const FamilleSection = () => {
 
   const handleStatutChange = async (statut: string) => {
     if (statut === relationStatus) return;
-    if (leavesCouple(relationStatus, statut)) {
-      setPendingStatut({ statut, children: childrenLinkedToSpouse(familyLinks) });
+    if (requiresConfirmation(relationStatus, statut)) {
+      const quitteCouple = leavesCouple(relationStatus, statut);
+      setPendingStatut({
+        statut,
+        children: quitteCouple ? childrenLinkedToSpouse(familyLinks) : [],
+        quitteCouple,
+        effacees: donneesEffacees(relationStatus, statut),
+      });
       return;
     }
     await applyStatut(statut);
@@ -196,10 +202,18 @@ const FamilleSection = () => {
             <AlertDialogTitle>Passer au statut « {pendingStatut?.statut} » ?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>
-                  Le partenaire n'apparaîtra plus dans l'arbre familial ni dans les calculs.
-                  Ses informations et celles du régime restent enregistrées.
-                </p>
+                {pendingStatut?.quitteCouple && (
+                  <p>
+                    Le partenaire n'apparaîtra plus dans l'arbre familial ni dans les calculs.
+                    Son identité reste enregistrée.
+                  </p>
+                )}
+                {pendingStatut && pendingStatut.effacees.length > 0 && (
+                  <p>
+                    Seront effacés : {pendingStatut.effacees.join(', ')}. Il faudra les ressaisir
+                    si vous revenez à ce statut.
+                  </p>
+                )}
                 {pendingStatut && pendingStatut.children.length > 0 && (
                   <>
                     <p>

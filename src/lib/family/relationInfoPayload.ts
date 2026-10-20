@@ -1,13 +1,13 @@
 import { format } from 'date-fns';
 import type { MaritalStatus } from '@/services/familyService';
+import { toRegimeType } from '@/types/matrimonial';
+import { champsObsoletesPourStatut } from '@/lib/family/maritalStatus';
 
-// Construit le payload d'enregistrement de RelationInfoForm.tsx en ne gardant
-// que les champs réellement affichés à l'écran pour le statut courant (Option
-// A) : les colonnes déjà en base pour un statut précédent ne sont ni écrites
-// ni effacées, elles restent inchangées si l'utilisateur change de statut
-// puis y revient. Conséquence acceptée : tout code qui lit ces colonnes doit
-// revérifier statut_couple avant de leur faire confiance (cf. qualifierBien,
-// computeTransmission, useAlertesConseil.ts).
+// Construit le payload d'enregistrement de RelationInfoForm.tsx : les champs
+// affichés pour le statut courant, et l'effacement de ceux d'un autre statut
+// (champsObsoletesPourStatut) — un ancien PACS ou régime ne reste jamais en
+// base. La clause de société d'acquêts (clauses_contrat) est retirée dès que le
+// régime n'est plus une séparation de biens avec société d'acquêts sous contrat.
 
 export interface RelationInfoFormValues {
   regimeMatrimonial?: string;
@@ -48,8 +48,14 @@ export const buildRelationInfoPayload = (
       ? { imposition_distincte: data.impositionDistincte ?? false, residence_separee: data.residenceSeparee ?? false }
       : {};
 
+  const obsoletes = champsObsoletesPourStatut(relationStatus);
+
   if (relationStatus === 'Marié(e)') {
+    const avecSocieteAcquets =
+      toRegimeType(data.regimeMatrimonial) === 'separation_societe_acquets' && !data.pasDeContrat;
     return {
+      ...obsoletes,
+      ...(avecSocieteAcquets ? {} : { clauses_contrat: null }),
       ...commonPayload,
       regime_matrimonial: data.regimeMatrimonial,
       date_mariage: formatDate(data.dateMariage),
@@ -74,12 +80,14 @@ export const buildRelationInfoPayload = (
 
   if (relationStatus === 'Pacsé(e)') {
     return {
+      ...obsoletes,
       ...commonPayload,
       convention_pacs: data.conventionPacs,
       date_pacs: formatDate(data.datePacs),
     };
   }
 
-  // Concubinage (ou tout autre statut) : aucun champ affiché, aucune écriture.
-  return {};
+  // Concubinage, Divorcé(e), Veuf/Veuve… : aucun champ affiché ; effacement selon
+  // champsObsoletesPourStatut (le régime d'une union dissoute est conservé).
+  return obsoletes as MaritalStatus;
 };

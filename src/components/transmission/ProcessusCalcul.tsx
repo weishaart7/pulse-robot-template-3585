@@ -440,7 +440,9 @@ export const ProcessusCalcul = () => {
         "Détail par héritier :",
         ...transmissionResult.heirs.map(h => {
           const dmtgHeir = transmissionResult.dmtg.perBeneficiary[h.personId];
-          return `• ${h.nom} : ${(dmtgHeir?.droitsTotaux || 0).toLocaleString('fr-FR')} € (sur ${(dmtgHeir?.baseApresFrais || 0).toLocaleString('fr-FR')} €)`;
+          const assiette = (dmtgHeir?.baseApresFrais || 0) + (dmtgHeir?.forfaitMobilierImpute || 0);
+          const mobilier = dmtgHeir?.forfaitMobilierImpute ? `, dont forfait mobilier ${dmtgHeir.forfaitMobilierImpute.toLocaleString('fr-FR')} €` : '';
+          return `• ${h.nom} : ${(dmtgHeir?.droitsTotaux || 0).toLocaleString('fr-FR')} € (assiette ${assiette.toLocaleString('fr-FR')} €${mobilier}, taxable après abattement ${(dmtgHeir?.taxableAfterAllowance || 0).toLocaleString('fr-FR')} €)`;
         })
       ],
       formula: `Taux effectif = ${((transmissionResult.dmtg.totals.droitsTotaux / patrimony.biensExistants) * 100).toFixed(1)}%`,

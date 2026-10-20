@@ -49,10 +49,17 @@ doit donc pas effacer silencieusement ces lignes.
   demande ~960 px, d'où le bandeau plutôt qu'un panneau latéral). Les cartes de l'arbre suivent le gabarit des panneaux : angles de 2 px, filet, fond blanc (couple en noir), initiales en carré coloré selon la branche, libellés de génération en texte 12 px, traits fins couleur filet. Plus de photo de profil ; le détail du
   régime n'y est pas répété, il vit dans la sous-section Régime matrimonial. La liste des membres vit dans un panneau de travail comme Foyer et Régime matrimonial (barre d'en-tête « Famille / Membres » portant le bouton « Ajouter un membre » (`AddButton`), titre 24 px et rappel) : une section filetée par branche — descendants, ascendants, collatéraux, autres — via `lib/family/groupesMembres.ts`, sur deux colonnes indépendantes à partir de `lg` (`repartirEnColonnes` : chaque branche va dans la colonne la moins remplie, les branches courtes s'empilent sans blanc ; le filet de fin de liste disparaît quand une branche suit). Chaque branche a une couleur fixe ([groupeTones.ts](../src/components/famille/groupeTones.ts) : descendants lagon, ascendants citron, collatéraux lagon foncé, autres gris), reprise par le repère du titre de section, le carré d'initiales des membres vivants (liste et arbre, via `groupeIdDuLien`) et la pastille du bloc « Composition » du Foyer ; étiquettes en `Chip` (lagon pour les avantages fiscaux) ; ligne cliquable pour modifier ; seul point d'entrée « Ajouter un membre »,
   état vide explicatif sans membre) vit dans la sous-section Membres. Les personnes décédées sont estompées
-  (carte à filet pointillé, « † année ») dans l'arbre et grisées dans le tableau. Quitter un statut en
-  couple (vers Célibataire, Divorcé(e), Veuf/Veuve) passe par une confirmation qui liste les enfants
-  rattachés au partenaire (`spouse` / `both_parents`) ; rien n'est effacé ni réaffecté
-  (`lib/family/statutTransition.ts`, politique « Option A »). Il route vers les fiches client et conjoint et, via l'arbre, vers les membres.
+  (carte à filet pointillé, « † année ») dans l'arbre et grisées dans le tableau. Changer de statut efface
+  les informations propres au statut quitté (`champsObsoletesPourStatut`, `lib/family/maritalStatus.ts`) :
+  en Marié(e), les champs du PACS ; en Pacsé(e), le régime, le contrat, les dates et lieu de mariage, les
+  donations au dernier vivant, la séparation de corps, l'option du conjoint survivant et la clause de
+  société d'acquêts ; en Concubinage ou Célibataire, les deux séries ; en Divorcé(e) ou Veuf/Veuve, le
+  régime de l'union dissoute est conservé (lecture seule) et seuls les champs du PACS sont effacés.
+  L'identité du partenaire et les antécédents matrimoniaux ne sont jamais effacés ; un statut null
+  (formulaire enregistré avant chargement) n'efface rien. La confirmation (`statutTransition.ts` :
+  `requiresConfirmation`, `donneesEffacees`) s'affiche dès qu'on quitte le couple ou qu'une information
+  est effacée (Marié ↔ Pacsé compris) ; elle nomme ce qui sera effacé et, en sortie de couple, liste les
+  enfants rattachés au partenaire (`spouse` / `both_parents`), dont le rattachement n'est pas modifié. Il route vers les fiches client et conjoint et, via l'arbre, vers les membres.
 - **Fiches client et conjoint** suivent le même gabarit de panneau de travail ([FicheClientForm.tsx](../src/pages/famille/components/FicheClientForm.tsx), [PartnerForm.tsx](../src/components/famille/PartnerForm.tsx)) : barre d'en-tête « Famille / Foyer / Client » (ou « Conjoint ») portant « Retour » et « Enregistrer », titre (nom) et rappel (date de naissance, âge), puis trois sections filetées sans encadré : Identité (grille de 3 colonnes ; 4 pour le conjoint avec le nom de jeune fille), Profession & Nationalité (profession, nationalité, case « Double nationalité » alignée sur le bas des champs, deuxième nationalité placée sous la première), Situation juridique sur la même grille de 3 colonnes (capacité juridique, puis « Personne handicapée » et « Mandat de protection future » en cases « à repère » à la hauteur d'un champ — [CaseRepere.tsx](../src/components/family/CaseRepere.tsx) : filet gauche qui fonce et fond blanc une fois cochée, case à droite, toute la ligne cliquable —, puis la date du mandat sous sa case, dans la 3e colonne, quand il est coché ; la case « Résidence fiscale à l'étranger » a été retirée le 2026-10-18, voir idees-de-cote.md) ; la civilité se choisit dans une bascule segmentée comme le contrat de mariage. Sans statut de couple, la fiche conjoint n'affiche qu'un message renvoyant au Foyer.
 - **Fiche client** et **Conjoint** saisissent l'identité civile de chaque membre du couple, dont
   une bonne partie de champs déclaratifs (adresse, nationalité…) qui restent aujourd'hui dormants
@@ -65,8 +72,8 @@ doit donc pas effacer silencieusement ces lignes.
   personnalisées) a été retiré en V1, voir §2. Pour
   Divorcé(e)/Veuf-Veuve, un bloc lecture seule affiche le régime de l'union dissoute (régime
   matrimonial, date/lieu, donation au dernier vivant) directement depuis les colonnes conservées en
-  base — aucune édition possible, cohérent avec la politique « Option A » de
-  `relationInfoPayload.ts` (rien n'est écrit ni effacé pour ces deux statuts).
+  base — aucune édition possible ; ces colonnes sont les seules d'un statut quitté à rester en base
+  (`STATUTS_UNION_DISSOUTE`, `maritalStatus.ts`).
 - **Membres** saisit les membres de la famille (`family_links`), qui est le socle de tout
   calcul successoral (dévolution légale, représentation, abattements DMTG) et alimente aussi les
   majorations retraite pour enfants. Un clic sur une carte de l'arbre ouvre le même
@@ -83,9 +90,10 @@ doit donc pas effacer silencieusement ces lignes.
   - Donation au dernier vivant : les 4 colonnes sont écrites par le seul `RelationInfoForm.tsx`, dans
     le même upsert que le reste du régime (`buildRelationInfoPayload`).
   - Écriture conditionnelle au statut du couple : `buildRelationInfoPayload()` /
-    [lib/family/relationInfoPayload.ts](../src/lib/family/relationInfoPayload.ts) — un couple
-    Pacsé(e)/Concubinage n'écrase plus les colonnes du régime matrimonial avec les valeurs par
-    défaut du schéma zod.
+    [lib/family/relationInfoPayload.ts](../src/lib/family/relationInfoPayload.ts) — écrit les champs
+    affichés pour le statut courant et efface ceux d'un autre statut (`champsObsoletesPourStatut`),
+    sans jamais écrire les valeurs par défaut du schéma zod. En Marié(e), `clauses_contrat` est
+    vidée dès que le régime n'est pas une séparation de biens avec société d'acquêts sous contrat.
   - Convention : ce découpage en `lib/family/` fait suite à un pattern déjà établi
     (`lib/ifi/`, `lib/fiscal/`) — la logique métier Famille est externalisée hors des composants
     de formulaire.

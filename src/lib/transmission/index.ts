@@ -1551,8 +1551,12 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     .reduce((sum, b) => sum + (b.capitalAVNet || 0), 0);
   // + indemnités de réduction versées par les donataires réduits, qui entrent
   // dans ce que reçoivent les héritiers (phase 3, R10).
+  // − frais funéraires (forfait réparti entre bénéficiaires, dmtg/index.ts) : déduits aussi
+  // par héritier dans netBreakdown.ts, pour que le total égale la somme des parts nettes.
+  const fraisFunerairesTotal = Object.values(dmtgResult.perBeneficiary)
+    .reduce((sum, b) => sum + (b.fraisFunerairesImputes || 0), 0);
   const transmissionNette = patrimoineNet + partage.totalIndemnitesReduction + capitalAVNetTotal
-    - dmtgResult.totals.droitsTotaux - fraisNotaireTotal;
+    - dmtgResult.totals.droitsTotaux - fraisNotaireTotal - fraisFunerairesTotal;
 
   // 11. Répartition nette par héritier (droits DMTG + frais de notaire +
   // droit de partage, prorata part civile) : source unique de vérité pour

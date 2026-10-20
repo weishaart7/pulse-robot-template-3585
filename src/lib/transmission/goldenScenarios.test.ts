@@ -316,11 +316,15 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       // buildPatrimonySnapshot) − passifs − droits DMTG (hors AV, dmtgAssets
       // l'exclut aussi) − frais de notaire, PLUS le capital AV net hors
       // succession (capitalBrut 250 000€ − prélèvement 990I 19 500€, cf. test
-      // précédent) rajouté une seule fois.
+      // précédent) rajouté une seule fois, moins les frais funéraires (forfait
+      // réparti entre bénéficiaires, déduits aussi dans netBreakdown).
       const patrimoineNetAttendu = patrimonyWithAV.biensExistants - patrimonyWithAV.passifs;
       const capitalAVNetAttendu = 250000 - 19500;
+      const fraisFunerairesAttendus = Object.values(resultAvecAV.dmtg.perBeneficiary)
+        .reduce((t, b) => t + (b.fraisFunerairesImputes || 0), 0);
       const transmissionNetteAttendue =
-        patrimoineNetAttendu + capitalAVNetAttendu - resultAvecAV.dmtg.totals.droitsTotaux - resultAvecAV.fraisNotaire;
+        patrimoineNetAttendu + capitalAVNetAttendu - resultAvecAV.dmtg.totals.droitsTotaux - resultAvecAV.fraisNotaire
+        - fraisFunerairesAttendus;
 
       expect(resultAvecAV.transmissionNette).toBeCloseTo(transmissionNetteAttendue, 0);
 

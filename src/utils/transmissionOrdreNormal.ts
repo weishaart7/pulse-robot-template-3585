@@ -20,8 +20,8 @@ import {
   buildSpouseAsDecedentFamilyGraph,
   buildSurvivingSpousePatrimony,
   computeRecuAuPremierDeces,
-  buildRecuAuPremierDecesRawAssets,
   buildSpouseRawAssets,
+  buildRecuEnNature,
   buildParticipationAcquetsContext,
   buildRecompensesCalcInput,
   buildCreancesCalcInput,
@@ -344,24 +344,30 @@ export function computeOrdreNormal(base: OrdreNormalBase, conjointOption: Conjoi
     demembrementCtx
   );
   const recuParConjoint = computeRecuAuPremierDeces(firstDeathUtilisateur, base.familyUtilisateur.survivingSpouseId!, base.avContractsUtilisateur);
+  // Reçu ventilé bien par bien (nature et valeur brute conservées, dettes reprises
+  // déduites à part) : remplace, au civil, le reçu net de buildSurvivingSpousePatrimony.
+  const recuEnNature = buildRecuEnNature(assets, base.passifLinesBrut, recuParConjoint, 'user', assetDemembrements, demembrementCtx);
   return computeChainedTransmission({
     firstDeath: ctxUtilisateurDecede,
     secondDeath: {
       family: spouseFamily,
-      patrimony: spousePatrimony,
+      patrimony: {
+        ...spousePatrimony,
+        biensExistants: spousePatrimony.biensExistants - recuParConjoint.total + recuEnNature.brut,
+        passifs: spousePatrimony.passifs + recuEnNature.passifs,
+      },
       // Toutes les libéralités saisies : computeTransmission ne retient que
       // celles du conjoint (seul ou pour moitié des biens communs).
       liberalites: base.ctxUtilisateurDecedeSansOption.liberalites,
       params,
       societesDutreil: data.societesDutreil,
       dutreilPartsNonAffectees: data.dutreilPartsNonAffectees,
-      passifsParBien: buildPassifsParBien(base.passifLinesBrut, 'conjoint'),
+      passifsParBien: { ...buildPassifsParBien(base.passifLinesBrut, 'conjoint'), ...recuEnNature.passifsParBien },
       referenceDate,
-      // + reçu du 1er décès dans l'assiette fiscale (même montant que le
-      // civil ci-dessus, cf. buildRecuAuPremierDecesRawAssets).
+      // + reçu du 1er décès dans l'assiette fiscale (mêmes lignes que le civil ci-dessus).
       rawAssets: [
         ...buildSpouseRawAssets(assets, assetDemembrements, demembrementCtx),
-        ...buildRecuAuPremierDecesRawAssets(recuParConjoint)
+        ...recuEnNature.rawAssets
       ],
       assetDemembrements,
       demembrementCtx,

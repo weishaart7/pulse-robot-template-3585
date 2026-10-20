@@ -13,10 +13,9 @@ import {
   buildAVContracts,
   buildSpouseAsDecedentFamilyGraph,
   computeRecuAuPremierDeces,
-  buildRecuAuPremierDecesRawAssets,
+  buildRecuEnNature,
   buildSpouseRawAssets,
   buildSpouseOwnBasePatrimony,
-  addReunifiedFullOwnership,
   widowFamilyGraph,
   computeAVReintegrationCivile,
   AVDonneesInsuffisantesError,
@@ -171,12 +170,15 @@ export const Succession2ndDeces = () => {
 
         const utilisateurVeufFamily = widowFamilyGraph(familyUtilisateur, familyLinks || []);
         const utilisateurBasePatrimony = buildPatrimonySnapshot(assets || [], passifLinesUtilisateur, 0, assetDemembrements, demembrementCtx);
-        const utilisateurVeufPatrimony = addReunifiedFullOwnership(
-          utilisateurBasePatrimony,
-          firstDeathConjoint,
-          familyUtilisateur.decedentId,
-          avContractsConjointPremier
-        );
+        // Reçu du conjoint prédécédé ventilé bien par bien (cf. buildRecuEnNature) :
+        // biens bruts avec leur nature, quote-part des dettes reprise au passif.
+        const recuDuConjoint = computeRecuAuPremierDeces(firstDeathConjoint, familyUtilisateur.decedentId, avContractsConjointPremier);
+        const recuEnNature = buildRecuEnNature(assets || [], passifLinesBrut, recuDuConjoint, 'conjoint', assetDemembrements, demembrementCtx);
+        const utilisateurVeufPatrimony = {
+          ...utilisateurBasePatrimony,
+          biensExistants: utilisateurBasePatrimony.biensExistants + recuEnNature.brut,
+          passifs: utilisateurBasePatrimony.passifs + recuEnNature.passifs,
+        };
         // Contrats de l'Utilisateur, dénoués à son décès (2nd) : résolus contre
         // le graphe veuf — une clause au profit du conjoint prédécédé est
         // caduque ou bascule au rang suivant.
@@ -199,13 +201,11 @@ export const Succession2ndDeces = () => {
             params,
             societesDutreil,
             dutreilPartsNonAffectees,
-            passifsParBien: buildPassifsParBien(passifLinesUtilisateur),
+            passifsParBien: { ...buildPassifsParBien(passifLinesUtilisateur), ...recuEnNature.passifsParBien },
             referenceDate,
             rawAssets: [
               ...(assets || []),
-              ...buildRecuAuPremierDecesRawAssets(
-                computeRecuAuPremierDeces(firstDeathConjoint, familyUtilisateur.decedentId, avContractsConjointPremier)
-              )
+              ...recuEnNature.rawAssets
             ],
             assetDemembrements,
             demembrementCtx,
