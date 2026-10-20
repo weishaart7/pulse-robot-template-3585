@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -121,8 +121,11 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
 
   const form = useForm<AssetFormValues>({
     resolver: zodResolver(assetSchema),
-    defaultValues: getDefaultAssetValues()
+    // Création : pleine propriété par défaut (cas courant ; démembrement ou indivision restent à choisir).
+    defaultValues: { ...getDefaultAssetValues(), ...(asset ? {} : { mode_detention: 'Pleine propriété' }) }
   });
+  // Création : le détenteur est proposé d'après la qualification tant que l'utilisateur ne l'a pas choisi.
+  const detenteurChoisiRef = useRef(false);
 
   // Load family data
   useEffect(() => {
@@ -373,6 +376,17 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       // Exception : un contrat (assurance-vie, retraite, prévoyance) garde un souscripteur unique
       // même commun — la communauté porte sur sa valeur de rachat, pas sur la qualité de
       // souscripteur / assuré, que le calcul de transmission lit via le détenteur.
+      // Création, détenteur encore vide et jamais choisi : proposé d'après la qualification —
+      // « Le couple » pour un bien commun, l'utilisateur seul hors couple. Rien pour un bien
+      // propre / personnel en couple (on ne sait pas lequel des deux) ni pour un contrat (souscripteur unique).
+      if (!asset?.id && !value.detenteur && !detenteurChoisiRef.current && !isContratSouscrit(value.nature)) {
+        const propose =
+          qualification === 'Bien commun' && familyData.hasPartner ? 'Le couple'
+          : qualification === 'Bien personnel' && !familyData.hasPartner ? familyData.userFirstName
+          : undefined;
+        if (propose) setTimeout(() => form.setValue('detenteur', propose, { shouldValidate: true }), 0);
+      }
+
       if (qualification === 'Bien commun' && detenteurIndividuel && !isContratSouscrit(value.nature)) {
         setTimeout(() => {
           form.setValue('detenteur', 'Le couple');
@@ -389,7 +403,8 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       recompute(initialValues);
     }
 
-    const subscription = form.watch((value, { name }) => {
+    const subscription = form.watch((value, { name, type }) => {
+      if (name === 'detenteur' && type === 'change') detenteurChoisiRef.current = true;
       const autoOn = value.qualification_auto !== false;
       if (!autoOn) return;
       if (!watchedFields.includes(name || '')) return;
@@ -526,7 +541,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         // Convert empty strings to null for optional fields
         denomination: values.denomination || null,
         etablissement: values.etablissement || null,
-        mode_detention: values.mode_detention || null,
+        mode_detention: isPrevoyanceDeces(values.nature) ? null : values.mode_detention || null,
         // Contrat de prévoyance : souscrit, sans origine (ni achat ni libéralité).
         origine_actif: isPrevoyanceDeces(values.nature) ? null : values.origine_actif,
         transfert_immobilier: transfertImmobilier,
