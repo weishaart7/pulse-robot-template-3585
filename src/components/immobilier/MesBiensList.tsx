@@ -96,7 +96,7 @@ export const MesBiensList = ({ assets, emprunts = [], isMeuble, onOpen, onGestio
       const biens = assets
         .filter(a => groupeOf(a.nature) === g.id)
         .sort((a, b) => (b.valeur_estimee || 0) - (a.valeur_estimee || 0));
-      return { ...g, biens, total: biens.reduce((s, a) => s + (a.valeur_estimee || 0), 0) };
+      return { ...g, biens, total: biens.reduce((s, a) => s + (a.valeur_estimee || 0) * computeQuotePart(a) / 100, 0) };
     })
     .filter(g => g.biens.length > 0);
 
@@ -171,7 +171,10 @@ export const MesBiensList = ({ assets, emprunts = [], isMeuble, onOpen, onGestio
                   </div>
 
                   <span className="text-right text-sm font-medium tabular-nums text-foreground">
-                    {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee) : '—'}
+                    {asset.valeur_estimee ? formatCurrency(asset.valeur_estimee * quotePart / 100) : '—'}
+                    {asset.valeur_estimee && quotePart < 100 ? (
+                      <span className="block text-xs font-normal text-muted-foreground">sur {formatCurrency(asset.valeur_estimee)}</span>
+                    ) : null}
                   </span>
                   <span className="hidden text-right text-sm tabular-nums md:block">
                     {isLoading ? '…' : ind && ind.aDesFlux && ind.rentabiliteBrute !== 0 ? fmtPct(ind.rentabiliteBrute) : <span className="text-muted-foreground">—</span>}

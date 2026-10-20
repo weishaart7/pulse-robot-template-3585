@@ -117,6 +117,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const watchedConditionsRural = form.watch('conditions_exoneration_rural');
   const isTerrain = watchedNature === 'Terrains';
   const isBois = watchedNature === 'Bois & forêts';
+  const isTerrainAgricole = watchedNature === 'Terrains agricoles';
   const isMaisonMobile = watchedNature === 'Maison mobile (péniche, etc.)';
   // Meublé LMNP (statut par défaut d'un meublé ; LMP exclu) : résidence de services.
   const isLMNP = watchedNature === 'Immeubles locatifs (meublés)' && form.watch('type_location') !== 'Location meublée professionnelle (LMP)';
@@ -510,10 +511,17 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="oui">Conditions remplies</SelectItem>
-                    <SelectItem value="non">Conditions non remplies</SelectItem>
+                    <SelectItem value="oui">{isBois ? 'Oui' : 'Conditions remplies'}</SelectItem>
+                    <SelectItem value="non">{isBois ? 'Non' : 'Conditions non remplies'}</SelectItem>
                   </SelectContent>
                 </Select>
+                {isBois && (
+                  <p className="text-[12px] leading-relaxed text-muted-foreground">
+                    {field.value === false
+                      ? 'Non : les bois entrent pour toute leur valeur dans la succession.'
+                      : "Oui : 3/4 de la valeur exonérés de droits de succession, si les héritiers s'engagent à gérer les bois durablement pendant 30 ans."}
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
@@ -655,6 +663,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormItem>
             )} />
           )}
+          {/* Bois & forêts : régime forestier imposé (enregistré par l'effet ci-dessus), rien à choisir. */}
+          {!isBois && (
           <FormField control={form.control} name="regime_exoneration_rural" render={({ field }) => (
             <FormItem>
               <FormLabel>
@@ -682,12 +692,13 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               <FormMessage />
             </FormItem>
           )} />
+          )}
 
           {watchedRegimeRural && watchedRegimeRural !== 'aucun' && (
             <FormField control={form.control} name="conditions_exoneration_rural" render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Conditions de l'exonération
+                  {isBois ? 'Gestion durable garantie' : "Conditions de l'exonération"}
                   <FieldHelp>
                     {watchedRegimeRural === 'forestier'
                       ? "Certificat attestant que les bois présentent une garantie de gestion durable (plan simple de gestion ou équivalent). Les héritiers devront s'engager à les gérer ainsi pendant 30 ans."
@@ -708,6 +719,29 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     <SelectItem value="non">Conditions non remplies</SelectItem>
                   </SelectContent>
                 </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isBois && (
+            <FormField control={form.control} name="surface_boisee_ha" render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Surface boisée (ha)
+                  <FieldHelp>
+                    Sert uniquement à la plus-value en cas de vente : réduction d'impôt de 10 € par hectare et par année de détention (art. 150 VF III CGI). Les fractions d'hectare ne comptent pas.
+                  </FieldHelp>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    className="bg-background border-border shadow-none"
+                    type="number"
+                    step="0.01"
+                    {...field}
+                    value={field.value ?? ''}
+                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -741,7 +775,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {(isTerrain || isBois || isMaisonMobile || isLMNP || isDroitsSociaux || isNft || isMatieresPremieres) && (
+      {(isTerrain || isTerrainAgricole || isMaisonMobile || isLMNP || isDroitsSociaux || isNft || isMatieresPremieres) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {isTerrain && (
             <FormField control={form.control} name="terrain_constructible" render={({ field }) => (
@@ -770,28 +804,26 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormItem>
             )} />
           )}
-          {isBois && (
-            <FormField control={form.control} name="surface_boisee_ha" render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Surface boisée (ha)
-                  <FieldHelp>
-                    Sert à la réduction d'impôt sur la plus-value de cession : 10 € par hectare et par année de détention (art. 150 VF III CGI). Les fractions d'hectare ne comptent pas.
-                  </FieldHelp>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    className="bg-background border-border shadow-none"
-                    type="number"
-                    step="0.01"
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+          {(isTerrain || isTerrainAgricole) && (
+            // Surface stockée en m² (surface_m2) ; saisie en hectares pour un terrain agricole.
+            <FormField control={form.control} name="surface_m2" render={({ field }) => {
+              const facteur = isTerrainAgricole ? 10000 : 1;
+              return (
+                <FormItem>
+                  <FormLabel>Surface ({isTerrainAgricole ? 'ha' : 'm²'})</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="bg-background border-border shadow-none"
+                      type="number"
+                      step={isTerrainAgricole ? '0.01' : '1'}
+                      value={field.value == null ? '' : +(field.value / facteur).toFixed(4)}
+                      onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) * facteur : undefined)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }} />
           )}
           {isMaisonMobile && (
             <FormField control={form.control} name="fixe_au_sol" render={({ field }) => (

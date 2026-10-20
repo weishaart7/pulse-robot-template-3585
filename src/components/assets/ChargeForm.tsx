@@ -41,15 +41,24 @@ interface ChargeFormProps {
   debiteurParDefaut?: ChargeFormValues['debiteur'];
 }
 
-/** Débiteur suggéré : le couple pour un bien commun ou indivis, sinon l'époux détenteur. */
+/** Débiteur suggéré : le couple pour un bien commun, l'époux détenteur pour un bien propre.
+ * En indivision (avec des tiers), seuls les époux qui ont une quote-part sur le bien
+ * paient leur part de la charge : le couple si les deux en ont une, sinon l'époux concerné. */
 export function debiteurDepuisDetention(
   detenteur: string | undefined,
   qualification: string | undefined,
   familyData: { userFirstName?: string; partnerFirstName?: string } | undefined,
+  pourcentages?: { utilisateur?: number | null; conjoint?: number | null },
 ): ChargeFormValues['debiteur'] | undefined {
-  if (qualification === 'Bien commun' || qualification === 'Indivision') return 'Couple';
+  if (qualification === 'Indivision' || detenteur === 'Indivision') {
+    const partConjoint = Number(pourcentages?.conjoint) || 0;
+    const partUtilisateur = Number(pourcentages?.utilisateur) || 0;
+    if (partConjoint > 0 && partUtilisateur > 0) return 'Couple';
+    return partConjoint > 0 ? 'Époux 2' : 'Époux 1';
+  }
+  if (qualification === 'Bien commun') return 'Couple';
   if (!detenteur) return undefined;
-  if (detenteur === 'Le couple' || detenteur === 'Indivision') return 'Couple';
+  if (detenteur === 'Le couple') return 'Couple';
   if (familyData?.partnerFirstName && detenteur === familyData.partnerFirstName) return 'Époux 2';
   if (familyData?.userFirstName && detenteur === familyData.userFirstName) return 'Époux 1';
   return undefined;

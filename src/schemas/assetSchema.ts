@@ -211,7 +211,7 @@ export const assetSchema = z.object({
   // l'enregistrement ; `frais_acquisition` devient la somme des frais détaillés.
   typologie_bien: z.enum(['Appartement', 'Maison', 'Parking', 'Garage', 'Box', 'Bureau', 'Commerce', "Local d'activité", 'Entrepôt', 'Cabinet']).optional(),
   surface_m2: z.number().finite().nonnegative().optional(),
-  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).optional(),
+  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente', 'Vacant']).optional(),
   frais_agence: z.number().finite().nonnegative().optional(),
   frais_notaire: z.number().finite().nonnegative().optional(),
   travaux_renovation: z.number().finite().nonnegative().optional(),

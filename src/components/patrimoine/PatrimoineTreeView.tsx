@@ -26,6 +26,7 @@ import { resolveAssetFiscalRegime, caracteristiquesFiscalesActif } from '@/lib/p
 import { useSocietes } from '@/hooks/useSocietes';
 import { useRachatsAssuranceVie } from '@/hooks/useRachatsAssuranceVie';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
+import { computeQuotePart } from '@/lib/immobilier/rentabilite';
 
 const libelleCategorie = (category: string) => category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
 
@@ -79,10 +80,14 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
   // Valeur pondérée par le démembrement, 0 si la fraction n'est pas calculable
   // (même traitement que demembrement.valueById dans usePatrimoineCalculations.ts) —
   // vaut asset.valeur_estimee pour un actif en pleine propriété (fraction 1).
+  // Pondérée aussi par la quote-part du foyer (computeQuotePart) : en indivision
+  // avec des tiers, la part des co-indivisaires n'entre pas dans la liste, comme
+  // dans le Résumé et dans Immobilier > Mes biens.
+  const getPartFoyer = (asset: Asset): number => computeQuotePart(asset) / 100;
   const getWeightedValue = (asset: Asset): number => {
     if (asset.valeur_estimee === undefined || asset.valeur_estimee === null) return 0;
     const fraction = getDemembrementFraction(asset);
-    return fraction === null ? 0 : asset.valeur_estimee * fraction;
+    return fraction === null ? 0 : asset.valeur_estimee * fraction * getPartFoyer(asset);
   };
 
   const empruntsByAsset = useMemo(() => {
@@ -193,10 +198,10 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
       return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     }
 
-    // Même calcul que le Résumé (computePlusValueActif), à la valeur totale
-    // de la ligne (part = 1) : null si non calculable (âge de l'usufruitier
+    // Même calcul que le Résumé (computePlusValueActif), sur la part du foyer
+    // dans le bien : null si non calculable (âge de l'usufruitier
     // inconnu, démembré sans date d'acquisition, valeurs absentes).
-    const pv = computePlusValueActif(asset, asset.id ? (demembrementsByAsset[asset.id] || []) : [], demembrementCtx);
+    const pv = computePlusValueActif(asset, asset.id ? (demembrementsByAsset[asset.id] || []) : [], demembrementCtx, getPartFoyer(asset));
     if (!pv) return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     const { plusValue } = pv;
 
@@ -236,7 +241,7 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
 
     categoryAssets.forEach(asset => {
       // Même calcul que getPlusValueDisplay ci-dessus.
-      const pv = computePlusValueActif(asset, asset.id ? (demembrementsByAsset[asset.id] || []) : [], demembrementCtx);
+      const pv = computePlusValueActif(asset, asset.id ? (demembrementsByAsset[asset.id] || []) : [], demembrementCtx, getPartFoyer(asset));
       const hasData = pv !== null;
       const plusValue = pv?.plusValue ?? 0;
       if (hasData) {

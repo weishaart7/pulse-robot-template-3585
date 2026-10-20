@@ -6,7 +6,7 @@ export const immobilierPropertySchema = z.object({
   surface_m2: z.number().min(0).optional().or(z.literal('')),
   date_acquisition: z.date().optional(),
   valeur_estimee: z.number().min(0).optional().or(z.literal('')),
-  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).nullable().optional(),
+  statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente', 'Vacant']).nullable().optional(),
   montant_immeuble: z.number().min(0).optional().or(z.literal('')),
   frais_agence: z.number().min(0).optional().or(z.literal('')),
   frais_notaire: z.number().min(0).optional().or(z.literal('')),

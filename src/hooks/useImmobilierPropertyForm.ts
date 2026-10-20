@@ -117,7 +117,7 @@ function getDefaultValues(asset: Asset | null): ImmobilierPropertyFormValues {
     surface_m2: numOrEmpty(asset.surface_m2),
     date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
     valeur_estimee: numOrEmpty(asset.valeur_estimee),
-    statut_bien: (asset.statut_bien ?? undefined) as 'Usage personnel' | 'En rénovation' | 'En vente' | undefined,
+    statut_bien: (asset.statut_bien ?? undefined) as 'Usage personnel' | 'En rénovation' | 'En vente' | 'Vacant' | undefined,
     montant_immeuble: numOrEmpty(asset.montant_immeuble),
     frais_agence: numOrEmpty(asset.frais_agence),
     frais_notaire: numOrEmpty(asset.frais_notaire),

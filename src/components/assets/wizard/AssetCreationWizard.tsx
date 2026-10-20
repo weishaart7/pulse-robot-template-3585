@@ -291,7 +291,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
       {showChargeForm && currentStep.id === 'charges' && (
         <ChargeForm
           charge={editingCharge || undefined}
-          debiteurParDefaut={debiteurDepuisDetention(form.getValues('detenteur'), form.getValues('qualification_bien'), familyData)}
+          debiteurParDefaut={debiteurDepuisDetention(form.getValues('detenteur'), form.getValues('qualification_bien'), familyData, { utilisateur: form.getValues('pourcentage_utilisateur'), conjoint: form.getValues('pourcentage_conjoint') })}
           onSubmit={handleChargeSubmit}
           onCancel={() => {
             setShowChargeForm(false);

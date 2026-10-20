@@ -546,6 +546,10 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         formattedValues.montant_immeuble = values.valeur_acquisition ?? null;
       } else {
         for (const champ of champsImmobilier) delete formattedValues[champ];
+        // Terrains : seule la surface est saisie (onglet Caractéristiques).
+        if (values.nature === 'Terrains' || values.nature === 'Terrains agricoles') {
+          formattedValues.surface_m2 = values.surface_m2 ?? null;
+        }
       }
       if (estEnLocation(values)) {
         // Loués nus et locaux professionnels : toujours en location nue (le choix n'est pas proposé).

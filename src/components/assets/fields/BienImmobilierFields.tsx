@@ -32,30 +32,45 @@ export const DescriptionBienFields: React.FC<BienImmobilierFieldsProps> = ({ for
         </p>
       )}
       {avecQuestionUsage(nature) && (
-        <FormField control={form.control} name="usage_loue" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Usage</FormLabel>
-            <div role="radiogroup" className="flex h-9 gap-[3px] rounded-[2px] bg-muted/60 p-[3px]">
-              {([false, true] as const).map((loue) => (
-                <button
-                  key={String(loue)}
-                  type="button"
-                  role="radio"
-                  aria-checked={!!field.value === loue}
-                  onClick={() => field.onChange(loue)}
-                  className={cn(
-                    'flex-1 rounded-[2px] px-2 text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    !!field.value === loue
-                      ? 'bg-background font-medium text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-border'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {loue ? (nature === NATURE_STATIONNEMENT ? 'Loué' : 'Loué à un tiers') : (nature === NATURE_STATIONNEMENT ? 'Personnel' : 'Ma propre activité')}
-                </button>
-              ))}
-            </div>
-          </FormItem>
-        )} />
+        <FormField control={form.control} name="usage_loue" render={({ field }) => {
+          // Trois usages, sans colonne dédiée : « Loué » → type_location renseigné ; « Vide »
+          // (local professionnel seulement) → non loué + statut_bien « Vacant » ; sinon usage propre.
+          const estLocalPro = nature !== NATURE_STATIONNEMENT;
+          const vide = estLocalPro && !field.value && form.watch('statut_bien') === 'Vacant';
+          const options = [
+            { id: 'propre', label: estLocalPro ? 'Ma propre activité' : 'Personnel', actif: !field.value && !vide },
+            { id: 'loue', label: estLocalPro ? 'Loué à un tiers' : 'Loué', actif: !!field.value },
+            ...(estLocalPro ? [{ id: 'vide', label: 'Vide', actif: vide }] : []),
+          ];
+          const choisir = (id: string) => {
+            field.onChange(id === 'loue');
+            if (estLocalPro) form.setValue('statut_bien', id === 'vide' ? 'Vacant' : undefined);
+          };
+          return (
+            <FormItem>
+              <FormLabel>Usage</FormLabel>
+              <div role="radiogroup" className="flex h-9 gap-[3px] rounded-[2px] bg-muted/60 p-[3px]">
+                {options.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={o.actif}
+                    onClick={() => choisir(o.id)}
+                    className={cn(
+                      'flex-1 rounded-[2px] px-2 text-[12.5px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      o.actif
+                        ? 'bg-background font-medium text-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-border'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </FormItem>
+          );
+        }} />
       )}
       <FormField control={form.control} name="typologie_bien" render={({ field }) => (
         <FormItem>
