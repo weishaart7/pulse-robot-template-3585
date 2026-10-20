@@ -3,7 +3,8 @@ import { motion, useReducedMotion } from 'framer-motion';
 
 /** Range Navigator — graphique d'évolution avec sélecteur de plage (1M / 3M / 1A / Tout)
  *  en haut à droite. Le survol du graphique affiche un réticule en pointillés avec une
- *  bulle indiquant la valeur et sa date. Les graduations de droite sont dérivées de la
+ *  bulle indiquant la valeur et sa date. Courbe lissée, aire en dégradé léger tramée de points,
+ *  repères ronds, étiquette de valeur, trait de départ. Graduations dérivées de la
  *  plage sélectionnée. Le viewBox est recalé sur la largeur réelle du conteneur (mesurée
  *  via ResizeObserver) pour que le SVG ne soit jamais étiré à l'échelle — sans ça, le
  *  texte se déforme horizontalement (trop gros, tassé) dès que la carte est plus large
@@ -29,13 +30,15 @@ const RANGES: { key: RangeKey; label: string; months: number | null }[] = [
 
 const BLUE = 'hsl(var(--chart-1))';
 const CARD = 'hsl(var(--card))';
-const BORDER = 'hsl(var(--border))';
 const TEXT = 'hsl(var(--foreground))';
 const TEXT_MUTED = 'hsl(var(--muted-foreground))';
 
 const DEFAULT_W = 560;
 const MAIN_H = 260;
-const PAD = { l: 0, r: 56, t: 12, b: 26 };
+// Graduations à gauche, dates horizontales sous l'axe.
+const PAD = { l: 48, r: 10, t: 14, b: 26 };
+/** Au-delà, les repères ronds de chaque point chargeraient la courbe. */
+const MAX_MARKERS = 24;
 const DATE_TICKS = 5;
 
 // Pas « rond » (1, 2, 2,5 ou 5 × 10^n) donnant environ `count` graduations sur [lo, hi].
@@ -46,8 +49,13 @@ function niceStep(span: number, count: number) {
   return (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
 }
 
-const formatAxis = (n: number) =>
-  new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', notation: 'compact', maximumFractionDigits: 1 }).format(n);
+// Décimales ajustées au pas : sans ça, des graduations proches (1,79 M / 1,80 M) s'affichaient toutes « 1,8 M € ».
+// Sans `currency`, l'axe n'écrit pas « € » à chaque graduation (« 1,79 M ») ; l'étiquette le garde.
+const formatAxis = (n: number, step: number, currency = true) => {
+  const unit = Math.abs(n) >= 1e6 ? 1e6 : Math.abs(n) >= 1e3 ? 1e3 : 1;
+  const digits = Math.min(3, Math.max(0, Math.ceil(-Math.log10(step / unit) - 1e-9)));
+  return new Intl.NumberFormat('fr-FR', { ...(currency ? { style: 'currency' as const, currency: 'EUR' } : {}), notation: 'compact', maximumFractionDigits: digits, minimumFractionDigits: digits }).format(n);
+};
 
 
 const defaultFormatValue = (n: number, precision = 0) =>
@@ -175,7 +183,7 @@ export default function RangeNavigator({
       const t = t0 + (k / (DATE_TICKS - 1)) * tSpan;
       return { t, x: PAD.l + (k / (DATE_TICKS - 1)) * plotW };
     });
-    return { line, area, min, max, ticks, values, n, x, y, dateTicks };
+    return { line, area, min, max, step, ticks, values, n, x, y, dateTicks };
   }, [windowPoints, plotW]);
 
   const onMainMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -276,11 +284,30 @@ export default function RangeNavigator({
         onPointerLeave={() => setHover(null)}
       >
         <defs>
-          <linearGradient id="rn-g" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.18" />
-            <stop offset="60%" stopColor={color} stopOpacity="0.04" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          {/* Aire pleine qui s'efface vers le bas, tramée de points clairs. */}
+          <linearGradient id="rn-fade" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.32" />
+            <stop offset="55%" stopColor="#fff" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
           </linearGradient>
+          <mask id="rn-mask" maskContentUnits="userSpaceOnUse">
+            <rect x={0} y={PAD.t} width={W} height={MAIN_H - PAD.t - PAD.b} fill="url(#rn-fade)" />
+          </mask>
+          {/* Révélation de gauche à droite, au rythme du tracé de la courbe. */}
+          <clipPath id="rn-reveal">
+            <motion.rect
+              key={`reveal-${range}-${windowPoints.length}`}
+              x={0}
+              y={0}
+              height={MAIN_H}
+              initial={{ width: reduced ? W : PAD.l }}
+              animate={{ width: W }}
+              transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </clipPath>
+          <pattern id="rn-dots" width={6} height={6} patternUnits="userSpaceOnUse">
+            <circle cx={3} cy={3} r={0.6} fill={color} fillOpacity={0.35} />
+          </pattern>
         </defs>
         {detail.ticks.map((v) => {
           const ty = detail.y(v);
@@ -291,35 +318,55 @@ export default function RangeNavigator({
                 y1={ty}
                 x2={W - PAD.r}
                 y2={ty}
-                stroke={BORDER}
-                strokeOpacity={v === detail.min ? 1 : 0.55}
+                stroke={TEXT_MUTED}
+                strokeOpacity={v === detail.min ? 0.35 : 0.12}
               />
-              <text x={W - PAD.r + 10} y={ty + 3.5} fontSize={11} fill={TEXT_MUTED} className="tabular-nums">
-                {formatAxis(v)}
+              <text x={PAD.l - 10} y={ty + 3.5} fontSize={11} fill={TEXT_MUTED} textAnchor="end" className="tabular-nums">
+                {formatAxis(v, detail.step, false)}
               </text>
             </g>
           );
         })}
-        <motion.path
-          key={`${range}-${windowPoints.length}`}
-          d={detail.area}
-          fill="url(#rn-g)"
-          initial={{ opacity: reduced ? 1 : 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: reduced ? 0 : 0.6, delay: reduced ? 0 : 0.35 }}
-        />
+        <g clipPath="url(#rn-reveal)">
+          <g mask="url(#rn-mask)">
+            <path d={detail.area} fill={color} />
+          </g>
+          <path d={detail.area} fill="url(#rn-dots)" opacity={0.5} />
+          {detail.n <= MAX_MARKERS &&
+            detail.values.map((v, i) => (
+              <circle key={`m${i}`} cx={detail.x(i)} cy={detail.y(v)} r={2.25} fill={CARD} stroke={color} strokeWidth={1.25} strokeOpacity={0.7} pointerEvents="none" />
+            ))}
+        </g>
         <motion.path
           key={`line-${range}-${windowPoints.length}`}
           d={detail.line}
           fill="none"
           stroke={color}
           strokeWidth={2}
+          strokeLinejoin="round"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
           initial={{ pathLength: reduced ? 1 : 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: reduced ? 0 : 0.9, ease: [0.16, 1, 0.3, 1] }}
         />
+        {/* Niveau de départ de la période : la progression se lit par rapport à ce trait. */}
+        {detail.n > 1 && (
+          <g pointerEvents="none">
+            <line
+              x1={PAD.l}
+              y1={detail.y(detail.values[0])}
+              x2={W - PAD.r}
+              y2={detail.y(detail.values[0])}
+              stroke={color}
+              strokeOpacity={0.45}
+              strokeDasharray="2 4"
+            />
+            <text x={W - PAD.r - 2} y={detail.y(detail.values[0]) + 13} fontSize={10} textAnchor="end" fill={color} fillOpacity={0.8}>
+              Départ
+            </text>
+          </g>
+        )}
         {/* Point final « aujourd'hui » : halo qui respire doucement. */}
         {!hv && (
           <g pointerEvents="none">
@@ -366,6 +413,31 @@ export default function RangeNavigator({
             <circle cx={hv.x} cy={hv.y} r={4.5} fill={color} stroke={CARD} strokeWidth={2} />
           </g>
         )}
+        {/* Étiquette encadrée (référence fin.ai) : dernier point, ou point survolé. */}
+        {(() => {
+          const i = hv ? hv.i : detail.n - 1;
+          const px = detail.x(i);
+          const py = detail.y(detail.values[i]);
+          const label = formatAxis(detail.values[i], detail.step / 10);
+          const w = label.length * 6.3 + 14;
+          const h = 20;
+          const bx = Math.min(Math.max(px - w / 2, PAD.l + 2), W - PAD.r - w - 2);
+          const by = py - h - 9 < PAD.t ? py + 9 : py - h - 9;
+          return (
+            <motion.g
+              key={reduced ? 'tag' : `tag-${range}-${windowPoints.length}`}
+              pointerEvents="none"
+              initial={{ opacity: hv || reduced ? 1 : 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: hv || reduced ? 0 : 0.8 }}
+            >
+              <rect x={bx} y={by} width={w} height={h} rx={4} fill={color} />
+              <text x={bx + w / 2} y={by + 13.5} fontSize={11} fontWeight={500} textAnchor="middle" fill="#fff" className="tabular-nums">
+                {label}
+              </text>
+            </motion.g>
+          );
+        })()}
       </svg>
     </div>
   );
