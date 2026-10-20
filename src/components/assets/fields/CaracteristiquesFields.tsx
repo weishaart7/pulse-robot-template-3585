@@ -60,6 +60,42 @@ interface CaracteristiquesFieldsProps {
 // montres, vins, produits structurés, SCPI, etc.). Réutilisable telle quelle
 // à la fois par l'onglet de modification et par l'étape "Particularités" du
 // wizard de création.
+// Type de groupement foncier (GFA, GFF…) : demandé avec la nature, à la première étape, car il
+// précise le placement lui-même ; il propose ensuite le régime d'exonération (modifiable).
+export const TypeGroupementField: React.FC<CaracteristiquesFieldsProps> = ({ form }) => {
+  if (form.watch('nature') !== NATURE_GROUPEMENT_FONCIER) return null;
+  const changerTypeGroupement = (type: string) => {
+    form.setValue('type_groupement', type as AssetFormValues['type_groupement'], { shouldDirty: true });
+    const regime = TYPES_GROUPEMENT_FONCIER.find((t) => t.value === type)?.regime;
+    if (regime) form.setValue('regime_exoneration_rural', regime, { shouldDirty: true });
+  };
+  return (
+    <FormField control={form.control} name="type_groupement" render={({ field }) => (
+      <FormItem>
+        <FormLabel>
+          Type de groupement
+          <FieldHelp>
+            Informatif. Le type choisi propose le régime d'exonération correspondant, que vous pouvez ensuite modifier.
+          </FieldHelp>
+        </FormLabel>
+        <Select onValueChange={changerTypeGroupement} value={field.value}>
+          <FormControl>
+            <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+              <SelectValue placeholder="Choisir" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            {TYPES_GROUPEMENT_FONCIER.map((t) => (
+              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    )} />
+  );
+};
+
 export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ form }) => {
   const watchedNature = form.watch('nature');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
@@ -131,13 +167,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
     }
   }, [regimeRuralImpose, watchedNature, form]);
 
-  // Groupement foncier : le type choisi propose son régime d'exonération (modifiable ensuite).
-  const isGroupementFoncier = watchedNature === NATURE_GROUPEMENT_FONCIER;
-  const changerTypeGroupement = (type: string) => {
-    form.setValue('type_groupement', type as AssetFormValues['type_groupement'], { shouldDirty: true });
-    const regime = TYPES_GROUPEMENT_FONCIER.find((t) => t.value === type)?.regime;
-    if (regime) form.setValue('regime_exoneration_rural', regime, { shouldDirty: true });
-  };
 
   // PER obligatoire : sous-type figé sur Assurantiel, enregistré tel quel.
   useEffect(() => {
@@ -638,31 +667,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
 
       {isRurale && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isGroupementFoncier && (
-            <FormField control={form.control} name="type_groupement" render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>
-                  Type de groupement
-                  <FieldHelp>
-                    Informatif. Le type choisi propose le régime d'exonération correspondant, que vous pouvez ensuite modifier.
-                  </FieldHelp>
-                </FormLabel>
-                <Select onValueChange={changerTypeGroupement} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
-                      <SelectValue placeholder="Choisir" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {TYPES_GROUPEMENT_FONCIER.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
           {/* Bois & forêts : régime forestier imposé (enregistré par l'effet ci-dessus), rien à choisir. */}
           {!isBois && (
           <FormField control={form.control} name="regime_exoneration_rural" render={({ field }) => (

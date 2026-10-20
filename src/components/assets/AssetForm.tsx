@@ -24,7 +24,7 @@ import { PrimeFields } from './fields/PrimeFields';
 import { ValorisationDemembreeBlock } from './fields/ValorisationDemembreeBlock';
 import { OrigineFields, QualificationFields } from './fields/OrigineQualificationFields';
 import { DetentionFields } from './fields/DetentionFields';
-import { CaracteristiquesFields } from './fields/CaracteristiquesFields';
+import { CaracteristiquesFields, TypeGroupementField } from './fields/CaracteristiquesFields';
 import { ChargesListFields } from './fields/ChargesListFields';
 import { FieldHelp } from '@/components/ui/field-help';
 import { DescriptionBienFields } from './fields/BienImmobilierFields';
@@ -99,7 +99,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const handleInvalid = (errors: Record<string, unknown>) => {
     const champs = Object.keys(errors);
     const ongletDe = (champ: string) =>
-      ['nature', 'denomination', 'valeur_estimee', 'date_estimation', 'capital_garanti'].includes(champ) ? 'essentiel'
+      ['nature', 'denomination', 'type_groupement', 'valeur_estimee', 'date_estimation', 'capital_garanti'].includes(champ) ? 'essentiel'
         : ['date_acquisition', 'origine_actif', 'valeur_acquisition', 'frais_acquisition', 'mode_detention', 'detenteur', 'qualification_bien', 'financement_mixte_apport_propre', 'pourcentage_utilisateur', 'pourcentage_conjoint'].includes(champ) ? 'propriete'
         : 'caracteristiques';
     const onglets: string[] = champs.map(ongletDe);
@@ -136,6 +136,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             <FormMessage />
           </FormItem>
         )} />
+        <TypeGroupementField form={form} />
       </div>
 
       <DescriptionBienFields form={form} />

@@ -4,6 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { AssetFormValues } from '@/schemas/assetSchema';
+import { TypeGroupementField } from '@/components/assets/fields/CaracteristiquesFields';
 import { DescriptionBienFields } from '@/components/assets/fields/BienImmobilierFields';
 import { RequiredMark } from '@/components/ui/required-mark';
 
@@ -36,6 +37,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
           <FormMessage />
         </FormItem>
       )} />
+      <TypeGroupementField form={form} />
     </div>
 
     <DescriptionBienFields form={form} />
