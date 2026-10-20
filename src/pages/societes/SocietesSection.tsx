@@ -1,3 +1,4 @@
+import { actifDepuisSociete } from '@/lib/societes/partsFoyer';
 import React, { useState, useEffect } from 'react';
 import { GooeyNav } from '@/components/ui/gooey-nav';
 import { WorkspaceHeader, panelButtonClass } from '@/components/layout/workspace-panel';
@@ -31,7 +32,9 @@ import { type SocieteFormData, societeToFormData, formDataToSociete } from '@/li
 
 export const SocietesSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
-  const [editingMode, setEditingMode] = useState<'list' | 'edit' | 'create'>('list');
+  // `?nouvelle=1` (lien « Créer la société » du wizard d'actif) ouvre directement le formulaire de création.
+  const [editingMode, setEditingMode] = useState<'list' | 'edit' | 'create'>(() =>
+    new URLSearchParams(window.location.search).has('nouvelle') ? 'create' : 'list');
   const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SocieteFormData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -126,21 +129,18 @@ export const SocietesSection = () => {
 
         // « Transférer vers la liste d'actifs » : actif Patrimoine rattaché à la société
         // (societe_id, natures « parts » seulement — cf. societeTransfer.ts), avec la
-        // qualification, le détenteur et les quotités de la société, qui font autorité.
+        // valeur des parts du foyer et l'entrée dans la société (lib/societes/partsFoyer.ts).
         if (data.transfertVersActifs && data.natureActif && newSociete) {
           try {
             await assetService.createAsset({
               nature: data.natureActif,
               denomination: data.denomination,
               etablissement: data.denomination,
-              valeur_estimee: data.valeurEstimee || undefined,
               date_estimation: new Date().toISOString().split('T')[0],
               mode_detention: 'Pleine propriété',
-              qualification_bien: newSociete.qualification_bien,
-              qualification_auto: false,
-              detenteur: newSociete.detenteur,
-              pourcentage_utilisateur: newSociete.pourcentage_utilisateur,
-              pourcentage_conjoint: newSociete.pourcentage_conjoint,
+              // Valeur des parts du foyer, répartition, origine, date, prix de revient, qualification.
+              ...actifDepuisSociete(newSociete),
+              valeur_estimee: actifDepuisSociete(newSociete).valeur_estimee ?? undefined,
               societe_id: isPartsSocieteNature(data.natureActif) ? newSociete.id : null,
               transfert_societe: isPartsSocieteNature(data.natureActif),
             });

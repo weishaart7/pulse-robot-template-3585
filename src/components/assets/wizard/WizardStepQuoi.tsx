@@ -7,6 +7,8 @@ import { AssetFormValues } from '@/schemas/assetSchema';
 import { TypeGroupementField } from '@/components/assets/fields/CaracteristiquesFields';
 import { DescriptionBienFields } from '@/components/assets/fields/BienImmobilierFields';
 import { RequiredMark } from '@/components/ui/required-mark';
+import { Link } from 'react-router-dom';
+import { isPartsSocieteNature } from '@/lib/patrimoine/societeTransfer';
 
 interface WizardStepQuoiProps {
   form: UseFormReturn<AssetFormValues>;
@@ -39,6 +41,24 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
       )} />
       <TypeGroupementField form={form} />
     </div>
+
+    {/* Parts de société : la fiche société porte le régime IR / IS, la valeur et l'entrée du foyer,
+        et crée elle-même l'actif « parts » complet (lib/societes/partsFoyer.ts). */}
+    {isPartsSocieteNature(form.watch('nature')) && (
+      <div className="max-w-2xl border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3 text-[13px] leading-snug">
+        <p className="text-foreground">
+          Pour des parts de société, créez plutôt la société dans le module Sociétés : elle porte le régime fiscal,
+          la valeur et votre entrée au capital, et ajoute ces parts à vos actifs.
+        </p>
+        <p className="mt-1 text-muted-foreground">
+          Société déjà saisie : continuez ici et choisissez-la dans « Société liée ». Sans société liée, la plus-value
+          des parts reste non déterminée.
+        </p>
+        <Link to="/dashboard/societes?nouvelle=1" className="mt-2 inline-block font-medium text-lagon-ink hover:underline">
+          Créer la société (abandonne cette saisie) →
+        </Link>
+      </div>
+    )}
 
     <DescriptionBienFields form={form} />
   </div>

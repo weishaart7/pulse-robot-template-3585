@@ -74,6 +74,22 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const isAchat = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
   const isEchange = (watchedOrigineActif || []).includes('Échange');
   const showClauseRemploi = !isPrevoyance && (isAchat || isEchange);
+  // Libellés du prix selon l'origine : « valeur d'achat » n'a pas de sens pour un bien créé ou reçu.
+  const origine = (watchedOrigineActif || [])[0];
+  const libellesPrix = origine === 'Création'
+    ? {
+        valeur: 'Montant des apports / coût de création',
+        aide: "Société créée : apports au capital (en numéraire ou en nature), qui forment le prix de revient des parts. Œuvre ou brevet : coût engagé, 0 s'il n'y en a pas.",
+        frais: 'Frais de constitution',
+        aideFrais: "Greffe, annonce légale, rédaction des statuts, droits d'enregistrement des apports, etc.",
+      }
+    : origine === 'Découverte'
+      ? { valeur: 'Valeur à la découverte', aide: 'Valeur du bien au jour de sa découverte.', frais: 'Frais', aideFrais: 'Frais éventuels (expertise, etc.).' }
+      : origine === 'Échange'
+        ? { valeur: 'Valeur du bien reçu', aide: "Valeur du bien reçu en échange, soulte comprise.", frais: "Frais d'acquisition", aideFrais: "Notaire, droits d'enregistrement, etc." }
+        : origine && origine !== 'Acquisition à titre onéreux'
+          ? { valeur: 'Valeur à la réception', aide: "Valeur retenue dans l'acte de donation ou la déclaration de succession.", frais: "Frais d'acquisition", aideFrais: "Frais d'acte ou droits payés à la réception." }
+          : { valeur: "Prix d'achat", aide: "Prix payé à l'achat.", frais: "Frais d'acquisition", aideFrais: "Notaire, agence, droits d'enregistrement, etc." };
   const showEstPropreParNature = !isPrevoyance && !estCreance && isInCouple(maritalContext.statutCouple);
   // Financement mixte (art. 1436) : ne se pose qu'en régime communautaire,
   // pour un achat (pas un échange), et n'a plus de sens si le remploi total
@@ -140,8 +156,8 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>Valeur d'achat / réception<RequiredMark /></FormLabel>
-                <FieldHelp>Prix payé à l'achat, ou valeur déclarée si reçu en donation/héritage. Sert de base pour le calcul de la plus-value.</FieldHelp>
+                <FormLabel>{libellesPrix.valeur}<RequiredMark /></FormLabel>
+                <FieldHelp>{libellesPrix.aide} Sert de base pour le calcul de la plus-value.</FieldHelp>
                 <FormControl>
                   <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>
@@ -151,8 +167,8 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 
             {!fraisDetailles && <FormField control={form.control} name="frais_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>Frais d'acquisition</FormLabel>
-                <FieldHelp>Notaire, agence, droits d'enregistrement, etc.</FieldHelp>
+                <FormLabel>{libellesPrix.frais}</FormLabel>
+                <FieldHelp>{libellesPrix.aideFrais}</FieldHelp>
                 <FormControl>
                   <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>

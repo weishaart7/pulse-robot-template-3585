@@ -62,8 +62,17 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
 → auth.users(id) ON DELETE CASCADE` confirmé en base — conforme à `CLAUDE.md`.
 
 **Flux clés** :
-- Une société est créée manuellement (recherche SIRENE optionnelle) avec qualification civile et
-  détenteur saisis **à la main** (§3 — friction Patrimoine↔Sociétés n°1).
+- Une société est créée manuellement (recherche SIRENE optionnelle). Section **« Votre entrée dans la
+  société »** du formulaire : origine des parts (`origine_entree` : création, achat de parts, donation,
+  héritage — `ORIGINES_ENTREE_SOCIETE`), date d'entrée (date de création pour une création, sinon
+  `date_souscription` libellée « date d'achat / de réception des parts »), montant (`montant_entree` :
+  apports, prix ou valeur à la réception, pour l'ensemble des parts du foyer — prix de revient), remploi
+  (`remploi_entree`, proposé en régime communautaire pour une création ou un achat), part du capital de
+  chaque époux. La **qualification des parts est calculée** par `qualifierBien()`
+  ([partsFoyer.ts](src/lib/societes/partsFoyer.ts) `qualifierPartsSociete`) et le détenteur (associé)
+  déduit des quotités (un seul époux → lui, les deux → « Le couple », la qualification tranchant commun ou
+  indivision) ; « Modifier manuellement » passe `qualification_auto` à false (sélecteurs d'avant), « Revenir
+  au calcul » le rétablit. Une société enregistrée sans origine reste en qualification manuelle.
 - **Détention du foyer, directe et indirecte** ([detentionFoyer.ts](src/lib/societes/detentionFoyer.ts),
   testé) : directe = quotités de la fiche ; indirecte = pour chaque société détenue en direct, sa détention
   multipliée par la participation totale en cascade vers la société visée (`computeTotalParticipations`).
@@ -79,7 +88,13 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
   par chacun. Une quote-part de 0 % est conservée telle quelle ; seule une quotité jamais saisie (NULL) est
   lue 100 % / 0 % (`formMapping.ts`, `useSocietesIntegration.ts`, `SocieteFinancesImpactFiscal.tsx`).
 - **Lien actif ↔ société** (`assets.societe_id`, §2) : se fait de deux façons, jamais par création
-  automatique d'une société depuis un actif.
+  automatique d'une société depuis un actif. L'actif reçoit, à la création puis à chaque sauvegarde de la
+  société (`actifDepuisSociete`, sens unique société → actif, un seul actif lié) : la **valeur des seules
+  parts du foyer** (valeur de la société × somme des quotités), la répartition entre époux (50/50 et
+  détenteur « Le couple » pour des parts communes, sinon au prorata des quotités), l'origine, la date
+  d'entrée, le prix de revient (`valeur_acquisition`) et la qualification (`qualification_auto` = false
+  côté actif). Dans le wizard d'actif, une nature « parts » (`isPartsSocieteNature`) affiche un encart
+  renvoyant vers `/dashboard/societes?nouvelle=1`, qui ouvre directement le formulaire de création.
   - Dans Patrimoine, la liste « Société liée » de l'actif rattache des titres à une société existante.
   - À la création d'une société, « Transférer vers la liste d'actifs » (coché par défaut) crée l'actif
     correspondant, rattaché à la société.
@@ -319,21 +334,6 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Friction Patrimoine↔Sociétés n°1 confirmée toujours ouverte : la qualification civile d'une société
-  est purement manuelle.** `SocieteForm.tsx` réutilise `QUALIFICATION_OPTIONS` de
-  `lib/patrimoine/qualification.ts` ([SocieteForm.tsx:12,676-712](src/components/societes/SocieteForm.tsx))
-  mais n'appelle jamais `qualifierBien()` : l'utilisateur choisit une valeur dans une liste, sans lien
-  avec le régime matrimonial ou l'origine des fonds ayant financé les parts. Contrairement aux actifs
-  Patrimoine (recalcul automatique tant que `qualification_auto = true`), une société ne se
-  requalifie jamais automatiquement si le régime matrimonial change en amont (module Famille).
-- **Friction Patrimoine↔Sociétés n°2, aggravée par l'absence de lien (§2).** Un actif créé depuis le
-  formulaire société (`SocietesSection.tsx`) n'a pas de `qualification_bien` — `getPartSuccessorale()` lèvera
-  `BienNonQualifieError` dès qu'un module aval (Transmission, ou `SocietesTransmission.tsx` lui-même
-  pour la société d'origine) tentera de calculer sa part successorale, tant que l'utilisateur n'aura pas
-  ouvert et complété manuellement cet actif dans Patrimoine. `SocietesTransmission.tsx` gère cette
-  erreur proprement côté société (bandeau explicite avec message d'action, pas de crash — bon point,
-  cf. §2/ligne 120-125), mais l'actif orphelin lui-même n'a aucun signal équivalent dans l'UI Patrimoine
-  au-delà du bandeau générique `IncompleteAssetsBanner` (documenté limité dans `docs/patrimoine.md`).
 - **Simulateurs IS/IR et rémunération/dividendes de `SocietesStrategiesFiscales.tsx` avec des
   approximations non documentées à l'écran.** `totalIR = computeIR(resultat * 0.9) + resultat * 0.17`
   ([SocietesStrategiesFiscales.tsx:46](src/components/societes/strategies/SocietesStrategiesFiscales.tsx))

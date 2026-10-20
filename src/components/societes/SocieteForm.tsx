@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,9 @@ import { mapDetenteurToDisplay, mapDetenteurToDb, type FamilyInfo } from '@/lib/
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { natureActifPourSociete } from '@/lib/patrimoine/societeTransfer';
+import { lirePerimetreDesClauses } from '@/lib/patrimoine/societeAcquets';
+import { isInCouple, isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
+import { ORIGINES_ENTREE_SOCIETE, qualifierPartsSociete, type ContexteMatrimonial } from '@/lib/societes/partsFoyer';
 
 interface SocieteFormData {
   denomination: string;
@@ -45,6 +48,10 @@ interface SocieteFormData {
   pourcentageConjoint?: number;
   qualificationBien: string;
   detenteur: string;
+  origineEntree?: string;
+  montantEntree?: number;
+  remploiEntree?: boolean;
+  qualificationAuto?: boolean;
 }
 
 interface SocieteFormProps {
@@ -155,7 +162,10 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     pourcentageUtilisateur: 100,
     pourcentageConjoint: 0,
     qualificationBien: '',
-    detenteur: ''
+    detenteur: '',
+    origineEntree: '',
+    remploiEntree: false,
+    qualificationAuto: true
   });
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -164,6 +174,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
   const [detenteurOptions, setDetenteurOptions] = useState<string[]>([]);
   const [familyData, setFamilyData] = useState<FamilyInfo>({ hasPartner: false });
   const [familyLoaded, setFamilyLoaded] = useState(false);
+  const [contexteMatrimonial, setContexteMatrimonial] = useState<ContexteMatrimonial>({});
   // État du formulaire à son ouverture, pour détecter les modifications non enregistrées.
   const [baseline, setBaseline] = useState<SocieteFormData | null>(null);
 
@@ -201,6 +212,17 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
 
         setDetenteurOptions(options);
         setFamilyData(familyInfo);
+        setContexteMatrimonial({
+          statutCouple: maritalStatus?.statut_couple,
+          regimeMatrimonial: maritalStatus?.regime_matrimonial,
+          dateMariage: maritalStatus?.date_mariage,
+          conventionPacs: maritalStatus?.convention_pacs,
+          datePacs: maritalStatus?.date_pacs,
+          societeAcquets: lirePerimetreDesClauses(maritalStatus?.clauses_contrat),
+          dateJugementSeparationCorps: maritalStatus?.separation_de_corps
+            ? maritalStatus?.date_jugement_separation_corps ?? undefined
+            : undefined,
+        });
       } catch (error) {
         setDetenteurOptions(['Utilisateur']);
       } finally {
@@ -248,7 +270,10 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
         pourcentageUtilisateur: 100,
         pourcentageConjoint: 0,
         qualificationBien: '',
-        detenteur: ''
+        detenteur: '',
+        origineEntree: '',
+        remploiEntree: false,
+        qualificationAuto: true
       };
       setFormData(initial);
       setBaseline(initial);
@@ -264,6 +289,39 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
     }));
   };
 
+  // Qualification des parts calculée par le moteur des actifs (lib/societes/partsFoyer.ts) à partir
+  // de l'entrée du foyer, des quotités et de la situation matrimoniale ; le détenteur en découle.
+  const qualificationCalculee = useMemo(() => {
+    if (!formData.origineEntree) return null;
+    return qualifierPartsSociete(
+      contexteMatrimonial,
+      {
+        origine: formData.origineEntree,
+        dateCreation: formData.dateCreation,
+        dateSouscription: formData.dateSouscription,
+        remploi: formData.remploiEntree,
+      },
+      formData.pourcentageUtilisateur,
+      formData.pourcentageConjoint,
+      natureActifPourSociete({ type_societe: formData.typeSociete, forme_societe_civile: formData.formeSocieteCivile, holding: formData.holding }),
+    );
+  }, [contexteMatrimonial, formData.origineEntree, formData.dateCreation, formData.dateSouscription, formData.remploiEntree,
+    formData.pourcentageUtilisateur, formData.pourcentageConjoint, formData.typeSociete, formData.formeSocieteCivile, formData.holding]);
+
+  useEffect(() => {
+    if (!formData.qualificationAuto || !qualificationCalculee) return;
+    const detenteur = qualificationCalculee.detenteur ? mapDetenteurToDisplay(qualificationCalculee.detenteur, familyData) : '';
+    setFormData(prev => (prev.qualificationBien === qualificationCalculee.qualification && prev.detenteur === detenteur)
+      ? prev
+      : { ...prev, qualificationBien: qualificationCalculee.qualification, detenteur });
+  }, [qualificationCalculee, formData.qualificationAuto, familyData]);
+
+  const libelleMontantEntree = formData.origineEntree === 'Création'
+    ? 'Montant des apports (€)'
+    : formData.origineEntree === 'Acquisition à titre onéreux' ? 'Prix des parts (€)' : 'Valeur des parts à la réception (€)';
+  const showRemploi = isInCouple(contexteMatrimonial.statutCouple) && isRegimeCommunautaire(contexteMatrimonial.regimeMatrimonial)
+    && ['Création', 'Acquisition à titre onéreux'].includes(formData.origineEntree || '');
+
   const totalQuotites = (formData.pourcentageUtilisateur || 0) + (formData.pourcentageConjoint || 0);
   const quotitesInvalides = totalQuotites > 100;
 
@@ -275,8 +333,13 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
       return;
     }
 
+    if (formData.qualificationAuto && !formData.origineEntree) {
+      toast.error("L'origine de vos parts (création, achat, donation, héritage) est obligatoire.");
+      return;
+    }
+
     if (!formData.qualificationBien || !formData.detenteur) {
-      toast.error('La qualification du bien et le détenteur sont obligatoires.');
+      toast.error('La qualification des parts et le détenteur sont obligatoires (au moins une quote-part non nulle).');
       return;
     }
 
@@ -601,26 +664,15 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 items-end">
-          <div className="flex items-center space-x-2 pb-2">
-            <Checkbox
-              id="partsNegociables"
-              checked={formData.partsNegociables}
-              onCheckedChange={(checked) => handleInputChange('partsNegociables', checked as boolean)}
-            />
-            <Label htmlFor="partsNegociables" className="cursor-pointer">
-              Parts négociables (actions)
-            </Label>
-          </div>
-          <div>
-            <Label htmlFor="dateSouscription">Date de souscription des parts par le client</Label>
-            <Input
-              id="dateSouscription"
-              type="date"
-              value={formData.dateSouscription || ''}
-              onChange={(e) => handleInputChange('dateSouscription', e.target.value)}
-            />
-          </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="partsNegociables"
+            checked={formData.partsNegociables}
+            onCheckedChange={(checked) => handleInputChange('partsNegociables', checked as boolean)}
+          />
+          <Label htmlFor="partsNegociables" className="cursor-pointer">
+            Parts négociables (actions)
+          </Label>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -667,75 +719,175 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
         </div>
 
-        <div>
-          <Label>Quotités de détention</Label>
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            <div>
-              <Label htmlFor="pourcentageUtilisateur" className="text-xs text-muted-foreground">Quote-part utilisateur (%)</Label>
-              <Input
-                id="pourcentageUtilisateur"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.pourcentageUtilisateur ?? ''}
-                onChange={(e) => handleInputChange('pourcentageUtilisateur', Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="pourcentageConjoint" className="text-xs text-muted-foreground">Quote-part conjoint (%)</Label>
-              <Input
-                id="pourcentageConjoint"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.pourcentageConjoint ?? ''}
-                onChange={(e) => handleInputChange('pourcentageConjoint', Number(e.target.value))}
-              />
-            </div>
-          </div>
-          {quotitesInvalides && (
-            <p className="text-sm text-destructive mt-2">
-              La somme des quotités ({totalQuotites}%) dépasse 100%. Corrigez la répartition entre l'utilisateur et le conjoint.
+        {/* Entrée du foyer dans la société : origine, date, montant et quotités, d'où la
+            qualification des parts (calculée, modifiable à la main) et le détenteur. */}
+        <div className="space-y-4 border-t border-border pt-6">
+          <div>
+            <p className="text-sm font-medium">Votre entrée dans la société</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              D'où viennent vos parts et quelle part du capital chacun détient : la qualification des parts en découle.
             </p>
-          )}
-        </div>
-
-        <div>
-          <Label>Qualification civile des parts</Label>
-          <div className="grid grid-cols-2 gap-4 mt-2">
-            <div>
-              <Label htmlFor="qualificationBien" className="text-xs text-muted-foreground">Qualification du bien *</Label>
-              <Select
-                value={formData.qualificationBien}
-                onValueChange={(value) => handleInputChange('qualificationBien', value)}
-              >
-                <SelectTrigger id="qualificationBien" size="lg">
-                  <SelectValue placeholder="Sélectionnez la qualification" />
-                </SelectTrigger>
-                <SelectContent>
-                  {QUALIFICATION_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="detenteur" className="text-xs text-muted-foreground">Détenteur *</Label>
-              <Select
-                value={formData.detenteur}
-                onValueChange={(value) => handleInputChange('detenteur', value)}
-              >
-                <SelectTrigger id="detenteur" size="lg">
-                  <SelectValue placeholder="Sélectionnez le détenteur" />
-                </SelectTrigger>
-                <SelectContent>
-                  {detenteurOptions.map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="origineEntree">Origine des parts *</Label>
+              <Select value={formData.origineEntree || ''} onValueChange={(value) => handleInputChange('origineEntree', value)}>
+                <SelectTrigger id="origineEntree" size="lg">
+                  <SelectValue placeholder="Choisir" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORIGINES_ENTREE_SOCIETE.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.origineEntree && formData.origineEntree !== 'Création' ? (
+              <div>
+                <Label htmlFor="dateSouscription">
+                  {formData.origineEntree === 'Acquisition à titre onéreux' ? "Date d'achat des parts" : 'Date de réception des parts'}
+                </Label>
+                <Input
+                  id="dateSouscription"
+                  type="date"
+                  value={formData.dateSouscription || ''}
+                  onChange={(e) => handleInputChange('dateSouscription', e.target.value)}
+                />
+              </div>
+            ) : formData.origineEntree === 'Création' ? (
+              <p className="self-end pb-2 text-xs text-muted-foreground">Date d'entrée : la date de création de la société, ci-dessus.</p>
+            ) : <div />}
+          </div>
+
+          {formData.origineEntree && (
+            <div className="grid grid-cols-2 gap-4 items-end">
+              <div>
+                <Label htmlFor="montantEntree">{libelleMontantEntree}</Label>
+                <Input
+                  id="montantEntree"
+                  type="number"
+                  value={formData.montantEntree ?? ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, montantEntree: e.target.value === '' ? undefined : Number(e.target.value) }))}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Pour l'ensemble des parts du foyer. Prix de revient des parts, base de la plus-value en cas de cession.</p>
+              </div>
+              {showRemploi && (
+                <div className="flex items-center space-x-2 pb-7">
+                  <Checkbox
+                    id="remploiEntree"
+                    checked={!!formData.remploiEntree}
+                    onCheckedChange={(checked) => handleInputChange('remploiEntree', checked === true)}
+                  />
+                  <Label htmlFor="remploiEntree" className="cursor-pointer">
+                    Payées avec des fonds propres ou par apport d'un bien propre (remploi)
+                  </Label>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div>
+            <Label>Part du capital détenue</Label>
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              <div>
+                <Label htmlFor="pourcentageUtilisateur" className="text-xs text-muted-foreground">{familyData.userFirstName || 'Vous'} (%)</Label>
+                <Input
+                  id="pourcentageUtilisateur"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.pourcentageUtilisateur ?? ''}
+                  onChange={(e) => handleInputChange('pourcentageUtilisateur', Number(e.target.value))}
+                />
+              </div>
+              {familyData.hasPartner && (
+                <div>
+                  <Label htmlFor="pourcentageConjoint" className="text-xs text-muted-foreground">{familyData.partnerFirstName || 'Conjoint'} (%)</Label>
+                  <Input
+                    id="pourcentageConjoint"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.pourcentageConjoint ?? ''}
+                    onChange={(e) => handleInputChange('pourcentageConjoint', Number(e.target.value))}
+                  />
+                </div>
+              )}
+            </div>
+            {quotitesInvalides && (
+              <p className="text-sm text-destructive mt-2">
+                La somme des quotités ({totalQuotites}%) dépasse 100%. Corrigez la répartition.
+              </p>
+            )}
+          </div>
+
+          {formData.qualificationAuto ? (
+            qualificationCalculee && (
+              <div className="border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">
+                <p className="text-sm">
+                  <span className="font-medium">{qualificationCalculee.qualification}</span>
+                  {formData.detenteur && <span className="text-muted-foreground"> · {formData.detenteur === 'Le couple' ? 'associés : le couple' : `associé : ${formData.detenteur}`}</span>}
+                  <span className="ml-2 text-[12px] text-lagon-ink">calculée</span>
+                </p>
+                <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground">{qualificationCalculee.raison}</p>
+                <button
+                  type="button"
+                  className="mt-1 text-[13px] font-medium text-lagon-ink hover:underline"
+                  onClick={() => handleInputChange('qualificationAuto', false)}
+                >
+                  Modifier manuellement
+                </button>
+              </div>
+            )
+          ) : (
+            <div>
+              <div className="flex items-center justify-between">
+                <Label>Qualification civile des parts</Label>
+                <button
+                  type="button"
+                  className="text-[13px] font-medium text-lagon-ink hover:underline"
+                  onClick={() => handleInputChange('qualificationAuto', true)}
+                >
+                  Revenir au calcul
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <div>
+                  <Label htmlFor="qualificationBien" className="text-xs text-muted-foreground">Qualification *</Label>
+                  <Select
+                    value={formData.qualificationBien}
+                    onValueChange={(value) => handleInputChange('qualificationBien', value)}
+                  >
+                    <SelectTrigger id="qualificationBien" size="lg">
+                      <SelectValue placeholder="Sélectionnez la qualification" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {QUALIFICATION_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="detenteur" className="text-xs text-muted-foreground">Détenteur *</Label>
+                  <Select
+                    value={formData.detenteur}
+                    onValueChange={(value) => handleInputChange('detenteur', value)}
+                  >
+                    <SelectTrigger id="detenteur" size="lg">
+                      <SelectValue placeholder="Sélectionnez le détenteur" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {detenteurOptions.map((option) => (
+                        <SelectItem key={option} value={option}>{option}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>

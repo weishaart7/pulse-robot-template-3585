@@ -78,7 +78,7 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
 
     const etapes = [
       { label: 'Origine et propriété', champs: ["Date d'acquisition", 'Mode de détention', 'Détenteur', 'Qualification du bien'] },
-      { label: 'Prix', champs: ["Valeur d'achat / réception", "Frais d'acquisition"] },
+      { label: 'Prix', champs: ["Prix d'achat", "Frais d'acquisition"] },
       { label: 'Valeur', champs: ['Valeur actuelle estimée'] },
     ];
     for (const { label, champs } of etapes) {
@@ -86,13 +86,13 @@ describe('AssetCreationWizard — navigation entre étapes', () => {
       expect(await screen.findByRole('heading', { name: label })).toBeInTheDocument();
       champs.forEach((champ) => expect(screen.getByText((_, el) => el?.tagName === 'LABEL' && el.textContent?.replace('*', '').trim() === champ)).toBeInTheDocument());
       if (label === 'Origine et propriété') {
-        expect(screen.queryByText(/Valeur d'achat \/ réception/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Prix d'achat/)).not.toBeInTheDocument();
         // Champs obligatoires de l'étape, remplis pour pouvoir avancer.
         await user.type(screen.getByPlaceholderText('jj/mm/aaaa'), '01/01/2020');
         await user.click(screen.getByRole('combobox', { name: /Mode de détention/ }));
         await user.click(await screen.findByRole('option', { name: 'Pleine propriété' }));
       }
-      if (label === 'Prix') await user.type(screen.getByLabelText(/Valeur d'achat/), '1000');
+      if (label === 'Prix') await user.type(screen.getByLabelText(/Prix d'achat/), '1000');
     }
   });
 

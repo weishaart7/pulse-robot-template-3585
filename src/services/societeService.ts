@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { secureService } from './secureService';
 import { sanitizeObject } from '@/lib/security';
+import { actifDepuisSociete } from '@/lib/societes/partsFoyer';
 
 export interface Societe {
   id: string;
@@ -31,6 +32,11 @@ export interface Societe {
   pourcentage_conjoint?: number;
   qualification_bien?: string;
   detenteur?: string;
+  // Entrée du foyer dans la société (cf. lib/societes/partsFoyer.ts)
+  origine_entree?: string | null;
+  montant_entree?: number | null;
+  remploi_entree?: boolean;
+  qualification_auto?: boolean;
   // Financial fields
   chiffre_affaires?: number;
   resultat_net?: number;
@@ -43,12 +49,11 @@ export interface Societe {
   updated_at?: string;
 }
 
-// Pousse qualification_bien/detenteur/pourcentage_utilisateur/pourcentage_conjoint
-// de la société vers son actif lié (assets.societe_id) à chaque sauvegarde d'une
-// société existante — sens unique société → actif, jamais l'inverse (societes fait
-// autorité sur ces 4 champs, cf. décision du chantier "valeur successorale").
-// N'agit que si exactement un actif est lié ; ne devine jamais lequel synchroniser
-// si plusieurs le sont.
+// Recopie la société sur son actif lié (assets.societe_id) à chaque sauvegarde d'une société
+// existante — sens unique société → actif (societes fait autorité) : valeur des parts du foyer,
+// répartition entre époux, origine, date, prix de revient, qualification et détenteur
+// (lib/societes/partsFoyer.ts). N'agit que si exactement un actif est lié ; ne devine jamais
+// lequel synchroniser si plusieurs le sont.
 const syncQualificationToLinkedAsset = async (societe: Societe): Promise<void> => {
   const { data: linkedAssets, error } = await supabase
     .from('assets')
@@ -69,12 +74,7 @@ const syncQualificationToLinkedAsset = async (societe: Societe): Promise<void> =
 
   const { error: updateError } = await supabase
     .from('assets')
-    .update({
-      qualification_bien: societe.qualification_bien,
-      detenteur: societe.detenteur,
-      pourcentage_utilisateur: societe.pourcentage_utilisateur,
-      pourcentage_conjoint: societe.pourcentage_conjoint,
-    })
+    .update(actifDepuisSociete(societe))
     .eq('id', linkedAssets[0].id);
 
   if (updateError && import.meta.env.DEV) {

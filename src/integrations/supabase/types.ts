@@ -3428,6 +3428,10 @@ export type Database = {
           id: string
           jour_cloture: string | null
           mois_cloture: string | null
+          montant_entree: number | null
+          origine_entree: string | null
+          qualification_auto: boolean
+          remploi_entree: boolean
           nombre_salaries: number | null
           nombre_titres: number | null
           parts_negociables: boolean | null
@@ -3467,6 +3471,10 @@ export type Database = {
           id?: string
           jour_cloture?: string | null
           mois_cloture?: string | null
+          montant_entree?: number | null
+          origine_entree?: string | null
+          qualification_auto?: boolean
+          remploi_entree?: boolean
           nombre_salaries?: number | null
           nombre_titres?: number | null
           parts_negociables?: boolean | null
@@ -3506,6 +3514,10 @@ export type Database = {
           id?: string
           jour_cloture?: string | null
           mois_cloture?: string | null
+          montant_entree?: number | null
+          origine_entree?: string | null
+          qualification_auto?: boolean
+          remploi_entree?: boolean
           nombre_salaries?: number | null
           nombre_titres?: number | null
           parts_negociables?: boolean | null

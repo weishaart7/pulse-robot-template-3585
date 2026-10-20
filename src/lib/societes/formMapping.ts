@@ -32,6 +32,12 @@ export interface SocieteFormData {
   pourcentageConjoint?: number;
   qualificationBien: string;
   detenteur: string;
+  /** Entrée du foyer dans la société (cf. lib/societes/partsFoyer.ts). */
+  origineEntree?: string;
+  montantEntree?: number;
+  remploiEntree?: boolean;
+  /** Qualification calculée (true) ou fixée à la main (false). */
+  qualificationAuto?: boolean;
   // Financial fields
   chiffreAffaires?: number;
   resultatNet?: number;
@@ -72,6 +78,11 @@ export const societeToFormData = (societe: Societe): SocieteFormData => ({
   pourcentageConjoint: societe.pourcentage_conjoint ?? 0,
   qualificationBien: societe.qualification_bien || '',
   detenteur: societe.detenteur || '',
+  origineEntree: societe.origine_entree || '',
+  montantEntree: societe.montant_entree ?? undefined,
+  remploiEntree: societe.remploi_entree || false,
+  // Société saisie avant l'entrée du foyer (sans origine) : sa qualification reste celle saisie à la main.
+  qualificationAuto: societe.origine_entree ? (societe.qualification_auto ?? true) : false,
   chiffreAffaires: societe.chiffre_affaires || undefined,
   resultatNet: societe.resultat_net || undefined,
   tresorerieDisponible: societe.tresorerie_disponible || undefined,
@@ -110,6 +121,10 @@ export const formDataToSociete = (
   pourcentage_conjoint: data.pourcentageConjoint ?? null,
   qualification_bien: data.qualificationBien || null,
   detenteur: data.detenteur || null,
+  origine_entree: data.origineEntree || null,
+  montant_entree: data.montantEntree ?? null,
+  remploi_entree: data.remploiEntree || false,
+  qualification_auto: data.qualificationAuto ?? true,
   chiffre_affaires: data.chiffreAffaires || null,
   resultat_net: data.resultatNet || null,
   tresorerie_disponible: data.tresorerieDisponible || null,
