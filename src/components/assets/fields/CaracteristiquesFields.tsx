@@ -40,6 +40,8 @@ import {
   TYPES_GROUPEMENT_FONCIER,
   NATURE_GROUPEMENT_FONCIER,
   NATURE_SEF,
+  FRACTION_FORESTIERE_GFI_DEFAUT,
+  isGfi,
 } from '@/constants/assetTypes';
 import { NATURES_LIQUIDITES_FR } from '@/schemas/assetSchema';
 import { NATURES_WITH_ETABLISSEMENT } from '@/hooks/useAssetForm';
@@ -68,6 +70,12 @@ export const TypeGroupementField: React.FC<CaracteristiquesFieldsProps> = ({ for
     form.setValue('type_groupement', type as AssetFormValues['type_groupement'], { shouldDirty: true });
     const regime = TYPES_GROUPEMENT_FONCIER.find((t) => t.value === type)?.regime;
     if (regime) form.setValue('regime_exoneration_rural', regime, { shouldDirty: true });
+    // GFI : forêts sous plan simple de gestion → conditions présumées remplies (à confirmer), et
+    // part forestière pré-remplie à 90 % (≈ 10 % de trésorerie, non éligible).
+    if (type === 'GFI') {
+      if (form.getValues('conditions_exoneration_rural') == null) form.setValue('conditions_exoneration_rural', true, { shouldDirty: true });
+      if (form.getValues('fraction_eligible_rural') == null) form.setValue('fraction_eligible_rural', FRACTION_FORESTIERE_GFI_DEFAUT, { shouldDirty: true });
+    }
   };
   return (
     <FormField control={form.control} name="type_groupement" render={({ field }) => (
@@ -151,6 +159,11 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const regimeRuralImpose = REGIME_RURAL_IMPOSE[watchedNature];
   const watchedRegimeRural = form.watch('regime_exoneration_rural');
   const watchedConditionsRural = form.watch('conditions_exoneration_rural');
+  const gfi = isGfi({ nature: watchedNature, type_groupement: form.watch('type_groupement') });
+  // Parts acquises à titre onéreux : à détenir depuis plus de 2 ans au jour de la transmission (art. 793-1-3° CGI).
+  const dateAcquisitionRurale = form.watch('date_acquisition');
+  const gfiDetenuMoinsDe2Ans = gfi && (form.watch('origine_actif') ?? []).includes('Acquisition à titre onéreux') && !!dateAcquisitionRurale
+    && new Date(dateAcquisitionRurale).getTime() > Date.now() - 2 * 365.25 * 24 * 3600 * 1000;
   const isTerrain = watchedNature === 'Terrains';
   const isBois = watchedNature === 'Bois & forêts';
   const isTerrainAgricole = watchedNature === 'Terrains agricoles';
@@ -723,6 +736,13 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     <SelectItem value="non">Conditions non remplies</SelectItem>
                   </SelectContent>
                 </Select>
+                {gfi && (
+                  <p className={`text-[12px] leading-relaxed ${gfiDetenuMoinsDe2Ans ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {gfiDetenuMoinsDe2Ans
+                      ? "Parts achetées il y a moins de 2 ans : l'exonération n'est acquise qu'au-delà de 2 ans de détention (art. 793-1-3° CGI)."
+                      : "Présumées remplies pour un GFI (forêts sous plan simple de gestion) : à confirmer par le certificat et l'engagement de gestion de 30 ans pris par le groupement."}
+                  </p>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
@@ -753,14 +773,16 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {watchedNature === NATURE_SEF && watchedRegimeRural === 'forestier' && watchedConditionsRural === true && (
+      {(watchedNature === NATURE_SEF || gfi) && watchedRegimeRural === 'forestier' && watchedConditionsRural === true && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField control={form.control} name="fraction_eligible_rural" render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Part de l'actif éligible (%)
+                  {gfi ? 'Part forestière (%)' : "Part de l'actif éligible (%)"}
                   <FieldHelp>
-                    Fraction de l'actif de la société investie en bois, forêts et parts de groupements forestiers éligibles, selon l'attestation de la société de gestion. L'exonération des 3/4 ne porte que sur cette fraction.
+                    {gfi
+                      ? "Part de la valeur des parts représentative des bois et forêts, hors trésorerie, selon le dernier rapport de la société de gestion (90 % par défaut, environ 10 % de trésorerie). L'exonération des 3/4 ne porte que sur cette part."
+                      : "Fraction de l'actif de la société investie en bois, forêts et parts de groupements forestiers éligibles, selon l'attestation de la société de gestion. L'exonération des 3/4 ne porte que sur cette fraction."}
                   </FieldHelp>
                 </FormLabel>
                 <FormControl>

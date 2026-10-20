@@ -236,6 +236,7 @@ export interface RawAssetInput {
   regime_exoneration_rural?: string | null;
   conditions_exoneration_rural?: boolean | null;
   fraction_eligible_rural?: number | null;
+  type_groupement?: string | null;
   // Entreprise individuelle (art. 787 C), plancher d'assurance (art. 764 II),
   // assurance-vie sur la tête d'un tiers — cf. constants/assetTypes.ts.
   conditions_787c?: boolean | null;

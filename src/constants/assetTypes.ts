@@ -498,7 +498,8 @@ export const PARTS_FONCIERES_NATURES = [
 //   600 000 € par bénéficiaire, 1/2 au-delà ;
 // - 'aucun' : pas d'exonération (terre non louée par bail à long terme…).
 // GFR (forêts et terres agricoles) : régime dominant. Sociétés d'épargne forestière : régime
-// forestier au prorata de la fraction de l'actif éligible (assets.fraction_eligible_rural).
+// forestier au prorata de la fraction de l'actif éligible (assets.fraction_eligible_rural). GFI :
+// même prorata (part forestière, hors trésorerie), 90 % par défaut.
 export type RegimeExonerationRurale = 'forestier' | 'agricole' | 'aucun';
 
 export const NATURES_RURALES = [
@@ -538,7 +539,13 @@ type BienRuralInput = {
   regime_exoneration_rural?: string | null;
   conditions_exoneration_rural?: boolean | null;
   fraction_eligible_rural?: number | null;
+  type_groupement?: string | null;
 };
+
+// Part forestière par défaut d'un GFI : environ 10 % de l'actif est en trésorerie, non éligible.
+export const FRACTION_FORESTIERE_GFI_DEFAUT = 90;
+export const isGfi = (asset: Pick<BienRuralInput, 'nature' | 'type_groupement'>): boolean =>
+  asset.nature === NATURE_GROUPEMENT_FONCIER && asset.type_groupement === 'GFI';
 
 // Régime ou conditions non renseignés (les conditions sont sans objet en régime 'aucun'), ou
 // société d'épargne forestière exonérée sans fraction éligible saisie.
@@ -552,9 +559,14 @@ export const isBienRuralNonQualifie = (asset: BienRuralInput): boolean =>
   );
 
 // Fraction (0 à 1) de la valeur à laquelle s'applique l'exonération rurale : 1, sauf pour une
-// société d'épargne forestière (part de l'actif investie en bois, forêts et groupements éligibles).
-export const getFractionEligibleRurale = (asset: BienRuralInput): number =>
-  asset.nature === NATURE_SEF ? Math.min(1, Math.max(0, (asset.fraction_eligible_rural ?? 0) / 100)) : 1;
+// société d'épargne forestière (part de l'actif investie en bois, forêts et groupements éligibles)
+// et un GFI (part forestière hors trésorerie, 90 % si non saisie).
+export const getFractionEligibleRurale = (asset: BienRuralInput): number => {
+  const borne = (pct: number) => Math.min(1, Math.max(0, pct / 100));
+  if (asset.nature === NATURE_SEF) return borne(asset.fraction_eligible_rural ?? 0);
+  if (isGfi(asset)) return borne(asset.fraction_eligible_rural ?? FRACTION_FORESTIERE_GFI_DEFAUT);
+  return 1;
+};
 
 // Régime d'exonération effectivement applicable (conditions remplies), sinon null.
 export const getExonerationRurale = (asset: BienRuralInput): 'forestier' | 'agricole' | null =>
