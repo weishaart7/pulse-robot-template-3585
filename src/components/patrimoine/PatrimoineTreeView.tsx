@@ -266,8 +266,13 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
     return { display: '0 €', className: 'text-muted-foreground' };
   };
 
+  // Catégories puis actifs de chaque catégorie par poids décroissant (valeur pondérée, part du foyer).
   const categoriesTriees = Object.entries(assetsByCategory)
-    .map(([category, list]) => ({ category, list, valeur: list.reduce((sum, asset) => sum + getWeightedValue(asset), 0) }))
+    .map(([category, list]) => ({
+      category,
+      list: [...list].sort((a, b) => getWeightedValue(b) - getWeightedValue(a)),
+      valeur: list.reduce((sum, asset) => sum + getWeightedValue(asset), 0),
+    }))
     .sort((a, b) => b.valeur - a.valeur);
   const plusValueTotale = getCategoryPlusValue(filteredAssets);
   const nbNonEvalues = filteredAssets.filter((a) => !a.valeur_estimee).length;
