@@ -242,7 +242,7 @@ export function LiensFamiliauxForm({ view }: LiensFamiliauxFormProps) {
           icon={<Users strokeWidth={1.75} />}
           trail={['Famille', 'Membres']}
           actions={
-                <AddButton onClick={() => dialogRef.current?.openForAdd()}>Ajouter un membre</AddButton>
+                <AddButton tone="citron" onClick={() => dialogRef.current?.openForAdd()}>Ajouter un membre</AddButton>
           }
         />
 

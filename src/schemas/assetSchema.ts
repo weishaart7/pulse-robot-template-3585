@@ -209,7 +209,7 @@ export const assetSchema = z.object({
   // Description et coût de revient détaillé d'un bien immobilier (cf. hasDetailImmobilier).
   // Le prix d'achat reste `valeur_acquisition`, recopié dans `montant_immeuble` à
   // l'enregistrement ; `frais_acquisition` devient la somme des frais détaillés.
-  typologie_bien: z.enum(['Appartement', 'Maison']).optional(),
+  typologie_bien: z.enum(['Appartement', 'Maison', 'Parking', 'Garage', 'Box', 'Bureau', 'Commerce', "Local d'activité", 'Entrepôt', 'Cabinet']).optional(),
   surface_m2: z.number().finite().nonnegative().optional(),
   statut_bien: z.enum(['Usage personnel', 'En rénovation', 'En vente']).optional(),
   frais_agence: z.number().finite().nonnegative().optional(),
@@ -225,6 +225,8 @@ export const assetSchema = z.object({
   loyer_mensuel: z.number().finite().nonnegative().optional(),
   loyer_budget: z.boolean().optional(),
   finance_par_credit: z.boolean().optional(),
+  // Parking ou local professionnel : usage loué (sinon personnel / propre activité). Déduit de type_location, jamais écrit en base.
+  usage_loue: z.boolean().optional(),
 }).superRefine((values, ctx) => {
   for (const { champ, message } of champsObligatoiresManquants(values)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: [champ], message });
@@ -281,6 +283,7 @@ export type AssetFormValues = z.infer<typeof assetSchema>;
 
 // Default values
 export const getDefaultAssetValues = (): AssetFormValues => ({
+  loyer_budget: true,
   nature: '',
   denomination: '',
   etablissement: '',

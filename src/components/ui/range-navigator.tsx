@@ -130,8 +130,15 @@ export default function RangeNavigator({
     const times = windowPoints.map((p) => new Date(p.date).getTime());
     const t0 = times[0];
     const tSpan = times[n - 1] - t0 || 1;
-    const lo = Math.min(...values);
-    const hi = Math.max(...values);
+    const rawLo = Math.min(...values);
+    const rawHi = Math.max(...values);
+    // Écart minimal affiché : 2 % de la valeur (au moins 1). Sans ce plancher,
+    // une variation de quelques centimes occupait toute la hauteur et la courbe
+    // semblait chuter alors que les montants arrondis étaient identiques.
+    const ecartMin = Math.max(1, Math.max(Math.abs(rawLo), Math.abs(rawHi)) * 0.02);
+    const milieu = (rawLo + rawHi) / 2;
+    const lo = rawHi - rawLo < ecartMin ? milieu - ecartMin / 2 : rawLo;
+    const hi = rawHi - rawLo < ecartMin ? milieu + ecartMin / 2 : rawHi;
     // Bornes calées sur des graduations rondes ; pas de graduation sous zéro
     // quand toutes les valeurs sont positives (montants ≥ 0).
     const step = niceStep((hi - lo) || Math.max(1, Math.abs(hi) * 0.1), 4);
@@ -232,7 +239,8 @@ export default function RangeNavigator({
 
   const first = detail.values[0];
   const last = detail.values[detail.n - 1];
-  const delta = last - first;
+  // Arrondi à l'euro : quelques centimes d'écart ne s'affichent pas en « −0 € » rouge.
+  const delta = Math.round(last - first);
   const deltaPct = first > 0 ? (delta / first) * 100 : null;
   const shown = hv ?? { i: detail.n - 1, v: last };
 
@@ -251,9 +259,9 @@ export default function RangeNavigator({
           <span className="text-[12px] tabular-nums" style={{ color: TEXT_MUTED }}>au {fmtAt(hv.i, true)}</span>
         ) : (
           <span className="text-[12px] tabular-nums" style={{ color: TEXT_MUTED }}>
-            <span className={delta >= 0 ? 'text-positive' : 'text-destructive'}>
-              {delta >= 0 ? '+' : '−'}{formatValue(Math.abs(delta))}
-              {deltaPct !== null && ` (${delta >= 0 ? '+' : '−'}${Math.abs(deltaPct).toFixed(1).replace('.', ',')} %)`}
+            <span className={delta === 0 ? 'text-[#ffa451]' : delta > 0 ? 'text-positive' : 'text-destructive'}>
+              {delta > 0 ? '+' : delta < 0 ? '−' : ''}{formatValue(Math.abs(delta))}
+              {deltaPct !== null && ` (${delta > 0 ? '+' : delta < 0 ? '−' : ''}${Math.abs(deltaPct).toFixed(1).replace('.', ',')} %)`}
             </span>{' '}
             depuis le {fmtAt(0, true)}
           </span>
@@ -332,7 +340,8 @@ export default function RangeNavigator({
         )}
         {/* dates régulièrement espacées sous l'axe */}
         {detail.dateTicks.map((d, k) => (
-          <text
+          // Une date déjà écrite à gauche n'est pas répétée (période de quelques jours).
+          k > 0 && formatDate(new Date(d.t), crossesYear) === formatDate(new Date(detail.dateTicks[k - 1].t), crossesYear) ? null : <text
             key={k}
             x={d.x}
             y={MAIN_H - 6}

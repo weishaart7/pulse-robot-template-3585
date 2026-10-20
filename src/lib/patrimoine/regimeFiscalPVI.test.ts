@@ -112,7 +112,7 @@ describe('computePVIRegime — cession simulée', () => {
   });
 
   it('majore la plus-value LMNP des amortissements réintégrés, forfait 7,5 % sur le prix brut', () => {
-    const lmnp = { ...base, nature: 'Immeubles locatifs (LMNP)', dateCession: new Date(2025, 5, 1) };
+    const lmnp = { ...base, nature: 'Immeubles locatifs (meublés)', dateCession: new Date(2025, 5, 1) };
     const sans = computePVIRegime({ ...lmnp, plusValue: 100_000 });
     const avec = computePVIRegime({ ...lmnp, plusValue: 100_000, amortissementsReintegres: 40_000 });
     // Même abattement : l'IR croît de 40 000 × (1 − 24 %) × 19 %.
@@ -164,7 +164,7 @@ describe('computePVIRegime — natures immobilières (référentiel 2026-10-18)'
   });
 
   it('LMP : régime professionnel informatif', () => {
-    expect(computePVIRegime({ nature: 'Immeubles locatifs (LMP)', plusValue: 10000, dateAcquisition: ilYa(3) })?.tone).toBe('informatif');
+    expect(computePVIRegime({ nature: 'Immeubles locatifs (meublés)', typeLocation: 'Location meublée professionnelle (LMP)', plusValue: 10000, dateAcquisition: ilYa(3) })?.tone).toBe('informatif');
   });
 });
 

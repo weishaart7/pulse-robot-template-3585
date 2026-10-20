@@ -20,7 +20,7 @@ describe('renvoisImmobilier', () => {
   });
 
   it('LMNP : amortissement dans la fiche du bien', () => {
-    const r = renvoisImmobilier({ nature: 'Immeubles locatifs (LMNP)', type_location: 'Location meublée non professionnelle (LMNP)' });
+    const r = renvoisImmobilier({ nature: 'Immeubles locatifs (meublés)', type_location: 'Location meublée non professionnelle (LMNP)' });
     expect(r.some((x) => x.includes('amortissement'))).toBe(true);
     expect(r.some((x) => x.includes('Synthèse foncière'))).toBe(false);
   });

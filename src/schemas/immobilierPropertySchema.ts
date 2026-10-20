@@ -2,7 +2,7 @@ import * as z from 'zod';
 
 // Schema for property form validation
 export const immobilierPropertySchema = z.object({
-  typologie_bien: z.enum(['Appartement', 'Maison']).nullable().optional(),
+  typologie_bien: z.enum(['Appartement', 'Maison', 'Parking', 'Garage', 'Box', 'Bureau', 'Commerce', "Local d'activité", 'Entrepôt', 'Cabinet']).nullable().optional(),
   surface_m2: z.number().min(0).optional().or(z.literal('')),
   date_acquisition: z.date().optional(),
   valeur_estimee: z.number().min(0).optional().or(z.literal('')),
@@ -10,16 +10,9 @@ export const immobilierPropertySchema = z.object({
   montant_immeuble: z.number().min(0).optional().or(z.literal('')),
   frais_agence: z.number().min(0).optional().or(z.literal('')),
   frais_notaire: z.number().min(0).optional().or(z.literal('')),
-  frais_bancaires: z.number().min(0).optional().or(z.literal('')),
-  frais_hypotheque: z.number().min(0).optional().or(z.literal('')),
   travaux_renovation: z.number().min(0).optional().or(z.literal('')),
   travaux_construction: z.number().min(0).optional().or(z.literal('')),
   meubles: z.number().min(0).optional().or(z.literal('')),
-  financement_actif: z.boolean().optional(),
-  financement_duree_mois: z.number().min(0).optional().or(z.literal('')),
-  financement_apport: z.number().min(0).optional().or(z.literal('')),
-  financement_taux_credit: z.number().min(0).optional().or(z.literal('')),
-  financement_taux_assurance: z.number().min(0).optional().or(z.literal('')),
   type_location: z.enum(['Location nue', 'Location meublée non professionnelle (LMNP)', 'Location meublée professionnelle (LMP)']).nullable().optional(),
   regime_location: z.enum(['Micro-foncier', 'Réel', 'Micro-BIC', 'BIC']).nullable().optional(),
 });
@@ -31,8 +24,7 @@ export const RESIDENCE_TYPES = ['Résidence principale', 'Résidences secondaire
 
 export const RENTAL_PROPERTY_TYPES = [
   'Immeubles locatifs (loués nus)',
-  'Immeubles locatifs (LMNP)',
-  'Immeubles locatifs (LMP)',
+  'Immeubles locatifs (meublés)',
   'Immeubles professionnels (hors LMP)',
   'Parking / Garage / Box'
 ];
@@ -44,6 +36,38 @@ export const isResidenceType = (nature: string | null | undefined): boolean => {
 export const isRentalPropertyType = (nature: string | null | undefined): boolean => {
   return nature ? RENTAL_PROPERTY_TYPES.includes(nature) : false;
 };
+
+export const NATURE_STATIONNEMENT = 'Parking / Garage / Box';
+export const NATURE_LOUES_NUS = 'Immeubles locatifs (loués nus)';
+/** Bureau, commerce, local d'activité : loué nu (bail commercial ou professionnel, revenus fonciers),
+ *  jamais en LMNP / LMP, statut réservé aux locaux d'habitation. */
+export const NATURE_LOCAL_PRO = 'Immeubles professionnels (hors LMP)';
+/** Natures toujours louées nues : le type de location n'est pas proposé, seul le régime l'est. */
+export const toujoursLoueNu = (nature: string | null | undefined): boolean =>
+  nature === NATURE_LOUES_NUS || nature === NATURE_LOCAL_PRO;
+/** Poste « Meubles » du coût de revient : biens locatifs, hors locaux professionnels. */
+export const avecPosteMeubles = (nature: string | null | undefined): boolean =>
+  isRentalPropertyType(nature) && nature !== NATURE_LOCAL_PRO;
+/** LMNP et LMP ne sont pas des natures mais le statut du loueur (art. 155 IV CGI), porté par
+ *  type_location : une seule nature pour les meublés. */
+export const NATURE_MEUBLE = 'Immeubles locatifs (meublés)';
+export const TYPE_LMNP = 'Location meublée non professionnelle (LMNP)';
+export const TYPE_LMP = 'Location meublée professionnelle (LMP)';
+
+export const estMeuble = (nature: string | null | undefined): boolean => nature === NATURE_MEUBLE;
+/** Bien meublé sous statut LMP (sinon LMNP, statut par défaut). */
+export const estLMP = (asset: { nature?: string | null; type_location?: string | null }): boolean =>
+  estMeuble(asset.nature) && asset.type_location === TYPE_LMP;
+
+/** Natures qui demandent l'usage (loué ou non) : un parking peut être personnel, un local
+ *  professionnel occupé pour sa propre activité. Usage déduit de type_location (aucune colonne). */
+export const avecQuestionUsage = (nature: string | null | undefined): boolean =>
+  nature === NATURE_STATIONNEMENT || nature === 'Immeubles professionnels (hors LMP)';
+
+/** Bien saisi en location : nature locative, et pour un parking ou un local professionnel,
+ *  usage « Loué » déclaré. */
+export const estEnLocation = (values: { nature?: string | null; usage_loue?: boolean }): boolean =>
+  isRentalPropertyType(values.nature) && (!avecQuestionUsage(values.nature) || !!values.usage_loue);
 
 // Charge natures enrichies
 export const CHARGE_NATURES = [
@@ -120,17 +144,31 @@ export const TYPE_LOCATION_OPTIONS: TypeLocation[] = [
 export const regimesPour = (type: TypeLocation | null | undefined): RegimeLocation[] =>
   type === 'Location nue' ? ['Micro-foncier', 'Réel'] : ['Micro-BIC', 'BIC'];
 
-// Types de location possibles selon la nature : un bien de nature « loués nus » ne peut être qu'en
-// location nue ; les autres natures locatives peuvent être louées nues ou meublées.
+// Types de location possibles selon la nature : « loués nus » toujours en location nue (choix
+// masqué), meublés en LMNP ou LMP (le choix devient le statut), autres natures nues ou meublées.
 export const typesLocationPour = (nature: string | null | undefined): TypeLocation[] =>
-  nature === 'Immeubles locatifs (loués nus)' ? ['Location nue'] : TYPE_LOCATION_OPTIONS;
+  toujoursLoueNu(nature) ? ['Location nue']
+    : estMeuble(nature) ? [TYPE_LMNP, TYPE_LMP]
+    : TYPE_LOCATION_OPTIONS;
 
 // Type proposé d'office à la création, quand la nature le désigne.
 export const typeLocationParDefaut = (nature: string | null | undefined): TypeLocation | undefined => {
   switch (nature) {
     case 'Immeubles locatifs (loués nus)': return 'Location nue';
-    case 'Immeubles locatifs (LMNP)': return 'Location meublée non professionnelle (LMNP)';
-    case 'Immeubles locatifs (LMP)': return 'Location meublée professionnelle (LMP)';
+    case NATURE_MEUBLE: return TYPE_LMNP;
+    case NATURE_LOCAL_PRO: return 'Location nue';
     default: return undefined;
   }
 };
+
+/** Prix au m² arrondi à l'euro, ou null sans valeur ni surface. */
+export const prixAuM2 = (valeur: number | string | null | undefined, surface: number | string | null | undefined): number | null => {
+  const v = Number(valeur), s = Number(surface);
+  return v > 0 && s > 0 ? Math.round(v / s) : null;
+};
+
+/** Typologies proposées selon la nature : un stationnement n'est ni un appartement ni une maison. */
+export const typologiesPourNature = (nature: string | null | undefined): readonly string[] =>
+  nature === 'Parking / Garage / Box' ? ['Parking', 'Garage', 'Box']
+    : nature === NATURE_LOCAL_PRO ? ['Bureau', 'Commerce', "Local d'activité", 'Entrepôt', 'Cabinet']
+    : ['Appartement', 'Maison'];

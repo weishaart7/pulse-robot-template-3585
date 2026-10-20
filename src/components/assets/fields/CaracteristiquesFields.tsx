@@ -118,7 +118,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const isTerrain = watchedNature === 'Terrains';
   const isBois = watchedNature === 'Bois & forêts';
   const isMaisonMobile = watchedNature === 'Maison mobile (péniche, etc.)';
-  const isLMNP = watchedNature === 'Immeubles locatifs (LMNP)';
+  // Meublé LMNP (statut par défaut d'un meublé ; LMP exclu) : résidence de services.
+  const isLMNP = watchedNature === 'Immeubles locatifs (meublés)' && form.watch('type_location') !== 'Location meublée professionnelle (LMP)';
   const isDroitsSociaux = watchedNature === 'Droits sociaux' || watchedNature === 'Parts de holding';
   const isNft = watchedNature === 'Objets numériques (NFT, etc.)';
   const isMatieresPremieres = watchedNature === 'Matières premières (pétrole, blé…)';

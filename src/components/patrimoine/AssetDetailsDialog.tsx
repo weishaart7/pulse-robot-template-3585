@@ -663,7 +663,7 @@ const emptyRevenuDraft = (): RevenuDraft => ({
   date_debut: format(new Date(), 'yyyy-MM-dd'),
   date_fin: '',
   commentaire: '',
-  impact_budget: false,
+  impact_budget: true,
 });
 
 const PERIODICITE_REVENU_OPTIONS: AssetRevenu['periodicite'][] = ['Mensuelle', 'Trimestrielle', 'Annuelle'];

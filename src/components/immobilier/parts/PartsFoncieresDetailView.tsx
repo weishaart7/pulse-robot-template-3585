@@ -20,7 +20,7 @@ import { SimulationReventeSection } from '@/components/immobilier/revente/Simula
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { getFractionDemembrement } from '@/lib/patrimoine/demembrementFraction';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { getExonerationRurale, isBienRuralNonQualifie, isNatureRurale, REGIME_FISCAL_PARTS_OPTIONS } from '@/constants/assetTypes';
+import { getExonerationRurale, isBienRuralNonQualifie, isNatureRurale, REGIME_FISCAL_PARTS_OPTIONS, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { computeIndicateursParts, estBienNuEnDirect, regimeImpositionParts } from '@/lib/immobilier/partsFoncieres';
 
 interface PartsFoncieresDetailViewProps {
@@ -167,7 +167,7 @@ export const PartsFoncieresDetailView: React.FC<PartsFoncieresDetailViewProps> =
 
       <div className="px-8 pt-6 pb-4">
         <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{nom}</h1>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">{asset.nature}</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{getNatureDisplayLabel(asset.nature)}</p>
       </div>
 
       <div className="grid grid-cols-1 divide-y divide-border border-t border-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">

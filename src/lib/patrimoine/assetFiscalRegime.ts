@@ -21,6 +21,8 @@ export interface ResolveAssetFiscalRegimeInput {
   surfaceBoiseeHa?: number | null;
   fixeAuSol?: boolean | null;
   residenceServices?: boolean | null;
+  // Meublés : statut du loueur (type_location, LMNP ou LMP).
+  typeLocation?: string | null;
   // Parts de SCI : régime fiscal de la société liée (societes.regime_fiscal).
   regimeSociete?: string | null;
   // Épargne retraite : mode de sortie et part des versements déduits (cf. regimeFiscalRetraite.ts).
@@ -102,6 +104,7 @@ export const resolveAssetFiscalRegime = ({
   surfaceBoiseeHa,
   fixeAuSol,
   residenceServices,
+  typeLocation,
   regimeSociete,
   modeSortie,
   versementsDeduitsPct,
@@ -165,6 +168,7 @@ export const resolveAssetFiscalRegime = ({
       surfaceBoiseeHa: surfaceBoiseeHa ?? undefined,
       fixeAuSol: fixeAuSol ?? undefined,
       residenceServices: residenceServices ?? undefined,
+      typeLocation: typeLocation ?? undefined,
     }) ??
     computeFiscalRegime({ nature: effectiveNature, plusValue, valeurEstimee, dateAcquisition, cessionDepartRetraite: cessionDepartRetraite ?? undefined })
   );
@@ -177,6 +181,7 @@ export const caracteristiquesFiscalesActif = (
     surface_boisee_ha?: number | null;
     fixe_au_sol?: boolean | null;
     residence_services?: boolean | null;
+    type_location?: string | null;
     societe_id?: string | null;
     mode_sortie?: string | null;
     versements_deduits_pct?: number | null;
@@ -185,11 +190,12 @@ export const caracteristiquesFiscalesActif = (
     detention_matieres_premieres?: string | null;
   } | undefined,
   regimesSocietes: Record<string, string | null | undefined> = {},
-): Pick<ResolveAssetFiscalRegimeInput, 'terrainConstructible' | 'surfaceBoiseeHa' | 'fixeAuSol' | 'residenceServices' | 'regimeSociete' | 'modeSortie' | 'versementsDeduitsPct' | 'cessionDepartRetraite' | 'qualificationNft' | 'detentionMatieresPremieres'> => ({
+): Pick<ResolveAssetFiscalRegimeInput, 'terrainConstructible' | 'surfaceBoiseeHa' | 'fixeAuSol' | 'residenceServices' | 'typeLocation' | 'regimeSociete' | 'modeSortie' | 'versementsDeduitsPct' | 'cessionDepartRetraite' | 'qualificationNft' | 'detentionMatieresPremieres'> => ({
   terrainConstructible: asset?.terrain_constructible,
   surfaceBoiseeHa: asset?.surface_boisee_ha,
   fixeAuSol: asset?.fixe_au_sol,
   residenceServices: asset?.residence_services,
+  typeLocation: asset?.type_location,
   regimeSociete: asset?.societe_id ? regimesSocietes[asset.societe_id] : undefined,
   modeSortie: asset?.mode_sortie,
   versementsDeduitsPct: asset?.versements_deduits_pct,

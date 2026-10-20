@@ -276,7 +276,7 @@ describe('computeLoyersAnnuels / computeChargesAnnuelles', () => {
 
 function makeAssetLMNP(overrides: Partial<Asset> = {}): Asset {
   return {
-    nature: 'Immeubles locatifs (LMNP)',
+    nature: 'Immeubles locatifs (meublés)',
     montant_immeuble: 200_000,
     zone_bien: 'Zones rurales et villes moyennes', // 15 % terrain
     meubles: 10_000,
@@ -370,7 +370,8 @@ describe('computeRentabiliteLMNP', () => {
 
 function makeAssetLMP(overrides: Partial<Asset> = {}): Asset {
   return {
-    nature: 'Immeubles locatifs (LMP)',
+    nature: 'Immeubles locatifs (meublés)',
+    type_location: 'Location meublée professionnelle (LMP)',
     montant_immeuble: 200_000,
     zone_bien: 'Zones rurales et villes moyennes', // 15 % terrain
     meubles: 10_000,

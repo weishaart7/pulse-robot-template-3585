@@ -6,7 +6,7 @@ import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FieldHelp } from '@/components/ui/field-help';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { TypeLocation, hasDetailImmobilier, isRentalPropertyType, regimesPour, typesLocationPour } from '@/schemas/immobilierPropertySchema';
+import { TypeLocation, hasDetailImmobilier, estEnLocation, estMeuble, toujoursLoueNu, TYPE_LMNP, regimesPour, typesLocationPour } from '@/schemas/immobilierPropertySchema';
 
 interface LocationFieldsProps {
   form: UseFormReturn<AssetFormValues>;
@@ -21,7 +21,10 @@ export const LocationFields: React.FC<LocationFieldsProps> = ({ form, creation =
   const typeLocation = form.watch('type_location');
   const loyer = form.watch('loyer_mensuel');
   const typeOptions = typesLocationPour(nature);
-  const regimeOptions = regimesPour(typeLocation);
+  // Loués nus et locaux professionnels : toujours en location nue, rien à choisir. Meublés : le choix est le statut LMNP / LMP.
+  const sansChoixType = toujoursLoueNu(nature);
+  const meuble = estMeuble(nature);
+  const regimeOptions = regimesPour(sansChoixType ? 'Location nue' : typeLocation);
 
   const handleTypeChange = (value: string, onChange: (v: string) => void) => {
     onChange(value);
@@ -34,9 +37,18 @@ export const LocationFields: React.FC<LocationFieldsProps> = ({ form, creation =
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <FormField control={form.control} name="type_location" render={({ field }) => (
+        {!sansChoixType && <FormField control={form.control} name="type_location" render={({ field }) => (
           <FormItem>
-            <FormLabel>Type de location</FormLabel>
+            <div className="flex items-center">
+              <FormLabel>{meuble ? 'Statut du loueur' : 'Type de location'}</FormLabel>
+              {meuble && (
+                <FieldHelp>
+                  Statut apprécié pour tout le foyer (art. 155 IV CGI) : LMP si les recettes de location meublée
+                  du foyer dépassent 23 000 € par an et dépassent ses autres revenus d'activité ; LMNP sinon.
+                  Il s'applique à tous les meublés du foyer.
+                </FieldHelp>
+              )}
+            </div>
             <Select onValueChange={(v) => handleTypeChange(v, field.onChange)} value={field.value ?? ''}>
               <FormControl>
                 <SelectTrigger className="bg-background border-border shadow-none" size="lg">
@@ -44,14 +56,14 @@ export const LocationFields: React.FC<LocationFieldsProps> = ({ form, creation =
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
-                {typeOptions.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {typeOptions.map((t) => <SelectItem key={t} value={t}>{meuble ? (t === TYPE_LMNP ? 'LMNP — non professionnel' : 'LMP — professionnel') : t}</SelectItem>)}
               </SelectContent>
             </Select>
             <FormMessage />
           </FormItem>
-        )} />
+        )} />}
 
-        {typeLocation && (
+        {(typeLocation || sansChoixType) && (
           <FormField control={form.control} name="regime_location" render={({ field }) => (
             <FormItem>
               <FormLabel>Régime fiscal</FormLabel>
@@ -118,8 +130,6 @@ export const CreditFields: React.FC<{ form: UseFormReturn<AssetFormValues> }> = 
   )} />
 );
 
-const NATURES_MEUBLEES = ['Immeubles locatifs (LMNP)', 'Immeubles locatifs (LMP)'];
-
 // Ce qui reste à saisir ailleurs pour un bien immobilier, selon sa nature et la saisie en cours :
 // renvois affichés dans l'étape Location et en pied du récapitulatif.
 export const renvoisImmobilier = (values: Partial<AssetFormValues>): string[] => {
@@ -127,8 +137,8 @@ export const renvoisImmobilier = (values: Partial<AssetFormValues>): string[] =>
   if (hasDetailImmobilier(values.nature) && values.finance_par_credit) {
     renvois.push('Le crédit : dans Patrimoine → Passifs, relié à ce bien (proposé juste après la création).');
   }
-  if (!isRentalPropertyType(values.nature)) return renvois;
-  if (NATURES_MEUBLEES.includes(values.nature || '')) {
+  if (!estEnLocation(values)) return renvois;
+  if (estMeuble(values.nature)) {
     renvois.push('Zone géographique, part du terrain et amortissement : Immobilier → Mes biens → fiche du bien.');
   }
   if (values.type_location === 'Location nue') {

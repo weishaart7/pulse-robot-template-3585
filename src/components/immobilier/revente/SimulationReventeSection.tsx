@@ -9,7 +9,7 @@ import type { Emprunt } from '@/services/passifService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import {
   estimationAmortissementsLMNP,
-  NATURE_LMNP,
+  estLMNP,
   simulerRevente,
   travauxReelsParDefaut,
 } from '@/lib/immobilier/revente';
@@ -26,7 +26,7 @@ const signed = (v: number) => `${v >= 0 ? '+' : ''}${formatCurrency(v)}`;
 // pénalités de remboursement anticipé) à gauche, plus-value, impôt, crédit à rembourser et net perçu
 // par le foyer à droite. Rien n'est enregistré (lib/immobilier/revente.ts).
 export const SimulationReventeSection = ({ asset, emprunts }: SimulationReventeSectionProps) => {
-  const isLMNP = asset.nature === NATURE_LMNP;
+  const isLMNP = estLMNP(asset);
   const [dateVente, setDateVente] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [prixVente, setPrixVente] = useState(String(asset.valeur_estimee ?? ''));
   const [fraisVente, setFraisVente] = useState('');

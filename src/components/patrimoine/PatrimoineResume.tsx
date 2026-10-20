@@ -14,7 +14,7 @@ import { usePatrimoineCalculations, UnqualifiedItem } from '@/hooks/usePatrimoin
 import { assetValorisationService, AssetValorisation } from '@/services/assetValorisationService';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { computeEvolutionPatrimoine } from '@/lib/patrimoine/evolutionPatrimoine';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ArrowRight } from 'lucide-react';
 
 interface PatrimoineResumeProps {
   onNavigateToPlusValues?: () => void;
@@ -119,6 +119,8 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
       depuis: base.date <= cutoffStr ? 'sur 12 mois' : `depuis le ${new Date(base.date).toLocaleDateString('fr-FR')}`,
     };
   }, [evolutionPatrimoine]);
+  // Moins d'un euro d'écart : variation nulle, flèche à plat en orange.
+  const variationStable = !!variation && Math.round(variation.delta) === 0;
 
   const tauxEndettement = financialSummary.totalActifs > 0 ? (financialSummary.totalPassifs / financialSummary.totalActifs) * 100 : 0;
 
@@ -168,14 +170,18 @@ export const PatrimoineResume = ({ onNavigateToPlusValues, onNavigateToParTete }
           </p>
           {variation && (
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
-              <span className={`inline-flex h-6 items-center gap-1 rounded-[2px] px-2 font-medium tabular-nums ${variation.delta >= 0 ? 'bg-positive/10 text-positive' : 'bg-destructive/10 text-destructive'}`}>
-                {variation.delta >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-                {variation.pct !== null
-                  ? `${variation.delta >= 0 ? '+' : ''}${variation.pct.toFixed(1).replace('.', ',')} %`
-                  : `${variation.delta >= 0 ? '+' : ''}${formatCurrency(variation.delta)}`}
+              <span className={`inline-flex h-6 items-center gap-1 rounded-[2px] px-2 font-medium tabular-nums ${
+                variationStable ? 'bg-[#ffa451]/15 text-[#ffa451]' : variation.delta > 0 ? 'bg-positive/10 text-positive' : 'bg-destructive/10 text-destructive'
+              }`}>
+                {variationStable ? <ArrowRight className="h-3.5 w-3.5" /> : variation.delta > 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {variationStable
+                  ? (variation.pct !== null ? '0,0 %' : formatCurrency(0))
+                  : variation.pct !== null
+                    ? `${variation.delta > 0 ? '+' : ''}${variation.pct.toFixed(1).replace('.', ',')} %`
+                    : `${variation.delta > 0 ? '+' : ''}${formatCurrency(variation.delta)}`}
               </span>
               <span className="text-muted-foreground">
-                {variation.depuis}{variation.pct !== null && ` (${variation.delta >= 0 ? '+' : ''}${formatCurrency(variation.delta)})`}
+                {variation.depuis}{variation.pct !== null && ` (${variationStable ? formatCurrency(0) : `${variation.delta > 0 ? '+' : ''}${formatCurrency(variation.delta)}`})`}
               </span>
             </p>
           )}

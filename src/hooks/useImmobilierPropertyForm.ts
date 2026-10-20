@@ -8,8 +8,7 @@ import {
   immobilierPropertySchema, 
   ImmobilierPropertyFormValues,
   isResidenceType,
-  isRentalPropertyType
-} from '@/schemas/immobilierPropertySchema';
+  isRentalPropertyType, toujoursLoueNu, avecQuestionUsage } from '@/schemas/immobilierPropertySchema';
 
 interface UseImmobilierPropertyFormProps {
   asset: Asset | null;
@@ -54,12 +53,11 @@ export const useImmobilierPropertyForm = ({ asset, onSuccess, onClose }: UseImmo
         valeur_estimee: numOrNull(data.valeur_estimee),
         statut_bien: data.statut_bien || null,
         // Coût de revient : en lecture seule ici, saisi dans Patrimoine (PropertyCostSection).
-        financement_actif: data.financement_actif || false,
-        financement_duree_mois: numOrNull(data.financement_duree_mois),
-        financement_apport: numOrNull(data.financement_apport),
-        financement_taux_credit: numOrNull(data.financement_taux_credit),
-        financement_taux_assurance: numOrNull(data.financement_taux_assurance),
-        type_location: data.type_location || null,
+        // Loués nus et locaux professionnels : toujours en location nue (le choix n'est pas proposé).
+        // Local professionnel occupé pour sa propre activité (sans type de location) : reste sans location.
+        type_location: toujoursLoueNu(asset.nature)
+          ? (avecQuestionUsage(asset.nature) && !asset.type_location ? null : 'Location nue')
+          : data.type_location || null,
         regime_location: data.regime_location || null,
       };
 
@@ -106,23 +104,16 @@ function getDefaultValues(asset: Asset | null): ImmobilierPropertyFormValues {
       montant_immeuble: '',
       frais_agence: '',
       frais_notaire: '',
-      frais_bancaires: '',
-      frais_hypotheque: '',
       travaux_renovation: '',
       travaux_construction: '',
       meubles: '',
-      financement_actif: false,
-      financement_duree_mois: '',
-      financement_apport: '',
-      financement_taux_credit: '',
-      financement_taux_assurance: '',
       type_location: undefined,
       regime_location: undefined,
     };
   }
 
   return {
-    typologie_bien: (asset.typologie_bien ?? undefined) as 'Appartement' | 'Maison' | undefined,
+    typologie_bien: (asset.typologie_bien ?? undefined) as ImmobilierPropertyFormValues['typologie_bien'],
     surface_m2: numOrEmpty(asset.surface_m2),
     date_acquisition: asset.date_acquisition ? new Date(asset.date_acquisition) : undefined,
     valeur_estimee: numOrEmpty(asset.valeur_estimee),
@@ -130,16 +121,9 @@ function getDefaultValues(asset: Asset | null): ImmobilierPropertyFormValues {
     montant_immeuble: numOrEmpty(asset.montant_immeuble),
     frais_agence: numOrEmpty(asset.frais_agence),
     frais_notaire: numOrEmpty(asset.frais_notaire),
-    frais_bancaires: numOrEmpty(asset.frais_bancaires),
-    frais_hypotheque: numOrEmpty(asset.frais_hypotheque),
     travaux_renovation: numOrEmpty(asset.travaux_renovation),
     travaux_construction: numOrEmpty(asset.travaux_construction),
     meubles: numOrEmpty(asset.meubles),
-    financement_actif: asset.financement_actif || false,
-    financement_duree_mois: numOrEmpty(asset.financement_duree_mois),
-    financement_apport: numOrEmpty(asset.financement_apport),
-    financement_taux_credit: numOrEmpty(asset.financement_taux_credit),
-    financement_taux_assurance: numOrEmpty(asset.financement_taux_assurance),
     // Valeurs garanties par les contraintes CHECK de `assets`, comme les unions de l'Asset.
     type_location: (asset.type_location ?? undefined) as ImmobilierPropertyFormValues['type_location'],
     regime_location: (asset.regime_location ?? undefined) as ImmobilierPropertyFormValues['regime_location'],

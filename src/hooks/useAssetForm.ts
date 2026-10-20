@@ -16,7 +16,7 @@ import { IndivisaireDraft, draftsFromIndivisaires } from '@/components/assets/In
 import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { DemembrementDraft, draftsFromDemembrements } from '@/components/assets/DemembrementSection';
 import { isPartsSocieteNature } from '@/lib/patrimoine/societeTransfer';
-import { FRAIS_DETAILLES, FraisDetailleName, hasDetailImmobilier, isRentalPropertyType, typeLocationParDefaut } from '@/schemas/immobilierPropertySchema';
+import { FRAIS_DETAILLES, FraisDetailleName, hasDetailImmobilier, isRentalPropertyType, estEnLocation, typeLocationParDefaut, toujoursLoueNu } from '@/schemas/immobilierPropertySchema';
 import { estimerFraisNotaire } from '@/lib/immobilier/rentabilite';
 
 const FRAIS_DETAILLES_NAMES: string[] = FRAIS_DETAILLES.map((f) => f.name);
@@ -311,6 +311,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         meubles: asset.meubles ?? undefined,
         type_location: (asset.type_location as AssetFormValues['type_location']) ?? undefined,
         regime_location: (asset.regime_location as AssetFormValues['regime_location']) ?? undefined,
+        usage_loue: !!asset.type_location,
       });
     }
     // `indivisaires` est chargé de façon asynchrone par l'effet précédent
@@ -546,18 +547,24 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       } else {
         for (const champ of champsImmobilier) delete formattedValues[champ];
       }
-      if (isRentalPropertyType(values.nature)) {
-        formattedValues.type_location = values.type_location ?? null;
+      if (estEnLocation(values)) {
+        // Loués nus et locaux professionnels : toujours en location nue (le choix n'est pas proposé).
+        formattedValues.type_location = toujoursLoueNu(values.nature) ? 'Location nue' : values.type_location ?? null;
         formattedValues.regime_location = values.regime_location ?? null;
+      } else if (isRentalPropertyType(values.nature)) {
+        // Stationnement à usage personnel : aucune location enregistrée.
+        formattedValues.type_location = null;
+        formattedValues.regime_location = null;
       } else {
         delete formattedValues.type_location;
         delete formattedValues.regime_location;
       }
+      delete formattedValues.usage_loue;
       delete formattedValues.loyer_mensuel;
       delete formattedValues.loyer_budget;
       delete formattedValues.finance_par_credit;
       const extras: AssetSaisieExtras = {
-        loyerMensuel: isRentalPropertyType(values.nature) && values.loyer_mensuel ? values.loyer_mensuel : undefined,
+        loyerMensuel: estEnLocation(values) && values.loyer_mensuel ? values.loyer_mensuel : undefined,
         loyerBudget: !!values.loyer_budget,
         financeParCredit: hasDetailImmobilier(values.nature) && !!values.finance_par_credit,
       };

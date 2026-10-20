@@ -6,7 +6,8 @@ import { PanelSection } from './PanelSection';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { ImmobilierPropertyFormValues } from '@/schemas/immobilierPropertySchema';
+import { ImmobilierPropertyFormValues, prixAuM2 } from '@/schemas/immobilierPropertySchema';
+import { PrixAuM2 } from './PrixAuM2';
 
 // Date d'achat saisie comme dans Famille (JJ/MM/AAAA ou calendrier, dates passées). Une saisie
 // incomplète reste locale : le formulaire ne reçoit qu'une date complète et valide, ou rien.
@@ -30,11 +31,17 @@ export const AcquisitionDateInput = ({ value, onChange }: { value?: Date; onChan
 interface PropertyGeneralSectionProps {
   form: UseFormReturn<ImmobilierPropertyFormValues>;
   showStatutField?: boolean;
+  /** Prix d'achat du bien (lecture seule ici), pour le prix au m². */
+  prixAchat?: number | null;
+  /** Choix de typologie, selon la nature du bien (cf. typologiesPourNature). */
+  typologies?: readonly string[];
 }
 
 export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
   form,
   showStatutField = false,
+  typologies = ['Appartement', 'Maison'],
+  prixAchat = null,
 }) => {
   return (
     <PanelSection title="Données générales">
@@ -51,8 +58,7 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Appartement">Appartement</SelectItem>
-                  <SelectItem value="Maison">Maison</SelectItem>
+                  {typologies.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -76,6 +82,7 @@ export const PropertyGeneralSection: React.FC<PropertyGeneralSectionProps> = ({
                   onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : '')}
                 />
               </FormControl>
+              <PrixAuM2 achat={prixAuM2(prixAchat, field.value)} estime={prixAuM2(form.watch('valeur_estimee'), field.value)} />
               <FormMessage />
             </FormItem>
           )}

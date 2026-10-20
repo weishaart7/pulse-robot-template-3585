@@ -64,7 +64,7 @@ export const getDefaultPassifEmpruntValues = (): PassifEmpruntFormValues => ({
   pourcentage_utilisateur: 50,
   pourcentage_conjoint: 50,
   qualification_auto: true,
-  reporter_budget: false,
+  reporter_budget: true,
   type_garantie: 'Aucune',
   assure: false,
   mode_amortissement: 'Amortissable',

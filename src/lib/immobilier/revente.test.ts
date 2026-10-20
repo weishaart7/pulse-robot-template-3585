@@ -45,16 +45,16 @@ describe('valeurs par défaut', () => {
     const t = { travaux_renovation: 30_000, travaux_construction: 10_000 };
     expect(travauxReelsParDefaut(bien(t))).toBe(10_000); // loué nu : construction seule
     expect(travauxReelsParDefaut(bien({ ...t, nature: 'Résidences secondaires', type_location: undefined }))).toBe(40_000);
-    expect(travauxReelsParDefaut(bien({ ...t, nature: 'Immeubles locatifs (LMNP)' }))).toBe(0);
+    expect(travauxReelsParDefaut(bien({ ...t, nature: 'Immeubles locatifs (meublés)' }))).toBe(0);
   });
 
   it('estime les amortissements LMNP de l’immeuble (hors mobilier), bornés à la durée de chaque composant', () => {
-    const lmnp = bien({ nature: 'Immeubles locatifs (LMNP)', meubles: 10_000, zone_bien: 'Grandes villes', date_acquisition: '2020-01-01' });
+    const lmnp = bien({ nature: 'Immeubles locatifs (meublés)', meubles: 10_000, zone_bien: 'Grandes villes', date_acquisition: '2020-01-01' });
     const a = estimationAmortissementsLMNP(lmnp, new Date(2030, 0, 1));
     // Bâtiment 160 000 € (terrain 20 %) : 10 ans de chaque composant (tous ≥ 12 ans sauf aucun).
     const annuel = 160_000 * (0.225 / 12 + 0.0875 / 25 + 0.1 / 25 + 0.075 / 30 + 0.5125 / 75);
     expect(a).toBeCloseTo(annuel * 10, 0);
-    expect(estimationAmortissementsLMNP(bien({ nature: 'Immeubles locatifs (LMNP)', date_acquisition: undefined }), new Date())).toBe(0);
+    expect(estimationAmortissementsLMNP(bien({ nature: 'Immeubles locatifs (meublés)', date_acquisition: undefined }), new Date())).toBe(0);
   });
 });
 
@@ -92,7 +92,7 @@ describe('simulerRevente', () => {
   });
 
   it('réintègre les amortissements LMNP, sauf en résidence services', () => {
-    const lmnp = bien({ nature: 'Immeubles locatifs (LMNP)', type_location: undefined });
+    const lmnp = bien({ nature: 'Immeubles locatifs (meublés)', type_location: undefined });
     const avec = simulerRevente(lmnp, [], hyp({ amortissementsDeduits: 30_000 }));
     const residence = simulerRevente(lmnp, [], hyp({ amortissementsDeduits: 30_000, residenceServices: true }));
     if (avec.statut !== 'ok' || residence.statut !== 'ok') throw new Error('hors périmètre');
@@ -107,7 +107,7 @@ describe('simulerRevente', () => {
   });
 
   it('signale les cas hors périmètre', () => {
-    expect(simulerRevente(bien({ nature: 'Immeubles locatifs (LMP)' }), [], hyp()).statut).toBe('hors_perimetre');
+    expect(simulerRevente(bien({ nature: 'Immeubles locatifs (meublés)', type_location: 'Location meublée professionnelle (LMP)' }), [], hyp()).statut).toBe('hors_perimetre');
     expect(simulerRevente(bien({ mode_detention: 'Nue-propriété' }), [], hyp()).statut).toBe('hors_perimetre');
     expect(simulerRevente(bien({ nature: 'Parts de SCI' }), [], hyp()).statut).toBe('hors_perimetre');
     expect(simulerRevente(bien({ nature: 'Parts de groupements fonciers' }), [], hyp()).statut).toBe('ok');

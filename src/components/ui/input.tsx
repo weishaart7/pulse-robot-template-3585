@@ -35,6 +35,9 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
         ref={ref}
         onChange={handleChange}
         {...props}
+        // Un champ nombre actif change de valeur à la molette (pas de 0,01 :
+        // 175 000 devenait 174 999,91 en faisant défiler la page) : on le quitte.
+        onWheel={type === "number" ? (e) => { e.currentTarget.blur(); props.onWheel?.(e); } : props.onWheel}
       />
     );
   },

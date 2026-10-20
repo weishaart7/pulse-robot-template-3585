@@ -137,7 +137,9 @@ export const passifService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    // Comme getEmprunts : mensualité et capital restant dû recalculés depuis le tableau
+    // (la mensualité d'un contrat complet n'est pas stockée en base).
+    return (data || []).map((e) => actualiserEmprunt(e as Emprunt));
   },
 
   // Passifs methods

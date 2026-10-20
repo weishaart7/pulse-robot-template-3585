@@ -88,8 +88,7 @@ export const ASSET_CATEGORIES = {
     "Terrains",
     "Terrains agricoles",
     "Immeubles locatifs (loués nus)",
-    "Immeubles locatifs (LMNP)",
-    "Immeubles locatifs (LMP)",
+    "Immeubles locatifs (meublés)",
     "Immeubles professionnels (hors LMP)",
     "Parts de SCI",
     "Parts de SCPI",
@@ -211,10 +210,14 @@ export const ASSET_NATURES: string[] = Object.values(ASSET_CATEGORIES).flat();
 // Sous-groupes d'affichage du sélecteur de nature (NaturePicker), sans effet sur la catégorie
 // ni sur le stockage. Une catégorie absente s'affiche à plat. Chaque catégorie listée doit
 // couvrir exactement ses natures d'ASSET_CATEGORIES (vérifié par assetTypes.test.ts).
+/** Natures retirées du choix à la saisie (règles spécifiques à reprendre plus tard).
+ *  Toujours reconnues pour les actifs existants, qui gardent leur nature. */
+export const NATURES_MASQUEES_SAISIE: readonly string[] = ["Maison mobile (péniche, etc.)"];
+
 export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, { titre: string; natures: string[] }[]>> = {
   "actifs immobiliers": [
     { titre: "Résidences", natures: ["Résidence principale", "Résidences secondaires", "Maison mobile (péniche, etc.)", "Parking / Garage / Box"] },
-    { titre: "Locatif et professionnel", natures: ["Immeubles locatifs (loués nus)", "Immeubles locatifs (LMNP)", "Immeubles locatifs (LMP)", "Immeubles professionnels (hors LMP)"] },
+    { titre: "Locatif et professionnel", natures: ["Immeubles locatifs (loués nus)", "Immeubles locatifs (meublés)", "Immeubles professionnels (hors LMP)"] },
     { titre: "Foncier", natures: ["Terrains", "Terrains agricoles", "Bois & forêts"] },
     { titre: "Parts de sociétés", natures: ["Parts de SCI", "Parts de SCPI", "Parts de groupements fonciers", "Parts de sociétés d'épargne forestière"] },
   ],
@@ -256,6 +259,8 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
 // N'ajouter ici que des natures pour lesquelles on veut un libellé différent
 // de la valeur brute d'ASSET_NATURES.
 export const NATURE_DISPLAY_LABELS: Record<string, string> = {
+  "Immeubles locatifs (meublés)": "Immeubles locatifs (LMNP et LMP)",
+  "Immeubles professionnels (hors LMP)": "Locaux professionnels et commerciaux",
   "PEA": "Plan d'Épargne en Actions (PEA)",
   "PEA-PME": "Plan d'Épargne en Actions PME (PEA-PME)",
   "Résidences secondaires": "Résidence secondaire",

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { assetService } from '@/services/assetService';
+import { AssetCharge, assetService } from '@/services/assetService';
 import { CHARGE_NATURES, PERIODICITE_OPTIONS, DETENTEUR_OPTIONS } from '@/schemas/immobilierPropertySchema';
 
 interface ChargeFormProps {
@@ -16,9 +16,11 @@ interface ChargeFormProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   impactBudget?: boolean;
+  /** Charge existante : le formulaire la modifie au lieu d'en créer une. */
+  charge?: AssetCharge | null;
 }
 
-export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudget = false }: ChargeFormProps) => {
+export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudget = true, charge = null }: ChargeFormProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     nature: '',
@@ -27,6 +29,15 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
     debiteur: 'common'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const periodiciteForm: Record<string, string> = { mensuelle: 'Mensuelle', trimestrielle: 'Trimestrielle', annuelle: 'Annuelle', ponctuelle: 'Annuelle' };
+    const debiteurForm: Record<string, string> = { 'Époux 1': 'user', 'Époux 2': 'spouse', Couple: 'common' };
+    setFormData(charge
+      ? { nature: charge.denomination || '', montant: String(charge.montant), periodicite: periodiciteForm[charge.periodicite] || 'Annuelle', debiteur: debiteurForm[charge.debiteur] || 'common' }
+      : { nature: '', montant: '', periodicite: 'Annuelle', debiteur: 'common' });
+  }, [open, charge]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,21 +72,28 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
         ? parseFloat(formData.montant) * 2
         : parseFloat(formData.montant);
 
-      await assetService.createAssetCharge({
-        asset_id: assetId,
-        type_charge: 'Charges courantes',
+      const champs = {
         denomination: formData.nature,
         montant: montantAnnualise,
         debiteur: debiteurMap[formData.debiteur] || 'Couple',
-        unite: '€',
         periodicite: periodiciteMap[formData.periodicite] || 'annuelle',
-        date_debut: new Date().toISOString().split('T')[0],
-        duree_type: 'Indéterminée',
-        impact_budget: impactBudget,
-      });
+      } as const;
+      if (charge?.id) {
+        await assetService.updateAssetCharge(charge.id, champs);
+      } else {
+        await assetService.createAssetCharge({
+          ...champs,
+          asset_id: assetId,
+          type_charge: 'Charges courantes',
+          unite: '€',
+          date_debut: new Date().toISOString().split('T')[0],
+          duree_type: 'Indéterminée',
+          impact_budget: impactBudget,
+        });
+      }
 
       toast({
-        title: "Charge ajoutée",
+        title: charge ? "Charge modifiée" : "Charge ajoutée",
         description: "La charge a été enregistrée avec succès.",
       });
 
@@ -106,7 +124,7 @@ export const ChargeForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
         className="workspace-panel no-scrollbar max-w-lg max-h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]"
       >
         <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
-          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Ajouter une charge</DialogTitle>
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">{charge ? 'Modifier la charge' : 'Ajouter une charge'}</DialogTitle>
           <DialogDescription className="text-[12.5px]">
             Enregistrez une charge liée à ce bien immobilier
           </DialogDescription>

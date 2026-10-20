@@ -32,7 +32,9 @@ const NATURES_PARTS = ['Parts de SCPI', 'Parts de SCI', 'Parts de groupements fo
 export const NATURE_SCI = 'Parts de SCI';
 const NATURE_MAISON_MOBILE = 'Maison mobile (péniche, etc.)';
 const NATURE_BOIS = 'Bois & forêts';
-const NATURE_LMP = 'Immeubles locatifs (LMP)';
+// Meublés : une seule nature, le statut LMNP / LMP vient de type_location (art. 155 IV CGI).
+const NATURE_MEUBLE = 'Immeubles locatifs (meublés)';
+const TYPE_LMP = 'Location meublée professionnelle (LMP)';
 // Exonération des cessions dont le prix n'excède pas 15 000 € (art. 150 U II 6° CGI).
 const SEUIL_EXONERATION_PRIX = 15000;
 // Bois et forêts : impôt sur le revenu réduit de 10 € par hectare et par année de détention
@@ -68,7 +70,6 @@ const NOTES_NATURE: Record<string, string> = {
 };
 
 // --- LMNP ---
-const NATURE_LMNP = 'Immeubles locatifs (LMNP)';
 
 // Abattement pour durée de détention à l'IR : 0% avant 6 ans, puis 6%/an de
 // la 6e à la 21e année (16 ans à 6% = 96%), puis 4% la 22e année → 100% à 22
@@ -121,6 +122,8 @@ const abattementMeubles = (years: number): number => Math.min(Math.max(years - 2
 
 export interface ComputePVIRegimeInput {
   nature: string;
+  // Meublés : statut du loueur (type_location) — LMP si « Location meublée professionnelle (LMP) », LMNP sinon.
+  typeLocation?: string;
   // Plus-value latente économique (valeur estimée − prix − frais réels).
   plusValue: number;
   dateAcquisition?: string;
@@ -247,6 +250,7 @@ const LMP_RESULT: FiscalRegimeResult = {
 
 export const computePVIRegime = ({
   nature,
+  typeLocation,
   plusValue: plusValueLatente,
   dateAcquisition,
   valeurAcquisition,
@@ -265,13 +269,14 @@ export const computePVIRegime = ({
   if (nature === NATURE_RESIDENCE_PRINCIPALE) {
     return exonere('Résidence principale — exonérée', 'Exonération totale (IR + PS), sans condition de durée de détention.');
   }
-  if (nature === NATURE_LMP) return LMP_RESULT;
+  const isLMP = nature === NATURE_MEUBLE && typeLocation === TYPE_LMP;
+  if (isLMP) return LMP_RESULT;
   if (nature === NATURE_MAISON_MOBILE && !fixeAuSol) {
     return computeBiensMeubles(plusValueLatente, getHoldingYears(dateAcquisition, dateCession), prixCession);
   }
 
   const isRegimeGeneral = NATURES_REGIME_GENERAL.includes(nature) || nature === NATURE_MAISON_MOBILE;
-  const isLMNP = nature === NATURE_LMNP;
+  const isLMNP = nature === NATURE_MEUBLE && !isLMP;
   if (!isRegimeGeneral && !isLMNP) {
     return null;
   }

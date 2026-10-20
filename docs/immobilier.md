@@ -53,8 +53,7 @@ et être reliée à sa SCI.
 | Mes biens | [MesBiensList.tsx](src/components/immobilier/MesBiensList.tsx) (sections par famille, rentabilité brute et cashflow par bien) → [ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx), [LMNPDetailView.tsx](src/components/immobilier/lmnp/LMNPDetailView.tsx) ou [PartsFoncieresDetailView.tsx](src/components/immobilier/parts/PartsFoncieresDetailView.tsx) | Liste des biens transférés ; clic → fiche détail (infos générales/coûts/financement/location), vue LMNP dédiée si le bien est meublé, ou fiche des parts foncières/forestières |
 | Gestion des biens | [GestionBiensSection.tsx](src/components/immobilier/GestionBiensSection.tsx) | Vue consolidée en lecture seule : tous les revenus/charges de tous les biens transférés (pas seulement locatifs), groupés par bien, avec montant annualisé et sous-totaux + total portefeuille. Pas d'ajout/modification/suppression ici — reste le rôle du menu ⋯ → « Revenus et charges » de « Mes biens » |
 
-Accessible aussi depuis « Mes biens » : [ImmobilierGestionDialog.tsx](src/components/immobilier/ImmobilierGestionDialog.tsx)
-(menu ⋯ → « Revenus et charges » de « Mes biens », non-LMNP ; ex-bouton « Gérer ») — CRUD des revenus/charges du bien et bascule « Transfert dans budget ».
+Fiche d'un bien (`ImmobilierPropertyDetailView`) en trois onglets segmentés : **Informations** (formulaire de la fiche, gardé monté quand on change d'onglet pour conserver la saisie et « Enregistrer »), **Revenus et charges**, **Simulation** (simulateur de rentabilité pour la location nue, projection, revente ; absent pour les biens sans formulaire). Onglet « Revenus et charges » : [RevenusChargesSection.tsx](src/components/immobilier/RevenusChargesSection.tsx), hors du formulaire de la fiche — bandeau des totaux ramenés au mois (revenus, charges, solde ; lignes ponctuelles et charges en % exclues), bascule « Reporter dans le Budget », CRUD des revenus/charges. Le menu ⋯ → « Revenus et charges » de « Mes biens » (non-LMNP) ouvre la fiche sur cet onglet (`focusRevenusCharges`). Seules les parts foncières, sans fiche détaillée, gardent la fenêtre [ImmobilierGestionDialog.tsx](src/components/immobilier/ImmobilierGestionDialog.tsx), simple enveloppe de la même section.
 
 Pour la nature « Immeubles locatifs (loués nus) » spécifiquement, la fiche détail
 ([ImmobilierPropertyDetailView.tsx](src/components/immobilier/ImmobilierPropertyDetailView.tsx)) affiche
@@ -97,10 +96,20 @@ confondus** — seules règles pertinentes pour une déclaration réelle. Moteur
 - TMI du foyer saisi localement dans la section (pas de persistance, pas de lien avec le module Fiscalité —
   décision explicite, pas un gap non traité : le module Fiscalité n'a aucune section revenus fonciers/2044).
 
-De même pour « Immeubles locatifs (LMNP) », `LMNPDetailView.tsx` affiche une section équivalente
+**Meublés : une seule nature « Immeubles locatifs (meublés) »** (migration `20261020140000`). LMNP / LMP est le statut du loueur, apprécié pour tout le foyer (art. 155 IV CGI : LMP si recettes meublées > 23 000 €/an et > autres revenus d'activité du foyer), non une nature : il est porté par `type_location` (« Location meublée non professionnelle (LMNP) », par défaut, ou « … professionnelle (LMP) »), lu via `estMeuble` / `estLMP` (`immobilierPropertySchema.ts`). Saisi comme « Statut du loueur » (LMNP — non professionnel / LMP — professionnel) dans `LocationFields` et `PropertyLocationSection` ; pour « loués nus », le type n'est plus proposé (toujours « Location nue », forcé à l'enregistrement), seul le régime reste ; immeubles professionnels et parking loué gardent le choix nu / meublé. Plus-value (`regimeFiscalPVI.computePVIRegime`, paramètre `typeLocation` ; `revente.ts`, `estLMNP`) et fiche (`LMNPDetailView`, `isLMP`) lisent le statut. Non modélisé : exonération IFI des biens professionnels du LMP (conditions non saisies).
+
+**Locaux professionnels** (nature « Immeubles professionnels (hors LMP) », affichée « Locaux professionnels et commerciaux ») : toujours loués nus (bail commercial ou professionnel, revenus fonciers ; `toujoursLoueNu`, comme « loués nus » : type non proposé, forcé à l'enregistrement, régime micro-foncier / réel), jamais LMNP / LMP. Typologies propres (Bureau, Commerce, Local d'activité, Entrepôt, Cabinet ; `typologiesPourNature`, contrainte `check_typologie_bien` élargie, migration `20261020160000`). Pas de poste « Meubles » au coût de revient (`avecPosteMeubles`). Simulateur de rentabilité des biens loués nus ouvert aux locaux professionnels (onglet Simulation). Question « Usage » (`avecQuestionUsage`, comme le parking ; champ de saisie `usage_loue`, déduit de `type_location`, jamais écrit) : « Loué à un tiers » ou « Ma propre activité » — en propre activité, ni étape Location, ni section Location, ni simulateur, `type_location` à null (`estEnLocation`). Non modélisé : exonération IFI des locaux affectés à l'activité principale (saisie manuelle dans le module IFI, sans lien avec l'actif).
+
+**Crédit** : la section « Financement » de la fiche Immobilier (`financement_*`) est retirée ; le crédit d'un bien se saisit uniquement comme emprunt relié dans Passifs. Le repli de calcul sur `financement_*` / `frais_bancaires` / `frais_hypotheque` (`credit.ts`, `rentabilite.ts`) n'est plus atteignable (aucune donnée en base au 20/10/2026) : code mort à retirer avec ses tests.
+
+**Fiche meublé** : prix d'achat, frais de notaire, mobilier, travaux et année d'acquisition en lecture seule, saisis dans Patrimoine (source unique de la plus-value et de la qualification) ; la fiche n'écrit plus que la zone, la part terrain forcée et la catégorie de meublé (`type_location_lmnp`, libellé « Catégorie de meublé » : LMNP classique, tourisme classé ou non, qui fixe l'abattement micro-BIC).
+
+**Prix au m²** (`prixAuM2`, `property/PrixAuM2.tsx`) : sous le champ Surface, dans le formulaire d'actif et la fiche du bien — à la valeur estimée et à l'achat.
+
+De même pour un meublé LMNP, `LMNPDetailView.tsx` affiche une section équivalente
 ([SimulateurRentabiliteLMNPSection.tsx](src/components/immobilier/lmnp/SimulateurRentabiliteLMNPSection.tsx))
 comparant micro-BIC (barème 2026, alerte de dépassement de plafond) et réel (charges + intérêts +
-assurance déductibles, amortissement plafonné, PS à 18,6 %). Et pour « Immeubles locatifs (LMP) »,
+assurance déductibles, amortissement plafonné, PS à 18,6 %). Et pour un meublé LMP,
 une troisième section équivalente
 ([SimulateurRentabiliteLMPSection.tsx](src/components/immobilier/lmnp/SimulateurRentabiliteLMPSection.tsx),
 mutuellement exclusive avec celle de LMNP dans le même composant) : même barème micro-BIC, mais au réel
@@ -191,7 +200,7 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
     filetée), Revenus et Charges (listes à étiquettes lagon / citron, suppression confirmée) ; à droite le
     Résumé fiscal collant (résultat fiscal en 24 px, étiquette de déficit, rappel du bien) ; simulateur en
     bandeau bas. Charge utile d'enregistrement typée `TablesUpdate<'assets'>` (plus de `any`).
-  - **Fenêtre « Revenus et charges »** (`ImmobilierGestionDialog`) et formulaires d'ajout
+  - **Section « Revenus et charges »** (`RevenusChargesSection`, fiche du bien ; fenêtre `ImmobilierGestionDialog` pour les parts foncières) et formulaires d'ajout
     (`RevenuForm`, `ChargeForm`) : gabarit des fenêtres de panneau (arrière-plan flouté, en-tête et pied
     filetés, boutons 32 px, champs à angles 2 px, montant suffixé €). Report au Budget en encadré, onglets
     segmentés Revenus / Charges avec compteurs, lignes à étiquettes lagon / citron ; **la suppression d'une
@@ -253,7 +262,7 @@ le TMI). Moteur de calcul commun aux trois : [src/lib/immobilier/rentabilite.ts]
   `handleGestion` (mêmes deux fonctions, même test `isMeuble`, appelé à 4 endroits du fichier).
 
 - **LMNP et LMP partagent la même vue et le même amortissement comptable, mais plus le même résultat
-  fiscal réel.** `LMNPDetailView` sert les natures « Immeubles locatifs (LMNP) » et « (LMP) » et calcule
+  fiscal réel.** `LMNPDetailView` sert la nature « Immeubles locatifs (meublés) », statut LMNP ou LMP, et calcule
   le même tableau d'amortissement par composants (mécanique identique entre les deux statuts). Son
   résumé fiscal déduit dans les deux cas les intérêts d'emprunt et l'assurance emprunteur au régime réel
   et distingue le traitement de l'amortissement : LMNP le plafonne (`computeResultatReelLMNP`), LMP ne le
@@ -659,7 +668,7 @@ Corrigés lors de l'audit initial (2026-08-27), vérifiés sur cas concret :
   - **Distinction LMNP/LMP** dans le calcul lui-même : les nouveaux simulateurs de rentabilité
     distinguent désormais les deux statuts (plafonnement de l'amortissement et PS à 18,6 % en LMNP ;
     pas de plafonnement, déficit imputable sans limite et cotisations sociales en saisie libre en LMP,
-    gate `asset.nature === 'Immeubles locatifs (LMP)'`), et le résumé fiscal de `LMNPDetailView.tsx`
+    gate `asset.type_location === 'Location meublée professionnelle (LMP)'`), et le résumé fiscal de `LMNPDetailView.tsx`
     applique la même distinction au régime réel (§2).
   - **Autres natures de `RENTAL_PROPERTY_TYPES` que « Immeubles locatifs (loués nus) »** (Parking/Garage/Box,
     Autres immeubles de rapport...) : même en location nue, elles n'ont toujours pas de fiche

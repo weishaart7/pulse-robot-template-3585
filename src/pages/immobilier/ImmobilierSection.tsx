@@ -15,10 +15,7 @@ import { PartsFoncieresDetailView } from '@/components/immobilier/parts/PartsFon
 import { isPartsFoncieres } from '@/lib/immobilier/partsFoncieres';
 import { Asset } from '@/services/assetService';
 
-const MEUBLE_NATURES = [
-  'Immeubles locatifs (LMNP)',
-  'Immeubles locatifs (LMP)',
-];
+const MEUBLE_NATURES = ['Immeubles locatifs (meublés)'];
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
@@ -29,6 +26,8 @@ export const ImmobilierSection = () => {
   const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
   const [selectedAssetForGestion, setSelectedAssetForGestion] = useState<Asset | null>(null);
   const [lmnpAssetId, setLmnpAssetId] = useState<string | null>(null);
+  // Fiche ouverte par « Revenus et charges » : positionnée sur cette section.
+  const [focusRevenusCharges, setFocusRevenusCharges] = useState(false);
   const selectedAsset = selectedAssetId ? assets.find(a => a.id === selectedAssetId) ?? null : null;
   const lmnpAsset = lmnpAssetId ? assets.find(a => a.id === lmnpAssetId) ?? null : null;
 
@@ -38,6 +37,7 @@ export const ImmobilierSection = () => {
     if (isMeuble(asset)) {
       setLmnpAssetId(asset.id ?? null);
     } else {
+      setFocusRevenusCharges(false);
       setSelectedAssetId(asset.id ?? null);
     }
   }, []);
@@ -53,9 +53,13 @@ export const ImmobilierSection = () => {
   const handleGestion = useCallback((asset: Asset) => {
     if (isMeuble(asset)) {
       setLmnpAssetId(asset.id ?? null);
-    } else {
+    } else if (isPartsFoncieres(asset.nature)) {
+      // Pas de fiche détaillée pour les parts foncières : la fenêtre reste.
       setSelectedAssetForGestion(asset);
       setGestionDialogOpen(true);
+    } else {
+      setFocusRevenusCharges(true);
+      setSelectedAssetId(asset.id ?? null);
     }
   }, []);
 
@@ -104,6 +108,7 @@ export const ImmobilierSection = () => {
           emprunts={emprunts}
           onBack={handleDialogClose}
           onUpdate={handleUpdate}
+          focusRevenusCharges={focusRevenusCharges}
         />
       </div>
     );

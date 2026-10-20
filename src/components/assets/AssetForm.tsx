@@ -29,7 +29,7 @@ import { ChargesListFields } from './fields/ChargesListFields';
 import { FieldHelp } from '@/components/ui/field-help';
 import { DescriptionBienFields } from './fields/BienImmobilierFields';
 import { LocationFields } from './fields/LocationFields';
-import { hasDetailImmobilier, isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
+import { hasDetailImmobilier, isRentalPropertyType, estEnLocation } from '@/schemas/immobilierPropertySchema';
 import type { Emprunt } from '@/services/passifService';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import { RequiredMark } from '@/components/ui/required-mark';
@@ -159,7 +159,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
 
   const renderCaracteristiquesSection = () => (
     <div className="space-y-6">
-      {isRentalPropertyType(watchedNature) && <LocationFields form={form} />}
+      {estEnLocation({ nature: watchedNature, usage_loue: form.watch('usage_loue') }) && <LocationFields form={form} />}
       <CaracteristiquesFields form={form} />
     </div>
   );
@@ -357,7 +357,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       </Form>
       </ActifFormFrame>
 
-      {showChargeForm && (
+      {showChargeForm && activeTab === 'charges' && (
         <ChargeForm
           charge={editingCharge || undefined}
           debiteurParDefaut={debiteurDepuisDetention(form.getValues('detenteur'), form.getValues('qualification_bien'), familyData)}

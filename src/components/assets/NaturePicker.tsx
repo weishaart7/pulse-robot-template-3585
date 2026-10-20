@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { ASSET_CATEGORIES, NATURE_SOUS_GROUPES, getAssetCategory, getNatureDisplayLabel } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, NATURE_SOUS_GROUPES, NATURES_MASQUEES_SAISIE, getAssetCategory, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { CATEGORY_COLORS } from '@/lib/patrimoine/utils';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +50,7 @@ export const NaturePicker: React.FC<{
     return Object.entries(ASSET_CATEGORIES)
       .map(([categorie, natures]) => {
         const garder = (n: string) =>
-          !q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(CATEGORY_LABELS[categorie] ?? categorie).includes(q);
+          (!NATURES_MASQUEES_SAISIE.includes(n) || n === value) && (!q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(CATEGORY_LABELS[categorie] ?? categorie).includes(q));
         // Sous-groupes d'affichage s'ils existent, sinon un groupe sans titre.
         const sousGroupes = (
           NATURE_SOUS_GROUPES[categorie as keyof typeof ASSET_CATEGORIES] ?? [{ titre: null, natures: natures as readonly string[] }]
@@ -139,7 +139,7 @@ export const NaturePicker: React.FC<{
             {/* Catégories : choisir celle affichée à droite (efface une recherche en cours). */}
             <nav className="hidden w-64 shrink-0 overflow-y-auto border-r border-border py-3 md:block">
               {toutes.map(([cat, natures]) => {
-                const nb = recherche.trim() ? groupes.find((g) => g.categorie === cat)?.natures.length ?? 0 : natures.length;
+                const nb = recherche.trim() ? groupes.find((g) => g.categorie === cat)?.natures.length ?? 0 : natures.filter((n) => !NATURES_MASQUEES_SAISIE.includes(n) || n === value).length;
                 const actif = !recherche.trim() && cat === categorie;
                 return (
                   <button

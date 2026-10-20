@@ -69,15 +69,16 @@ export const panelPrimaryButtonClass =
 
 /** Bouton d'ajout des panneaux (« Ajouter un membre », « Ajouter un actif »…) : bouton principal
  *  des panneaux, « + » sur carré citron. */
-export function AddButton({ children, className, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
+/** `tone` : couleur du carré « + » — orange par défaut, citron dans Famille. */
+export function AddButton({ children, className, tone = 'orange', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 'orange' | 'citron' }) {
   return (
     <button
       type="button"
       className={cn('inline-flex items-center gap-2 whitespace-nowrap transition-colors', panelPrimaryButtonClass, 'pl-1', className)}
       {...props}
     >
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px] bg-citron">
-        <Plus className="h-3.5 w-3.5 text-citron-ink" strokeWidth={2.25} />
+      <span className={cn('flex h-6 w-6 shrink-0 items-center justify-center rounded-[2px]', tone === 'citron' ? 'bg-citron' : 'bg-[#ffa451]')}>
+        <Plus className={cn('h-3.5 w-3.5', tone === 'citron' ? 'text-citron-ink' : 'text-[#5c3200]')} strokeWidth={2.25} />
       </span>
       {children}
     </button>

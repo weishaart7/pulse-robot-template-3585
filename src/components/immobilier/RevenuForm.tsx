@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { assetService } from '@/services/assetService';
+import { AssetRevenu, assetService } from '@/services/assetService';
 import { REVENU_NATURES, PERIODICITE_OPTIONS } from '@/schemas/immobilierPropertySchema';
 
 interface RevenuFormProps {
@@ -18,9 +18,11 @@ interface RevenuFormProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   impactBudget?: boolean;
+  /** Revenu existant : le formulaire le modifie au lieu d'en créer un. */
+  revenu?: AssetRevenu | null;
 }
 
-export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudget = false }: RevenuFormProps) => {
+export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudget = true, revenu = null }: RevenuFormProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     nature: 'Loyers charges comprises',
@@ -32,8 +34,20 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
   const [localImpactBudget, setLocalImpactBudget] = useState(impactBudget);
 
   useEffect(() => {
-    if (open) setLocalImpactBudget(impactBudget);
-  }, [open, impactBudget]);
+    if (!open) return;
+    if (revenu) {
+      setFormData({
+        nature: revenu.nature,
+        montant: String(revenu.montant),
+        periodicite: revenu.periodicite,
+        commentaire: revenu.commentaire || '',
+      });
+      setLocalImpactBudget((revenu as AssetRevenu & { impact_budget?: boolean }).impact_budget ?? impactBudget);
+    } else {
+      setFormData({ nature: 'Loyers charges comprises', montant: '', periodicite: 'Mensuelle', commentaire: '' });
+      setLocalImpactBudget(impactBudget);
+    }
+  }, [open, impactBudget, revenu]);
 
   const impactMensuel = (() => {
     const value = parseFloat(formData.montant);
@@ -62,19 +76,22 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
     setIsSubmitting(true);
 
     try {
-      await assetService.createAssetRevenu({
-        asset_id: assetId,
+      const champs = {
         nature: formData.nature,
         montant: parseFloat(formData.montant),
         periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Annuelle',
-        date_debut: new Date().toISOString().split('T')[0],
         commentaire: formData.commentaire || undefined,
         impact_budget: localImpactBudget,
-      });
-      
+      };
+      if (revenu?.id) {
+        await assetService.updateAssetRevenu(revenu.id, champs);
+      } else {
+        await assetService.createAssetRevenu({ ...champs, asset_id: assetId, date_debut: new Date().toISOString().split('T')[0] });
+      }
+
       toast({
-        title: "Revenu ajouté",
-        description: "Le revenu a été ajouté avec succès.",
+        title: revenu ? "Revenu modifié" : "Revenu ajouté",
+        description: revenu ? "Le revenu a été mis à jour." : "Le revenu a été ajouté avec succès.",
       });
       
       onSuccess();
@@ -106,7 +123,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
         className="workspace-panel no-scrollbar max-w-lg max-h-[90vh] overflow-y-auto rounded-[4px] sm:rounded-[4px]"
       >
         <DialogHeader className="-mx-6 border-b border-border px-6 pb-4">
-          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">Ajouter un revenu</DialogTitle>
+          <DialogTitle className="text-[16px] font-medium leading-tight tracking-[-0.01em]">{revenu ? 'Modifier le revenu' : 'Ajouter un revenu'}</DialogTitle>
           <DialogDescription className="text-[12.5px]">
             Enregistrez un revenu lié à ce bien immobilier
           </DialogDescription>
@@ -209,7 +226,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
               Annuler
             </Button>
             <Button type="submit" disabled={isSubmitting} className={panelPrimaryButtonClass}>
-              {isSubmitting ? <><LogoSpinner />Enregistrement...</> : "Ajouter"}
+              {isSubmitting ? <><LogoSpinner />Enregistrement...</> : revenu ? "Enregistrer" : "Ajouter"}
             </Button>
           </div>
         </form>

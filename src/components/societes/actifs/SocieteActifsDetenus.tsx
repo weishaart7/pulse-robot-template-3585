@@ -1,3 +1,4 @@
+import { getNatureDisplayLabel } from '@/constants/assetTypes';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle, PanelCardDescription } from '@/components/layout/panel-section';
@@ -43,7 +44,7 @@ export const SocieteActifsDetenus: React.FC<Props> = ({ societeId }) => {
             <div className="divide-y divide-border border-y border-border empty:hidden">
               {actifs.map(a => (
                 <div key={a.id} className="flex justify-between py-2.5 text-sm">
-                  <span>{a.denomination || a.nature} <span className="text-muted-foreground">· {a.nature}</span></span>
+                  <span>{a.denomination || a.nature} <span className="text-muted-foreground">· {getNatureDisplayLabel(a.nature)}</span></span>
                   <span className="font-medium">{(a.valeur_estimee || 0).toLocaleString('fr-FR')} €</span>
                 </div>
               ))}

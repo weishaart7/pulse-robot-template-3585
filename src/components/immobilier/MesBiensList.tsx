@@ -1,3 +1,4 @@
+import { getNatureDisplayLabel } from '@/constants/assetTypes';
 import { useEffect, useMemo, useState } from 'react';
 import { Building2, FileText, Home, MoreHorizontal, Wallet } from 'lucide-react';
 import {
@@ -162,7 +163,7 @@ export const MesBiensList = ({ assets, emprunts = [], isMeuble, onOpen, onGestio
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">{asset.denomination || 'Sans dénomination'}</p>
                       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
-                        <span className="truncate text-xs text-muted-foreground">{asset.nature}</span>
+                        <span className="truncate text-xs text-muted-foreground">{getNatureDisplayLabel(asset.nature)}</span>
                         {isMeuble(asset) && <Chip tone="lagon">Meublé</Chip>}
                         {quotePart < 100 && <Chip>Quote-part {quotePart.toLocaleString('fr-FR')} %</Chip>}
                       </div>

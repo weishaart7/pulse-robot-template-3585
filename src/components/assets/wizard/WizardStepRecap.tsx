@@ -12,7 +12,7 @@ import { PlusValueBlock } from '@/components/assets/fields/PlusValueBlock';
 import { ValorisationDemembreeBlock } from '@/components/assets/fields/ValorisationDemembreeBlock';
 import { WizardStepId } from '@/hooks/useAssetWizard';
 import { RenvoisImmobilier, renvoisImmobilier } from '@/components/assets/fields/LocationFields';
-import { FRAIS_DETAILLES, hasDetailImmobilier, isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
+import { FRAIS_DETAILLES, hasDetailImmobilier, isRentalPropertyType, estEnLocation } from '@/schemas/immobilierPropertySchema';
 import { NATURE_PREVOYANCE_RACHETABLE, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 
 interface WizardStepRecapProps {
@@ -168,9 +168,9 @@ export const WizardStepRecap: React.FC<WizardStepRecapProps> = ({
         </RecapSection>
       )}
 
-      {isRentalPropertyType(values.nature) && (
+      {estEnLocation(values) && (
         <RecapSection title="Location" onEdit={() => onEditStep('location')}>
-          <Row label="Type de location" value={values.type_location || '—'} />
+          <Row label={values.nature === 'Immeubles locatifs (meublés)' ? 'Statut du loueur' : 'Type de location'} value={values.type_location || '—'} />
           {values.regime_location && <Row label="Régime fiscal" value={values.regime_location} />}
           {values.loyer_mensuel ? <Row label="Loyer mensuel" value={`${formatEur(values.loyer_mensuel)}${values.loyer_budget ? ' · reporté au budget' : ''}`} /> : null}
         </RecapSection>

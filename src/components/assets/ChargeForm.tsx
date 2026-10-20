@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OptionToggle } from '@/components/ui/option-toggle';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,7 @@ const chargeSchema = z.object({
   type_charge: z.enum(['Charges courantes', 'Charges fiscales']),
   denomination: z.string().min(1, 'La dénomination est requise'),
   debiteur: z.enum(['Époux 1', 'Époux 2', 'Couple']),
-  montant: z.number().min(0, 'Le montant doit être positif'),
+  montant: z.number({ required_error: 'Le montant est requis', invalid_type_error: 'Le montant est requis' }).min(0, 'Le montant doit être positif'),
   unite: z.enum(['€', '%']),
   periodicite: z.enum(['ponctuelle', 'annuelle', 'trimestrielle', 'mensuelle']),
   date_debut: z.date({ required_error: 'La date est requise' }),
@@ -73,7 +74,7 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
       type_charge: 'Charges courantes',
       denomination: '',
       debiteur: debiteurParDefaut ?? 'Époux 1',
-      montant: 0,
+      montant: undefined,
       unite: '€',
       periodicite: 'mensuelle',
       date_debut: new Date(),
@@ -140,15 +141,18 @@ export const ChargeForm: React.FC<ChargeFormProps> = ({ charge, onSubmit, onCanc
               <FormLabel>Montant</FormLabel>
               <div className="flex gap-2">
                 <FormField control={form.control} name="montant" render={({ field }) => (
-                  <FormControl>
-                    <Input
-                      type="number"
+                  <div className="flex-1">
+                    <FormControl>
+                    <EuroInput
                       step="0.01"
-                      className="tabular-nums"
+                      suffix={unite}
                       {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      value={field.value ?? ''}
+                      // Champ vidé : laissé vide (et non remis à 0) pour pouvoir saisir le montant.
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
                     />
                   </FormControl>
+                  </div>
                 )} />
                 <FormField control={form.control} name="unite" render={({ field }) => (
                   <Segmented options={UNITE_OPTIONS} value={field.value} onChange={field.onChange} className="w-24 shrink-0" />

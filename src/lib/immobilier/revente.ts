@@ -20,8 +20,13 @@ import {
 // foyer. Toutes les hypothèses sont modifiables ; les valeurs par défaut viennent des fonctions
 // ci-dessous.
 
-export const NATURE_LMNP = 'Immeubles locatifs (LMNP)';
-const NATURE_LMP = 'Immeubles locatifs (LMP)';
+// Meublés : une seule nature, statut LMNP / LMP porté par type_location (art. 155 IV CGI).
+const NATURE_MEUBLE = 'Immeubles locatifs (meublés)';
+const estMeubleRevente = (asset: Pick<Asset, 'nature'>) => asset.nature === NATURE_MEUBLE;
+const estLMPRevente = (asset: Pick<Asset, 'nature' | 'type_location'>) =>
+  estMeubleRevente(asset) && asset.type_location === 'Location meublée professionnelle (LMP)';
+/** Meublé sous statut LMNP (statut par défaut d'un meublé). */
+export const estLMNP = (asset: Pick<Asset, 'nature' | 'type_location'>) => estMeubleRevente(asset) && !estLMPRevente(asset);
 /** Cessions à compter desquelles les amortissements LMNP sont réintégrés (LF 2025, art. 84). */
 export const DATE_REINTEGRATION_AMORTISSEMENTS_LMNP = new Date(2025, 1, 15);
 
@@ -50,7 +55,7 @@ export function fraisAcquisitionReels(asset: Asset): number {
 }
 
 export const estBienLoue = (asset: Asset): boolean =>
-  !!asset.type_location || asset.nature === NATURE_LMNP || asset.nature === NATURE_LMP
+  !!asset.type_location || estMeubleRevente(asset)
   || asset.nature === 'Immeubles locatifs (loués nus)';
 
 /**
@@ -60,7 +65,7 @@ export const estBienLoue = (asset: Asset): boolean =>
  * construction. Le champ « rénovation » ne distingue pas amélioration et entretien : à vérifier.
  */
 export function travauxReelsParDefaut(asset: Asset): number {
-  if (asset.nature === NATURE_LMNP || asset.nature === NATURE_LMP) return 0;
+  if (estMeubleRevente(asset)) return 0;
   if (estBienLoue(asset)) return asset.travaux_construction || 0;
   return (asset.travaux_renovation || 0) + (asset.travaux_construction || 0);
 }
@@ -121,7 +126,7 @@ export type ResultatRevente =
     };
 
 export function simulerRevente(asset: Asset, emprunts: Emprunt[], h: HypothesesRevente): ResultatRevente {
-  if (asset.nature === NATURE_LMP) {
+  if (estLMPRevente(asset)) {
     return { statut: 'hors_perimetre', message: 'Bien en LMP : la vente relève des plus-values professionnelles (court terme / long terme, exonération de l’art. 151 septies si recettes < 90 000 €, partielle jusqu’à 126 000 €, après 5 ans d’activité), non modélisées : recettes et ancienneté d’activité ne sont pas saisies.' };
   }
   if (asset.nature === 'Parts de SCI') {
@@ -135,12 +140,13 @@ export function simulerRevente(asset: Asset, emprunts: Emprunt[], h: HypothesesR
   const prixAchat = prixAchatBien(asset);
   const frais = fraisAcquisitionReels(asset);
   const prixNetTotal = Math.max(0, h.prixVente - h.fraisVente);
-  const isLMNP = asset.nature === NATURE_LMNP;
+  const isLMNP = estLMNP(asset);
   const reintegration = isLMNP && !h.residenceServices && h.dateVente >= DATE_REINTEGRATION_AMORTISSEMENTS_LMNP;
 
   const origines = asset.origine_actif as string[] | null | undefined;
   const regime = computePVIRegime({
     nature: asset.nature,
+    typeLocation: asset.type_location ?? undefined,
     plusValue: (prixNetTotal - prixAchat - frais) * partFoyer,
     dateAcquisition: asset.date_acquisition,
     valeurAcquisition: prixAchat * partFoyer,

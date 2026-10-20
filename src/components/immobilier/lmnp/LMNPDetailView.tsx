@@ -1,3 +1,4 @@
+import { getNatureDisplayLabel } from '@/constants/assetTypes';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,9 +25,7 @@ import {
   computeAmortissementImmeubleLMNP as computeAmortissement,
   computeResultatReelLMNP,
   computeResultatReelLMP,
-  estimerFraisNotaire,
 } from '@/lib/immobilier/rentabilite';
-import { dateAcquisitionDepuisAnnee } from '@/lib/immobilier/dateAcquisition';
 import { SimulateurRentabiliteLMNPSection } from './SimulateurRentabiliteLMNPSection';
 import { SimulateurRentabiliteLMPSection } from './SimulateurRentabiliteLMPSection';
 
@@ -42,16 +41,16 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
   const { toast } = useToast();
 
   // Form state
-  const [prixAchat, setPrixAchat] = useState<number>(asset.montant_immeuble || asset.valeur_acquisition || 0);
+  // Prix, frais de notaire, mobilier, travaux et date d'acquisition se saisissent dans Patrimoine
+  // (formulaire d'actif), source unique pour la plus-value et la qualification : lus ici, jamais écrits.
+  const prixAchat = asset.valeur_acquisition || asset.montant_immeuble || 0;
   const [zoneBien, setZoneBien] = useState<string>(asset.zone_bien || '');
   const [forceTerrainPct, setForceTerrainPct] = useState<boolean>(!!asset.pourcentage_terrain_force);
   const [terrainPctCustom, setTerrainPctCustom] = useState<number>(asset.pourcentage_terrain_force || 0);
-  const [fraisNotaire, setFraisNotaire] = useState<number>(asset.frais_notaire || 0);
-  const [anneeAcquisition, setAnneeAcquisition] = useState<string>(
-    asset.date_acquisition ? new Date(asset.date_acquisition).getFullYear().toString() : ''
-  );
-  const [valeurMobilier, setValeurMobilier] = useState<number>(asset.meubles || 0);
-  const [travaux, setTravaux] = useState<number>((asset.travaux_renovation || 0) + (asset.travaux_construction || 0));
+  const fraisNotaire = asset.frais_notaire || 0;
+  const anneeAcquisition = asset.date_acquisition ? new Date(asset.date_acquisition).getFullYear().toString() : '';
+  const valeurMobilier = asset.meubles || 0;
+  const travaux = (asset.travaux_renovation || 0) + (asset.travaux_construction || 0);
   const [typeLocationLmnp, setTypeLocationLmnp] = useState<string>(asset.type_location_lmnp || '');
 
   // Revenue & charges
@@ -61,23 +60,20 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
   // Ligne dont la suppression attend confirmation.
   const [pendingDelete, setPendingDelete] = useState<{ id: string; nom: string; type: 'revenu' | 'charge' } | null>(null);
   const [chargeFormOpen, setChargeFormOpen] = useState(false);
-  const [impactBudget, setImpactBudget] = useState(false);
+  // Ligne ouverte en modification (null : ajout).
+  const [revenuEdite, setRevenuEdite] = useState<AssetRevenu | null>(null);
+  const [chargeEditee, setChargeEditee] = useState<AssetCharge | null>(null);
+  const [impactBudget, setImpactBudget] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialMount = useRef(true);
 
   // Use refs for auto-save to avoid stale closures
-  const formDataRef = useRef({
-    prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire,
-    anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp,
-  });
+  const formDataRef = useRef({ zoneBien, forceTerrainPct, terrainPctCustom, typeLocationLmnp });
 
   useEffect(() => {
-    formDataRef.current = {
-      prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire,
-      anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp,
-    };
-  }, [prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire, anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp]);
+    formDataRef.current = { zoneBien, forceTerrainPct, terrainPctCustom, typeLocationLmnp };
+  }, [zoneBien, forceTerrainPct, terrainPctCustom, typeLocationLmnp]);
 
   const terrainPct = forceTerrainPct
     ? terrainPctCustom
@@ -92,40 +88,21 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
     setRevenus(rev);
     setCharges(chg);
     type AvecImpact = { impact_budget?: boolean };
-    setImpactBudget(rev.some((r) => (r as AvecImpact).impact_budget) || chg.some((c) => (c as AvecImpact).impact_budget));
+    // Aucune ligne encore : report au Budget proposé par défaut.
+    setImpactBudget(rev.length + chg.length === 0 || rev.some((r) => (r as AvecImpact).impact_budget) || chg.some((c) => (c as AvecImpact).impact_budget));
   }, [asset.id]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Frais de notaire pré-calculés à 7,5 % uniquement quand l'utilisateur modifie le prix d'achat —
-  // pas au chargement de la fiche, qui écraserait sinon les frais réels enregistrés (et déclencherait
-  // l'auto-sauvegarde sans aucune saisie), cf. docs/immobilier.md §3.
-  const handlePrixAchatChange = (value: number) => {
-    setPrixAchat(value);
-    if (value > 0) {
-      setFraisNotaire(estimerFraisNotaire(value));
-    }
-  };
-
   const performSave = useCallback(async (silent: boolean) => {
     const d = formDataRef.current;
     setIsSaving(true);
     try {
       const updateData: Partial<Asset> = {
-        montant_immeuble: d.prixAchat || null,
         zone_bien: d.zoneBien || null,
         pourcentage_terrain_force: d.forceTerrainPct ? d.terrainPctCustom : null,
-        frais_notaire: d.fraisNotaire || null,
-        // Seule l'année est saisie ici : la date réelle stockée est conservée (cf. dateAcquisition.ts).
-        date_acquisition: dateAcquisitionDepuisAnnee(d.anneeAcquisition, asset.date_acquisition),
-        meubles: d.valeurMobilier || null,
-        // Le champ « Travaux » de cette fiche est la somme rénovation + construction (lues partout
-        // additionnées) : la somme est enregistrée dans travaux_renovation et la construction remise à
-        // vide, sinon elle serait recomptée à chaque rechargement.
-        travaux_renovation: d.travaux || null,
-        travaux_construction: null,
         type_location_lmnp: d.typeLocationLmnp || null,
       };
 
@@ -140,7 +117,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
     } finally {
       setIsSaving(false);
     }
-  }, [asset.id, asset.date_acquisition, toast, onUpdate]);
+  }, [asset.id, toast, onUpdate]);
 
   // Auto-save with debounce
   useEffect(() => {
@@ -162,7 +139,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [prixAchat, zoneBien, forceTerrainPct, terrainPctCustom, fraisNotaire, anneeAcquisition, valeurMobilier, travaux, typeLocationLmnp, performSave]);
+  }, [zoneBien, forceTerrainPct, terrainPctCustom, typeLocationLmnp, performSave]);
 
   // Compute amortissement
   const amortissementLines = computeAmortissement(prixAchat, terrainPct, valeurMobilier, travaux);
@@ -215,7 +192,8 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
 
   // LMP : pas de plafonnement de l'amortissement — le déficit BIC, y compris celui créé par
   // l'amortissement, est imputable sur le revenu global sans plafond ni limite de durée.
-  const isLMP = asset.nature === 'Immeubles locatifs (LMP)';
+  // Statut du loueur porté par type_location (LMNP par défaut).
+  const isLMP = asset.type_location === 'Location meublée professionnelle (LMP)';
   const resultatFiscalReel = isLMP
     ? computeResultatReelLMP(totalRevenusAnnuel, chargesDeductiblesReel, totalAmortissementAnnuel).resultatFiscal
     : resultatFiscalReelLMNP;
@@ -274,6 +252,16 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
             </span>
             <button
               type="button"
+              onClick={() => {
+                if (l.type === 'revenu') { setRevenuEdite(revenus.find(x => x.id === l.id) ?? null); setRevenuFormOpen(true); }
+                else { setChargeEditee(charges.find(x => x.id === l.id) ?? null); setChargeFormOpen(true); }
+              }}
+              className="h-8 shrink-0 rounded-[2px] px-2 text-[12.5px] font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              Modifier
+            </button>
+            <button
+              type="button"
               aria-label={`Supprimer ${l.nom}`}
               onClick={() => l.id && setPendingDelete({ id: l.id, nom: l.nom, type: l.type })}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[2px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
@@ -314,7 +302,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
 
       <div className="px-8 pt-6 pb-4">
         <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{asset.denomination || 'Bien meublé'}</h1>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">{asset.nature}</p>
+        <p className="mt-1 text-[12.5px] text-muted-foreground">{getNatureDisplayLabel(asset.nature)}</p>
       </div>
 
       <div className="grid grid-cols-1 divide-y divide-border border-t border-border lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:divide-x lg:divide-y-0">
@@ -322,41 +310,26 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
         <div className="min-w-0 divide-y divide-border">
           <section className="px-8 py-6">
             <SectionHeader title="Informations du bien" />
-            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+            <p className="-mt-2 mb-4 text-[12.5px] text-muted-foreground">
+              Se modifient dans Patrimoine → Actifs → ce bien (onglet Propriété) : ils y servent aussi à la plus-value et à la qualification du bien.
+            </p>
+            <dl className="-mx-2 mb-5 grid grid-cols-1 border-y border-border md:grid-cols-2 md:gap-x-6">
               {([
-                ["Prix d'achat du bien", prixAchat, handlePrixAchatChange, '200 000'],
-                ['Frais de notaire', fraisNotaire, setFraisNotaire, "7,5 % du prix d'achat"],
-                ['Valeur du mobilier', valeurMobilier, setValeurMobilier, '10 000'],
-                ['Travaux', travaux, setTravaux, '20 000'],
-              ] as const).map(([label, value, setter, placeholder]) => (
-                <div key={label} className="space-y-1.5">
-                  <Label>{label}</Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      value={value || ''}
-                      onChange={(e) => setter(parseFloat(e.target.value) || 0)}
-                      placeholder={placeholder}
-                      className={`${numberCls} pr-8`}
-                    />
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">€</span>
-                  </div>
+                ["Prix d'achat du bien", formatCurrency(prixAchat)],
+                ['Frais de notaire', formatCurrency(fraisNotaire)],
+                ['Valeur du mobilier', formatCurrency(valeurMobilier)],
+                ['Travaux', formatCurrency(travaux)],
+                ["Année d'acquisition", anneeAcquisition || '—'],
+              ] as const).map(([label, valeur]) => (
+                <div key={label} className="flex items-baseline justify-between gap-4 border-b border-border px-2 py-2.5 text-[13px]">
+                  <dt className="text-muted-foreground">{label}</dt>
+                  <dd className="tabular-nums text-foreground">{valeur}</dd>
                 </div>
               ))}
+            </dl>
+            <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>Année d'acquisition</Label>
-                <Input
-                  type="number"
-                  value={anneeAcquisition}
-                  onChange={(e) => setAnneeAcquisition(e.target.value)}
-                  placeholder="2024"
-                  min="1900"
-                  max="2100"
-                  className={numberCls}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Type de location</Label>
+                <Label>Catégorie de meublé</Label>
                 <Select value={typeLocationLmnp} onValueChange={setTypeLocationLmnp}>
                   <SelectTrigger className="rounded-[2px] border-border bg-background shadow-none">
                     <SelectValue placeholder="Sélectionner" />
@@ -474,7 +447,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
           <section className="px-8 py-6">
             <div className="mb-3.5 flex items-center justify-between gap-3">
               <SectionHeader title="Revenus locatifs" />
-              <Button type="button" onClick={() => setRevenuFormOpen(true)} className={`-mt-3.5 ${panelButtonClass}`} variant="outline">
+              <Button type="button" onClick={() => { setRevenuEdite(null); setRevenuFormOpen(true); }} className={`-mt-3.5 ${panelButtonClass}`} variant="outline">
                 <Plus className="h-4 w-4" /> Ajouter
               </Button>
             </div>
@@ -484,7 +457,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
           <section className="px-8 py-6">
             <div className="mb-3.5 flex items-center justify-between gap-3">
               <SectionHeader title="Charges" markClassName="bg-citron" />
-              <Button type="button" onClick={() => setChargeFormOpen(true)} className={`-mt-3.5 ${panelButtonClass}`} variant="outline">
+              <Button type="button" onClick={() => { setChargeEditee(null); setChargeFormOpen(true); }} className={`-mt-3.5 ${panelButtonClass}`} variant="outline">
                 <Plus className="h-4 w-4" /> Ajouter
               </Button>
             </div>
@@ -553,12 +526,12 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
         </aside>
       </div>
 
-      {asset.nature === 'Immeubles locatifs (LMNP)' && (
+      {!isLMP && (
         <div className="border-t border-border">
           <SimulateurRentabiliteLMNPSection asset={asset} emprunts={emprunts} />
         </div>
       )}
-      {asset.nature === 'Immeubles locatifs (LMP)' && (
+      {isLMP && (
         <div className="border-t border-border">
           <SimulateurRentabiliteLMPSection asset={asset} emprunts={emprunts} />
         </div>
@@ -593,6 +566,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
         open={revenuFormOpen}
         onOpenChange={setRevenuFormOpen}
         impactBudget={impactBudget}
+        revenu={revenuEdite}
         onSuccess={fetchData}
       />
       <ChargeForm
@@ -600,6 +574,7 @@ export const LMNPDetailView: React.FC<LMNPDetailViewProps> = ({ asset, emprunts 
         open={chargeFormOpen}
         onOpenChange={setChargeFormOpen}
         impactBudget={impactBudget}
+        charge={chargeEditee}
         onSuccess={fetchData}
       />
     </div>

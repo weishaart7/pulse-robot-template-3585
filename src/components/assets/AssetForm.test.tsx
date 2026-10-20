@@ -210,7 +210,9 @@ describe('AssetForm — location d\'un bien locatif', () => {
     await waitFor(() => expect(screen.getByDisplayValue('Studio Nantes')).toBeInTheDocument());
 
     await user.click(screen.getByRole('button', { name: 'Caractéristiques' }));
-    expect(screen.getByText('Type de location')).toBeInTheDocument();
+    // Loués nus : toujours en location nue, le type n'est pas proposé ; le régime reste à choisir.
+    expect(screen.queryByText('Type de location')).not.toBeInTheDocument();
+    expect(screen.getByText('Régime fiscal')).toBeInTheDocument();
     expect(screen.queryByText('Loyer mensuel hors charges')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer' }));
 

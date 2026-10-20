@@ -2,10 +2,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { ASSET_CATEGORIES } from '@/constants/assetTypes';
 
 // Biens retenus par la synthèse foncière (location nue) : actifs transférés dans Immobilier, de nature
-// immobilière hors meublé — une nature LMNP/LMP relève des BIC, jamais des revenus fonciers, même si
-// type_location indique « Location nue ».
+// immobilière hors meublé — un meublé (LMNP ou LMP) relève des BIC, jamais des revenus fonciers.
 const NATURES_LOCATION_NUE = (ASSET_CATEGORIES['actifs immobiliers'] as readonly string[]).filter(
-  (n) => n !== 'Immeubles locatifs (LMNP)' && n !== 'Immeubles locatifs (LMP)',
+  (n) => n !== 'Immeubles locatifs (meublés)',
 );
 
 export interface Asset {

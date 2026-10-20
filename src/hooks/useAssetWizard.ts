@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { AssetFormValues } from '@/schemas/assetSchema';
 import { NATURES_WITHOUT_ACQUISITION, isCreance, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
 import { useAssetForm } from './useAssetForm';
-import { isRentalPropertyType } from '@/schemas/immobilierPropertySchema';
+import { isRentalPropertyType, estEnLocation } from '@/schemas/immobilierPropertySchema';
 import { AssetCharge } from '@/services/assetService';
 import { IndivisaireDraft } from '@/components/assets/IndivisairesSection';
 import { AssetSaisieExtras } from '@/hooks/useAssetForm';
@@ -71,7 +71,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     label: 'Location',
     fields: ['type_location', 'regime_location', 'loyer_mensuel'],
     // Biens locatifs seulement (RENTAL_PROPERTY_TYPES), comme la section Location de la fiche Immobilier.
-    isVisible: (values) => isRentalPropertyType(values.nature),
+    // Stationnement : seulement s'il est loué (question « Usage » de l'étape 1).
+    isVisible: (values) => estEnLocation(values),
   },
   {
     id: 'particularites',
