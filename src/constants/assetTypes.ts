@@ -486,6 +486,12 @@ export const isClubDealOuSPV = (nature: string | null | undefined): boolean =>
 export const isPEA = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_PEA as readonly string[]).includes(nature);
 
+// Défiscalisation (FIP, FIP Corse, FCPI, SOFICA) : valeur_acquisition = montant souscrit, base
+// de la réduction d'IR (taux saisi, reduction_ir_entree) et de la plus-value.
+export const NATURES_DEFISCALISATION = ['Parts de FIP', 'Parts de FIP Corse', 'Parts de FCPI', 'Parts de SOFICA'] as const;
+export const isDefiscalisation = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_DEFISCALISATION as readonly string[]).includes(nature);
+
 // Titulaire unique (contrat souscrit ou PEA) : jamais « Le couple » ni indivision, même pour
 // un bien commun — la communauté porte sur la valeur, pas sur la qualité de titulaire.
 export const isTitulaireUnique = (nature: string | null | undefined): boolean =>

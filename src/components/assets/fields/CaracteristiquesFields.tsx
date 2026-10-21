@@ -194,6 +194,17 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const valeursMobilieresChamps = VALEURS_MOBILIERES_NATURES_CHAMPS[watchedNature] || [];
   const showDureeBlocage = valeursMobilieresChamps.includes('duree_blocage');
   const showReductionIrEntree = valeursMobilieresChamps.includes('reduction_ir_entree');
+  // Réduction d'IR : montant = taux saisi × montant souscrit (valeur_acquisition), parts à
+  // conserver 5 ans. Pas de reprise au décès pour FIP / FCPI (art. 199 terdecies-0 A) ; SOFICA :
+  // exception non affirmée.
+  const watchedReductionIr = form.watch('reduction_ir_entree');
+  const watchedMontantSouscrit = form.watch('valeur_acquisition');
+  const watchedDateSouscription = form.watch('date_acquisition');
+  const reductionObtenue = (watchedReductionIr ?? 0) > 0 && (watchedMontantSouscrit ?? 0) > 0
+    ? Math.round((watchedReductionIr! / 100) * watchedMontantSouscrit!) : undefined;
+  const finConservation = watchedDateSouscription ? (() => {
+    const d = new Date(watchedDateSouscription); d.setFullYear(d.getFullYear() + 5); return d.toLocaleDateString('fr-FR');
+  })() : undefined;
   const showDateAttribution = valeursMobilieresChamps.includes('date_attribution');
   const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
   const showMontantEngageAppele = valeursMobilieresChamps.includes('montant_engage');
@@ -1222,6 +1233,13 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                   />
                 </FormControl>
+                {reductionObtenue !== undefined && (
+                  <FieldHelp>
+                    Réduction obtenue : <span className="tabular-nums text-foreground">{formatCurrency(reductionObtenue)}</span>
+                    {finConservation && <> · à conserver jusqu'au {finConservation}</>}
+                    {watchedNature !== 'Parts de SOFICA' && <>, pas de reprise en cas de décès du souscripteur ou de son conjoint</>}.
+                  </FieldHelp>
+                )}
                 <FormMessage />
               </FormItem>
             )} />
