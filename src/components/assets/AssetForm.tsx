@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { Asset, AssetCharge } from '@/services/assetService';
 import { ChargeForm, debiteurDepuisDetention } from './ChargeForm';
-import { NATURES_WITHOUT_ACQUISITION, isAssuranceVieHorsSuccession, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isAssuranceVieHorsSuccession, isCreance, isLiquidites, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useAssetForm } from '@/hooks/useAssetForm';
 import AnimatedBackground from '@/components/ui/animated-tabs';
 import { Info, Users, ShoppingCart, Coins, Receipt } from 'lucide-react';
@@ -173,7 +173,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const renderProprieteSection = () => {
     const sansAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature);
     const prixVisible = champsObligatoiresVisibles({ nature: watchedNature, detenteur: watchedDetenteur }).valeur_acquisition;
-    const qualificationVisible = !sansAcquisition && !isPrevoyanceSansRachat(watchedNature);
+    const qualificationVisible = (!sansAcquisition || isLiquidites(watchedNature)) && !isPrevoyanceSansRachat(watchedNature);
     const enCouple = isInCouple(maritalContext.statutCouple);
     const pacs = maritalContext.statutCouple === 'Pacsé(e)';
     const dateUnion = pacs ? maritalContext.datePacs : maritalContext.dateMariage;

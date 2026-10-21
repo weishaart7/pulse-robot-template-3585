@@ -8,7 +8,7 @@ import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
-import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isTitulaireUnique, isPEA, isPrevoyanceDeces, hasSuiviAppelsFonds } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isTitulaireUnique, isTitulaireNominatif, isPrevoyanceDeces, hasSuiviAppelsFonds } from '@/constants/assetTypes';
 import { fondsMouvementService } from '@/services/fondsMouvementService';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 import { lirePerimetreDesClauses, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
@@ -385,9 +385,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       // affiché alors que la valeur réelle a changé (constaté en test manuel
       // le 2026-09-22). Un setTimeout(0) sort de ce cycle de rendu en cours et
       // laisse le Controller se resynchroniser normalement.
-      // PEA / PEA-PME : jamais « Le couple » (plan à titulaire unique), même commun — ex. proposé
-      // au montage avant le choix de la nature.
-      if (((qualification === 'Bien propre' || qualification === 'Bien personnel') || isPEA(value.nature)) && value.detenteur === 'Le couple') {
+      // PEA, livrets réglementés, épargne logement : jamais « Le couple » (titulaire unique), même
+      // commun — ex. proposé au montage avant le choix de la nature.
+      if (((qualification === 'Bien propre' || qualification === 'Bien personnel') || isTitulaireNominatif(value.nature)) && value.detenteur === 'Le couple') {
         setTimeout(() => {
           form.setValue('detenteur', '');
           form.setValue('pourcentage_utilisateur', undefined);

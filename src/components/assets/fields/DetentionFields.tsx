@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
-import { isActionnariatSalarie, isClubDealOuSPV, isContratSouscrit, isCTO, isPEA, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { isActionnariatSalarie, isClubDealOuSPV, isContratSouscrit, isCTO, isPEA, isTitulaireNominatif, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
 import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -66,9 +66,9 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
 
   // Contrat : souscripteur unique (pas d'indivision) ; « Le couple » exclu en prévoyance
   // (co-souscription non modélisée), conservé ailleurs avec une alerte en Transmission.
-  // PEA / PEA-PME : titulaire unique, ni « Le couple » ni indivision (pas de plan joint).
+  // PEA, livrets réglementés, épargne logement : titulaire unique, ni « Le couple » ni indivision.
   const isContrat = isContratSouscrit(watchedNature);
-  const isPlanPEA = isPEA(watchedNature);
+  const isPlanPEA = isTitulaireNominatif(watchedNature);
   // Actionnariat salarié : bénéficiaire unique (droit attaché à la personne).
   const isAS = isActionnariatSalarie(watchedNature);
   const titulaireUnique = isContrat || isPlanPEA || isAS;
@@ -110,7 +110,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             <FormLabel>{libelle}</FormLabel>
             {isPlanPEA && (
               <FieldHelp>
-                Un PEA n'a qu'un titulaire. Il peut néanmoins être commun : sa valeur se partage alors à la liquidation du régime.
+                {isPEA(watchedNature) ? 'Un PEA' : 'Ce compte'} n'a qu'un titulaire. Il peut néanmoins être commun : sa valeur se partage alors à la liquidation du régime.
               </FieldHelp>
             )}
             {field.value === 'Indivision' && (

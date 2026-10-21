@@ -18,7 +18,7 @@ export const ORIGINE_ACTIF_OPTIONS = [
 // Origines proposées pour une créance : mêmes valeurs stockées (lues telles quelles par
 // qualifierBien()), libellés propres. Des fonds propres se signalent par la clause de remploi.
 export const ORIGINE_CREANCE_OPTIONS = [
-  { value: 'Acquisition à titre onéreux', label: 'Prêt ou vente consenti par le foyer' },
+  { value: 'Acquisition à titre onéreux', label: 'Prêt, vente ou dépôt consenti par le foyer' },
   { value: 'Héritage', label: 'Reçue par héritage ou partage successoral' },
   { value: 'Donation', label: 'Reçue par donation' },
 ] as const;

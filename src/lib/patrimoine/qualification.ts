@@ -38,7 +38,7 @@
  * - Sans union (célibataire / divorcé / veuf) → bien personnel
  */
 
-import { getAssetCategory, isActionnariatSalarie } from '@/constants/assetTypes';
+import { getAssetCategory, isActionnariatSalarie, isLiquidites } from '@/constants/assetTypes';
 import { isDetenteurCommon } from './utils';
 import { categorieCouvrante, PerimetreSocieteAcquets } from './societeAcquets';
 
@@ -549,6 +549,15 @@ export const qualifierBien = (ctx: QualificationContext): {
     return {
       qualification: 'Bien commun',
       raison: `Financement mixte (art. 1436) : la contribution en fonds propres (${apportFondsPropres} €) est inférieure à la moitié du coût total d'acquisition, frais inclus (${coutTotalAcquisition} €, Cass. 1re civ., 7 oct. 2018, n°17-25965) : bien commun, récompense due à l'époux apporteur pour sa contribution en fonds propres — à documenter dans le module Récompenses.`,
+    };
+  }
+
+  // Sommes en compte (sans date ni origine saisies) : présomption de communauté (art. 1402),
+  // à renverser manuellement si les fonds sont propres (avant le mariage, donation, succession).
+  if (isLiquidites(natureActif) && !dateAcquisition) {
+    return {
+      qualification: 'Bien commun',
+      raison: "Sommes en compte : présumées communes (art. 1402). Si elles proviennent d'avant le mariage, d'une donation ou d'une succession, modifiez la qualification manuellement.",
     };
   }
 

@@ -26,9 +26,10 @@ describe('contrats souscrits et prévoyance', () => {
 });
 
 describe('isCreance', () => {
-  it('reconnaît les 3 natures de créance, pas le dépôt de garantie', () => {
+  it('reconnaît les natures de créance, dépôt de garantie compris (créance sur le bailleur)', () => {
     expect(isCreance('Prêt consenti à un proche')).toBe(true);
     expect(isCreance('Soulte ou prix de vente à recevoir')).toBe(true);
-    expect(isCreance('Dépôt de garantie')).toBe(false);
+    expect(isCreance('Dépôt de garantie')).toBe(true);
+    expect(isCreance('Livret A')).toBe(false);
   });
 });

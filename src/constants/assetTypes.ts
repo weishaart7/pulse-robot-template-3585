@@ -162,8 +162,7 @@ export const ASSET_CATEGORIES = {
     "PEL",
     "Compte à terme",
     "Bons de caisse (ou bon d'épargne)",
-    "PEP Bancaire",
-    "Dépôt de garantie"
+    "PEP Bancaire"
   ],
   "valeurs mobilières et placements financiers": [
     "Compte-titres (CTO)",
@@ -186,7 +185,8 @@ export const ASSET_CATEGORIES = {
   "créances": [
     "Prêt consenti à un proche",
     "Créance sur un tiers (reconnaissance de dette)",
-    "Soulte ou prix de vente à recevoir"
+    "Soulte ou prix de vente à recevoir",
+    "Dépôt de garantie"
   ],
   "autres": [
     "Droits de propriété littéraire ou artistique",
@@ -227,7 +227,7 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
     { titre: "Capitalisation", natures: ["Bons & contrats de capitalisation", "Contrat de capitalisation luxembourgeois"] },
   ],
   "épargne bancaire / liquidités": [
-    { titre: "Comptes", natures: ["Comptes courants", "Compte à terme", "Dépôt de garantie"] },
+    { titre: "Comptes", natures: ["Comptes courants", "Compte à terme"] },
     { titre: "Livrets", natures: ["Comptes sur livret (CSL)", "Livret A", "Livret Bleu", "Livret de développement durable et solidaire (LDDS)", "Livret d'épargne populaire (LEP)", "Livret Jeune"] },
     { titre: "Épargne logement et bons", natures: ["CEL", "PEL", "PEP Bancaire", "Bons de caisse (ou bon d'épargne)"] },
   ],
@@ -475,6 +475,20 @@ export const isClubDealOuSPV = (nature: string | null | undefined): boolean =>
 export const isPEA = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_PEA as readonly string[]).includes(nature);
 
+// Livrets réglementés et épargne logement : un seul titulaire (un plan par personne, pas de compte
+// joint), alors même que leur valeur peut être commune entre époux (art. 1402).
+export const NATURES_COMPTES_REGLEMENTES = [
+  'Livret A', 'Livret Bleu', 'Livret de développement durable et solidaire (LDDS)',
+  "Livret d'épargne populaire (LEP)", 'Livret Jeune', 'CEL', 'PEL', 'PEP Bancaire',
+] as const;
+export const isCompteReglemente = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_COMPTES_REGLEMENTES as readonly string[]).includes(nature);
+/** Compte ou plan nominatif (PEA, livret réglementé, épargne logement) : libellé « Titulaire », ni « Le couple » ni indivision. */
+export const isTitulaireNominatif = (nature: string | null | undefined): boolean =>
+  isPEA(nature) || isCompteReglemente(nature);
+export const isLiquidites = (nature: string | null | undefined): boolean =>
+  !!nature && (ASSET_CATEGORIES['épargne bancaire / liquidités'] as readonly string[]).includes(nature);
+
 // SOFICA : valeur_acquisition = montant souscrit, base de la réduction d'IR (taux saisi,
 // reduction_ir_entree) et de la plus-value.
 export const NATURES_DEFISCALISATION = ['Parts de SOFICA'] as const;
@@ -522,7 +536,7 @@ export const isActionnariatSalarie = (nature: string | null | undefined): boolea
 // Titulaire unique (contrat souscrit ou PEA) : jamais « Le couple » ni indivision, même pour
 // un bien commun — la communauté porte sur la valeur, pas sur la qualité de titulaire.
 export const isTitulaireUnique = (nature: string | null | undefined): boolean =>
-  isContratSouscrit(nature) || isPEA(nature) || isActionnariatSalarie(nature);
+  isContratSouscrit(nature) || isTitulaireNominatif(nature) || isActionnariatSalarie(nature);
 
 // Prévoyance sans valeur de rachat (temporaire décès, prévoyance individuelle) : rien à
 // partager entre époux, la qualification commun / propre est sans objet (art. L132-16 C. ass.).

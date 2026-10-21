@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
 import { formatCurrency } from '@/lib/patrimoine/utils';
 import { MouvementsFondsFields } from './MouvementsFondsFields';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, hasEngagementAppels, hasSuiviAppelsFonds, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, hasEngagementAppels, hasSuiviAppelsFonds, isActionnariatSalarie, isLiquidites, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -339,7 +339,8 @@ export const QualificationFields: React.FC<QualificationFieldsProps> = ({ form, 
     : null;
 
   // Prévoyance sans valeur de rachat : qualification sans objet (rien à partager entre époux).
-  if ((NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature)) || isPrevoyanceSansRachat(watchedNature)) return null;
+  // Liquidités : qualification affichée (présumée commune, corrigeable) malgré l'absence de date et d'origine.
+  if ((NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !isCreance(watchedNature) && !isLiquidites(watchedNature)) || isPrevoyanceSansRachat(watchedNature)) return null;
 
   return (
     <FormField control={form.control} name="qualification_bien" render={({ field }) => (

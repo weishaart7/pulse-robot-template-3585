@@ -105,4 +105,23 @@ describe('useAssetForm — cohérence détenteur / qualification (régime légal
     await waitFor(() => expect(result.current.form.getValues('valeur_acquisition')).toBe(50000));
     expect(result.current.form.getValues('date_acquisition')).toEqual(new Date('2022-03-15'));
   });
+
+  it("garde le titulaire individuel d'un Livret A commun (pas de « Le couple »)", async () => {
+    const { result } = renderHook(() => useAssetForm({ onSubmit: vi.fn() }));
+    await waitFor(() => expect(result.current.maritalContext.statutCouple).toBe('Marié(e)'));
+
+    act(() => {
+      result.current.form.setValue('nature', 'Livret A');
+    });
+    await waitFor(() => expect(result.current.form.getValues('qualification_bien')).toBe('Bien commun'));
+    act(() => {
+      result.current.form.setValue('detenteur', 'Titouan', { shouldDirty: true });
+    });
+    act(() => {
+      result.current.form.trigger('detenteur');
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(result.current.form.getValues('detenteur')).toBe('Titouan');
+  });
 });

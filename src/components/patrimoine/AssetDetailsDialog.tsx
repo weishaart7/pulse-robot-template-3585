@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPEA, getLibelleMontantInvesti, hasEngagementAppels, hasSuiviAppelsFonds, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPEA, isTitulaireNominatif, getLibelleMontantInvesti, hasEngagementAppels, hasSuiviAppelsFonds, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -195,7 +195,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
             <div className="p-4 rounded-[2px] border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{isContratSouscrit(asset.nature) ? 'Souscripteur' : isPEA(asset.nature) ? 'Titulaire' : isActionnariatSalarie(asset.nature) ? 'Bénéficiaire' : 'Détenteur'}</span>
+                <span className="text-sm text-muted-foreground">{isContratSouscrit(asset.nature) ? 'Souscripteur' : isTitulaireNominatif(asset.nature) ? 'Titulaire' : isActionnariatSalarie(asset.nature) ? 'Bénéficiaire' : 'Détenteur'}</span>
               </div>
               <div className="text-[17px] font-medium tabular-nums">
                 {formatDetenteur(asset.detenteur)}

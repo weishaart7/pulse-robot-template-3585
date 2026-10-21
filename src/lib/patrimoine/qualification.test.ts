@@ -565,3 +565,11 @@ describe('qualifierBien — actionnariat salarié non exercé (art. 1404)', () =
     expect(qualifierBien({ ...base, natureActif: 'Compte-titres (CTO)', origineActif: ['Acquisition à titre onéreux'] }).qualification).toBe('Bien commun');
   });
 });
+
+describe('qualifierBien — liquidités sans date (art. 1402)', () => {
+  it('livret en communauté : présumé commun, raison invitant à corriger si fonds propres', () => {
+    const r = qualifierBien({ statutCouple: 'Marié(e)', regimeMatrimonial: 'Communauté réduite aux acquêts', dateMariage: '2015-06-01', natureActif: 'Livret A', detenteur: 'user' });
+    expect(r.qualification).toBe('Bien commun');
+    expect(r.raison).toContain('présumées communes (art. 1402)');
+  });
+});
