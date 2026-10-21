@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
-import { isActionnariatSalarie, isClubDealOuSPV, isContratSouscrit, isCTO, isPEA, isTitulaireNominatif, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { isActionnariatSalarie, isDroitsAuteur, isClubDealOuSPV, isContratSouscrit, isCTO, isPEA, isTitulaireNominatif, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
 import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -71,9 +71,11 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
   const isPlanPEA = isTitulaireNominatif(watchedNature);
   // Actionnariat salarié : bénéficiaire unique (droit attaché à la personne).
   const isAS = isActionnariatSalarie(watchedNature);
-  const titulaireUnique = isContrat || isPlanPEA || isAS;
-  const coupleExclu = isPrevoyanceDeces(watchedNature) || isPlanPEA || isAS;
-  const libelle = isContrat ? 'Souscripteur' : isPlanPEA ? 'Titulaire' : isAS ? 'Bénéficiaire' : 'Détenteur';
+  // Droits d'auteur : l'auteur seul (droit d'exploitation propre, art. L121-9 CPI).
+  const isAuteur = isDroitsAuteur(watchedNature);
+  const titulaireUnique = isContrat || isPlanPEA || isAS || isAuteur;
+  const coupleExclu = isPrevoyanceDeces(watchedNature) || isPlanPEA || isAS || isAuteur;
+  const libelle = isContrat ? 'Souscripteur' : isPlanPEA ? 'Titulaire' : isAS ? 'Bénéficiaire' : isAuteur ? 'Auteur' : 'Détenteur';
   useEffect(() => {
     if ((titulaireUnique && watchedDetenteur === 'Indivision') || (coupleExclu && watchedDetenteur === 'Le couple')) {
       form.setValue('detenteur', '');
@@ -128,7 +130,7 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
                 Compte joint ou indivis : au décès, les titres sont présumés appartenir à chaque cotitulaire par parts égales, sauf preuve contraire (art. 753 CGI).
               </FieldHelp>
             )}
-            {field.value !== 'Indivision' && qualifiePropre && !coupleRequalifie && !isPlanPEA && !isAS && (
+            {field.value !== 'Indivision' && qualifiePropre && !coupleRequalifie && !isPlanPEA && !isAS && !isAuteur && (
               <FieldHelp>
                 "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
               </FieldHelp>

@@ -753,6 +753,10 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   n'est pas clôturé : la moitié de sa valeur entre dans la succession (part `Bien commun`) et se règle
   au partage, note dédiée. Un PEA propre du survivant reste hors succession. Tests :
   `utils/transmissionHelpers.placements.test.ts`.
+- **Droits d'auteur (`index.ts`, note `explicationsTexte`).** Usufruit légal du conjoint survivant sur
+  le droit d'exploitation (art. L123-6 CPI), non modélisé dans le partage : note réservée aux droits de
+  propriété littéraire ou artistique (`isDroitsAuteur`), plus aux droits à royalties achetés comme
+  placement. Tests : `utils/transmissionHelpers.placements.test.ts`.
 - **Actionnariat salarié non exercé (`index.ts`, note `explicationsTexte`).** Stock-options, AGA en
   période d'acquisition et BSPCE du défunt (propres par nature) : une note commune, retenus pour leur
   valeur saisie ; stock-options et BSPCE exerçables par les héritiers dans les 6 mois (gain de levée des

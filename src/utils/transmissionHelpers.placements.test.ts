@@ -88,3 +88,10 @@ describe('Cryptomonnaies au décès', () => {
     expect(explications([crypto('plateforme')] as never)).not.toContain('portefeuille personnel');
   });
 });
+
+describe('Droits d\'auteur au décès', () => {
+  it('usufruit du conjoint (L123-6) pour les droits d\'auteur, pas pour les royalties', () => {
+    expect(explications([pea('Œuvres Paul', 'Droits de propriété littéraire ou artistique', 'user', 'Bien propre')])).toContain('art. L123-6 CPI');
+    expect(explications([pea('Catalogue', 'Droits à royalties', 'user', 'Bien propre')])).not.toContain('L123-6');
+  });
+});

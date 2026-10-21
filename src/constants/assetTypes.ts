@@ -536,7 +536,13 @@ export const isActionnariatSalarie = (nature: string | null | undefined): boolea
 // Titulaire unique (contrat souscrit ou PEA) : jamais « Le couple » ni indivision, même pour
 // un bien commun — la communauté porte sur la valeur, pas sur la qualité de titulaire.
 export const isTitulaireUnique = (nature: string | null | undefined): boolean =>
-  isContratSouscrit(nature) || isTitulaireNominatif(nature) || isActionnariatSalarie(nature);
+  isContratSouscrit(nature) || isTitulaireNominatif(nature) || isActionnariatSalarie(nature) || isDroitsAuteur(nature);
+
+// Droits d'auteur : droit d'exploitation propre à l'époux auteur sous tous les régimes (art. L121-9
+// CPI), seuls les revenus perçus pendant le mariage suivant le régime matrimonial. À distinguer des
+// droits à royalties achetés comme placement (droit commun).
+export const NATURE_DROITS_AUTEUR = 'Droits de propriété littéraire ou artistique';
+export const isDroitsAuteur = (nature: string | null | undefined): boolean => nature === NATURE_DROITS_AUTEUR;
 
 // Prévoyance sans valeur de rachat (temporaire décès, prévoyance individuelle) : rien à
 // partager entre époux, la qualification commun / propre est sans objet (art. L132-16 C. ass.).

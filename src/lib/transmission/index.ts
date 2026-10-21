@@ -36,7 +36,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA, isActionnariatSalarie, NATURE_CRYPTO } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA, isActionnariatSalarie, NATURE_CRYPTO, isDroitsAuteur } from '../../constants/assetTypes';
 import { isDetenteurSpouse } from '../patrimoine/utils';
 import {
   computeDMTG,
@@ -1186,13 +1186,13 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
-  // Droits d'auteur : usufruit légal du conjoint sur le droit d'exploitation.
-  const droitsAuteur = (rawAssets || []).filter(a => (a.nature === 'Droits de propriété littéraire ou artistique' || a.nature === 'Droits à royalties')
-    && getFractionSuccessorale(a) > 0);
+  // Droits d'auteur : usufruit légal du conjoint sur le droit d'exploitation (auteur seulement ; les
+  // droits à royalties achetés comme placement relèvent du droit commun).
+  const droitsAuteur = (rawAssets || []).filter(a => isDroitsAuteur(a.nature) && getFractionSuccessorale(a) > 0);
   if (droitsAuteur.length > 0) {
     successionLegaleResult.explicationsTexte.push(
       `${droitsAuteur.map(a => a.denomination || a.nature).join(', ')} : valeur saisie (en général capitalisation des revenus). ` +
-      `Pour des droits d'auteur, le conjoint survivant dispose d'un usufruit légal sur le droit d'exploitation (art. L123-6 CPI), ` +
+      `Le conjoint survivant dispose d'un usufruit légal sur le droit d'exploitation (art. L123-6 CPI), ` +
       `en plus de ses droits successoraux : non modélisé dans le partage. Le droit moral se transmet sans valeur.`
     );
   }

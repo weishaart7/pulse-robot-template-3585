@@ -573,3 +573,15 @@ describe('qualifierBien — liquidités sans date (art. 1402)', () => {
     expect(r.raison).toContain('présumées communes (art. 1402)');
   });
 });
+
+describe('qualifierBien — droits d\'auteur (art. L121-9 CPI)', () => {
+  const base = { statutCouple: 'Marié(e)', regimeMatrimonial: 'Communauté réduite aux acquêts', dateMariage: '2015-06-01', dateAcquisition: '2020-01-01', origineActif: ['Création'], detenteur: 'user' };
+
+  it('droit créé pendant le mariage : propre à l\'auteur', () => {
+    expect(qualifierBien({ ...base, natureActif: 'Droits de propriété littéraire ou artistique' }).qualification).toBe('Bien propre');
+  });
+
+  it('droits à royalties achetés comme placement : droit commun', () => {
+    expect(qualifierBien({ ...base, origineActif: ['Acquisition à titre onéreux'], natureActif: 'Droits à royalties' }).qualification).toBe('Bien commun');
+  });
+});

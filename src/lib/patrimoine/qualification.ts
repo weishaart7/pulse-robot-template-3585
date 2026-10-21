@@ -38,7 +38,7 @@
  * - Sans union (célibataire / divorcé / veuf) → bien personnel
  */
 
-import { getAssetCategory, isActionnariatSalarie, isLiquidites } from '@/constants/assetTypes';
+import { getAssetCategory, isActionnariatSalarie, isDroitsAuteur, isLiquidites } from '@/constants/assetTypes';
 import { isDetenteurCommon } from './utils';
 import { categorieCouvrante, PerimetreSocieteAcquets } from './societeAcquets';
 
@@ -303,6 +303,21 @@ export const qualifierBien = (ctx: QualificationContext): {
     return {
       qualification: 'Bien personnel',
       raison: "Droit attaché à la personne du bénéficiaire : exclu de l'indivision du PACS (art. 515-5-2).",
+    };
+  }
+
+  // Droits d'auteur : droit d'exploitation propre à l'auteur sous tous les régimes (art. L121-9 CPI) ;
+  // les revenus perçus pendant le mariage, eux, suivent le régime (saisis à part, en liquidités).
+  if (isDroitsAuteur(natureActif) && (isRegimeCommunautaire(regimeMatrimonial) || pacsIndivision)) {
+    if (isRegimeCommunautaire(regimeMatrimonial)) {
+      return {
+        qualification: 'Bien propre',
+        raison: "Droit d'exploitation propre à l'époux auteur (art. L121-9 CPI), quel que soit le régime ; les revenus perçus pendant le mariage sont communs.",
+      };
+    }
+    return {
+      qualification: 'Bien personnel',
+      raison: "Droit d'exploitation propre à l'auteur (art. L121-9 CPI) : exclu de l'indivision du PACS.",
     };
   }
 
