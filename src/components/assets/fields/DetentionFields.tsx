@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
-import { isContratSouscrit, isCTO, isPEA, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { isClubDealOuSPV, isContratSouscrit, isCTO, isPEA, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
 import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -114,6 +114,11 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             {field.value === 'Indivision' && (
               <FieldHelp>
                 En indivision avec un tiers (hors couple), la qualification du bien est directement « Indivision », quels que soient le régime matrimonial et l'origine du bien.
+              </FieldHelp>
+            )}
+            {watchedQualificationBien === 'Bien commun' && isClubDealOuSPV(watchedNature) && (
+              <FieldHelp>
+                Parts non négociables (SARL, société civile) : seul l'époux souscripteur est associé, la valeur des parts reste commune ; son conjoint doit être averti de l'apport de biens communs (art. 1832-2).
               </FieldHelp>
             )}
             {field.value === 'Indivision' && isCTO(watchedNature) && (

@@ -57,7 +57,6 @@ const PARTICULARITES_RECAP_FIELDS: { key: keyof AssetFormValues; label: string }
   { key: 'taux_remuneration', label: 'Taux de rémunération' },
   { key: 'duree_blocage', label: 'Durée de blocage' },
   { key: 'montant_engage', label: 'Montant engagé' },
-  { key: 'montant_appele', label: 'Montant appelé' },
   { key: 'sous_jacent', label: 'Sous-jacent' },
   { key: 'lieu_stockage', label: 'Lieu de stockage' },
   { key: 'quantite', label: 'Quantité' },

@@ -470,6 +470,19 @@ export const NATURES_PEA = ['PEA', 'PEA-PME'] as const;
 
 export const NATURE_CTO = 'Compte-titres (CTO)';
 export const isCTO = (nature: string | null | undefined): boolean => nature === NATURE_CTO;
+
+// Non coté à appels de fonds : valeur_acquisition = montant appelé (sommes effectivement versées),
+// distinct du montant engagé (montant_engage). Club deals / SPV : titres de société (art. 1832-2).
+export const NATURES_NON_COTE = [
+  'Fonds de private equity (LBO, growth, venture)',
+  'Club deals',
+  "SPV d'investissement (structures ad hoc)",
+  'Fonds de dette privée',
+] as const;
+export const isNonCote = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_NON_COTE as readonly string[]).includes(nature);
+export const isClubDealOuSPV = (nature: string | null | undefined): boolean =>
+  nature === 'Club deals' || nature === "SPV d'investissement (structures ad hoc)";
 export const isPEA = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_PEA as readonly string[]).includes(nature);
 
@@ -703,7 +716,6 @@ export type ValeursMobilieresChamp =
   | 'date_attribution'
   | 'prix_exercice'
   | 'montant_engage'
-  | 'montant_appele'
   | 'sous_jacent'
   | 'capital_garanti'
   | 'lieu_stockage'
@@ -716,10 +728,10 @@ export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieres
   'Parts de SOFICA': ['duree_blocage', 'reduction_ir_entree'],
   'Stock-options': ['date_attribution', 'prix_exercice'],
   'Actions gratuites': ['date_attribution'],
-  'Fonds de private equity (LBO, growth, venture)': ['duree_blocage', 'montant_engage', 'montant_appele'],
-  'Club deals': ['duree_blocage', 'montant_engage', 'montant_appele'],
-  "SPV d'investissement (structures ad hoc)": ['duree_blocage', 'montant_engage', 'montant_appele'],
-  'Fonds de dette privée': ['duree_blocage', 'montant_engage', 'montant_appele'],
+  'Fonds de private equity (LBO, growth, venture)': ['duree_blocage', 'montant_engage'],
+  'Club deals': ['duree_blocage', 'montant_engage'],
+  "SPV d'investissement (structures ad hoc)": ['duree_blocage', 'montant_engage'],
+  'Fonds de dette privée': ['duree_blocage', 'montant_engage'],
   'Produits structurés': ['sous_jacent', 'date_echeance', 'capital_garanti'],
   'Autres produits dérivés (Swap, Warrants, CFD...)': ['sous_jacent', 'date_echeance', 'capital_garanti'],
   'Or (physique)': ['lieu_stockage', 'quantite'],

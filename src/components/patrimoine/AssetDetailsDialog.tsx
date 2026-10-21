@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPEA, isCTO, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPEA, isCTO, isNonCote, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -349,7 +349,7 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                 </div>
                 {!isPrevoyanceDeces(asset.nature) && !isCreance(asset.nature) && (
                   <div>
-                    <span className="text-sm text-muted-foreground">{isPEA(asset.nature) ? 'Montant versé' : isCTO(asset.nature) ? 'Montant investi' : "Valeur d'acquisition"}</span>
+                    <span className="text-sm text-muted-foreground">{isPEA(asset.nature) ? 'Montant versé' : isCTO(asset.nature) ? 'Montant investi' : isNonCote(asset.nature) ? 'Montant appelé' : "Valeur d'acquisition"}</span>
                     <p className="font-medium">{formatCurrency(asset.valeur_acquisition)}</p>
                   </div>
                 )}

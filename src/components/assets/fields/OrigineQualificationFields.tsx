@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -94,6 +94,8 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
       ? { valeur: 'Valeur à la découverte', aide: 'Valeur du bien au jour de sa découverte.', frais: 'Frais', aideFrais: 'Frais éventuels (expertise, etc.).' }
       : origine === 'Échange'
         ? { valeur: 'Valeur du bien reçu', aide: "Valeur du bien reçu en échange, soulte comprise.", frais: "Frais d'acquisition", aideFrais: "Notaire, droits d'enregistrement, etc." }
+        : isNonCote(watchedNature)
+          ? { valeur: 'Montant appelé', aide: 'Sommes effectivement versées au fonds ou à la société (hors engagement restant à appeler).', frais: 'Frais de souscription', aideFrais: "Droits d'entrée ou frais de structuration, le cas échéant." }
         : isCTO(watchedNature)
           ? { valeur: 'Montant investi', aide: 'Prix de revient des titres en portefeuille (versements nets des retraits).', frais: "Frais d'acquisition", aideFrais: 'Frais de courtage et droits de garde capitalisés, le cas échéant.' }
         : isPEA(watchedNature)
@@ -127,7 +129,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="date_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>{isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : "Date d'acquisition"}<RequiredMark /></FormLabel>
+                <FormLabel>{isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : isNonCote(watchedNature) ? 'Date de souscription' : "Date d'acquisition"}<RequiredMark /></FormLabel>
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>

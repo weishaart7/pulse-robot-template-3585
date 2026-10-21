@@ -54,6 +54,7 @@ import { useSocietes } from '@/hooks/useSocietes';
 const AUCUNE_SOCIETE = 'aucune';
 import { OptionToggle } from '@/components/ui/option-toggle';
 import { FieldHelp } from '@/components/ui/field-help';
+import { formatCurrency } from '@/lib/patrimoine/utils';
 
 interface CaracteristiquesFieldsProps {
   form: UseFormReturn<AssetFormValues>;
@@ -196,6 +197,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const showDateAttribution = valeursMobilieresChamps.includes('date_attribution');
   const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
   const showMontantEngageAppele = valeursMobilieresChamps.includes('montant_engage');
+  const watchedMontantEngage = form.watch('montant_engage');
+  const watchedMontantAppele = form.watch('valeur_acquisition');
   const showSousJacent = valeursMobilieresChamps.includes('sous_jacent');
   const showDateEcheanceVM = valeursMobilieresChamps.includes('date_echeance');
   const showCapitalGarantiVM = valeursMobilieresChamps.includes('capital_garanti');
@@ -1245,22 +1248,12 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             </FormItem>
           )} />
 
-          <FormField control={form.control} name="montant_appele" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Montant appelé</FormLabel>
-              <FormControl>
-                <EuroInput
-                  className="bg-background border-border shadow-none"
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          {/* Montant appelé = prix d'acquisition (valeur_acquisition), saisi dans Origine. */}
+          <div className="self-end pb-2 text-[12.5px] leading-snug text-muted-foreground">
+            {(watchedMontantEngage ?? 0) > 0 && (
+              <>Reste à appeler : <span className="tabular-nums text-foreground">{formatCurrency(Math.max(0, (watchedMontantEngage ?? 0) - (watchedMontantAppele ?? 0)))}</span> (engagement envers le fonds, non déduit de l'actif)</>
+            )}
+          </div>
         </div>
       )}
 
