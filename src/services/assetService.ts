@@ -137,14 +137,10 @@ export interface Asset {
   date_echeance?: string;
   // Champs additionnels "valeurs mobilières et placements financiers" — cf.
   // VALEURS_MOBILIERES_NATURES_CHAMPS.
-  plafond_verse?: number;
   duree_blocage?: string;
   reduction_ir_entree?: number;
-  date_attribution?: string;
   prix_exercice?: number;
   montant_engage?: number;
-  montant_appele?: number;
-  sous_jacent?: string;
   lieu_stockage?: string;
   quantite?: string;
   created_at?: string;

@@ -321,13 +321,11 @@ export type Database = {
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
           date_acquisition: string | null
-          date_attribution: string | null
           date_disponibilite: string | null
           date_echeance: string | null
           date_estimation: string | null
           denomination: string | null
           detenteur: string | null
-          detention_matieres_premieres: string | null
           duree_blocage: string | null
           est_propre_par_nature: boolean | null
           etablissement: string | null
@@ -351,14 +349,12 @@ export type Database = {
           meubles: number | null
           mode_detention: string | null
           mode_sortie: string | null
-          montant_appele: number | null
           montant_engage: number | null
           montant_immeuble: number | null
           motif_deblocage_anticipe: string | null
           nature: string
           origine_actif: string[] | null
           part_licitation_personnelle: number | null
-          plafond_verse: number | null
           pourcentage_conjoint: number | null
           pourcentage_terrain_force: number | null
           pourcentage_utilisateur: number | null
@@ -379,7 +375,6 @@ export type Database = {
           situation_particuliere: string[] | null
           societe_id: string | null
           societe_proprietaire_id: string | null
-          sous_jacent: string | null
           sous_type_per: string | null
           statut_bien: string | null
           support_investissement: string | null
@@ -424,13 +419,11 @@ export type Database = {
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
           date_acquisition?: string | null
-          date_attribution?: string | null
           date_disponibilite?: string | null
           date_echeance?: string | null
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
-          detention_matieres_premieres?: string | null
           duree_blocage?: string | null
           est_propre_par_nature?: boolean | null
           etablissement?: string | null
@@ -454,14 +447,12 @@ export type Database = {
           meubles?: number | null
           mode_detention?: string | null
           mode_sortie?: string | null
-          montant_appele?: number | null
           montant_engage?: number | null
           montant_immeuble?: number | null
           motif_deblocage_anticipe?: string | null
           nature: string
           origine_actif?: string[] | null
           part_licitation_personnelle?: number | null
-          plafond_verse?: number | null
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
@@ -482,7 +473,6 @@ export type Database = {
           situation_particuliere?: string[] | null
           societe_id?: string | null
           societe_proprietaire_id?: string | null
-          sous_jacent?: string | null
           sous_type_per?: string | null
           statut_bien?: string | null
           support_investissement?: string | null
@@ -527,13 +517,11 @@ export type Database = {
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
           date_acquisition?: string | null
-          date_attribution?: string | null
           date_disponibilite?: string | null
           date_echeance?: string | null
           date_estimation?: string | null
           denomination?: string | null
           detenteur?: string | null
-          detention_matieres_premieres?: string | null
           duree_blocage?: string | null
           est_propre_par_nature?: boolean | null
           etablissement?: string | null
@@ -557,14 +545,12 @@ export type Database = {
           meubles?: number | null
           mode_detention?: string | null
           mode_sortie?: string | null
-          montant_appele?: number | null
           montant_engage?: number | null
           montant_immeuble?: number | null
           motif_deblocage_anticipe?: string | null
           nature?: string
           origine_actif?: string[] | null
           part_licitation_personnelle?: number | null
-          plafond_verse?: number | null
           pourcentage_conjoint?: number | null
           pourcentage_terrain_force?: number | null
           pourcentage_utilisateur?: number | null
@@ -585,7 +571,6 @@ export type Database = {
           situation_particuliere?: string[] | null
           societe_id?: string | null
           societe_proprietaire_id?: string | null
-          sous_jacent?: string | null
           sous_type_per?: string | null
           statut_bien?: string | null
           support_investissement?: string | null
