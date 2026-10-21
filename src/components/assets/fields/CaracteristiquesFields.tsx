@@ -31,6 +31,9 @@ import {
   MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS,
   LIQUIDITES_NATURES_CHAMPS,
   VALEURS_MOBILIERES_NATURES_CHAMPS,
+  NATURE_FONDS_CI,
+  TYPES_FONDS_CI,
+  getChampsFondsCI,
   QUALIFICATIONS_NFT,
   isEpargneAssuranceVie,
   isPrevoyanceDeces,
@@ -191,7 +194,10 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const liquiditesChamps = LIQUIDITES_NATURES_CHAMPS[watchedNature] || [];
   const showTauxRemuneration = liquiditesChamps.includes('taux_remuneration');
   const showDateEcheanceLiquidites = liquiditesChamps.includes('date_echeance');
-  const valeursMobilieresChamps = VALEURS_MOBILIERES_NATURES_CHAMPS[watchedNature] || [];
+  const watchedTypeFonds = form.watch('type_fonds');
+  const valeursMobilieresChamps = watchedNature === NATURE_FONDS_CI
+    ? getChampsFondsCI(watchedTypeFonds)
+    : VALEURS_MOBILIERES_NATURES_CHAMPS[watchedNature] || [];
   const showDureeBlocage = valeursMobilieresChamps.includes('duree_blocage');
   const showReductionIrEntree = valeursMobilieresChamps.includes('reduction_ir_entree');
   // Réduction d'IR : montant = taux saisi × montant souscrit (valeur_acquisition), parts à
@@ -349,6 +355,36 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           )} />
         )}
       </div>
+
+      {watchedNature === NATURE_FONDS_CI && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="type_fonds" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Type de fonds
+                <FieldHelp>
+                  Détermine la fiscalité : FCPI et FIP ouvrent une réduction d'impôt à la souscription et sont
+                  exonérés d'impôt sur le revenu après 5 ans ; un FCPR fiscal ou un FPCI l'est aussi après 5 ans, sans
+                  réduction à l'entrée, et fonctionne par appels de fonds.
+                </FieldHelp>
+              </FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                    <SelectValue placeholder="Choisir" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {TYPES_FONDS_CI.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label} <span className="text-muted-foreground">· {t.aide}</span></SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+      )}
 
       {watchedNature === NATURE_OBJETS_ART_COLLECTION && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

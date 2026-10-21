@@ -1,4 +1,5 @@
 import { differenceInYears } from 'date-fns';
+import { NATURE_FONDS_CI } from '@/constants/assetTypes';
 
 /**
  * Moteur de régime fiscal des plus-values, nature par nature (taux au 01/01/2026).
@@ -92,7 +93,15 @@ const NOTES_PFU: Record<string, string> = {
 // --- Fonds fiscaux de capital-investissement (FIP, FIP Corse, FCPI) ---
 // Plus-values de cession exonérées d'IR après 5 ans de détention (art. 150-0 A III 1 CGI),
 // prélèvements sociaux dus ; avant 5 ans, PFU et reprise de la réduction d'impôt.
+// Clés internes du dispatch : la nature saisie est « Fonds de capital-investissement », dont le
+// type de fonds (type_fonds) est résolu vers l'une de ces clés par resolveEffectiveNature.
 const NATURES_FONDS_FISCAUX = ['Parts de FIP', 'Parts de FIP Corse', 'Parts de FCPI'];
+const TYPE_FONDS_TO_NATURE: Record<string, string> = {
+  fcpi: 'Parts de FCPI',
+  fip: 'Parts de FIP',
+  fip_corse: 'Parts de FIP Corse',
+  fcpr_fpci: 'Fonds de private equity (LBO, growth, venture)',
+};
 
 // --- Droits sociaux, parts de holding (art. 150-0 A CGI) ---
 // PFU 31,4 % ; cession par un dirigeant partant à la retraite : abattement fixe de 500 000 €
@@ -168,8 +177,10 @@ const CTO_SOUS_JACENT_TO_NATURE: Record<string, string> = {
 export const resolveEffectiveNature = (
   nature: string,
   ctoMultiActifs?: boolean,
-  ctoNatureSousJacent?: string
+  ctoNatureSousJacent?: string,
+  typeFonds?: string | null
 ): string => {
+  if (nature === NATURE_FONDS_CI) return (typeFonds && TYPE_FONDS_TO_NATURE[typeFonds]) || nature;
   if (nature === 'Compte-titres (CTO)' && ctoMultiActifs && ctoNatureSousJacent) {
     return CTO_SOUS_JACENT_TO_NATURE[ctoNatureSousJacent] ?? nature;
   }
@@ -200,6 +211,17 @@ export const computeFiscalRegime = ({
   dateAcquisition,
   cessionDepartRetraite,
 }: ComputeFiscalRegimeInput): FiscalRegimeResult => {
+  // Fonds de capital-investissement dont le type n'a pas été résolu (cf. resolveEffectiveNature).
+  if (nature === NATURE_FONDS_CI) {
+    return {
+      badge: 'Type de fonds à préciser',
+      tone: 'non_determine',
+      ir: null,
+      ps: null,
+      total: null,
+      note: "Type de fonds non renseigné (FCPI, FIP, FIP Corse ou FCPR / FPCI) : il détermine l'exonération après 5 ans et la reprise éventuelle d'une réduction d'impôt.",
+    };
+  }
   if (NATURES_DROITS_SOCIAUX.includes(nature)) {
     const abattement = cessionDepartRetraite ? Math.min(Math.max(plusValue, 0), ABATTEMENT_DEPART_RETRAITE) : 0;
     const ir = (plusValue - abattement) * PFU_IR;

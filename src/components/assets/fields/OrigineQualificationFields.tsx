@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -39,6 +39,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const showOrigineSection = section !== 'prix';
   const showPrixSection = section !== 'origine';
   const watchedNature = form.watch('nature');
+  const watchedTypeFonds = form.watch('type_fonds');
   const watchedDetenteur = form.watch('detenteur');
   const watchedOrigineActif = form.watch('origine_actif');
   const watchedClauseRemploi = form.watch('clause_remploi');
@@ -98,9 +99,9 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
       ? { valeur: 'Valeur à la découverte', aide: 'Valeur du bien au jour de sa découverte.', frais: 'Frais', aideFrais: 'Frais éventuels (expertise, etc.).' }
       : origine === 'Échange'
         ? { valeur: 'Valeur du bien reçu', aide: "Valeur du bien reçu en échange, soulte comprise.", frais: "Frais d'acquisition", aideFrais: "Notaire, droits d'enregistrement, etc." }
-        : isDefiscalisation(watchedNature)
+        : isDefiscalisation(watchedNature) || (isFondsCI(watchedNature) && watchedTypeFonds !== 'fcpr_fpci')
           ? { valeur: 'Montant souscrit', aide: "Sommes versées à la souscription, base de la réduction d'impôt.", frais: "Droits d'entrée", aideFrais: "Droits d'entrée prélevés à la souscription, le cas échéant." }
-        : isNonCote(watchedNature)
+        : isNonCote(watchedNature) || isFondsCI(watchedNature)
           ? { valeur: 'Montant appelé', aide: 'Sommes effectivement versées au fonds ou à la société (hors engagement restant à appeler).', frais: 'Frais de souscription', aideFrais: "Droits d'entrée ou frais de structuration, le cas échéant." }
         : isCTO(watchedNature)
           ? { valeur: 'Montant investi', aide: 'Prix de revient des titres en portefeuille (versements nets des retraits).', frais: "Frais d'acquisition", aideFrais: 'Frais de courtage et droits de garde capitalisés, le cas échéant.' }
@@ -135,7 +136,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="date_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>{isPrevoyance ? 'Date de souscription' : isAS ? "Date d'attribution" : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : (isNonCote(watchedNature) || isDefiscalisation(watchedNature)) ? 'Date de souscription' : "Date d'acquisition"}<RequiredMark /></FormLabel>
+                <FormLabel>{isPrevoyance ? 'Date de souscription' : isAS ? "Date d'attribution" : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : (isNonCote(watchedNature) || isDefiscalisation(watchedNature) || isFondsCI(watchedNature)) ? 'Date de souscription' : "Date d'acquisition"}<RequiredMark /></FormLabel>
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>

@@ -308,6 +308,7 @@ export type Database = {
           bien_etranger: boolean | null
           capital_garanti: number | null
           categorie_objet_art: string | null
+          type_fonds: string | null
           cession_depart_retraite: boolean | null
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
@@ -408,6 +409,7 @@ export type Database = {
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           categorie_objet_art?: string | null
+          type_fonds?: string | null
           cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
@@ -508,6 +510,7 @@ export type Database = {
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           categorie_objet_art?: string | null
+          type_fonds?: string | null
           cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null

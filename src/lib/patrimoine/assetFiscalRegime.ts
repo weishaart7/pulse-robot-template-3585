@@ -7,6 +7,8 @@ export interface ResolveAssetFiscalRegimeInput {
   nature: string;
   ctoMultiActifs?: boolean;
   ctoNatureSousJacent?: string;
+  // Fonds de capital-investissement : type de fonds (assets.type_fonds), aiguille le régime.
+  typeFonds?: string | null;
   plusValue: number;
   valeurEstimee: number;
   dateAcquisition?: string;
@@ -93,6 +95,7 @@ export const resolveAssetFiscalRegime = ({
   nature,
   ctoMultiActifs,
   ctoNatureSousJacent,
+  typeFonds,
   plusValue,
   valeurEstimee,
   dateAcquisition,
@@ -112,7 +115,7 @@ export const resolveAssetFiscalRegime = ({
   qualificationNft,
   detentionMatieresPremieres,
 }: ResolveAssetFiscalRegimeInput): FiscalRegimeResult => {
-  const effectiveNature = resolveEffectiveNature(nature, ctoMultiActifs, ctoNatureSousJacent);
+  const effectiveNature = resolveEffectiveNature(nature, ctoMultiActifs, ctoNatureSousJacent, typeFonds);
   if (effectiveNature === NATURE_RETRAITE_ETRANGERE) {
     return {
       badge: 'Non pris en compte',
@@ -188,9 +191,11 @@ export const caracteristiquesFiscalesActif = (
     cession_depart_retraite?: boolean | null;
     qualification_nft?: string | null;
     detention_matieres_premieres?: string | null;
+    type_fonds?: string | null;
   } | undefined,
   regimesSocietes: Record<string, string | null | undefined> = {},
-): Pick<ResolveAssetFiscalRegimeInput, 'terrainConstructible' | 'surfaceBoiseeHa' | 'fixeAuSol' | 'residenceServices' | 'typeLocation' | 'regimeSociete' | 'modeSortie' | 'versementsDeduitsPct' | 'cessionDepartRetraite' | 'qualificationNft' | 'detentionMatieresPremieres'> => ({
+): Pick<ResolveAssetFiscalRegimeInput, 'terrainConstructible' | 'surfaceBoiseeHa' | 'fixeAuSol' | 'residenceServices' | 'typeLocation' | 'regimeSociete' | 'modeSortie' | 'versementsDeduitsPct' | 'cessionDepartRetraite' | 'qualificationNft' | 'detentionMatieresPremieres' | 'typeFonds'> => ({
+  typeFonds: asset?.type_fonds,
   terrainConstructible: asset?.terrain_constructible,
   surfaceBoiseeHa: asset?.surface_boisee_ha,
   fixeAuSol: asset?.fixe_au_sol,

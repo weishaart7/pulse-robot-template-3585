@@ -169,9 +169,7 @@ export const ASSET_CATEGORIES = {
     "Compte-titres (CTO)",
     "PEA",
     "PEA-PME",
-    "Parts de FIP",
-    "Parts de FIP Corse",
-    "Parts de FCPI",
+    "Fonds de capital-investissement",
     "Parts de SOFICA",
     "Contrat à terme",
     "Stock-options",
@@ -180,7 +178,6 @@ export const ASSET_CATEGORIES = {
     "BSPCE",
     "Portefeuille de valeurs numériques (cryptomonnaies)",
     "Objets numériques (NFT, etc.)",
-    "Fonds de private equity (LBO, growth, venture)",
     "Club deals",
     "SPV d'investissement (structures ad hoc)",
     "Fonds de dette privée",
@@ -242,8 +239,8 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
   ],
   "valeurs mobilières et placements financiers": [
     { titre: "Enveloppes", natures: ["Compte-titres (CTO)", "PEA", "PEA-PME"] },
-    { titre: "Défiscalisation", natures: ["Parts de FIP", "Parts de FIP Corse", "Parts de FCPI", "Parts de SOFICA"] },
-    { titre: "Non coté", natures: ["Fonds de private equity (LBO, growth, venture)", "Club deals", "SPV d'investissement (structures ad hoc)", "Fonds de dette privée"] },
+    { titre: "Non coté", natures: ["Fonds de capital-investissement", "Club deals", "SPV d'investissement (structures ad hoc)", "Fonds de dette privée"] },
+    { titre: "Défiscalisation", natures: ["Parts de SOFICA"] },
     { titre: "Actionnariat salarié", natures: ["Stock-options", "Actions gratuites", "BSPCE"] },
     { titre: "Produits complexes", natures: ["Produits structurés", "Contrat à terme", "Autres produits dérivés (Swap, Warrants, CFD...)", "Titres de dette subordonnée"] },
     { titre: "Actifs alternatifs", natures: ["Portefeuille de valeurs numériques (cryptomonnaies)", "Objets numériques (NFT, etc.)", "Métaux précieux (argent, platine)", "Matières premières (pétrole, blé…)"] },
@@ -474,7 +471,6 @@ export const isCTO = (nature: string | null | undefined): boolean => nature === 
 // Non coté à appels de fonds : valeur_acquisition = montant appelé (sommes effectivement versées),
 // distinct du montant engagé (montant_engage). Club deals / SPV : titres de société (art. 1832-2).
 export const NATURES_NON_COTE = [
-  'Fonds de private equity (LBO, growth, venture)',
   'Club deals',
   "SPV d'investissement (structures ad hoc)",
   'Fonds de dette privée',
@@ -486,11 +482,35 @@ export const isClubDealOuSPV = (nature: string | null | undefined): boolean =>
 export const isPEA = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_PEA as readonly string[]).includes(nature);
 
-// Défiscalisation (FIP, FIP Corse, FCPI, SOFICA) : valeur_acquisition = montant souscrit, base
-// de la réduction d'IR (taux saisi, reduction_ir_entree) et de la plus-value.
-export const NATURES_DEFISCALISATION = ['Parts de FIP', 'Parts de FIP Corse', 'Parts de FCPI', 'Parts de SOFICA'] as const;
+// SOFICA : valeur_acquisition = montant souscrit, base de la réduction d'IR (taux saisi,
+// reduction_ir_entree) et de la plus-value.
+export const NATURES_DEFISCALISATION = ['Parts de SOFICA'] as const;
 export const isDefiscalisation = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_DEFISCALISATION as readonly string[]).includes(nature);
+
+// Fonds de capital-investissement : nature unique, le type de fonds (assets.type_fonds) aiguille
+// le régime fiscal (regimeFiscalPlusValue.ts) et les champs. FCPI / FIP / FIP Corse : réduction
+// d'IR à la souscription, montant souscrit. FCPR / FPCI : appels de fonds (montant engagé,
+// valeur_acquisition = montant appelé).
+export const NATURE_FONDS_CI = 'Fonds de capital-investissement';
+export const isFondsCI = (nature: string | null | undefined): boolean => nature === NATURE_FONDS_CI;
+export type TypeFondsCI = 'fcpi' | 'fip' | 'fip_corse' | 'fcpr_fpci';
+export const TYPES_FONDS_CI: { value: TypeFondsCI; label: string; aide: string }[] = [
+  { value: 'fcpi', label: 'FCPI', aide: 'innovation, réduction d’IR' },
+  { value: 'fip', label: 'FIP', aide: 'PME régionales, réduction d’IR' },
+  { value: 'fip_corse', label: 'FIP Corse', aide: 'PME corses, réduction d’IR majorée' },
+  { value: 'fcpr_fpci', label: 'FCPR / FPCI', aide: 'private equity : LBO, growth, venture' },
+];
+export const isFondsReductionIR = (typeFonds: string | null | undefined): boolean =>
+  typeFonds === 'fcpi' || typeFonds === 'fip' || typeFonds === 'fip_corse';
+/** Libellé de valeur_acquisition selon la nature (et le type de fonds) ; undefined = défaut. */
+export const getLibelleMontantInvesti = (nature: string | null | undefined, typeFonds?: string | null): string | undefined =>
+  isPEA(nature) ? 'Montant versé'
+  : isCTO(nature) ? 'Montant investi'
+  : isFondsCI(nature) ? (typeFonds === 'fcpr_fpci' ? 'Montant appelé' : 'Montant souscrit')
+  : isNonCote(nature) ? 'Montant appelé'
+  : isDefiscalisation(nature) ? 'Montant souscrit'
+  : undefined;
 
 // Actionnariat salarié : droits NON exercés uniquement (option non levée, AGA en période
 // d'acquisition, BSPCE non exercé). Droit attaché à la personne, propre par nature (art. 1404 ;
@@ -734,14 +754,16 @@ export type ValeursMobilieresChamp =
   | 'lieu_stockage'
   | 'quantite';
 
+// Fonds de capital-investissement : champs selon le type de fonds (aucun tant qu'il n'est pas choisi).
+export const getChampsFondsCI = (typeFonds: string | null | undefined): ValeursMobilieresChamp[] =>
+  isFondsReductionIR(typeFonds) ? ['duree_blocage', 'reduction_ir_entree']
+  : typeFonds === 'fcpr_fpci' ? ['duree_blocage', 'montant_engage']
+  : [];
+
 export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieresChamp[]> = {
-  'Parts de FIP': ['duree_blocage', 'reduction_ir_entree'],
-  'Parts de FIP Corse': ['duree_blocage', 'reduction_ir_entree'],
-  'Parts de FCPI': ['duree_blocage', 'reduction_ir_entree'],
   'Parts de SOFICA': ['duree_blocage', 'reduction_ir_entree'],
   'Stock-options': ['prix_exercice'],
   'BSPCE': ['prix_exercice'],
-  'Fonds de private equity (LBO, growth, venture)': ['duree_blocage', 'montant_engage'],
   'Club deals': ['duree_blocage', 'montant_engage'],
   "SPV d'investissement (structures ad hoc)": ['duree_blocage', 'montant_engage'],
   'Fonds de dette privée': ['duree_blocage', 'montant_engage'],

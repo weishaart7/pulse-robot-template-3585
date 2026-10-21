@@ -274,3 +274,22 @@ describe('computeFiscalRegime — autres', () => {
     expect(computeFiscalRegime({ nature: 'Droits à royalties', plusValue: 1000, valeurEstimee: 5000 }).tone).toBe('non_determine');
   });
 });
+
+describe('Fonds de capital-investissement : régime selon le type de fonds', () => {
+  const base = { nature: 'Fonds de capital-investissement', plusValue: 1000, valeurEstimee: 5000 };
+
+  it('FCPI / FIP / FIP Corse : PFU avant 5 ans, PS seuls après', () => {
+    expect(resolveAssetFiscalRegime({ ...base, typeFonds: 'fcpi', dateAcquisition: ilYa(3) }).total).toBeCloseTo(314, 6);
+    expect(resolveAssetFiscalRegime({ ...base, typeFonds: 'fip_corse', dateAcquisition: ilYa(6) }).total).toBeCloseTo(186, 6);
+  });
+
+  it('FCPR / FPCI : régime private equity', () => {
+    expect(resolveAssetFiscalRegime({ ...base, typeFonds: 'fcpr_fpci', dateAcquisition: ilYa(6) }).badge).toBe('FCPR/FPCI ≥ 5 ans');
+  });
+
+  it('type non renseigné : régime à préciser, rien de deviné', () => {
+    const r = resolveAssetFiscalRegime({ ...base, dateAcquisition: ilYa(6) });
+    expect(r.tone).toBe('non_determine');
+    expect(r.total).toBeNull();
+  });
+});

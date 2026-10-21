@@ -114,6 +114,7 @@ export interface Asset {
   // Champs additionnels "actifs corporels" — cf. CORPS_NATURES_CHAMPS.
   // Objets d'art et de collection : catégorie de l'art. 98 A, annexe III CGI (informative).
   categorie_objet_art?: string | null;
+  type_fonds?: string | null;
   quantite_millesime?: string;
   // Champs additionnels "épargne retraite" et "prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
   capital_garanti?: number;
