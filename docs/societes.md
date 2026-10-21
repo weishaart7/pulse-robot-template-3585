@@ -422,6 +422,16 @@ brouillon de la fiche est remis à zéro au changement de société. Tests : `li
 
 ## 4. Périmètre V1 / différé
 
+- **Phase 2b — différée (validée le 21/10/2026, à exposer règle par règle avant de coder)** :
+  - *Revenus fonciers d'une SCI à l'IR* : les loyers et charges des biens de la société sont saisis sur
+    leur fiche mais restent hors budget et hors synthèse foncière. À faire : résultat foncier de la SCI
+    (loyers − charges − intérêts, 2072), quote-part du foyer reportée dans la synthèse foncière
+    d'Immobilier (2044) et dans le Budget ; parts de SCI à l'IR → micro-foncier fermé, régime réel
+    obligatoire. SCI à l'IS : non concernée (dividendes de l'onglet Finances).
+  - *Valeur IFI calculée* : aujourd'hui saisie à la main (`valeur_ifi` / `pourcentage_ifi`). À faire :
+    fraction immobilière de l'actif de la société, moins les dettes déductibles qui s'y rattachent, ×
+    quote-part du foyer ; exclusions (immeubles affectés à une activité professionnelle) et règles de
+    déductibilité des dettes (prêts familiaux, comptes courants).
 - **V1 — en place** : CRUD société avec recherche SIRENE, quotités de détention et qualification civile
   manuelle, graphe de participations société→société avec anti-cycle base + client, table de
   capitalisation (associés), pacte d'associés, comptes courants d'associés, historique de bilans,

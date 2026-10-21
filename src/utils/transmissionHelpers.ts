@@ -1540,6 +1540,9 @@ function toRawAssetPondere(
         // Biens ruraux : conservés pour l'exonération des art. 793 et 793 bis CGI.
         regime_exoneration_rural: asset.regime_exoneration_rural ?? null,
         conditions_exoneration_rural: asset.conditions_exoneration_rural ?? null,
+        // GFI et sociétés d'épargne forestière : exonération au prorata de la part forestière.
+        type_groupement: asset.type_groupement ?? null,
+        fraction_eligible_rural: asset.fraction_eligible_rural ?? null,
         // Art. 787 C, plancher d'assurance (art. 764 II), assuré tiers.
         conditions_787c: asset.conditions_787c ?? null,
         valeur_assuree: asset.valeur_assuree != null ? asset.valeur_assuree * partConjoint : null,
