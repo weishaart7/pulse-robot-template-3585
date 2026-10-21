@@ -47,13 +47,12 @@ export interface FiscalRegimeResult {
 }
 
 // --- Groupe 1 : PFU générique ---
-// Dettes subordonnées, dette privée
+// Dette privée
 // (par défaut), CTO générique, matières premières (trackers/ETC/contrats à
 // terme).
 //
 // Changements vs l'ancien système (NATURES_PFU) :
-// - "Titres de dette subordonnée",
-//   "Fonds de dette privée", "Contrat à terme" : restaient déjà PFU.
+// - "Fonds de dette privée" : restait déjà PFU.
 // - "Compte-titres (CTO)" : corrige un bug de l'ancien système, qui listait
 //   "Compte-titres" (sans "(CTO)") dans NATURES_PFU — cette chaîne ne
 //   correspondait à aucune valeur réelle de `nature` (ASSET_NATURES utilise
@@ -62,15 +61,11 @@ export interface FiscalRegimeResult {
 // - "Matières premières (pétrole, blé…)" : nouvelle addition, absente de
 //   l'ancien NATURES_PFU.
 const NATURES_PFU_GENERIQUE = [
-  'Titres de dette subordonnée',
   'Fonds de dette privée',
   'Compte-titres (CTO)',
   'Matières premières (pétrole, blé…)',
-  'Contrat à terme',
   // Ajoutées le 2026-10-18 (revue des placements financiers) : gains sur titres et
   // instruments financiers à terme, PFU (art. 150-0 A et 150 ter CGI).
-  'Produits structurés',
-  'Autres produits dérivés (Swap, Warrants, CFD...)',
   'Club deals',
   "SPV d'investissement (structures ad hoc)",
   'Parts de SOFICA',

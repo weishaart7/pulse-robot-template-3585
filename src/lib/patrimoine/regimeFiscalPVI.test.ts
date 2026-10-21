@@ -187,8 +187,8 @@ describe('computeFiscalRegime — placements financiers (2026-10-18)', () => {
     expect(computeFiscalRegime({ nature: 'Parts de FIP', plusValue: 1000, valeurEstimee: 5000, dateAcquisition: ilYa(6) }).total).toBeCloseTo(186, 6);
   });
 
-  it('structurés, dérivés, club deals, SPV, SOFICA, autres valeurs mobilières : PFU', () => {
-    for (const nature of ['Produits structurés', 'Autres produits dérivés (Swap, Warrants, CFD...)', 'Club deals', "SPV d'investissement (structures ad hoc)", 'Parts de SOFICA', 'Autres valeurs mobilières']) {
+  it('club deals, SPV, SOFICA, autres valeurs mobilières : PFU', () => {
+    for (const nature of ['Club deals', "SPV d'investissement (structures ad hoc)", 'Parts de SOFICA', 'Autres valeurs mobilières']) {
       expect(computeFiscalRegime({ nature, plusValue: 1000, valeurEstimee: 5000 }).total).toBeCloseTo(314, 6);
     }
   });

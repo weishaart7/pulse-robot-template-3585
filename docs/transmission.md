@@ -863,8 +863,6 @@ successoral. Données en base : aucun actif de prévoyance décès ni article 82
   cohérent (supprimer un bien ne doit pas supprimer l'emprunt), à acter comme exception.
 - **Typage** : `ProcessusCalcul.tsx` passe des `Asset[]` (`id` optionnel) en `rawAssets`
   (`RawAssetInput.id` requis) — erreur `tsc` préexistante.
-- **Typage** : `'date_echeance'` utilisé dans `VALEURS_MOBILIERES_NATURES_CHAMPS` (Produits
-  structurés, Autres produits dérivés) sans figurer dans `ValeursMobilieresChamp` (erreur `tsc`).
 
 - **9 des 11 clauses de donation restent purement déclaratives.** `nature`, `demembrement`,
   `droitsParDonateur`/`prise_en_charge_droits`, et 9 clauses sur 11

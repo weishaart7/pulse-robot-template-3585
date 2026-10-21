@@ -171,18 +171,14 @@ export const ASSET_CATEGORIES = {
     "PEA-PME",
     "Fonds de capital-investissement",
     "Parts de SOFICA",
-    "Contrat à terme",
     "Stock-options",
     "Actions gratuites",
-    "Titres de dette subordonnée",
     "BSPCE",
     "Portefeuille de valeurs numériques (cryptomonnaies)",
     "Objets numériques (NFT, etc.)",
     "Club deals",
     "SPV d'investissement (structures ad hoc)",
     "Fonds de dette privée",
-    "Produits structurés",
-    "Autres produits dérivés (Swap, Warrants, CFD...)",
     "Métaux précieux (argent, platine)",
     "Matières premières (pétrole, blé…)",
     "Autres placements divers",
@@ -242,7 +238,6 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
     { titre: "Non coté", natures: ["Fonds de capital-investissement", "Club deals", "SPV d'investissement (structures ad hoc)", "Fonds de dette privée"] },
     { titre: "Défiscalisation", natures: ["Parts de SOFICA"] },
     { titre: "Actionnariat salarié", natures: ["Stock-options", "Actions gratuites", "BSPCE"] },
-    { titre: "Produits complexes", natures: ["Produits structurés", "Contrat à terme", "Autres produits dérivés (Swap, Warrants, CFD...)", "Titres de dette subordonnée"] },
     { titre: "Actifs alternatifs", natures: ["Portefeuille de valeurs numériques (cryptomonnaies)", "Objets numériques (NFT, etc.)", "Métaux précieux (argent, platine)", "Matières premières (pétrole, blé…)"] },
     { titre: "Divers", natures: ["Autres placements divers", "Autres valeurs mobilières"] },
   ],
@@ -754,8 +749,6 @@ export type ValeursMobilieresChamp =
   | 'duree_blocage'
   | 'reduction_ir_entree'
   | 'prix_exercice'
-  | 'sous_jacent'
-  | 'capital_garanti'
   | 'lieu_stockage'
   | 'quantite';
 
@@ -772,8 +765,6 @@ export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieres
   'Club deals': ['duree_blocage'],
   "SPV d'investissement (structures ad hoc)": ['duree_blocage'],
   'Fonds de dette privée': ['duree_blocage'],
-  'Produits structurés': ['sous_jacent', 'date_echeance', 'capital_garanti'],
-  'Autres produits dérivés (Swap, Warrants, CFD...)': ['sous_jacent', 'date_echeance', 'capital_garanti'],
   'Or (physique)': ['lieu_stockage', 'quantite'],
   'Métaux précieux (argent, platine)': ['lieu_stockage', 'quantite'],
   'Matières premières (pétrole, blé…)': ['lieu_stockage', 'quantite'],

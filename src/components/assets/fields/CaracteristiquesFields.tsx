@@ -245,9 +245,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
     const d = new Date(watchedDateSouscription); d.setFullYear(d.getFullYear() + 5); return d.toLocaleDateString('fr-FR');
   })() : undefined;
   const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
-  const showSousJacent = valeursMobilieresChamps.includes('sous_jacent');
-  const showDateEcheanceVM = valeursMobilieresChamps.includes('date_echeance');
-  const showCapitalGarantiVM = valeursMobilieresChamps.includes('capital_garanti');
   // Matières premières : stockage et quantité n'ont de sens qu'en détention physique.
   const showLieuStockageQuantite = valeursMobilieresChamps.includes('lieu_stockage')
     && (!isMatieresPremieres || watchedDetentionMP === 'physique');
@@ -1021,27 +1018,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {(showCapitalGarantiVM || showModeSortie) && (
+      {showModeSortie && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {showCapitalGarantiVM && (
-            <FormField control={form.control} name="capital_garanti" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Capital garanti</FormLabel>
-                <FormControl>
-                  <EuroInput
-                    className="bg-background border-border shadow-none"
-                    type="number"
-                    step="0.01"
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
-
           {showModeSortie && (
             <FormField control={form.control} name="mode_sortie" render={({ field }) => (
               <FormItem>
@@ -1313,34 +1291,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     value={field.value ?? ''}
                     onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
-        </div>
-      )}
-
-      {(showSousJacent || showDateEcheanceVM) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {showSousJacent && (
-            <FormField control={form.control} name="sous_jacent" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Sous-jacent</FormLabel>
-                <FormControl>
-                  <Input className="bg-background border-border shadow-none" {...field} value={field.value || ''} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
-
-          {showDateEcheanceVM && (
-            <FormField control={form.control} name="date_echeance" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date d'échéance</FormLabel>
-                <FormControl>
-                  <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
