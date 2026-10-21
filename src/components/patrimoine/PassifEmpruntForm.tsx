@@ -337,7 +337,22 @@ export const PassifEmpruntForm = ({
                       : numberField('mensualite', 'Mensualité', { help: 'Hors assurance emprunteur, intérêts compris.' })}
                   </>
                 ) : (
-                  numberField('montant_du', 'Montant dû')
+                  <>
+                    {numberField('montant_du', 'Montant dû')}
+                    <FormField control={form.control} name="date_echeance" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>À payer avant le</FormLabel>
+                        <FieldHelp>Facultatif : date limite de paiement (avis d'imposition, jugement, convention de divorce…). Sans effet sur les calculs.</FieldHelp>
+                        <FormControl>
+                          <DateInput
+                            value={field.value ? new Date(`${field.value}T00:00:00`) : undefined}
+                            onChange={(d) => field.onChange(d ? format(d, 'yyyy-MM-dd') : '')}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </>
                 )}
               </FormSection>
             )}

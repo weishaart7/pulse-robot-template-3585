@@ -2089,6 +2089,7 @@ export type Database = {
         Row: {
           created_at: string
           date_souscription: string | null
+          date_echeance: string | null
           detenteur: string | null
           id: string
           libelle: string | null
@@ -2104,6 +2105,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date_souscription?: string | null
+          date_echeance?: string | null
           detenteur?: string | null
           id?: string
           libelle?: string | null
@@ -2119,6 +2121,7 @@ export type Database = {
         Update: {
           created_at?: string
           date_souscription?: string | null
+          date_echeance?: string | null
           detenteur?: string | null
           id?: string
           libelle?: string | null

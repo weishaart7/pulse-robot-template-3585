@@ -54,6 +54,9 @@ export const reglesEmprunt = (nature?: string): ReglesEmprunt => {
       return { ...base, sansTableau: true, sansActifNiGarantie: true, actifLiable: () => false };
     case 'Crédit à la consommation':
       return { ...base, garantiesProposees: ['Caution', 'Aucune'] };
+    case 'Prêt familial ou entre particuliers':
+      // Souvent sans garantie, parfois remboursé en une fois ; taux nul possible (le champ reste affiché).
+      return { ...base, garantiesProposees: ['Caution', 'Aucune'] };
     case 'Crédit affecté (auto, travaux, etc.)':
       return { ...base, garantiesProposees: ['Caution', 'Aucune'], actifLiable: (n) => immobilier(n) || getAssetCategory(n) === 'actifs corporels' };
     default:

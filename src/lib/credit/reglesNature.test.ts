@@ -50,4 +50,10 @@ describe('reglesEmprunt', () => {
     expect(reglesEmprunt('Prêt immobilier (résidence principale)').actifGarantie).toBeUndefined();
     expect(reglesEmprunt('Crédit renouvelable / revolving').actifGarantie).toBeUndefined();
   });
+
+  it('prêt familial : caution ou aucune garantie, taux affiché', () => {
+    const r = reglesEmprunt('Prêt familial ou entre particuliers');
+    expect(r.garantiesProposees).toEqual(['Caution', 'Aucune']);
+    expect(r.tauxZero).toBe(false);
+  });
 });

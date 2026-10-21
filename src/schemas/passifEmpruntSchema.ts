@@ -19,6 +19,7 @@ export const passifEmpruntSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   libelle: z.string().optional(),
   date_souscription: z.string().optional(),
+  date_echeance: z.string().optional(),
   montant_du: montant,
   capital_restant_du: montant,
   taux_interet: pourcentage,

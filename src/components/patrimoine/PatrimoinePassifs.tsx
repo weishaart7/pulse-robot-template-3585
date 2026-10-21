@@ -161,6 +161,10 @@ export const PatrimoinePassifs = () => {
                   icon={<Receipt className="h-3.5 w-3.5" />}
                   tone="bg-[#f8e9e6] text-[#a8473d]"
                   title={passif.libelle || passif.nature}
+                  subtitle={[
+                    passif.libelle ? passif.nature : null,
+                    passif.date_echeance ? `à payer avant le ${new Date(passif.date_echeance).toLocaleDateString('fr-FR')}` : null,
+                  ].filter(Boolean).join(' · ') || undefined}
                   amount={euros(passif.montant_du)}
                   amountLabel="Montant dû"
                   onOpen={() => setSelectedPassif(passif)}

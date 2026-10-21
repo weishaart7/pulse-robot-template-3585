@@ -158,8 +158,9 @@ export const PassifDetailView: React.FC<PassifDetailViewProps> = ({ item, assets
             <>
               <Section title="La dette">
                 <Row label="Nature" value={dette!.nature} />
-                <Row label="Date de souscription" value={date(dette!.date_souscription)} />
+                <Row label="Date de naissance de la dette" value={date(dette!.date_souscription)} />
                 <Row label="Montant dû" value={eur(dette!.montant_du)} />
+                <Row label="À payer avant le" value={date(dette!.date_echeance)} />
               </Section>
               <Section title="Détention">
                 <Row label="Détenteur" value={detenteur} />

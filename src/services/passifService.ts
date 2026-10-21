@@ -62,6 +62,8 @@ export interface Passif {
   libelle?: string | null;
   montant_du: number;
   date_souscription?: string | null;
+  /** « À payer avant le » : informative, hors calculs. */
+  date_echeance?: string | null;
   detenteur?: string;
   pourcentage_utilisateur?: number;
   pourcentage_conjoint?: number;

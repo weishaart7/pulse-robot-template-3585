@@ -9,7 +9,10 @@ export const EMPRUNT_NATURES = [
   "Prêt immobilier (résidence principale)",
   "Prêt immobilier (résidences secondaires)",
   "Prêt immobilier locatif (investissement locatif)",
-  "Prêt pour acquisition de SCPI"
+  "Prêt pour acquisition de SCPI",
+  "Prêt familial ou entre particuliers",
+  "Prêt patronal",
+  "Emprunts participatifs"
 ];
 
 // Sous-groupes d'affichage des emprunts dans la fenêtre de choix de nature (sans effet sur la valeur stockée).
@@ -31,6 +34,11 @@ export const EMPRUNT_SOUS_GROUPES: { titre: string; natures: readonly string[] }
     "Crédit in fine (adossé à assurance-vie ou autres actifs)",
     "Crédit Lombard (prêt gagé sur portefeuille-titres)",
   ] },
+  { titre: "Prêts privés et aidés", natures: [
+    "Prêt familial ou entre particuliers",
+    "Prêt patronal",
+    "Emprunts participatifs",
+  ] },
 ];
 
 // Sous-groupes d'affichage des dettes dans la fenêtre de choix de nature (sans effet sur la valeur stockée).
@@ -40,12 +48,6 @@ export const DETTE_SOUS_GROUPES: { titre: string; natures: readonly string[] }[]
     "Impôt sur la fortune immobilière (IFI) restant dû",
     "Dettes successorales (droits de succession restant dus)",
     "Cotisations sociales non réglées",
-  ] },
-  { titre: "Prêts privés", natures: [
-    "Emprunts familiaux ou privés",
-    "Prêts entre particuliers contractés",
-    "Prêt patronal",
-    "Emprunts participatifs",
   ] },
   { titre: "Litiges et séparations", natures: [
     "Dettes issues d'un divorce ou d'un partage de communauté",
@@ -86,14 +88,10 @@ export const PASSIF_NATURES = [
   "Cotisations sociales non réglées",
   "Dettes issues d'un divorce ou d'un partage de communauté", 
   "Dettes successorales (droits de succession restant dus)",
-  "Emprunts familiaux ou privés",
-  "Emprunts participatifs",
   "Engagements liés à produits d'investissement (appels de marge, etc.)",
   "Impôt sur la fortune immobilière (IFI) restant dû",
   "Impôt sur le revenu restant dû",
   "Indemnités prud'homales ou litiges judiciaires en cours",
-  "Prêt patronal",
-  "Prêts entre particuliers contractés"
 ];
 
 export const CHARGE_TYPES = [
