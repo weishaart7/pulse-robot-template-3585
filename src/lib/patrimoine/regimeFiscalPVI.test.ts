@@ -64,7 +64,7 @@ describe('computePVIRegime — surtaxe appréciée par cédant (BOI-RFPI-TPVIE-2
 
 describe('Or / métaux précieux — option plus-value réelle à 36,2 % (PS 17,2 %)', () => {
   it('3 ans de détention : abattement 5 %, taux 36,2 %', () => {
-    const r = computeFiscalRegime({ nature: 'Or (physique)', plusValue: 10000, valeurEstimee: 50000, dateAcquisition: ilYa(3) });
+    const r = computeFiscalRegime({ nature: 'Or et métaux précieux', plusValue: 10000, valeurEstimee: 50000, dateAcquisition: ilYa(3) });
     const reelle = r.alternatives?.find((a) => a.label.startsWith('Option plus-value réelle'));
     expect(r.tone).toBe('choix');
     expect(reelle?.label).toContain('36,2%');
@@ -206,14 +206,8 @@ describe('computeFiscalRegime — placements financiers (2026-10-18)', () => {
     expect(resolveAssetFiscalRegime({ ...base, qualificationNft: 'bien_meuble' }).total).toBeCloseTo(2000 * 0.9 * 0.362, 6);
   });
 
-  it('matières premières : PFU par défaut, bien meuble en détention physique', () => {
-    const base = { nature: 'Matières premières (pétrole, blé…)', plusValue: 2000, valeurEstimee: 10000, dateAcquisition: ilYa(4) };
-    expect(resolveAssetFiscalRegime(base).total).toBeCloseTo(628, 6);
-    expect(resolveAssetFiscalRegime({ ...base, detentionMatieresPremieres: 'physique' }).total).toBeCloseTo(2000 * 0.9 * 0.362, 6);
-  });
-
   it('métaux précieux : taxe forfaitaire due quel que soit le prix', () => {
-    const r = computeFiscalRegime({ nature: 'Métaux précieux (argent, platine)', plusValue: 1000, valeurEstimee: 4500 });
+    const r = computeFiscalRegime({ nature: 'Or et métaux précieux', plusValue: 1000, valeurEstimee: 4500 });
     expect(r.tone).toBe('choix');
     expect(r.alternatives?.[0].total).toBeCloseTo(4500 * 0.115, 6);
   });

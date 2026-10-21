@@ -223,6 +223,8 @@ export interface RawAssetInput {
   // détermine la part de ce bien qui entre réellement dans la succession.
   qualification_bien?: string | null;
   detenteur?: string | null;
+  // Cryptomonnaies : 'plateforme' ou 'portefeuille_personnel' (accès aux clés au décès).
+  conservation_crypto?: string | null;
   pourcentage_utilisateur?: number | null;
   pourcentage_conjoint?: number | null;
   // Usufruit/Nue-propriété (cf. lib/patrimoine/demembrementFraction.ts) : pondère

@@ -31,6 +31,10 @@ import {
   MOTIF_DEBLOCAGE_ANTICIPE_OPTIONS,
   LIQUIDITES_NATURES_CHAMPS,
   VALEURS_MOBILIERES_NATURES_CHAMPS,
+  NATURE_OR_METAUX,
+  METAUX_PRECIEUX,
+  NATURE_CRYPTO,
+  CONSERVATIONS_CRYPTO,
   NATURE_FONDS_CI,
   TYPES_FONDS_CI,
   getChampsFondsCI,
@@ -208,8 +212,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const isLMNP = watchedNature === 'Immeubles locatifs (meublés)' && form.watch('type_location') !== 'Location meublée professionnelle (LMP)';
   const isDroitsSociaux = watchedNature === 'Droits sociaux' || watchedNature === 'Parts de holding';
   const isNft = watchedNature === 'Objets numériques (NFT, etc.)';
-  const isMatieresPremieres = watchedNature === 'Matières premières (pétrole, blé…)';
-  const watchedDetentionMP = form.watch('detention_matieres_premieres');
+  const isOrMetaux = watchedNature === NATURE_OR_METAUX;
+  const isCrypto = watchedNature === NATURE_CRYPTO;
   useEffect(() => {
     if (regimeRuralImpose && form.getValues('regime_exoneration_rural') !== regimeRuralImpose) {
       form.setValue('regime_exoneration_rural', regimeRuralImpose);
@@ -245,9 +249,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
     const d = new Date(watchedDateSouscription); d.setFullYear(d.getFullYear() + 5); return d.toLocaleDateString('fr-FR');
   })() : undefined;
   const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
-  // Matières premières : stockage et quantité n'ont de sens qu'en détention physique.
-  const showLieuStockageQuantite = valeursMobilieresChamps.includes('lieu_stockage')
-    && (!isMatieresPremieres || watchedDetentionMP === 'physique');
+  const showLieuStockageQuantite = valeursMobilieresChamps.includes('lieu_stockage');
   const watchedCtoMultiActifs = form.watch('cto_multi_actifs');
 
   return (
@@ -829,7 +831,7 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {(isTerrain || isTerrainAgricole || isMaisonMobile || isLMNP || isDroitsSociaux || isNft || isMatieresPremieres) && (
+      {(isTerrain || isTerrainAgricole || isMaisonMobile || isLMNP || isDroitsSociaux || isNft || isOrMetaux || isCrypto) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {isTerrain && (
             <FormField control={form.control} name="terrain_constructible" render={({ field }) => (
@@ -934,14 +936,35 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormItem>
             )} />
           )}
-          {isMatieresPremieres && (
-            <FormField control={form.control} name="detention_matieres_premieres" render={({ field }) => (
+          {isOrMetaux && (
+            <FormField control={form.control} name="metal" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Métal</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value ?? undefined}>
+                  <FormControl>
+                    <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                      <SelectValue placeholder="Choisir" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {METAUX_PRECIEUX.map(m => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+          )}
+          {isCrypto && (
+            <FormField control={form.control} name="conservation_crypto" render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  Mode de détention
+                  Conservation
                   <FieldHelp>
-                    Détention financière (tracker, ETC, contrat) : plus-value au PFU. Détention physique : bien meuble
-                    (exonéré jusqu'à 5 000 €, sinon plus-value réelle avec abattement de 5 % par an après 2 ans).
+                    Sur une plateforme, les héritiers peuvent récupérer les avoirs auprès du prestataire ; un compte
+                    ouvert sur une plateforme étrangère se déclare chaque année (formulaire 3916-bis). En portefeuille
+                    personnel, les avoirs sont perdus si personne d'autre n'a accès aux clés.
                   </FieldHelp>
                 </FormLabel>
                 <Select onValueChange={field.onChange} value={field.value ?? undefined}>
@@ -951,10 +974,14 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="financiere">Financière (tracker, ETC, contrat)</SelectItem>
-                    <SelectItem value="physique">Physique</SelectItem>
+                    {CONSERVATIONS_CRYPTO.map(c => (
+                      <SelectItem key={c.value} value={c.value}>{c.label} <span className="text-muted-foreground">· {c.aide}</span></SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {field.value === 'plateforme' && form.watch('bien_etranger') && (
+                  <FieldHelp>Plateforme étrangère : compte à déclarer chaque année (formulaire 3916-bis).</FieldHelp>
+                )}
                 <FormMessage />
               </FormItem>
             )} />

@@ -108,7 +108,7 @@ export const ASSET_CATEGORIES = {
     "Matériel informatique ou audiovisuel haut de gamme",
     "Matériel sportif de valeur",
     "Vins & spiritueux d'investissement",
-    "Or (physique)"
+    "Or et métaux précieux"
   ],
   "actifs professionnels": [
     "Droits sociaux",
@@ -179,8 +179,6 @@ export const ASSET_CATEGORIES = {
     "Club deals",
     "SPV d'investissement (structures ad hoc)",
     "Fonds de dette privée",
-    "Métaux précieux (argent, platine)",
-    "Matières premières (pétrole, blé…)",
     "Autres placements divers",
     "Autres valeurs mobilières"
   ],
@@ -216,7 +214,7 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
   "actifs corporels": [
     { titre: "Cadre de vie", natures: ["Meubles meublants", "Véhicules motorisés", "Matériel informatique ou audiovisuel haut de gamme", "Matériel sportif de valeur"] },
     { titre: "Objets de valeur", natures: ["Objets d'art et de collection", "Montres", "Bijoux et pierres précieuses", "Sacs et accessoires de luxe"] },
-    { titre: "Placements tangibles", natures: ["Vins & spiritueux d'investissement", "Or (physique)"] },
+    { titre: "Placements tangibles", natures: ["Vins & spiritueux d'investissement", "Or et métaux précieux"] },
   ],
   "épargne retraite": [
     { titre: "PER (loi PACTE)", natures: ["PER individuel", "PER entreprise collectif", "PER entreprise obligatoire"] },
@@ -238,7 +236,7 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
     { titre: "Non coté", natures: ["Fonds de capital-investissement", "Club deals", "SPV d'investissement (structures ad hoc)", "Fonds de dette privée"] },
     { titre: "Défiscalisation", natures: ["Parts de SOFICA"] },
     { titre: "Actionnariat salarié", natures: ["Stock-options", "Actions gratuites", "BSPCE"] },
-    { titre: "Actifs alternatifs", natures: ["Portefeuille de valeurs numériques (cryptomonnaies)", "Objets numériques (NFT, etc.)", "Métaux précieux (argent, platine)", "Matières premières (pétrole, blé…)"] },
+    { titre: "Actifs alternatifs", natures: ["Portefeuille de valeurs numériques (cryptomonnaies)", "Objets numériques (NFT, etc.)"] },
     { titre: "Divers", natures: ["Autres placements divers", "Autres valeurs mobilières"] },
   ],
 };
@@ -765,10 +763,26 @@ export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieres
   'Club deals': ['duree_blocage'],
   "SPV d'investissement (structures ad hoc)": ['duree_blocage'],
   'Fonds de dette privée': ['duree_blocage'],
-  'Or (physique)': ['lieu_stockage', 'quantite'],
-  'Métaux précieux (argent, platine)': ['lieu_stockage', 'quantite'],
-  'Matières premières (pétrole, blé…)': ['lieu_stockage', 'quantite'],
+  'Or et métaux précieux': ['lieu_stockage', 'quantite'],
 };
+
+// Or et métaux précieux : nature unique (ex-« Or (physique) » et « Métaux précieux (argent,
+// platine) », même régime : taxe forfaitaire ou plus-value réelle), métal informatif (assets.metal).
+export const NATURE_OR_METAUX = 'Or et métaux précieux';
+export const METAUX_PRECIEUX = [
+  { value: 'or', label: 'Or' },
+  { value: 'argent', label: 'Argent' },
+  { value: 'platine', label: 'Platine' },
+  { value: 'palladium', label: 'Palladium' },
+] as const;
+
+// Cryptomonnaies : mode de conservation (assets.conservation_crypto). En portefeuille personnel,
+// les avoirs sont perdus au décès si les héritiers n'ont pas accès aux clés.
+export const NATURE_CRYPTO = 'Portefeuille de valeurs numériques (cryptomonnaies)';
+export const CONSERVATIONS_CRYPTO = [
+  { value: 'plateforme', label: 'Plateforme d’échange', aide: 'compte chez un prestataire' },
+  { value: 'portefeuille_personnel', label: 'Portefeuille personnel', aide: 'clés privées détenues soi-même' },
+] as const;
 
 // Objets numériques (NFT) : qualification fiscale (assets.qualification_nft), sans valeur par
 // défaut — régime aiguillé dans lib/patrimoine/assetFiscalRegime.ts.

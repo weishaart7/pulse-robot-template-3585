@@ -125,7 +125,8 @@ export interface Asset {
   // Droits sociaux / parts de holding : cession au départ à la retraite (150-0 D ter).
   cession_depart_retraite?: boolean | null;
   qualification_nft?: string | null;
-  detention_matieres_premieres?: string | null;
+  metal?: string | null;
+  conservation_crypto?: string | null;
   // Champs additionnels "épargne salariale" (PEE/PEI) — cf. NATURES_EPARGNE_SALARIALE.
   abondement_employeur?: number;
   date_disponibilite?: string;

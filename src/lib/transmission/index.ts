@@ -36,7 +36,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA, isActionnariatSalarie } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA, isActionnariatSalarie, NATURE_CRYPTO } from '../../constants/assetTypes';
 import { isDetenteurSpouse } from '../patrimoine/utils';
 import {
   computeDMTG,
@@ -1135,6 +1135,17 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
       `${avAssureTiers.map(a => a.denomination || a.nature).join(', ')} : assuré distinct du souscripteur, contrat non ` +
       `dénoué par ce décès — sa valeur de rachat entre dans la succession du souscripteur et se transmet à ses héritiers ` +
       `(droits de succession de droit commun, ni 990 I ni 757 B). Le capital sera versé au décès de l'assuré.`
+    );
+  }
+
+  // Cryptomonnaies en portefeuille personnel : sans accès aux clés, les avoirs sont perdus.
+  const cryptosAutoConservees = (rawAssets || []).filter(a => a.nature === NATURE_CRYPTO
+    && a.conservation_crypto === 'portefeuille_personnel' && getFractionSuccessorale(a) > 0);
+  if (cryptosAutoConservees.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `Cryptomonnaies en portefeuille personnel (${cryptosAutoConservees.map(a => a.denomination || a.nature).join(', ')}) : ` +
+      `retenues pour leur valeur au jour du décès, mais récupérables seulement si les héritiers ont accès aux clés privées ` +
+      `ou à la phrase de récupération. Sans cet accès, les avoirs sont perdus alors que les droits de succession restent dus.`
     );
   }
 

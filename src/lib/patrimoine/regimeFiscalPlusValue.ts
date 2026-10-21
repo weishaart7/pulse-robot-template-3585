@@ -48,8 +48,7 @@ export interface FiscalRegimeResult {
 
 // --- Groupe 1 : PFU générique ---
 // Dette privée
-// (par défaut), CTO générique, matières premières (trackers/ETC/contrats à
-// terme).
+// (par défaut), CTO générique.
 //
 // Changements vs l'ancien système (NATURES_PFU) :
 // - "Fonds de dette privée" : restait déjà PFU.
@@ -58,12 +57,9 @@ export interface FiscalRegimeResult {
 //   correspondait à aucune valeur réelle de `nature` (ASSET_NATURES utilise
 //   "Compte-titres (CTO)"), donc cette nature n'était en réalité JAMAIS
 //   classée PFU malgré sa présence dans le tableau. Désormais fonctionnelle.
-// - "Matières premières (pétrole, blé…)" : nouvelle addition, absente de
-//   l'ancien NATURES_PFU.
 const NATURES_PFU_GENERIQUE = [
   'Fonds de dette privée',
   'Compte-titres (CTO)',
-  'Matières premières (pétrole, blé…)',
   // Ajoutées le 2026-10-18 (revue des placements financiers) : gains sur titres et
   // instruments financiers à terme, PFU (art. 150-0 A et 150 ter CGI).
   'Club deals',
@@ -82,7 +78,6 @@ const NOTES_PFU: Record<string, string> = {
   'Parts de SOFICA': "Aucune exonération de la plus-value. Cession avant 5 ans : reprise de la réduction d'impôt obtenue à la souscription, non comptée ici.",
   'Autres valeurs mobilières': 'PFU retenu par défaut pour des titres détenus en direct.',
   'Autres placements divers': "Hypothèse : PFU retenu par défaut, le régime réel dépendant de la nature du placement.",
-  'Matières premières (pétrole, blé…)': "Détention financière (tracker, ETC, contrat) supposée : une détention physique relève des biens meubles (art. 150 UA), à préciser sur l'actif.",
 };
 
 // --- Fonds fiscaux de capital-investissement (FIP, FIP Corse, FCPI) ---
@@ -135,7 +130,7 @@ const NATURE_CRYPTO = 'Portefeuille de valeurs numériques (cryptomonnaies)';
 const NATURE_PRIVATE_EQUITY = 'Fonds de private equity (LBO, growth, venture)';
 
 // --- Groupe 8 : Or et métaux précieux ---
-const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
+const NATURES_OR = ['Or et métaux précieux'];
 // Taxe forfaitaire due quel que soit le prix de cession (art. 150 VI CGI) : le seuil de
 // 5 000 € (150 VJ) ne vise que les bijoux, objets d'art, de collection et antiquités.
 
@@ -162,9 +157,6 @@ const NATURES_OR = ['Or (physique)', 'Métaux précieux (argent, platine)'];
 const CTO_SOUS_JACENT_TO_NATURE: Record<string, string> = {
   'SCPI': 'Parts de SCPI',
   'Cryptomonnaies': NATURE_CRYPTO,
-  // Les deux natures d'NATURES_OR reçoivent un traitement fiscal identique
-  // (même badge, mêmes taux) : le choix de l'une ou l'autre ici est sans
-  // incidence sur le résultat calculé.
   'Or / métaux précieux': NATURES_OR[0],
   'Private equity (FCPR/FPCI)': NATURE_PRIVATE_EQUITY,
 };

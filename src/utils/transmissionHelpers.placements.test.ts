@@ -73,3 +73,18 @@ describe('Actionnariat salarié au décès', () => {
     expect(explications([pea('BSPCE Claire', 'BSPCE', 'spouse', 'Bien propre')])).not.toContain('Actionnariat salarié');
   });
 });
+
+describe('Cryptomonnaies au décès', () => {
+  const crypto = (conservation: string | null) => ({
+    ...pea('Wallet Paul', 'Portefeuille de valeurs numériques (cryptomonnaies)', 'user', 'Bien propre'),
+    conservation_crypto: conservation,
+  });
+
+  it('portefeuille personnel : rappel sur l\'accès aux clés', () => {
+    expect(explications([crypto('portefeuille_personnel')] as never)).toContain('Cryptomonnaies en portefeuille personnel (Wallet Paul)');
+  });
+
+  it('plateforme : pas de note', () => {
+    expect(explications([crypto('plateforme')] as never)).not.toContain('portefeuille personnel');
+  });
+});
