@@ -60,4 +60,29 @@ describe('useAssetForm — cohérence détenteur / qualification (régime légal
       expect(result.current.form.getValues('pourcentage_conjoint')).toBe(50);
     });
   });
+
+  it('garde le titulaire individuel d\'un PEA commun (pas de « Le couple »)', async () => {
+    const { result } = renderHook(() => useAssetForm({ onSubmit: vi.fn() }));
+    await waitFor(() => expect(result.current.maritalContext.statutCouple).toBe('Marié(e)'));
+
+    act(() => {
+      result.current.form.setValue('nature', 'PEA');
+      result.current.form.setValue('origine_actif', ['Acquisition à titre onéreux']);
+      result.current.form.setValue('date_acquisition', new Date('2020-01-01'));
+    });
+    await waitFor(() => expect(result.current.form.getValues('qualification_bien')).toBe('Bien commun'));
+    // Création : aucun titulaire proposé d'office (on ne sait pas lequel des deux).
+    expect(result.current.form.getValues('detenteur')).toBeFalsy();
+
+    act(() => {
+      result.current.form.setValue('detenteur', 'Titouan', { shouldDirty: true });
+    });
+    act(() => {
+      result.current.form.trigger('detenteur');
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(result.current.form.getValues('qualification_bien')).toBe('Bien commun');
+    expect(result.current.form.getValues('detenteur')).toBe('Titouan');
+  });
 });

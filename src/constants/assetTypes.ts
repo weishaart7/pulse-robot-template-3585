@@ -464,6 +464,20 @@ export const isContratSouscrit = (nature: string | null | undefined): boolean =>
   !!nature && (['épargne et assurance-vie', 'épargne retraite', 'prévoyance'] as const)
     .some((c) => (ASSET_CATEGORIES[c] as readonly string[]).includes(nature));
 
+// Plans d'épargne en actions : un titulaire unique (pas de compte joint ni d'indivision,
+// art. L221-30 CMF), alors même que leur valeur peut être commune entre époux.
+export const NATURES_PEA = ['PEA', 'PEA-PME'] as const;
+
+export const NATURE_CTO = 'Compte-titres (CTO)';
+export const isCTO = (nature: string | null | undefined): boolean => nature === NATURE_CTO;
+export const isPEA = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_PEA as readonly string[]).includes(nature);
+
+// Titulaire unique (contrat souscrit ou PEA) : jamais « Le couple » ni indivision, même pour
+// un bien commun — la communauté porte sur la valeur, pas sur la qualité de titulaire.
+export const isTitulaireUnique = (nature: string | null | undefined): boolean =>
+  isContratSouscrit(nature) || isPEA(nature);
+
 // Prévoyance sans valeur de rachat (temporaire décès, prévoyance individuelle) : rien à
 // partager entre époux, la qualification commun / propre est sans objet (art. L132-16 C. ass.).
 // Créances (prêt à un proche, créance sur un tiers, soulte ou prix à recevoir) : sans prix
@@ -664,7 +678,7 @@ export const NATURES_EPARGNE_SALARIALE = ["PEE", "PEI"];
 // relabellé "Date d'ouverture" dans AssetForm.tsx (même champ `date_acquisition`,
 // pas de nouvelle colonne) : CEL/PEL (compte bancaire réglementé) et PEA/PEA-PME
 // (point de départ du délai fiscal des 5 ans).
-export const NATURES_DATE_OUVERTURE = ["CEL", "PEL", "PEA", "PEA-PME"];
+export const NATURES_DATE_OUVERTURE = ["CEL", "PEL", "PEA", "PEA-PME", NATURE_CTO];
 
 // Champs additionnels proposés, dans AssetForm.tsx (pill "Caractéristiques"), pour certaines
 // natures de la famille "épargne bancaire / liquidités". Les livrets réglementés (Livret A,
@@ -684,7 +698,6 @@ export const LIQUIDITES_NATURES_CHAMPS: Record<string, LiquiditesChamp[]> = {
 // son propre traitement dédié (cto_multi_actifs / cto_nature_sous_jacent), hors de ce mapping.
 // Les natures absentes de ce mapping n'affichent aucun champ additionnel.
 export type ValeursMobilieresChamp =
-  | 'plafond_verse'
   | 'duree_blocage'
   | 'reduction_ir_entree'
   | 'date_attribution'
@@ -697,8 +710,6 @@ export type ValeursMobilieresChamp =
   | 'quantite';
 
 export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieresChamp[]> = {
-  'PEA': ['plafond_verse'],
-  'PEA-PME': ['plafond_verse'],
   'Parts de FIP': ['duree_blocage', 'reduction_ir_entree'],
   'Parts de FIP Corse': ['duree_blocage', 'reduction_ir_entree'],
   'Parts de FCPI': ['duree_blocage', 'reduction_ir_entree'],

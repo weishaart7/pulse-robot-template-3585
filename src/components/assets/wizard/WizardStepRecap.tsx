@@ -55,7 +55,6 @@ const PARTICULARITES_RECAP_FIELDS: { key: keyof AssetFormValues; label: string }
   { key: 'beneficiaire_designe', label: 'Bénéficiaire désigné' },
   { key: 'mode_sortie', label: 'Mode de sortie' },
   { key: 'taux_remuneration', label: 'Taux de rémunération' },
-  { key: 'plafond_verse', label: 'Montant versé' },
   { key: 'duree_blocage', label: 'Durée de blocage' },
   { key: 'montant_engage', label: 'Montant engagé' },
   { key: 'montant_appele', label: 'Montant appelé' },

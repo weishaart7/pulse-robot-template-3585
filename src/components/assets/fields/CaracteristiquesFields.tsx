@@ -191,7 +191,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const showTauxRemuneration = liquiditesChamps.includes('taux_remuneration');
   const showDateEcheanceLiquidites = liquiditesChamps.includes('date_echeance');
   const valeursMobilieresChamps = VALEURS_MOBILIERES_NATURES_CHAMPS[watchedNature] || [];
-  const showPlafondVerse = valeursMobilieresChamps.includes('plafond_verse');
   const showDureeBlocage = valeursMobilieresChamps.includes('duree_blocage');
   const showReductionIrEntree = valeursMobilieresChamps.includes('reduction_ir_entree');
   const showDateAttribution = valeursMobilieresChamps.includes('date_attribution');
@@ -1190,25 +1189,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
             )} />
           )}
         </div>
-      )}
-
-      {showPlafondVerse && (
-        <FormField control={form.control} name="plafond_verse" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Montant versé</FormLabel>
-            <FormControl>
-              <EuroInput
-                className="bg-background border-border shadow-none"
-                type="number"
-                step="0.01"
-                {...field}
-                value={field.value ?? ''}
-                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
       )}
 
       {(showDureeBlocage || showReductionIrEntree) && (

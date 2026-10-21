@@ -1,7 +1,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isPEA, isCTO } from '@/constants/assetTypes';
 import { calculatePlusValue } from '@/lib/patrimoine/utils';
 import { cn } from '@/lib/utils';
 
@@ -95,7 +95,7 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
         <div className="mt-2.5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-[12px] tabular-nums">
           <span className="inline-flex items-center gap-1.5 text-muted-foreground">
             <span className="h-2 w-2 rounded-[1px] bg-lagon" />
-            Prix d'achat <span className="text-foreground">{formatEur(valeurAchat)}</span>
+            {isPEA(nature) ? 'Montant versé' : isCTO(nature) ? 'Montant investi' : "Prix d'achat"} <span className="text-foreground">{formatEur(valeurAchat)}</span>
           </span>
           <span className="inline-flex flex-wrap items-center gap-x-1.5 text-muted-foreground">
             {frais > 0 && (

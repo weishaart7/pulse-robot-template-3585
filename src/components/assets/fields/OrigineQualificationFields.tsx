@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -48,6 +48,13 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const hideAcquisition = NATURES_WITHOUT_ACQUISITION.includes(watchedNature) && !estCreance;
   const origineOptions = estCreance ? ORIGINE_CREANCE_OPTIONS : ORIGINE_ACTIF_OPTIONS;
   const isDateOuverture = NATURES_DATE_OUVERTURE.includes(watchedNature);
+  // CTO / PEA ouvert avant le mariage en communauté : les titres d'origine restent propres, mais
+  // les versements ultérieurs de fonds communs ouvrent une récompense (art. 1433), non calculée ici.
+  const watchedDateAcquisition = form.watch('date_acquisition');
+  const showAideRecompense = (isCTO(watchedNature) || isPEA(watchedNature))
+    && isRegimeCommunautaire(maritalContext.regimeMatrimonial)
+    && !!watchedDateAcquisition && !!maritalContext.dateMariage
+    && new Date(watchedDateAcquisition) < new Date(maritalContext.dateMariage);
   // Contrat de prévoyance : souscrit, ni acheté ni reçu — seule la date de souscription est
   // demandée (date_acquisition, lue comme telle par useAVContracts), sans origine ni clauses.
   const isPrevoyance = isPrevoyanceDeces(watchedNature);
@@ -87,6 +94,10 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
       ? { valeur: 'Valeur à la découverte', aide: 'Valeur du bien au jour de sa découverte.', frais: 'Frais', aideFrais: 'Frais éventuels (expertise, etc.).' }
       : origine === 'Échange'
         ? { valeur: 'Valeur du bien reçu', aide: "Valeur du bien reçu en échange, soulte comprise.", frais: "Frais d'acquisition", aideFrais: "Notaire, droits d'enregistrement, etc." }
+        : isCTO(watchedNature)
+          ? { valeur: 'Montant investi', aide: 'Prix de revient des titres en portefeuille (versements nets des retraits).', frais: "Frais d'acquisition", aideFrais: 'Frais de courtage et droits de garde capitalisés, le cas échéant.' }
+        : isPEA(watchedNature)
+          ? { valeur: 'Montant versé', aide: 'Total des versements effectués sur le plan depuis son ouverture, hors gains.', frais: 'Frais sur versements', aideFrais: "Droits d'entrée ou frais prélevés sur les versements, le cas échéant." }
         : origine && origine !== 'Acquisition à titre onéreux'
           ? { valeur: 'Valeur à la réception', aide: "Valeur retenue dans l'acte de donation ou la déclaration de succession.", frais: "Frais d'acquisition", aideFrais: "Frais d'acte ou droits payés à la réception." }
           : { valeur: "Prix d'achat", aide: "Prix payé à l'achat.", frais: "Frais d'acquisition", aideFrais: "Notaire, agence, droits d'enregistrement, etc." };
@@ -120,6 +131,11 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>
+                {showAideRecompense && (
+                  <FieldHelp>
+                    Ouvert avant le mariage : s'il a ensuite été alimenté par des revenus communs, saisissez la récompense due à la communauté dans Récompenses.
+                  </FieldHelp>
+                )}
                 <FormMessage />
               </FormItem>
             )} />

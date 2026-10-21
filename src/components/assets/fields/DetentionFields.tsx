@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, MODE_DETENTION_OPTIONS } from '@/schemas/assetSchema';
-import { isContratSouscrit, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { isContratSouscrit, isCTO, isPEA, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { isPacsIndivision, qualifierBien } from '@/lib/patrimoine/qualification';
 import { buildQualificationContext, FamilyMember, MaritalContext } from '@/hooks/useAssetForm';
 import { FamilyInfo } from '@/lib/patrimoine/utils';
@@ -66,13 +66,17 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
 
   // Contrat : souscripteur unique (pas d'indivision) ; « Le couple » exclu en prévoyance
   // (co-souscription non modélisée), conservé ailleurs avec une alerte en Transmission.
+  // PEA / PEA-PME : titulaire unique, ni « Le couple » ni indivision (pas de plan joint).
   const isContrat = isContratSouscrit(watchedNature);
-  const coupleExclu = isPrevoyanceDeces(watchedNature);
+  const isPlanPEA = isPEA(watchedNature);
+  const titulaireUnique = isContrat || isPlanPEA;
+  const coupleExclu = isPrevoyanceDeces(watchedNature) || isPlanPEA;
+  const libelle = isContrat ? 'Souscripteur' : isPlanPEA ? 'Titulaire' : 'Détenteur';
   useEffect(() => {
-    if ((isContrat && watchedDetenteur === 'Indivision') || (coupleExclu && watchedDetenteur === 'Le couple')) {
+    if ((titulaireUnique && watchedDetenteur === 'Indivision') || (coupleExclu && watchedDetenteur === 'Le couple')) {
       form.setValue('detenteur', '');
     }
-  }, [isContrat, coupleExclu, watchedDetenteur, form]);
+  }, [titulaireUnique, coupleExclu, watchedDetenteur, form]);
   const qualifiePropre = watchedQualificationBien === 'Bien propre' || watchedQualificationBien === 'Bien personnel';
   // "Le couple" n'a de sens que pour un bien commun (50/50 de droit) ou indivis
   // entre époux (quote-part) — jamais pour un bien propre/personnel (100/0
@@ -101,13 +105,23 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
           <FormItem>
             {/* "Souscripteur" pour les contrats (assurance-vie, retraite, prévoyance) : vocabulaire
                 assurantiel, même colonne `detenteur` (cf. constants/assetTypes.ts). */}
-            <FormLabel>{isContrat ? 'Souscripteur' : 'Détenteur'}</FormLabel>
+            <FormLabel>{libelle}</FormLabel>
+            {isPlanPEA && (
+              <FieldHelp>
+                Un PEA n'a qu'un titulaire. Il peut néanmoins être commun : sa valeur se partage alors à la liquidation du régime.
+              </FieldHelp>
+            )}
             {field.value === 'Indivision' && (
               <FieldHelp>
                 En indivision avec un tiers (hors couple), la qualification du bien est directement « Indivision », quels que soient le régime matrimonial et l'origine du bien.
               </FieldHelp>
             )}
-            {field.value !== 'Indivision' && qualifiePropre && !coupleRequalifie && (
+            {field.value === 'Indivision' && isCTO(watchedNature) && (
+              <FieldHelp>
+                Compte joint ou indivis : au décès, les titres sont présumés appartenir à chaque cotitulaire par parts égales, sauf preuve contraire (art. 753 CGI).
+              </FieldHelp>
+            )}
+            {field.value !== 'Indivision' && qualifiePropre && !coupleRequalifie && !isPlanPEA && (
               <FieldHelp>
                 "Le couple" n'est pas proposé : ce bien est qualifié {watchedQualificationBien.toLowerCase()}, il appartient donc entièrement à une seule personne.
               </FieldHelp>
@@ -115,14 +129,14 @@ export const DetenteurFields: React.FC<DetenteurFieldsProps> = ({
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
                 <SelectTrigger className="bg-background border-border shadow-none" size="lg">
-                  <SelectValue placeholder={isContrat ? 'Choisir un souscripteur' : 'Choisir un détenteur'} />
+                  <SelectValue placeholder={`Choisir un ${libelle.toLowerCase()}`} />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {filteredDetenteurOptions.map(option => (
                   <SelectItem key={option} value={option}>{option}</SelectItem>
                 ))}
-                {!isContrat && <SelectItem value="Indivision">En indivision avec un tiers</SelectItem>}
+                {!titulaireUnique && <SelectItem value="Indivision">En indivision avec un tiers</SelectItem>}
               </SelectContent>
             </Select>
             <FormMessage />

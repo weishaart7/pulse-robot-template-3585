@@ -747,6 +747,12 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   A444-66) identiques dans la version de Légifrance en vigueur au 01/08/2026, malgré l'arrêté du
   25/02/2026. À surveiller : le PLF 2027 (790 G porté à 50 000 € pour les dons du 1er semestre 2027),
   non voté.
+- **PEA / PEA-PME au décès (`index.ts`, notes `explicationsTexte`).** Le plan n'est clôturé que par le
+  décès de son titulaire (`detenteur`) : note de clôture (gain exonéré d'IR, PS de 18,6 % dus, non
+  déduits), que le plan soit commun ou propre. Un PEA commun dont le conjoint survivant est titulaire
+  n'est pas clôturé : la moitié de sa valeur entre dans la succession (part `Bien commun`) et se règle
+  au partage, note dédiée. Un PEA propre du survivant reste hors succession. Tests :
+  `utils/transmissionHelpers.pea.test.ts`.
 
 ## 3. Dette identifiée
 

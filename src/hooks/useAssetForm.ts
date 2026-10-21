@@ -8,7 +8,7 @@ import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
-import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isContratSouscrit, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isTitulaireUnique, isPEA, isPrevoyanceDeces } from '@/constants/assetTypes';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 import { lirePerimetreDesClauses, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
@@ -353,7 +353,9 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       // affiché alors que la valeur réelle a changé (constaté en test manuel
       // le 2026-09-22). Un setTimeout(0) sort de ce cycle de rendu en cours et
       // laisse le Controller se resynchroniser normalement.
-      if ((qualification === 'Bien propre' || qualification === 'Bien personnel') && value.detenteur === 'Le couple') {
+      // PEA / PEA-PME : jamais « Le couple » (plan à titulaire unique), même commun — ex. proposé
+      // au montage avant le choix de la nature.
+      if (((qualification === 'Bien propre' || qualification === 'Bien personnel') || isPEA(value.nature)) && value.detenteur === 'Le couple') {
         setTimeout(() => {
           form.setValue('detenteur', '');
           form.setValue('pourcentage_utilisateur', undefined);
@@ -371,13 +373,13 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       const detenteurIndividuel =
         value.detenteur === familyData.userFirstName || value.detenteur === 'Vous' ||
         value.detenteur === familyData.partnerFirstName || value.detenteur === 'Conjoint';
-      // Exception : un contrat (assurance-vie, retraite, prévoyance) garde un souscripteur unique
+      // Exception : un contrat (assurance-vie, retraite, prévoyance) ou un PEA garde un titulaire unique
       // même commun — la communauté porte sur sa valeur de rachat, pas sur la qualité de
       // souscripteur / assuré, que le calcul de transmission lit via le détenteur.
       // Création, détenteur encore vide et jamais choisi : proposé d'après la qualification —
       // « Le couple » pour un bien commun, l'utilisateur seul hors couple. Rien pour un bien
-      // propre / personnel en couple (on ne sait pas lequel des deux) ni pour un contrat (souscripteur unique).
-      if (!asset?.id && !value.detenteur && !detenteurChoisiRef.current && !isContratSouscrit(value.nature)) {
+      // propre / personnel en couple (on ne sait pas lequel des deux) ni pour un contrat ou un PEA (titulaire unique).
+      if (!asset?.id && !value.detenteur && !detenteurChoisiRef.current && !isTitulaireUnique(value.nature)) {
         const propose =
           qualification === 'Bien commun' && familyData.hasPartner ? 'Le couple'
           : qualification === 'Bien personnel' && !familyData.hasPartner ? familyData.userFirstName
@@ -385,7 +387,7 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         if (propose) setTimeout(() => form.setValue('detenteur', propose, { shouldValidate: true }), 0);
       }
 
-      if (qualification === 'Bien commun' && detenteurIndividuel && !isContratSouscrit(value.nature)) {
+      if (qualification === 'Bien commun' && detenteurIndividuel && !isTitulaireUnique(value.nature)) {
         setTimeout(() => {
           form.setValue('detenteur', 'Le couple');
           form.setValue('pourcentage_utilisateur', 50);

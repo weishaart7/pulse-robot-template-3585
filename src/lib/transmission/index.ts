@@ -36,7 +36,8 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA } from '../../constants/assetTypes';
+import { isDetenteurSpouse } from '../patrimoine/utils';
 import {
   computeDMTG,
   DEFAULT_DMTG_PARAMS,
@@ -1201,9 +1202,21 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
-  // PEA / PEA-PME : clôturés par le décès, le gain reste exonéré d'IR mais supporte les
-  // prélèvements sociaux, quelle que soit l'ancienneté du plan.
-  const plansPEA = (rawAssets || []).filter(a => (a.nature === 'PEA' || a.nature === 'PEA-PME') && getFractionSuccessorale(a) > 0);
+  // PEA / PEA-PME : clôturés par le décès de leur titulaire (seul), le gain reste exonéré d'IR
+  // mais supporte les prélèvements sociaux, quelle que soit l'ancienneté du plan. Un PEA commun
+  // dont le titulaire est le conjoint survivant n'est pas clôturé : seule la moitié de sa valeur
+  // (créance sur la communauté) entre dans cette succession.
+  const peaEnSuccession = (rawAssets || []).filter(a => isPEA(a.nature) && getFractionSuccessorale(a) > 0);
+  const titulaireRole = (a: RawAssetInput) => isDetenteurSpouse(a.detenteur ?? undefined) ? 'spouse' : 'user';
+  const plansPEA = peaEnSuccession.filter(a => titulaireRole(a) === decedentRole);
+  const plansPEASurvivant = peaEnSuccession.filter(a => titulaireRole(a) !== decedentRole);
+  if (plansPEASurvivant.length > 0) {
+    successionLegaleResult.explicationsTexte.push(
+      `${plansPEASurvivant.map(a => a.denomination || a.nature).join(', ')} : plan commun dont le conjoint survivant est ` +
+      `titulaire. Il n'est pas clôturé par ce décès ; la moitié de sa valeur entre dans la succession et se règle ` +
+      `au partage, le survivant restant seul titulaire du plan.`
+    );
+  }
   if (plansPEA.length > 0) {
     successionLegaleResult.explicationsTexte.push(
       `${plansPEA.map(a => a.denomination || a.nature).join(', ')} : le plan est clôturé par le décès. Le gain réalisé depuis ` +
