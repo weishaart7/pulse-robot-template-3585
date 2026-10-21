@@ -1,3 +1,4 @@
+import { reglesEmprunt } from '@/lib/credit/reglesNature';
 import React from 'react';
 import { Landmark, Receipt } from 'lucide-react';
 import { Chip, PanelTitle, WorkspaceHeader, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
@@ -62,6 +63,7 @@ export const PassifDetailView: React.FC<PassifDetailViewProps> = ({ item, assets
   const emprunt = isEmprunt(item) ? item : null;
   const dette = emprunt ? null : (item as Passif);
   const linkedAsset = emprunt?.asset_id ? assets.find((a) => a.id === emprunt.asset_id) : undefined;
+  const actifGarantie = emprunt?.actif_garantie_id ? assets.find((a) => a.id === emprunt.actif_garantie_id) : undefined;
   const titre = (emprunt ?? dette)!.libelle || (emprunt ?? dette)!.nature;
 
   // Contrat complet : tableau d'amortissement, il fait foi (capital restant dû, fin, coût).
@@ -107,7 +109,7 @@ export const PassifDetailView: React.FC<PassifDetailViewProps> = ({ item, assets
             <>
               <Section title="Le prêt">
                 <Row label="Nature" value={emprunt.nature} />
-                <Row label="Actif financé / garanti" value={linkedAsset ? (linkedAsset.denomination || linkedAsset.nature) : null} />
+                <Row label="Bien financé" value={linkedAsset ? (linkedAsset.denomination || linkedAsset.nature) : null} />
                 <Row label="Date de souscription" value={date(emprunt.date_souscription)} />
                 <Row label="Capital restant dû" value={eur(emprunt.capital_restant_du)} />
                 <Row label="Durée restante" value={emprunt.duree_restante != null ? `${emprunt.duree_restante} mois` : null} />
@@ -129,6 +131,9 @@ export const PassifDetailView: React.FC<PassifDetailViewProps> = ({ item, assets
               <AmortissementSection emprunt={emprunt} onEdit={onEdit} />
               <Section title="Garantie et assurance">
                 <Row label="Type de garantie" value={emprunt.type_garantie || 'Aucune'} />
+                {actifGarantie && (
+                  <Row label={reglesEmprunt(emprunt.nature).actifGarantie?.libelle ?? 'Actif en garantie'} value={actifGarantie.denomination || actifGarantie.nature} />
+                )}
                 <Row label="Assurance emprunteur" value={emprunt.assure ? 'Oui' : 'Non'} />
                 {emprunt.assure && (
                   <>

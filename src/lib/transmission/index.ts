@@ -1069,8 +1069,8 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   }
 
   // Dette rattachée à un bien exonéré (art. 769 II CGI) : imputée par
-  // priorité sur sa valeur. Le rattachement (« actif financé / garanti »)
-  // est présumé désigner un prêt d'acquisition, signalé.
+  // priorité sur sa valeur. Le rattachement (« bien financé », emprunts.asset_id ;
+  // l'actif donné en garantie n'y entre pas) présume un prêt d'acquisition, signalé.
   const biensExoneresEndettes = (rawAssets || []).filter(a =>
     !isContratHorsSuccession(a) && (ctx.passifsParBien?.[a.id] || 0) > 0 && (
       (!!a.societe_id && (ctx.societesDutreil || []).includes(a.societe_id)) || getExonerationRurale(a) !== null

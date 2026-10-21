@@ -19,6 +19,8 @@ export interface Emprunt {
   qualification_auto?: boolean;
   reporter_budget?: boolean;
   asset_id?: string | null;
+  /** Actif donné en garantie (nantissement, bien à vendre d'un relais) : informatif, hors calculs. */
+  actif_garantie_id?: string | null;
   // Emprunt porté par une société : exclu du passif successoral du particulier
   // (cf. transmissionHelpers.ts::buildPassifLines). Déjà renvoyé par le
   // `select('*')` de getEmprunts, simplement jamais typé jusqu'ici.

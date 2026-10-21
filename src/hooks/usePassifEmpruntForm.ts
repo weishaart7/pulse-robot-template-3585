@@ -9,6 +9,7 @@ import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patrimoine/utils';
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
+import { reglesEmprunt } from '@/lib/credit/reglesNature';
 import { qualifierDette, QualificationContext } from '@/lib/patrimoine/qualification';
 
 // `capital_restant_du` n'existe que sur emprunts (passifs a aussi un libellé depuis la migration 20261022100000).
@@ -127,6 +128,7 @@ export const usePassifEmpruntForm = ({
         qualification_bien: item.qualification_bien || undefined,
         qualification_auto: item.qualification_auto !== false,
         asset_id: isEmpruntItem ? (item.asset_id || undefined) : undefined,
+        actif_garantie_id: isEmpruntItem ? (item.actif_garantie_id || undefined) : undefined,
         type_garantie: isEmpruntItem ? ((item.type_garantie as PassifEmpruntFormValues['type_garantie']) || 'Aucune') : 'Aucune',
         assure: isEmpruntItem ? (item.assure || false) : false,
         quotite_assuree_utilisateur: isEmpruntItem ? item.quotite_assuree_utilisateur : undefined,
@@ -310,6 +312,8 @@ export const usePassifEmpruntForm = ({
           qualification_bien: values.qualification_bien || null,
           qualification_auto: values.qualification_auto !== false,
           asset_id: values.asset_id || null,
+          // Seulement pour une nature qui a un actif en garantie (cf. reglesNature.ts).
+          actif_garantie_id: (reglesEmprunt(values.nature).actifGarantie && values.actif_garantie_id) || null,
           type_garantie: values.type_garantie || null,
           assure: values.assure ?? false,
           quotite_assuree_utilisateur: values.assure ? values.quotite_assuree_utilisateur : undefined,

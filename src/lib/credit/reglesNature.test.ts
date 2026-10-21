@@ -36,4 +36,18 @@ describe('reglesEmprunt', () => {
       }
     }
   });
+
+  it('actif en garantie : relais (bien à vendre), in fine (actif nanti), Lombard (portefeuille) ; absent sinon', () => {
+    expect(reglesEmprunt('Crédit relais').actifGarantie?.libelle).toBe('Bien à vendre');
+    expect(reglesEmprunt('Crédit relais').actifGarantie?.liable('Résidence principale')).toBe(true);
+    const inFine = reglesEmprunt('Crédit in fine (adossé à assurance-vie ou autres actifs)').actifGarantie;
+    expect(inFine?.liable('Résidence principale')).toBe(false);
+    expect(inFine?.liable("Contrat d'assurance-vie")).toBe(true);
+    const lombard = reglesEmprunt('Crédit Lombard (prêt gagé sur portefeuille-titres)').actifGarantie;
+    expect(lombard?.libelle).toBe('Portefeuille nanti');
+    expect(lombard?.liable('Véhicules motorisés')).toBe(false);
+    expect(lombard?.liable('Compte-titres (CTO)')).toBe(true);
+    expect(reglesEmprunt('Prêt immobilier (résidence principale)').actifGarantie).toBeUndefined();
+    expect(reglesEmprunt('Crédit renouvelable / revolving').actifGarantie).toBeUndefined();
+  });
 });

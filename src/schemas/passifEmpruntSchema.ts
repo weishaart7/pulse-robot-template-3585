@@ -32,6 +32,7 @@ export const passifEmpruntSchema = z.object({
   qualification_bien: z.string().optional(),
   qualification_auto: z.boolean().optional(),
   asset_id: z.string().optional(),
+  actif_garantie_id: z.string().optional(),
   type_garantie: z.enum(['Hypothèque', 'Privilège de prêteur de deniers', 'Caution', "Caution d'un organisme", 'Nantissement', 'Aucune']).optional(),
   assure: z.boolean().optional(),
   quotite_assuree_utilisateur: pourcentage,

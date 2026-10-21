@@ -924,6 +924,7 @@ export type Database = {
       }
       emprunts: {
         Row: {
+          actif_garantie_id: string | null
           asset_id: string | null
           assurance_mode: string | null
           assurance_valeur: number | null
@@ -964,6 +965,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actif_garantie_id?: string | null
           asset_id?: string | null
           assurance_mode?: string | null
           assurance_valeur?: number | null
@@ -1004,6 +1006,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actif_garantie_id?: string | null
           asset_id?: string | null
           assurance_mode?: string | null
           assurance_valeur?: number | null

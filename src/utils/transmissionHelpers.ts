@@ -1140,7 +1140,7 @@ export function buildSpouseAsDecedentFamilyGraph(
  */
 export interface PassifLine {
   montant_du: number;
-  // Emprunt rattaché à un bien (emprunts.asset_id, « actif financé / garanti »).
+  // Emprunt rattaché à un bien (emprunts.asset_id, bien financé ; l'actif donné en garantie, actif_garantie_id, n'y entre pas).
   asset_id?: string | null;
   qualification_bien?: string | null;
   detenteur?: string | null;

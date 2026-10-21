@@ -526,7 +526,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   ou partie (Dutreil, bois et forêts, biens ruraux ; pas la résidence principale, dont l'abattement est
   une règle d'évaluation) : imputée par priorité sur la valeur du bien avant exonération (art. 769 II
   CGI), seul l'excédent éventuel restant au passif général (`AssetValuationResult.
-  passifImputeSurBiens`). Rattachement : `emprunts.asset_id` (« actif financé / garanti »), présumé
+  passifImputeSurBiens`). Rattachement : `emprunts.asset_id` (« bien financé » ; l'actif donné en garantie, `actif_garantie_id`, n'y entre pas), présumé
   désigner un prêt d'acquisition et signalé ; montants pondérés comme le passif global par
   `transmissionHelpers.ts::buildPassifsParBien` (`TransmissionContext.passifsParBien`, 1er et 2nd
   décès, ordres normal et inversé). Les `passifs` hors emprunts ne sont jamais rattachés à un bien.

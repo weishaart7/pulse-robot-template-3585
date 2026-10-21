@@ -127,6 +127,8 @@ export const PassifEmpruntForm = ({
   const watchedAssetId = form.watch('asset_id');
   // L'actif déjà relié reste proposé même s'il ne correspond plus à la nature.
   const actifsLiables = assets.filter((a) => regles.actifLiable(a.nature) || a.id === watchedAssetId);
+  const watchedGarantieId = form.watch('actif_garantie_id');
+  const actifsGarantie = assets.filter((a) => regles.actifGarantie?.liable(a.nature) || a.id === watchedGarantieId);
   const garantiesProposees = regles.garantiesProposees ?? TYPE_GARANTIE_OPTIONS;
 
   // Changement de nature : valeurs imposées ou par défaut de la nouvelle nature (cf. reglesNature.ts).
@@ -154,6 +156,8 @@ export const PassifEmpruntForm = ({
       }
       const actif = value.asset_id ? assets.find((a) => a.id === value.asset_id) : undefined;
       if (actif && !r.actifLiable(actif.nature)) form.setValue('asset_id', undefined);
+      const garanti = value.actif_garantie_id ? assets.find((x) => x.id === value.actif_garantie_id) : undefined;
+      if (garanti && !r.actifGarantie?.liable(garanti.nature)) form.setValue('actif_garantie_id', undefined);
     });
     return () => subscription.unsubscribe();
   }, [form, assets]);
@@ -257,7 +261,7 @@ export const PassifEmpruntForm = ({
                 {isEmprunt && !regles.sansActifNiGarantie && (
                   <FormField control={form.control} name="asset_id" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Actif financé / garanti</FormLabel>
+                      <FormLabel>Bien financé</FormLabel>
                       <FieldHelp>
                         Le détenteur et la quote-part seront préremplis depuis cet actif, puis restent modifiables (emprunt non solidaire).
                       </FieldHelp>
@@ -269,6 +273,30 @@ export const PassifEmpruntForm = ({
                         </FormControl>
                         <SelectContent>
                           {actifsLiables.map((a) => (
+                            <SelectItem key={a.id} value={a.id!}>{a.denomination || a.nature}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+
+                {isEmprunt && regles.actifGarantie && (
+                  <FormField control={form.control} name="actif_garantie_id" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{regles.actifGarantie!.libelle}</FormLabel>
+                      <FieldHelp>
+                        Actif donné en garantie du prêt. Informatif : il n'entre ni dans la qualification de la dette ni dans les calculs de transmission.
+                      </FieldHelp>
+                      <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <FormControl>
+                          <SelectTrigger size="lg">
+                            <SelectValue placeholder="Aucun actif lié" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {actifsGarantie.map((a) => (
                             <SelectItem key={a.id} value={a.id!}>{a.denomination || a.nature}</SelectItem>
                           ))}
                         </SelectContent>

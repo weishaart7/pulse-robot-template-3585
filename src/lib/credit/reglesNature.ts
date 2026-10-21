@@ -18,12 +18,16 @@ export interface ReglesEmprunt {
   garantieParDefaut?: 'Nantissement';
   /** Garanties proposées ; toutes si absent. */
   garantiesProposees?: readonly string[];
-  /** L'actif peut-il être relié à un emprunt de cette nature ? */
+  /** L'actif peut-il être relié comme bien financé ? */
   actifLiable: (natureActif: string) => boolean;
+  /** Second lien, vers l'actif donné en garantie (informatif, hors calculs) ; absent si la nature n'en a pas. */
+  actifGarantie?: { libelle: string; liable: (natureActif: string) => boolean };
 }
 
 const tous = () => true;
 const immobilier = (n: string) => getAssetCategory(n) === 'actifs immobiliers';
+const categorie = (...cats: string[]) => (n: string) => cats.includes(getAssetCategory(n));
+const placements = categorie('valeurs mobilières et placements financiers', 'épargne et assurance-vie');
 
 export const reglesEmprunt = (nature?: string): ReglesEmprunt => {
   const base: ReglesEmprunt = { tauxZero: false, sansTableau: false, sansActifNiGarantie: false, actifLiable: tous };
@@ -36,13 +40,16 @@ export const reglesEmprunt = (nature?: string): ReglesEmprunt => {
       return { ...base, tauxZero: true, actifLiable: (n) => n === 'Résidence principale' };
     case 'Crédit relais':
       // Intérêts seuls, capital remboursé à la vente du bien.
-      return { ...base, modeParDefaut: 'In fine', actifLiable: immobilier };
+      return { ...base, modeParDefaut: 'In fine', actifLiable: immobilier, actifGarantie: { libelle: 'Bien à vendre', liable: immobilier } };
     case 'Prêt pour acquisition de SCPI':
       return { ...base, actifLiable: (n) => n === 'Parts de SCPI' };
     case 'Crédit in fine (adossé à assurance-vie ou autres actifs)':
-      return { ...base, modeImpose: 'In fine', garantieParDefaut: 'Nantissement' };
+      return {
+        ...base, modeImpose: 'In fine', garantieParDefaut: 'Nantissement',
+        actifGarantie: { libelle: 'Actif nanti', liable: categorie('épargne et assurance-vie', 'valeurs mobilières et placements financiers', 'épargne bancaire / liquidités') },
+      };
     case 'Crédit Lombard (prêt gagé sur portefeuille-titres)':
-      return { ...base, garantieImposee: 'Nantissement' };
+      return { ...base, garantieImposee: 'Nantissement', actifGarantie: { libelle: 'Portefeuille nanti', liable: placements } };
     case 'Crédit renouvelable / revolving':
       return { ...base, sansTableau: true, sansActifNiGarantie: true, actifLiable: () => false };
     case 'Crédit à la consommation':
