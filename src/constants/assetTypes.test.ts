@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ASSET_CATEGORIES, EMPRUNT_NATURES, EMPRUNT_SOUS_GROUPES, NATURE_SOUS_GROUPES, isContratSouscrit, isCreance, isPrevoyanceSansRachat } from './assetTypes';
+import { ASSET_CATEGORIES, EMPRUNT_NATURES, EMPRUNT_SOUS_GROUPES, PASSIF_NATURES, DETTE_SOUS_GROUPES, NATURE_SOUS_GROUPES, isContratSouscrit, isCreance, isPrevoyanceSansRachat } from './assetTypes';
 
 describe('NATURE_SOUS_GROUPES', () => {
   it.each(Object.entries(NATURE_SOUS_GROUPES))('couvre exactement les natures de « %s »', (categorie, sousGroupes) => {
@@ -38,5 +38,12 @@ describe('EMPRUNT_SOUS_GROUPES', () => {
   it('couvre exactement les natures d’emprunt', () => {
     const groupees = EMPRUNT_SOUS_GROUPES.flatMap((sg) => sg.natures);
     expect([...groupees].sort()).toEqual([...EMPRUNT_NATURES].sort());
+  });
+});
+
+describe('DETTE_SOUS_GROUPES', () => {
+  it('couvre exactement les natures de dette', () => {
+    const groupees = DETTE_SOUS_GROUPES.flatMap((sg) => sg.natures);
+    expect([...groupees].sort()).toEqual([...PASSIF_NATURES].sort());
   });
 });

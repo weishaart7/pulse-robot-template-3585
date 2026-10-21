@@ -12,7 +12,7 @@ import {
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { EMPRUNT_NATURES, EMPRUNT_SOUS_GROUPES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
+import { EMPRUNT_NATURES, EMPRUNT_SOUS_GROUPES, DETTE_SOUS_GROUPES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
 import { format } from 'date-fns';
 import { Emprunt, Passif } from '@/services/passifService';
 import { usePassifEmpruntForm } from '@/hooks/usePassifEmpruntForm';
@@ -123,7 +123,7 @@ export const PassifEmpruntForm = ({
   // Un emprunt existant ne devient pas une dette simple (et inversement) : tables distinctes.
   const categoriesPassif = useMemo<NatureCategorie[]>(() => [
     ...(originalIsEmprunt !== false ? [{ cle: 'emprunts', libelle: 'Emprunts', couleur: PASSIF.emprunt, sousGroupes: EMPRUNT_SOUS_GROUPES }] : []),
-    ...(originalIsEmprunt !== true ? [{ cle: 'dettes', libelle: 'Dettes et passifs simples', couleur: PASSIF.dette, sousGroupes: [{ titre: null, natures: PASSIF_NATURES }] }] : []),
+    ...(originalIsEmprunt !== true ? [{ cle: 'dettes', libelle: 'Dettes et passifs simples', couleur: PASSIF.dette, sousGroupes: DETTE_SOUS_GROUPES }] : []),
   ], [originalIsEmprunt]);
   const watchedDiffere = form.watch('differe_mois');
   const watchedAssuranceMode = form.watch('assurance_mode');

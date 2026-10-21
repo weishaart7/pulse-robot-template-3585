@@ -33,6 +33,30 @@ export const EMPRUNT_SOUS_GROUPES: { titre: string; natures: readonly string[] }
   ] },
 ];
 
+// Sous-groupes d'affichage des dettes dans la fenêtre de choix de nature (sans effet sur la valeur stockée).
+export const DETTE_SOUS_GROUPES: { titre: string; natures: readonly string[] }[] = [
+  { titre: "Fiscales et sociales", natures: [
+    "Impôt sur le revenu restant dû",
+    "Impôt sur la fortune immobilière (IFI) restant dû",
+    "Dettes successorales (droits de succession restant dus)",
+    "Cotisations sociales non réglées",
+  ] },
+  { titre: "Prêts privés", natures: [
+    "Emprunts familiaux ou privés",
+    "Prêts entre particuliers contractés",
+    "Prêt patronal",
+    "Emprunts participatifs",
+  ] },
+  { titre: "Litiges et séparations", natures: [
+    "Dettes issues d'un divorce ou d'un partage de communauté",
+    "Indemnités prud'homales ou litiges judiciaires en cours",
+  ] },
+  { titre: "Autres", natures: [
+    "Engagements liés à produits d'investissement (appels de marge, etc.)",
+    "Autres dettes diverses",
+  ] },
+];
+
 export const TYPE_GARANTIE_OPTIONS = [
   "Hypothèque",
   "Caution",
