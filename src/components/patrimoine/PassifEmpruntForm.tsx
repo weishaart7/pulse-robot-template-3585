@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ActifFormFrame } from '@/components/assets/ActifFormFrame';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { PASSIF } from '@/lib/palette';
+import { NaturePicker, type NatureCategorie } from '@/components/assets/NaturePicker';
 import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectLabel,
-  SelectSeparator, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { EMPRUNT_NATURES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
+import { EMPRUNT_NATURES, EMPRUNT_SOUS_GROUPES, PASSIF_NATURES, TYPE_GARANTIE_OPTIONS, MODE_AMORTISSEMENT_OPTIONS, TYPE_TAUX_OPTIONS } from '@/constants/assetTypes';
 import { format } from 'date-fns';
 import { Emprunt, Passif } from '@/services/passifService';
 import { usePassifEmpruntForm } from '@/hooks/usePassifEmpruntForm';
@@ -118,6 +120,11 @@ export const PassifEmpruntForm = ({
   const watchedAssure = form.watch('assure');
   const watchedQualificationBien = form.watch('qualification_bien');
   const isEmprunt = EMPRUNT_NATURES.includes(watchedNature);
+  // Un emprunt existant ne devient pas une dette simple (et inversement) : tables distinctes.
+  const categoriesPassif = useMemo<NatureCategorie[]>(() => [
+    ...(originalIsEmprunt !== false ? [{ cle: 'emprunts', libelle: 'Emprunts', couleur: PASSIF.emprunt, sousGroupes: EMPRUNT_SOUS_GROUPES }] : []),
+    ...(originalIsEmprunt !== true ? [{ cle: 'dettes', libelle: 'Dettes et passifs simples', couleur: PASSIF.dette, sousGroupes: [{ titre: null, natures: PASSIF_NATURES }] }] : []),
+  ], [originalIsEmprunt]);
   const watchedDiffere = form.watch('differe_mois');
   const watchedAssuranceMode = form.watch('assurance_mode');
   // Contrat complet : capital restant dû et durée restante calculés (aperçu à la date du jour).
@@ -180,32 +187,17 @@ export const PassifEmpruntForm = ({
               <FormField control={form.control} name="nature" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nature</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger size="lg">
-                        <SelectValue placeholder="Sélectionnez la nature" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {originalIsEmprunt !== false && (
-                        <SelectGroup>
-                          <SelectLabel>Emprunts</SelectLabel>
-                          {EMPRUNT_NATURES.map((n) => (
-                            <SelectItem key={n} value={n}>{n}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                      )}
-                      {originalIsEmprunt !== false && originalIsEmprunt !== true && <SelectSeparator />}
-                      {originalIsEmprunt !== true && (
-                        <SelectGroup>
-                          <SelectLabel>Dettes / passifs simples</SelectLabel>
-                          {PASSIF_NATURES.map((n) => (
-                            <SelectItem key={n} value={n}>{n}</SelectItem>
-                          ))}
-                        </SelectGroup>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <NaturePicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      categories={categoriesPassif}
+                      titre="Nature du passif"
+                      placeholderRecherche="Prêt immobilier, crédit relais, impôt…"
+                      placeholder="Sélectionnez la nature"
+                      className="h-10 bg-background border-border shadow-none"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

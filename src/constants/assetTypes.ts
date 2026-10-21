@@ -12,6 +12,27 @@ export const EMPRUNT_NATURES = [
   "Prêt pour acquisition de SCPI"
 ];
 
+// Sous-groupes d'affichage des emprunts dans la fenêtre de choix de nature (sans effet sur la valeur stockée).
+export const EMPRUNT_SOUS_GROUPES: { titre: string; natures: readonly string[] }[] = [
+  { titre: "Immobilier", natures: [
+    "Prêt immobilier (résidence principale)",
+    "Prêt immobilier (résidences secondaires)",
+    "Prêt immobilier locatif (investissement locatif)",
+    "Prêt à taux zéro (PTZ)",
+    "Crédit relais",
+    "Prêt pour acquisition de SCPI",
+  ] },
+  { titre: "Consommation", natures: [
+    "Crédit à la consommation",
+    "Crédit affecté (auto, travaux, etc.)",
+    "Crédit renouvelable / revolving",
+  ] },
+  { titre: "Adossés à un patrimoine", natures: [
+    "Crédit in fine (adossé à assurance-vie ou autres actifs)",
+    "Crédit Lombard (prêt gagé sur portefeuille-titres)",
+  ] },
+];
+
 export const TYPE_GARANTIE_OPTIONS = [
   "Hypothèque",
   "Caution",

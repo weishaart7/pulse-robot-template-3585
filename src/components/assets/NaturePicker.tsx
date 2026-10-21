@@ -20,6 +20,29 @@ const CATEGORY_LABELS: Record<string, string> = {
   'autres': 'Autres',
 };
 
+/** Catégorie proposée par la fenêtre : natures groupées en sous-groupes (titre null = sans titre). */
+export interface NatureCategorie {
+  cle: string;
+  libelle: string;
+  couleur?: string;
+  sousGroupes: { titre: string | null; natures: readonly string[] }[];
+}
+
+// Catalogue des actifs : natures masquées à la saisie retirées (sauf la valeur courante),
+// catégories triées de la plus fournie à la moins fournie.
+const catalogueActifs = (value?: string): NatureCategorie[] =>
+  Object.entries(ASSET_CATEGORIES)
+    .map(([cle, natures]) => ({
+      cle,
+      libelle: CATEGORY_LABELS[cle] ?? cle,
+      couleur: CATEGORY_COLORS[cle],
+      sousGroupes: (NATURE_SOUS_GROUPES[cle as keyof typeof ASSET_CATEGORIES] ?? [{ titre: null, natures: natures as readonly string[] }]).map((sg) => ({
+        titre: sg.titre as string | null,
+        natures: sg.natures.filter((n) => !NATURES_MASQUEES_SAISIE.includes(n) || n === value),
+      })),
+    }))
+    .sort((a, b) => b.sousGroupes.flatMap((sg) => sg.natures).length - a.sousGroupes.flatMap((sg) => sg.natures).length);
+
 // Recherche insensible à la casse et aux accents.
 const normaliser = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -34,39 +57,37 @@ export const NaturePicker: React.FC<{
   onChange: (nature: string) => void;
   placeholder?: string;
   className?: string;
-}> = ({ value, onChange, placeholder = 'Choisir une nature', className }) => {
+  /** Catalogue proposé ; par défaut, les natures d'actifs. */
+  categories?: NatureCategorie[];
+  titre?: string;
+  placeholderRecherche?: string;
+}> = ({ value, onChange, placeholder = 'Choisir une nature', className, categories, titre = "Nature de l'actif", placeholderRecherche = 'Livret A, SCPI, assurance-vie…' }) => {
   const [open, setOpen] = useState(false);
   const [recherche, setRecherche] = useState('');
-  // Catégories triées par nombre de natures proposées, de la plus fournie à la moins fournie.
-  const toutes = useMemo(() => {
-    const nbProposees = (natures: readonly string[]) => natures.filter((n) => !NATURES_MASQUEES_SAISIE.includes(n) || n === value).length;
-    return Object.entries(ASSET_CATEGORIES).sort(([, a], [, b]) => nbProposees(b) - nbProposees(a));
-  }, [value]);
-  const premiereCategorie = toutes[0][0];
+  const toutes = useMemo(() => categories ?? catalogueActifs(value), [categories, value]);
+  const premiereCategorie = toutes[0].cle;
+  const categorieDe = (nature: string) =>
+    categories ? toutes.find((c) => c.sousGroupes.some((sg) => sg.natures.includes(nature)))?.cle ?? premiereCategorie : getAssetCategory(nature);
   // Catégorie affichée à droite : celle de la nature déjà choisie, sinon la première.
   const [categorie, setCategorie] = useState(premiereCategorie);
   const ouvrir = () => {
-    setCategorie(value ? getAssetCategory(value) : premiereCategorie);
+    setCategorie(value ? categorieDe(value) : premiereCategorie);
     setOpen(true);
   };
 
   const groupes = useMemo(() => {
     const q = normaliser(recherche.trim());
     return toutes
-      .map(([categorie, natures]) => {
-        const garder = (n: string) =>
-          (!NATURES_MASQUEES_SAISIE.includes(n) || n === value) && (!q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(CATEGORY_LABELS[categorie] ?? categorie).includes(q));
-        // Sous-groupes d'affichage s'ils existent, sinon un groupe sans titre.
-        const sousGroupes = (
-          NATURE_SOUS_GROUPES[categorie as keyof typeof ASSET_CATEGORIES] ?? [{ titre: null, natures: natures as readonly string[] }]
-        )
-          .map((sg) => ({ titre: sg.titre as string | null, natures: sg.natures.filter(garder) }))
+      .map((cat) => {
+        const garder = (n: string) => !q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(cat.libelle).includes(q);
+        const sousGroupes = cat.sousGroupes
+          .map((sg) => ({ titre: sg.titre, natures: sg.natures.filter(garder) }))
           .filter((sg) => sg.natures.length > 0);
         // Natures dans l'ordre affiché (Entrée choisit la première).
-        return { categorie, sousGroupes, natures: sousGroupes.flatMap((sg) => sg.natures) };
+        return { categorie: cat.cle, libelle: cat.libelle, couleur: cat.couleur, sousGroupes, natures: sousGroupes.flatMap((sg) => sg.natures) };
       })
       .filter((g) => g.natures.length > 0);
-  }, [recherche, toutes, value]);
+  }, [recherche, toutes]);
 
   const choisir = (nature: string) => {
     onChange(nature);
@@ -99,7 +120,7 @@ export const NaturePicker: React.FC<{
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setRecherche(''); }}>
         <DialogContent overlayClassName="bg-black/25 backdrop-blur-[6px]" className="flex h-[min(640px,85vh)] max-w-3xl flex-col gap-0 overflow-hidden rounded-[4px] p-0 sm:rounded-[4px]">
           <div className="border-b border-border px-6 pb-4 pt-5">
-            <DialogTitle className="text-[18px] font-medium tracking-[-0.01em]">Nature de l'actif</DialogTitle>
+            <DialogTitle className="text-[18px] font-medium tracking-[-0.01em]">{titre}</DialogTitle>
             <DialogDescription className="mt-1 text-[13px] text-muted-foreground">
               Cherchez par nom ou parcourez les catégories.
             </DialogDescription>
@@ -116,7 +137,7 @@ export const NaturePicker: React.FC<{
                     if (premier) choisir(premier);
                   }
                 }}
-                placeholder="Livret A, SCPI, assurance-vie…"
+                placeholder={placeholderRecherche}
                 className="h-full w-full bg-transparent text-[14px] outline-none placeholder:text-muted-foreground"
               />
             </div>
@@ -124,7 +145,7 @@ export const NaturePicker: React.FC<{
 
           {/* Écran étroit : catégories en rangée défilante (la colonne de gauche est masquée). */}
           <div className="flex gap-1.5 overflow-x-auto border-b border-border px-6 py-2.5 md:hidden">
-            {toutes.map(([cat]) => (
+            {toutes.map(({ cle: cat, libelle }) => (
               <button
                 key={cat}
                 type="button"
@@ -134,7 +155,7 @@ export const NaturePicker: React.FC<{
                   !recherche.trim() && cat === categorie ? 'bg-foreground text-background' : 'text-muted-foreground'
                 )}
               >
-                {CATEGORY_LABELS[cat] ?? cat}
+                {libelle}
               </button>
             ))}
           </div>
@@ -142,8 +163,8 @@ export const NaturePicker: React.FC<{
           <div className="flex min-h-0 flex-1">
             {/* Catégories : choisir celle affichée à droite (efface une recherche en cours). */}
             <nav className="hidden w-64 shrink-0 overflow-y-auto border-r border-border py-3 md:block">
-              {toutes.map(([cat, natures]) => {
-                const nb = recherche.trim() ? groupes.find((g) => g.categorie === cat)?.natures.length ?? 0 : natures.filter((n) => !NATURES_MASQUEES_SAISIE.includes(n) || n === value).length;
+              {toutes.map(({ cle: cat, libelle, couleur, sousGroupes }) => {
+                const nb = recherche.trim() ? groupes.find((g) => g.categorie === cat)?.natures.length ?? 0 : sousGroupes.reduce((t, sg) => t + sg.natures.length, 0);
                 const actif = !recherche.trim() && cat === categorie;
                 return (
                   <button
@@ -157,8 +178,8 @@ export const NaturePicker: React.FC<{
                     )}
                   >
                     {actif && <span className="absolute inset-y-0 left-0 w-[2px] bg-foreground" />}
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: CATEGORY_COLORS[cat] }} />
-                    <span className="flex-1 leading-snug">{CATEGORY_LABELS[cat] ?? cat}</span>
+                    {couleur && <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: couleur }} />}
+                    <span className="flex-1 leading-snug">{libelle}</span>
                     <span className="tabular-nums text-[11.5px] text-muted-foreground">{nb}</span>
                   </button>
                 );
@@ -172,8 +193,8 @@ export const NaturePicker: React.FC<{
               {affiches.map((g) => (
                 <section key={g.categorie}>
                   <h3 className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background pb-2 pt-4 text-[11.5px] font-medium uppercase tracking-wider text-muted-foreground">
-                    <span className="h-2 w-2 rounded-[1px]" style={{ backgroundColor: CATEGORY_COLORS[g.categorie] }} />
-                    {CATEGORY_LABELS[g.categorie] ?? g.categorie}
+                    {g.couleur && <span className="h-2 w-2 rounded-[1px]" style={{ backgroundColor: g.couleur }} />}
+                    {g.libelle}
                   </h3>
                   {g.sousGroupes.map((sg) => (
                     <div key={sg.titre ?? ''}>

@@ -48,6 +48,13 @@ export const PATRIMOINE = {
   sableFonce: '#a9784a',
 } as const;
 
+// Passifs : nuances de rouge sourdes, accordées aux tons lagon / sable.
+// Mêmes valeurs en classes Tailwind arbitraires dans PatrimoinePassifs.tsx (repère de section, pastille d'icône).
+export const PASSIF = {
+  emprunt: '#a8473d',
+  dette: '#dc9488',
+} as const;
+
 /** Vrai si un texte blanc se lit mieux qu'un texte encre sur cette couleur. */
 export function isDarkColor(hex: string): boolean {
   const n = parseInt(hex.replace('#', '').slice(0, 6), 16);

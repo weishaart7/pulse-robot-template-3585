@@ -111,7 +111,7 @@ export const PatrimoinePassifs = () => {
       <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-2">
         <section>
           <div className="flex items-baseline justify-between">
-            <SectionHeader title="Emprunts" markClassName="bg-lagon" />
+            <SectionHeader title="Emprunts" markClassName="bg-[#a8473d]" />
             <span className="text-[12px] tabular-nums text-muted-foreground">{emprunts.length}</span>
           </div>
           {empruntsLoading ? (
@@ -124,7 +124,7 @@ export const PatrimoinePassifs = () => {
                 <PassifRow
                   key={emprunt.id}
                   icon={<Landmark className="h-3.5 w-3.5" />}
-                  tone="bg-lagon-soft text-lagon-ink"
+                  tone="bg-[#f3dfdb] text-[#8a3a31]"
                   title={emprunt.libelle || emprunt.nature}
                   // Emprunt lié à une société (module Sociétés) : déjà reflété dans la
                   // valorisation des parts, donc exclu des totaux.
@@ -146,7 +146,7 @@ export const PatrimoinePassifs = () => {
 
         <section>
           <div className="flex items-baseline justify-between">
-            <SectionHeader title="Autres passifs" markClassName="bg-[#c9c2b8]" />
+            <SectionHeader title="Autres passifs" markClassName="bg-[#dc9488]" />
             <span className="text-[12px] tabular-nums text-muted-foreground">{passifs.length}</span>
           </div>
           {passifsLoading ? (
@@ -159,7 +159,7 @@ export const PatrimoinePassifs = () => {
                 <PassifRow
                   key={passif.id}
                   icon={<Receipt className="h-3.5 w-3.5" />}
-                  tone="bg-[#ece7e1] text-foreground"
+                  tone="bg-[#f8e9e6] text-[#a8473d]"
                   title={passif.nature}
                   amount={euros(passif.montant_du)}
                   amountLabel="Montant dû"
