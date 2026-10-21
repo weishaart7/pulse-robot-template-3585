@@ -9,7 +9,8 @@ import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
 import { formatCurrency } from '@/lib/patrimoine/utils';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, hasEngagementAppels, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { MouvementsFondsFields } from './MouvementsFondsFields';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, hasEngagementAppels, hasSuiviAppelsFonds, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -42,6 +43,10 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const watchedNature = form.watch('nature');
   const watchedTypeFonds = form.watch('type_fonds');
   const avecEngagement = hasEngagementAppels(watchedNature, watchedTypeFonds);
+  // Suivi des appels : le montant appelé devient la somme des appels dès qu'il y en a un.
+  const avecSuiviAppels = hasSuiviAppelsFonds(watchedNature, watchedTypeFonds);
+  const appelsSaisis = avecSuiviAppels
+    && (form.watch('mouvements_fonds') || []).some((m) => m.type_mouvement === 'appel' && (m.montant ?? 0) > 0);
   const engage = Number(form.watch('montant_engage')) || 0;
   const appele = Number(form.watch('valeur_acquisition')) || 0;
   const watchedDetenteur = form.watch('detenteur');
@@ -186,9 +191,9 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
                 <FormLabel>{libellesPrix.valeur}<RequiredMark /></FormLabel>
-                <FieldHelp>{libellesPrix.aide} Sert de base pour le calcul de la plus-value.</FieldHelp>
+                <FieldHelp>{libellesPrix.aide} Sert de base pour le calcul de la plus-value.{appelsSaisis && ' Calculé : somme des appels de fonds ci-dessous.'}</FieldHelp>
                 <FormControl>
-                  <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                  <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" readOnly={appelsSaisis} {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -227,6 +232,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 </div>
               </>
             )}
+            {avecSuiviAppels && <MouvementsFondsFields form={form} />}
           </>
         )}
       </div>

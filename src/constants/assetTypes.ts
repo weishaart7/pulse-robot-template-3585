@@ -506,6 +506,9 @@ export const isFondsReductionIR = (typeFonds: string | null | undefined): boolea
 /** Fonds à appels de fonds : montant engagé saisi à l'étape Prix, à côté du montant appelé. */
 export const hasEngagementAppels = (nature: string | null | undefined, typeFonds?: string | null): boolean =>
   isNonCote(nature) || (isFondsCI(nature) && typeFonds === 'fcpr_fpci');
+/** Suivi des appels de fonds et distributions (table fonds_mouvements) : FCPR / FPCI et dette privée. */
+export const hasSuiviAppelsFonds = (nature: string | null | undefined, typeFonds?: string | null): boolean =>
+  nature === 'Fonds de dette privée' || (isFondsCI(nature) && typeFonds === 'fcpr_fpci');
 /** Libellé de valeur_acquisition selon la nature (et le type de fonds) ; undefined = défaut. */
 export const getLibelleMontantInvesti = (nature: string | null | undefined, typeFonds?: string | null): string | undefined =>
   isPEA(nature) ? 'Montant versé'

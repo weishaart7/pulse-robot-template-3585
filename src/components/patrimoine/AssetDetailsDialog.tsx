@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { fondsMouvementService, FondsMouvement } from '@/services/fondsMouvementService';
 import { lirePerimetreDesClauses } from '@/lib/patrimoine/societeAcquets';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { toast } from 'sonner';
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, TrendingUp, User, Building, Coins, Heart, Key, History, Plus, Pencil, Trash2, Check, X, Banknote, FileText, Scale, Link2 } from 'lucide-react';
-import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPEA, getLibelleMontantInvesti, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NOTES_FISCALITE_INTERETS, NATURE_PREVOYANCE_RACHETABLE, getNatureDisplayLabel, getAssetCategory, isContratSouscrit, isCreance, isPEA, getLibelleMontantInvesti, hasEngagementAppels, hasSuiviAppelsFonds, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { useAssetValorisations } from '@/hooks/useAssetValorisations';
 import { AssetValorisation } from '@/services/assetValorisationService';
@@ -43,6 +44,20 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
   const { revenus, createRevenu, updateRevenu, deleteRevenu } = useAssetRevenus(asset?.id);
   const [demembrements, setDemembrements] = useState<AssetDemembrement[]>([]);
   const [empruntsLies, setEmpruntsLies] = useState<Emprunt[]>([]);
+  const [mouvementsFonds, setMouvementsFonds] = useState<FondsMouvement[]>([]);
+
+  useEffect(() => {
+    if (asset?.id && hasSuiviAppelsFonds(asset.nature, asset.type_fonds)) {
+      fondsMouvementService.getByAsset(asset.id)
+        .then(setMouvementsFonds)
+        .catch(() => {
+          setMouvementsFonds([]);
+          toast.error('Impossible de charger les appels de fonds de cet actif');
+        });
+    } else {
+      setMouvementsFonds([]);
+    }
+  }, [asset?.id, asset?.nature, asset?.type_fonds]);
 
   useEffect(() => {
     if (asset?.id) {
@@ -365,7 +380,38 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                     <p className="font-medium">{formatDate(asset.date_estimation)}</p>
                   </div>
                 )}
+                {hasEngagementAppels(asset.nature, asset.type_fonds) && !!asset.montant_engage && (
+                  <div>
+                    <span className="text-sm text-muted-foreground">Montant engagé</span>
+                    <p className="font-medium">
+                      {formatCurrency(asset.montant_engage)}
+                      <span className="ml-2 text-[12.5px] font-normal text-muted-foreground">
+                        reste à appeler {formatCurrency(Math.max(0, asset.montant_engage - (asset.valeur_acquisition || 0)))}
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
+              {/* Appels de fonds et distributions (FCPR / FPCI, dette privée) */}
+              {mouvementsFonds.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm text-muted-foreground mb-1">Appels de fonds et distributions</p>
+                  <div className="divide-y divide-border border-y border-border text-[13px]">
+                    {mouvementsFonds.map((m) => (
+                      <div key={m.id} className="grid grid-cols-[1fr_1fr_auto] gap-3 py-1.5 tabular-nums">
+                        <span>{m.type_mouvement === 'appel' ? 'Appel' : 'Distribution'}</span>
+                        <span className="text-muted-foreground">{formatDate(m.date_mouvement)}</span>
+                        <span className="text-right">{m.type_mouvement === 'distribution' ? '+ ' : ''}{formatCurrency(m.montant)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {mouvementsFonds.some((m) => m.type_mouvement === 'distribution') && (
+                    <p className="mt-1 text-[12.5px] text-muted-foreground tabular-nums">
+                      Total distribué {formatCurrency(mouvementsFonds.filter((m) => m.type_mouvement === 'distribution').reduce((s, m) => s + Number(m.montant), 0))}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

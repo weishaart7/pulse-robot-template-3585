@@ -19,6 +19,7 @@ import { DemembrementDraft } from '@/components/assets/DemembrementSection';
 import { AssetSaisieExtras } from '@/hooks/useAssetForm';
 import { PassifEmpruntForm } from './PassifEmpruntForm';
 import { WizardConfirmDialog } from '@/components/assets/wizard/WizardConfirmDialog';
+import { fondsMouvementService } from '@/services/fondsMouvementService';
 import { useEmprunts, usePassifs } from '@/hooks/usePassifs';
 
 // Nature d'emprunt proposée pour le crédit d'un bien créé avec « Bien financé par un crédit ».
@@ -161,6 +162,16 @@ export const PatrimoineActifs = () => {
           ? error.message
           : "la contrepartie de démembrement n'a pas pu être enregistrée"
       );
+    }
+
+    // Appels de fonds / distributions (remplace l'ensemble existant pour cet actif).
+    if (extras?.mouvementsFonds) {
+      try {
+        await fondsMouvementService.replaceForAsset(savedAsset.id!, extras.mouvementsFonds);
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Sauvegarde des appels de fonds échouée:', error);
+        stepErrors.push("les appels de fonds n'ont pas pu être enregistrés");
+      }
     }
 
     // Loyer saisi à la création : revenu du bien, mensuel, à partir d'aujourd'hui.

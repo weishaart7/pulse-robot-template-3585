@@ -1231,6 +1231,47 @@ export type Database = {
         }
         Relationships: []
       }
+      fonds_mouvements: {
+        Row: {
+          asset_id: string
+          created_at: string
+          date_mouvement: string
+          id: string
+          montant: number
+          type_mouvement: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          date_mouvement: string
+          id?: string
+          montant: number
+          type_mouvement: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          date_mouvement?: string
+          id?: string
+          montant?: number
+          type_mouvement?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fonds_mouvements_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       foyer_fiscal: {
         Row: {
           ancien_combattant_declarant1: boolean

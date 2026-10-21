@@ -224,6 +224,13 @@ export const assetSchema = z.object({
   // enregistré comme revenu du bien, et crédit à saisir ensuite dans Passifs.
   loyer_mensuel: z.number().finite().nonnegative().optional(),
   loyer_budget: z.boolean().optional(),
+  // Appels de fonds et distributions (fonds_mouvements) : édités dans le formulaire, jamais écrits
+  // dans assets (extraits vers AssetSaisieExtras à l'envoi).
+  mouvements_fonds: z.array(z.object({
+    type_mouvement: z.enum(['appel', 'distribution']),
+    date_mouvement: z.date().optional(),
+    montant: z.number().finite().nonnegative().optional(),
+  })).optional(),
   finance_par_credit: z.boolean().optional(),
   // Parking ou local professionnel : usage loué (sinon personnel / propre activité). Déduit de type_location, jamais écrit en base.
   usage_loue: z.boolean().optional(),

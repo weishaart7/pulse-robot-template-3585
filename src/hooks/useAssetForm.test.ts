@@ -85,4 +85,24 @@ describe('useAssetForm — cohérence détenteur / qualification (régime légal
     expect(result.current.form.getValues('qualification_bien')).toBe('Bien commun');
     expect(result.current.form.getValues('detenteur')).toBe('Titouan');
   });
+
+  it("FCPR / FPCI : montant appelé = somme des appels, date de souscription = premier appel", async () => {
+    const { result } = renderHook(() => useAssetForm({ onSubmit: vi.fn() }));
+    await waitFor(() => expect(result.current.maritalContext.statutCouple).toBe('Marié(e)'));
+
+    act(() => {
+      result.current.form.setValue('nature', 'Fonds de capital-investissement');
+      result.current.form.setValue('type_fonds', 'fcpr_fpci');
+    });
+    act(() => {
+      result.current.form.setValue('mouvements_fonds', [
+        { type_mouvement: 'appel', date_mouvement: new Date('2023-05-10'), montant: 20000 },
+        { type_mouvement: 'appel', date_mouvement: new Date('2022-03-15'), montant: 30000 },
+        { type_mouvement: 'distribution', date_mouvement: new Date('2025-01-10'), montant: 5000 },
+      ]);
+    });
+
+    await waitFor(() => expect(result.current.form.getValues('valeur_acquisition')).toBe(50000));
+    expect(result.current.form.getValues('date_acquisition')).toEqual(new Date('2022-03-15'));
+  });
 });

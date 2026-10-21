@@ -8,7 +8,8 @@ import { Asset, AssetCharge, assetService } from '@/services/assetService';
 import { hasConjoint } from '@/lib/family/maritalStatus';
 import { familyService } from '@/services/familyService';
 import { mapDetenteurToDisplay, mapDetenteurToDb, getPartUtilisateurIndivisionTiers, FamilyInfo } from '@/lib/patrimoine/utils';
-import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isTitulaireUnique, isPEA, isPrevoyanceDeces } from '@/constants/assetTypes';
+import { ASSET_CATEGORIES, getAssetCategory, PARTS_FONCIERES_NATURES, DENOMINATION_PRIME, isTitulaireUnique, isPEA, isPrevoyanceDeces, hasSuiviAppelsFonds } from '@/constants/assetTypes';
+import { fondsMouvementService } from '@/services/fondsMouvementService';
 import { qualifierBien, QualificationContext } from '@/lib/patrimoine/qualification';
 import { lirePerimetreDesClauses, PerimetreSocieteAcquets } from '@/lib/patrimoine/societeAcquets';
 import { assetIndivisaireService, AssetIndivisaire } from '@/services/assetIndivisaireService';
@@ -37,6 +38,8 @@ export const NATURES_WITH_ETABLISSEMENT = [
 // Saisies de la création qui ne sont pas des colonnes de `assets` : enregistrées à part par le
 // parent (loyer → revenu du bien) ou proposées après coup (crédit → Passifs).
 export interface AssetSaisieExtras {
+  // Appels de fonds / distributions à enregistrer (undefined : nature sans suivi, rien à toucher).
+  mouvementsFonds?: { type_mouvement: 'appel' | 'distribution'; date_mouvement: string; montant: number }[];
   loyerMensuel?: number;
   loyerBudget?: boolean;
   financeParCredit?: boolean;
@@ -195,6 +198,37 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         });
     }
   }, [asset?.id]);
+
+  // Appels de fonds / distributions : chargés dans le formulaire à l'édition.
+  useEffect(() => {
+    if (asset?.id && hasSuiviAppelsFonds(asset.nature, asset.type_fonds)) {
+      fondsMouvementService.getByAsset(asset.id)
+        .then((rows) => form.setValue('mouvements_fonds', rows.map((r) => ({
+          type_mouvement: r.type_mouvement,
+          date_mouvement: new Date(r.date_mouvement),
+          montant: Number(r.montant),
+        }))))
+        .catch(() => toast.error("Impossible de charger les appels de fonds de cet actif"));
+    }
+  }, [asset?.id, asset?.nature, asset?.type_fonds, form]);
+
+  // Montant appelé = somme des appels dès qu'il y en a un ; date de souscription = premier appel
+  // si elle n'est pas renseignée.
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name !== 'mouvements_fonds' && !name?.startsWith('mouvements_fonds.')) return;
+      if (!hasSuiviAppelsFonds(value.nature, value.type_fonds)) return;
+      const appels = (value.mouvements_fonds || []).filter((m) => m?.type_mouvement === 'appel' && (m.montant ?? 0) > 0);
+      if (appels.length === 0) return;
+      const total = appels.reduce((sum, m) => sum + (m!.montant || 0), 0);
+      if (form.getValues('valeur_acquisition') !== total) form.setValue('valeur_acquisition', total, { shouldDirty: true });
+      const dates = appels.map((m) => m!.date_mouvement).filter((d): d is Date => d instanceof Date && !isNaN(d.getTime()));
+      if (!form.getValues('date_acquisition') && dates.length > 0) {
+        form.setValue('date_acquisition', new Date(Math.min(...dates.map((d) => d.getTime()))), { shouldDirty: true });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   // Load démembrement (contrepartie usufruit/nue-propriété) when editing existing asset
   useEffect(() => {
@@ -583,10 +617,15 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
       delete formattedValues.loyer_mensuel;
       delete formattedValues.loyer_budget;
       delete formattedValues.finance_par_credit;
+      delete formattedValues.mouvements_fonds;
       const extras: AssetSaisieExtras = {
         loyerMensuel: estEnLocation(values) && values.loyer_mensuel ? values.loyer_mensuel : undefined,
         loyerBudget: !!values.loyer_budget,
         financeParCredit: hasDetailImmobilier(values.nature) && !!values.finance_par_credit,
+        // Nature ou type sans suivi : liste vide, pour effacer d'éventuels mouvements d'avant le changement.
+        mouvementsFonds: (hasSuiviAppelsFonds(values.nature, values.type_fonds) ? values.mouvements_fonds || [] : [])
+          .filter((m) => m.date_mouvement && (m.montant ?? 0) > 0)
+          .map((m) => ({ type_mouvement: m.type_mouvement, date_mouvement: format(m.date_mouvement!, 'yyyy-MM-dd'), montant: m.montant! })),
       };
 
       const finalIndivisaires = dbDetenteur === 'Indivision' ? indivisaires : [];
