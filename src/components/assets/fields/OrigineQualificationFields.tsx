@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { formatCurrency } from '@/lib/patrimoine/utils';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isFondsCI, hasEngagementAppels, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -40,6 +41,9 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   const showPrixSection = section !== 'origine';
   const watchedNature = form.watch('nature');
   const watchedTypeFonds = form.watch('type_fonds');
+  const avecEngagement = hasEngagementAppels(watchedNature, watchedTypeFonds);
+  const engage = Number(form.watch('montant_engage')) || 0;
+  const appele = Number(form.watch('valeur_acquisition')) || 0;
   const watchedDetenteur = form.watch('detenteur');
   const watchedOrigineActif = form.watch('origine_actif');
   const watchedClauseRemploi = form.watch('clause_remploi');
@@ -200,6 +204,29 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
                 <FormMessage />
               </FormItem>
             )} />}
+
+            {/* Fonds à appels de fonds : engagement saisi ici, à côté du montant appelé. */}
+            {avecEngagement && (
+              <>
+                <FormField control={form.control} name="montant_engage" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Montant engagé</FormLabel>
+                    <FieldHelp>Montant total promis au fonds à la souscription, appelé progressivement.</FieldHelp>
+                    <FormControl>
+                      <EuroInput className="bg-background border-border shadow-none" type="number" step="0.01" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <div className="self-end pb-2 text-[12.5px] leading-snug text-muted-foreground">
+                  {engage > 0 && (appele > engage ? (
+                    <span className="text-destructive">Le montant appelé dépasse l'engagement : vérifiez les deux montants.</span>
+                  ) : (
+                    <>Reste à appeler : <span className="tabular-nums text-foreground">{formatCurrency(engage - appele)}</span> (engagement envers le fonds, non déduit de l'actif)</>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

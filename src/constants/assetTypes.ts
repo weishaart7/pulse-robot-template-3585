@@ -503,6 +503,9 @@ export const TYPES_FONDS_CI: { value: TypeFondsCI; label: string; aide: string }
 ];
 export const isFondsReductionIR = (typeFonds: string | null | undefined): boolean =>
   typeFonds === 'fcpi' || typeFonds === 'fip' || typeFonds === 'fip_corse';
+/** Fonds à appels de fonds : montant engagé saisi à l'étape Prix, à côté du montant appelé. */
+export const hasEngagementAppels = (nature: string | null | undefined, typeFonds?: string | null): boolean =>
+  isNonCote(nature) || (isFondsCI(nature) && typeFonds === 'fcpr_fpci');
 /** Libellé de valeur_acquisition selon la nature (et le type de fonds) ; undefined = défaut. */
 export const getLibelleMontantInvesti = (nature: string | null | undefined, typeFonds?: string | null): string | undefined =>
   isPEA(nature) ? 'Montant versé'
@@ -748,7 +751,6 @@ export type ValeursMobilieresChamp =
   | 'duree_blocage'
   | 'reduction_ir_entree'
   | 'prix_exercice'
-  | 'montant_engage'
   | 'sous_jacent'
   | 'capital_garanti'
   | 'lieu_stockage'
@@ -757,16 +759,16 @@ export type ValeursMobilieresChamp =
 // Fonds de capital-investissement : champs selon le type de fonds (aucun tant qu'il n'est pas choisi).
 export const getChampsFondsCI = (typeFonds: string | null | undefined): ValeursMobilieresChamp[] =>
   isFondsReductionIR(typeFonds) ? ['duree_blocage', 'reduction_ir_entree']
-  : typeFonds === 'fcpr_fpci' ? ['duree_blocage', 'montant_engage']
+  : typeFonds === 'fcpr_fpci' ? ['duree_blocage']
   : [];
 
 export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieresChamp[]> = {
   'Parts de SOFICA': ['duree_blocage', 'reduction_ir_entree'],
   'Stock-options': ['prix_exercice'],
   'BSPCE': ['prix_exercice'],
-  'Club deals': ['duree_blocage', 'montant_engage'],
-  "SPV d'investissement (structures ad hoc)": ['duree_blocage', 'montant_engage'],
-  'Fonds de dette privée': ['duree_blocage', 'montant_engage'],
+  'Club deals': ['duree_blocage'],
+  "SPV d'investissement (structures ad hoc)": ['duree_blocage'],
+  'Fonds de dette privée': ['duree_blocage'],
   'Produits structurés': ['sous_jacent', 'date_echeance', 'capital_garanti'],
   'Autres produits dérivés (Swap, Warrants, CFD...)': ['sous_jacent', 'date_echeance', 'capital_garanti'],
   'Or (physique)': ['lieu_stockage', 'quantite'],

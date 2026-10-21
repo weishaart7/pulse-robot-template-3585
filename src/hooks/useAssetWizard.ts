@@ -43,7 +43,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
   {
     id: 'quoi',
     label: 'Le bien',
-    fields: ['nature', 'denomination', 'type_groupement'],
+    fields: ['nature', 'denomination', 'type_groupement', 'type_fonds'],
     isVisible: () => true,
   },
   {

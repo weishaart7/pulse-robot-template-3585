@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { NaturePicker } from '@/components/assets/NaturePicker';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { TypeGroupementField } from '@/components/assets/fields/CaracteristiquesFields';
+import { TypeFondsField, TypeGroupementField } from '@/components/assets/fields/CaracteristiquesFields';
 import { DescriptionBienFields } from '@/components/assets/fields/BienImmobilierFields';
 import { RequiredMark } from '@/components/ui/required-mark';
 import { Link } from 'react-router-dom';
@@ -40,6 +40,7 @@ export const WizardStepQuoi: React.FC<WizardStepQuoiProps> = ({ form }) => (
         </FormItem>
       )} />
       <TypeGroupementField form={form} />
+      <TypeFondsField form={form} />
     </div>
 
     {/* Parts de société : la fiche société porte le régime IR / IS, la valeur et l'entrée du foyer,

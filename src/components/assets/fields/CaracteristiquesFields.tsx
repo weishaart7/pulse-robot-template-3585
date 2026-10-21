@@ -110,6 +110,39 @@ export const TypeGroupementField: React.FC<CaracteristiquesFieldsProps> = ({ for
   );
 };
 
+// Type de fonds de capital-investissement : demandé avec la nature, à la première étape, car il
+// aiguille l'étape Prix (montant souscrit ou appelé, engagement), les caractéristiques et le régime.
+export const TypeFondsField: React.FC<CaracteristiquesFieldsProps> = ({ form }) => {
+  if (form.watch('nature') !== NATURE_FONDS_CI) return null;
+  return (
+    <FormField control={form.control} name="type_fonds" render={({ field }) => (
+      <FormItem>
+        <FormLabel>
+          Type de fonds
+          <FieldHelp>
+            Détermine la fiscalité : FCPI et FIP ouvrent une réduction d'impôt à la souscription et sont
+            exonérés d'impôt sur le revenu après 5 ans ; un FCPR fiscal ou un FPCI l'est aussi après 5 ans, sans
+            réduction à l'entrée, et fonctionne par appels de fonds.
+          </FieldHelp>
+        </FormLabel>
+        <Select onValueChange={field.onChange} value={field.value}>
+          <FormControl>
+            <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+              <SelectValue placeholder="Choisir" />
+            </SelectTrigger>
+          </FormControl>
+          <SelectContent>
+            {TYPES_FONDS_CI.map((t) => (
+              <SelectItem key={t.value} value={t.value}>{t.label} <span className="text-muted-foreground">· {t.aide}</span></SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    )} />
+  );
+};
+
 export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ form }) => {
   const watchedNature = form.watch('nature');
   const isImmobilier = getAssetCategory(watchedNature) === 'actifs immobiliers';
@@ -212,9 +245,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
     const d = new Date(watchedDateSouscription); d.setFullYear(d.getFullYear() + 5); return d.toLocaleDateString('fr-FR');
   })() : undefined;
   const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
-  const showMontantEngageAppele = valeursMobilieresChamps.includes('montant_engage');
-  const watchedMontantEngage = form.watch('montant_engage');
-  const watchedMontantAppele = form.watch('valeur_acquisition');
   const showSousJacent = valeursMobilieresChamps.includes('sous_jacent');
   const showDateEcheanceVM = valeursMobilieresChamps.includes('date_echeance');
   const showCapitalGarantiVM = valeursMobilieresChamps.includes('capital_garanti');
@@ -355,36 +385,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
           )} />
         )}
       </div>
-
-      {watchedNature === NATURE_FONDS_CI && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField control={form.control} name="type_fonds" render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                Type de fonds
-                <FieldHelp>
-                  Détermine la fiscalité : FCPI et FIP ouvrent une réduction d'impôt à la souscription et sont
-                  exonérés d'impôt sur le revenu après 5 ans ; un FCPR fiscal ou un FPCI l'est aussi après 5 ans, sans
-                  réduction à l'entrée, et fonctionne par appels de fonds.
-                </FieldHelp>
-              </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
-                    <SelectValue placeholder="Choisir" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {TYPES_FONDS_CI.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label} <span className="text-muted-foreground">· {t.aide}</span></SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )} />
-        </div>
-      )}
 
       {watchedNature === NATURE_OBJETS_ART_COLLECTION && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1279,34 +1279,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormItem>
             )} />
           )}
-        </div>
-      )}
-
-      {showMontantEngageAppele && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FormField control={form.control} name="montant_engage" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Montant engagé</FormLabel>
-              <FormControl>
-                <EuroInput
-                  className="bg-background border-border shadow-none"
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  value={field.value ?? ''}
-                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
-          {/* Montant appelé = prix d'acquisition (valeur_acquisition), saisi dans Origine. */}
-          <div className="self-end pb-2 text-[12.5px] leading-snug text-muted-foreground">
-            {(watchedMontantEngage ?? 0) > 0 && (
-              <>Reste à appeler : <span className="tabular-nums text-foreground">{formatCurrency(Math.max(0, (watchedMontantEngage ?? 0) - (watchedMontantAppele ?? 0)))}</span> (engagement envers le fonds, non déduit de l'actif)</>
-            )}
-          </div>
         </div>
       )}
 
