@@ -5,7 +5,7 @@ import { getAssetCategory } from '@/constants/assetTypes';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { CATEGORY_COLORS } from '@/lib/patrimoine/utils';
 import { getRepartitionFoyer, BienNonQualifieError, SuccessionAssetInput } from '@/lib/patrimoine/succession';
-import { ASH, NEGATIVE } from '@/lib/palette';
+import { ASH, PASSIF } from '@/lib/palette';
 // Répartition du patrimoine par catégorie d'actif + ligne « Passifs ».
 // Exportée pour être réutilisée par la Vue d'ensemble (Dashboard).
 export function computePatrimoineBreakdown(
@@ -75,7 +75,7 @@ export function computePatrimoineBreakdown(
     actifData.push({
       name: 'Passifs',
       value: totalPassifs,
-      color: NEGATIVE,
+      color: PASSIF.emprunt,
       assets: [],
       type: 'passif'
     });

@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { SectorsDonut } from '@/components/ui/sectors-donut';
 import { Treemap } from '@/components/ui/treemap';
 import { cn } from '@/lib/utils';
-import { isDarkColor } from '@/lib/palette';
+import { isDarkColor, PASSIF } from '@/lib/palette';
 
 export interface CategorieActif {
   name: string;
@@ -156,9 +156,9 @@ export function RepartitionActifs({
               ))}
               {enNet && dettesNonAffectees > 0 && (
                 <li className="flex items-baseline gap-3 py-[7px]" title="Dettes et emprunts reliés à aucun actif : imputés à aucune catégorie">
-                  <span className="h-2.5 w-2.5 shrink-0 translate-y-[1px] rounded-[2px] border border-border" />
+                  <span className="h-2.5 w-2.5 shrink-0 translate-y-[1px] rounded-[2px]" style={{ backgroundColor: PASSIF.dette }} />
                   <span className="min-w-0 flex-1 truncate text-[13px] text-foreground">Dettes non affectées</span>
-                  <span className="shrink-0 text-[13px] font-medium tabular-nums text-destructive">{formatCurrency(-dettesNonAffectees)}</span>
+                  <span className="shrink-0 text-[13px] font-medium tabular-nums" style={{ color: PASSIF.emprunt }}>{formatCurrency(-dettesNonAffectees)}</span>
                   <span className="w-14 shrink-0 text-right text-[12px] tabular-nums text-muted-foreground">—</span>
                 </li>
               )}

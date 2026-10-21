@@ -4,6 +4,7 @@ import { DashCard, DashEyebrow, DashFigure, DashRow, DashOrbit, DashSoonChip, DA
 import { useRevenus, useCharges } from '@/hooks/useBudget';
 import { sumAnnualActive } from '@/lib/budget/periodicite';
 import { useAssets } from '@/hooks/useAssets';
+import { PASSIF } from '@/lib/palette';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
 import { useFamilyProfile, useMaritalStatus, useFamilyLinks } from '@/hooks/useFamilyData';
 import { computePatrimoineBreakdown } from '@/components/patrimoine/PatrimoineChart';
@@ -193,7 +194,7 @@ const Dashboard = () => {
                 </div>
                 <div className="mt-1 flex items-center justify-between gap-6">
                   <span className="text-muted-foreground">Passifs</span>
-                  <span className={`font-medium tabular-nums ${totalPassifs === 0 ? 'text-ash' : ''}`}>
+                  <span className={`font-medium tabular-nums ${totalPassifs === 0 ? 'text-ash' : ''}`} style={totalPassifs > 0 ? { color: PASSIF.emprunt } : undefined}>
                     {totalPassifs > 0 ? `− ${formatEuros(totalPassifs)}` : formatEuros(0)}
                   </span>
                 </div>
