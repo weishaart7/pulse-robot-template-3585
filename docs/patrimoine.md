@@ -161,10 +161,17 @@ Créances (prêt à un proche, reconnaissance de dette, soulte ou prix de vente 
 Natures dont la plus-value reste « Non déterminé » ou dont le régime est à revoir :
 - **Actions gratuites** : taux de PS du gain d'acquisition indiqué à 17,2 % dans la note — à vérifier depuis la LFSS 2026 (18,6 % probable).
 - **Droits à royalties** : régime dépendant de la forme de l'actif (droits acquis comme placement, brevets, catalogue musical via une plateforme, prêt rémunéré par royalties…) — plus-value non déterminée.
-- **Fonds de private equity (LBO, growth, venture)** : régime dépendant de la forme de l'investissement (FCPR fiscal / non fiscal, FPCI, SCR, détention directe ou via holding, carried interest…). Le code applique PFU avant 5 ans et PS seuls après (fonds fiscal présumé) — à revoir.
+- **Fonds de capital-investissement, type FCPR / FPCI** (ex-« Fonds de private equity ») : régime dépendant de la forme de l'investissement (FCPR fiscal / non fiscal, FPCI, SCR, détention directe ou via holding, carried interest…). Le code applique PFU avant 5 ans et PS seuls après (fonds fiscal présumé) — à revoir.
 - **Parts de sociétés d'épargne forestière** : plus-value de cession non déterminée (régime à confirmer sur la documentation du fonds).
 - **Prélèvements sociaux des biens meubles et métaux précieux** : 17,2 % retenus (plus-value réelle à 36,2 %) ; certaines sources appliquent 18,6 % depuis la LFSS 2026 — à confirmer.
 - **Assurance-vie ouverte avant le 27/09/2017 sans versements saisis** : non déterminé, laissé en l'état.
+
+### 🗂️ Mis de côté — placements financiers à reprendre personnellement
+
+Traitements posés le 21/10/2026 (titularité, qualification, libellés, transmission), à revoir :
+- **PEA / PEA-PME** : titulaire unique, valeur pouvant être commune, « Montant versé », clôture au seul décès du titulaire, aide Récompenses pour le cas mixte. Plafonds (150 000 € / 225 000 € cumulés par titulaire) non contrôlés.
+- **Compte-titres (CTO)** : « Date d'ouverture », « Montant investi », aides art. 753 CGI (indivision) et Récompenses (ouvert avant le mariage). Non modélisés : titularité bancaire distincte de la propriété, blocage du compte au décès, arbitrages de l'usufruitier.
+- **Suivi des appels de fonds** (FCPR / FPCI, fonds de dette privée) : enregistrement réel en base non encore vérifié de bout en bout ; distributions sans traitement fiscal ni effet sur la plus-value ; reste à appeler absent du passif et de la transmission.
 
 Champs ajoutés sur `assets` (migration `20261018190000`, nullables, CHECK sur les valeurs) : `qualification_nft`, `detention_matieres_premieres` — étape « Particularités ».
 
