@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { NATURES_WITHOUT_ACQUISITION, isCreance, isPrevoyanceDeces, isBienRuralNonQualifie, isBien787CNonQualifie, isRetraiteEtrangereNonQualifiee, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isActionnariatSalarie, isCreance, isPrevoyanceDeces, isBienRuralNonQualifie, isBien787CNonQualifie, isRetraiteEtrangereNonQualifiee, isPERNonQualifie, isRetraiteRenteNonQualifie } from '@/constants/assetTypes';
 
 // Constants
 // Origines proposées à l'utilisateur. `value` est ce qui est stocké dans
@@ -96,8 +96,8 @@ export const champsObligatoiresVisibles = (values: { nature?: string; detenteur?
   return {
     denomination: true,
     date_acquisition: origineVisible,
-    origine_actif: origineVisible && !prevoyance,
-    valeur_acquisition: !NATURES_WITHOUT_ACQUISITION.includes(nature) && !prevoyance && !creance,
+    origine_actif: origineVisible && !prevoyance && !isActionnariatSalarie(nature),
+    valeur_acquisition: !NATURES_WITHOUT_ACQUISITION.includes(nature) && !prevoyance && !creance && !isActionnariatSalarie(nature),
     mode_detention: !prevoyance,
   };
 };

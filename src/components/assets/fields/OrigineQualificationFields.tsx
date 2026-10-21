@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { EuroInput } from '@/components/ui/euro-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AssetFormValues, ORIGINE_ACTIF_OPTIONS, ORIGINE_CREANCE_OPTIONS, getOrigineActifLabel } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, NATURES_DATE_OUVERTURE, getAssetCategory, isCreance, isPEA, isCTO, isNonCote, isDefiscalisation, isActionnariatSalarie, isPrevoyanceDeces, isPrevoyanceSansRachat } from '@/constants/assetTypes';
 import { QUALIFICATION_OPTIONS, isRegimeCommunautaire, isInCouple } from '@/lib/patrimoine/qualification';
 import { MaritalContext } from '@/hooks/useAssetForm';
 import { FieldHelp } from '@/components/ui/field-help';
@@ -58,10 +58,14 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   // Contrat de prévoyance : souscrit, ni acheté ni reçu — seule la date de souscription est
   // demandée (date_acquisition, lue comme telle par useAVContracts), sans origine ni clauses.
   const isPrevoyance = isPrevoyanceDeces(watchedNature);
+  // Actionnariat salarié : droit attribué, ni acheté ni reçu — seule la date d'attribution est
+  // demandée (date_acquisition), sans origine, prix ni clauses ; qualification automatique.
+  const isAS = isActionnariatSalarie(watchedNature);
+  const sansOrigine = isPrevoyance || isAS;
   // Résidence ou bien locatif : frais détaillés à la place du champ global (cf. FraisDetaillesFields).
   const fraisDetailles = hasDetailImmobilier(watchedNature);
   const isIndivisionHorsCouple = watchedDetenteur === 'Indivision';
-  const showClauseEntreeCommunaute = !isPrevoyance && (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
+  const showClauseEntreeCommunaute = !sansOrigine && (watchedOrigineActif || []).includes('Donation') || (watchedOrigineActif || []).includes('Héritage');
   // Sous communauté universelle (art. 1526) ou, pour un bien meuble
   // uniquement, sous communauté de meubles et acquêts (art. 1498 al. 1), une
   // libéralité tombe dans la communauté PAR DÉFAUT — la case représente alors
@@ -80,7 +84,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
   // l'origine.
   const isAchat = (watchedOrigineActif || []).includes('Acquisition à titre onéreux');
   const isEchange = (watchedOrigineActif || []).includes('Échange');
-  const showClauseRemploi = !isPrevoyance && (isAchat || isEchange);
+  const showClauseRemploi = !sansOrigine && (isAchat || isEchange);
   // Libellés du prix selon l'origine : « valeur d'achat » n'a pas de sens pour un bien créé ou reçu.
   const origine = (watchedOrigineActif || [])[0];
   const libellesPrix = origine === 'Création'
@@ -105,7 +109,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
         : origine && origine !== 'Acquisition à titre onéreux'
           ? { valeur: 'Valeur à la réception', aide: "Valeur retenue dans l'acte de donation ou la déclaration de succession.", frais: "Frais d'acquisition", aideFrais: "Frais d'acte ou droits payés à la réception." }
           : { valeur: "Prix d'achat", aide: "Prix payé à l'achat.", frais: "Frais d'acquisition", aideFrais: "Notaire, agence, droits d'enregistrement, etc." };
-  const showEstPropreParNature = !isPrevoyance && !estCreance && isInCouple(maritalContext.statutCouple);
+  const showEstPropreParNature = !sansOrigine && !estCreance && isInCouple(maritalContext.statutCouple);
   // Financement mixte (art. 1436) : ne se pose qu'en régime communautaire,
   // pour un achat (pas un échange), et n'a plus de sens si le remploi total
   // est déjà acté (clause_remploi couvre alors la totalité du prix).
@@ -131,7 +135,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           <>
             <FormField control={form.control} name="date_acquisition" render={({ field }) => (
               <FormItem>
-                <FormLabel>{isPrevoyance ? 'Date de souscription' : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : (isNonCote(watchedNature) || isDefiscalisation(watchedNature)) ? 'Date de souscription' : "Date d'acquisition"}<RequiredMark /></FormLabel>
+                <FormLabel>{isPrevoyance ? 'Date de souscription' : isAS ? "Date d'attribution" : estCreance ? 'Date de la créance' : isDateOuverture ? "Date d'ouverture" : (isNonCote(watchedNature) || isDefiscalisation(watchedNature)) ? 'Date de souscription' : "Date d'acquisition"}<RequiredMark /></FormLabel>
                 <FormControl>
                   <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
                 </FormControl>
@@ -144,7 +148,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
               </FormItem>
             )} />
 
-            {!isPrevoyance && <FormField control={form.control} name="origine_actif" render={({ field }) => (
+            {!sansOrigine && <FormField control={form.control} name="origine_actif" render={({ field }) => (
               <FormItem>
                 <FormLabel>{estCreance ? 'Origine de la créance' : "Origine de l'actif"}<RequiredMark /></FormLabel>
                 <Select
@@ -172,7 +176,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
           </>
         )}
 
-        {showPrixSection && !isPrevoyance && !estCreance && (
+        {showPrixSection && !sansOrigine && !estCreance && (
           <>
             <FormField control={form.control} name="valeur_acquisition" render={({ field }) => (
               <FormItem>
@@ -253,7 +257,7 @@ export const OrigineFields: React.FC<OrigineFieldsProps> = ({ form, maritalConte
 
       {showPrixSection && fraisDetailles && <FraisDetaillesFields form={form} />}
 
-      {showPrixSection && !isPrevoyance && showFinancementMixte && (
+      {showPrixSection && !sansOrigine && showFinancementMixte && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FormField control={form.control} name="financement_mixte_apport_propre" render={({ field }) => (
           <FormItem>

@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { ChevronRight, MoreHorizontal, Pencil, Trash2, TrendingUp, TrendingDown, Scale, Link2, AlertTriangle } from 'lucide-react';
 import { Asset } from '@/services/assetService';
 import { Emprunt } from '@/services/passifService';
-import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, getNatureDisplayLabel } from '@/constants/assetTypes';
+import { getAssetCategory, NATURES_WITHOUT_ACQUISITION, isActionnariatSalarie, getNatureDisplayLabel } from '@/constants/assetTypes';
 import { Button } from '@/components/ui/button';
 import { FullTable } from '@/components/ui/full-table';
 import {
@@ -194,7 +194,7 @@ export const PatrimoineTreeView = ({ assets, searchQuery, onAssetEdit, onAssetDe
   // Calculate plus-value for display
   const getPlusValueDisplay = (asset: Asset) => {
     // No plus-value for liquid assets
-    if (NATURES_WITHOUT_ACQUISITION.includes(asset.nature)) {
+    if (NATURES_WITHOUT_ACQUISITION.includes(asset.nature) || isActionnariatSalarie(asset.nature)) {
       return { display: '—', className: 'text-muted-foreground', value: 0, regimeNonDetermine: false };
     }
 

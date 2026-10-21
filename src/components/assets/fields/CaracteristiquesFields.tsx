@@ -205,7 +205,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
   const finConservation = watchedDateSouscription ? (() => {
     const d = new Date(watchedDateSouscription); d.setFullYear(d.getFullYear() + 5); return d.toLocaleDateString('fr-FR');
   })() : undefined;
-  const showDateAttribution = valeursMobilieresChamps.includes('date_attribution');
   const showPrixExercice = valeursMobilieresChamps.includes('prix_exercice');
   const showMontantEngageAppele = valeursMobilieresChamps.includes('montant_engage');
   const watchedMontantEngage = form.watch('montant_engage');
@@ -1275,29 +1274,26 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         </div>
       )}
 
-      {(showDateAttribution || showPrixExercice) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {showDateAttribution && (
-            <FormField control={form.control} name="date_attribution" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date d'attribution</FormLabel>
-                <FormControl>
-                  <DateInput value={field.value} onChange={field.onChange} placeholder="jj/mm/aaaa" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          )}
+      {watchedNature === 'Actions gratuites' && (
+        <FieldHelp>
+          Actions en période d'acquisition : saisissez en valeur estimée le cours multiplié par le nombre d'actions
+          attribuées. Au décès, les héritiers peuvent demander l'attribution dans les 6 mois. Une fois acquises,
+          saisissez les actions dans un compte-titres.
+        </FieldHelp>
+      )}
 
+      {showPrixExercice && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {showPrixExercice && (
             <FormField control={form.control} name="prix_exercice" render={({ field }) => (
               <FormItem>
                 <FormLabel>
                   Prix d'exercice
                   <FieldHelp>
-                    Succession : options non levées au décès, exerçables par les héritiers dans les 6 mois. Leur prise en
-                    compte dans l'actif taxable est discutée (exclusion, ou valeur intrinsèque : cours moins prix
-                    d'exercice). Saisissez en valeur estimée la valeur intrinsèque totale, à faire confirmer par le notaire.
+                    Saisissez en valeur estimée la valeur intrinsèque totale : (cours − prix d'exercice) × nombre de
+                    titres. Succession : droits non exercés au décès, exerçables par les héritiers dans les 6 mois ; leur
+                    prise en compte dans l'actif taxable est discutée, à faire confirmer par le notaire. Une fois exercés,
+                    saisissez les titres dans un compte-titres.
                   </FieldHelp>
                 </FormLabel>
                 <FormControl>

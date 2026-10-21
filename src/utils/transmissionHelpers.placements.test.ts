@@ -57,3 +57,19 @@ describe('PEA au décès', () => {
     expect(texte).not.toContain('PEA Claire');
   });
 });
+
+describe('Actionnariat salarié au décès', () => {
+  it('note commune aux stock-options, BSPCE et actions gratuites du défunt', () => {
+    const texte = explications([
+      pea('SO Paul', 'Stock-options', 'user', 'Bien propre'),
+      pea('AGA Paul', 'Actions gratuites', 'user', 'Bien propre'),
+    ]);
+    expect(texte).toContain('Actionnariat salarié (SO Paul, AGA Paul) : droits non exercés');
+    expect(texte).toContain('exerçables par les héritiers dans les 6 mois');
+    expect(texte).toContain('art. L225-197-3');
+  });
+
+  it('ignore les droits propres du conjoint survivant', () => {
+    expect(explications([pea('BSPCE Claire', 'BSPCE', 'spouse', 'Bien propre')])).not.toContain('Actionnariat salarié');
+  });
+});

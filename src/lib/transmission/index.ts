@@ -36,7 +36,7 @@ import {
   regimeIsParticipationAcquets,
   PatrimoineLigneCalcInput,
 } from '../patrimoine/participationAcquets';
-import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA } from '../../constants/assetTypes';
+import { getAssetCategory, isContratHorsSuccession, isBienRuralNonQualifie, getExonerationRurale, getFractionEligibleRurale, isNatureRurale, isPrevoyanceDeces, NATURE_ARTICLE_82, isBien787CNonQualifie, isExonere787C, NATURES_787C, NATURES_PLANCHER_ASSURANCE, TAUX_PLANCHER_ASSURANCE, isAssuranceVieHorsSuccession, NATURE_RETRAITE_ETRANGERE, isPEA, isActionnariatSalarie } from '../../constants/assetTypes';
 import { isDetenteurSpouse } from '../patrimoine/utils';
 import {
   computeDMTG,
@@ -1138,14 +1138,18 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
     );
   }
 
-  // Stock-options non levées : doctrine incertaine, aucun traitement dédié.
-  const stockOptions = (rawAssets || []).filter(a => a.nature === 'Stock-options' && getFractionSuccessorale(a) > 0);
-  if (stockOptions.length > 0) {
+  // Actionnariat salarié non exercé (stock-options, AGA en période d'acquisition, BSPCE) : doctrine
+  // incertaine sur l'inclusion dans l'actif taxable, aucun traitement dédié.
+  const droitsSalaries = (rawAssets || []).filter(a => isActionnariatSalarie(a.nature) && getFractionSuccessorale(a) > 0);
+  if (droitsSalaries.length > 0) {
+    const libelles = droitsSalaries.map(a => a.denomination || a.nature).join(', ');
+    const aOptions = droitsSalaries.some(a => a.nature !== 'Actions gratuites');
+    const aAGA = droitsSalaries.some(a => a.nature === 'Actions gratuites');
     successionLegaleResult.explicationsTexte.push(
-      `Stock-options (${stockOptions.map(a => a.denomination || a.nature).join(', ')}) : retenues pour leur valeur saisie. ` +
-      `Des options non levées au décès sont exerçables par les héritiers dans les 6 mois ; leur inclusion dans l'actif ` +
-      `taxable (exclusion, ou valeur intrinsèque : cours moins prix d'exercice) est discutée — à faire confirmer par le notaire. ` +
-      `Levées dans ce délai, le gain de levée est exonéré d'impôt sur le revenu (art. 80 bis I CGI).`
+      `Actionnariat salarié (${libelles}) : droits non exercés, retenus pour leur valeur saisie. ` +
+      (aOptions ? `Stock-options et BSPCE sont exerçables par les héritiers dans les 6 mois du décès ; levées dans ce délai, le gain de levée des stock-options est exonéré d'impôt sur le revenu (art. 80 bis I CGI). ` : '') +
+      (aAGA ? `Pour les actions gratuites en période d'acquisition, les héritiers peuvent demander l'attribution dans les 6 mois (art. L225-197-3 C. com.), sans période de conservation. ` : '') +
+      `Leur inclusion dans l'actif taxable (exclusion, ou valeur intrinsèque) est discutée — à faire confirmer par le notaire.`
     );
   }
 

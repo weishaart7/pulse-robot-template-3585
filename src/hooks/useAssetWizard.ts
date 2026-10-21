@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, isCreance, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isActionnariatSalarie, isCreance, isPrevoyanceDeces, isPrevoyanceNonQualifiee } from '@/constants/assetTypes';
 import { useAssetForm } from './useAssetForm';
 import { isRentalPropertyType, estEnLocation } from '@/schemas/immobilierPropertySchema';
 import { AssetCharge } from '@/services/assetService';
@@ -30,7 +30,8 @@ interface WizardStepDef {
 // d'achat reste utile au calcul de la plus-value latente.
 // Masquée aussi pour un contrat de prévoyance (souscrit, sans prix d'achat ni plus-value).
 const isPrixStepVisible = (values: Partial<AssetFormValues>) =>
-  !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '') && !isPrevoyanceDeces(values.nature);
+  !NATURES_WITHOUT_ACQUISITION.includes(values.nature || '') && !isPrevoyanceDeces(values.nature)
+  && !isActionnariatSalarie(values.nature);
 
 // Étape "Particularités" : contient toujours au moins le champ "Situation
 // particulière" (jamais masqué, quelle que soit la nature) et, pour la

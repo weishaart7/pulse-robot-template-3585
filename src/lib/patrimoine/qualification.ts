@@ -38,7 +38,7 @@
  * - Sans union (célibataire / divorcé / veuf) → bien personnel
  */
 
-import { getAssetCategory } from '@/constants/assetTypes';
+import { getAssetCategory, isActionnariatSalarie } from '@/constants/assetTypes';
 import { isDetenteurCommon } from './utils';
 import { categorieCouvrante, PerimetreSocieteAcquets } from './societeAcquets';
 
@@ -286,6 +286,23 @@ export const qualifierBien = (ctx: QualificationContext): {
     return {
       qualification: 'Bien personnel',
       raison: 'Bien à caractère personnel : exclu de l\'indivision du PACS (art. 515-5-2).',
+    };
+  }
+
+  // Actionnariat salarié (droits non exercés : stock-options, AGA en période d'acquisition,
+  // BSPCE) : droit attaché à la personne du bénéficiaire, propre par nature (art. 1404 ;
+  // Cass. 1re civ., 9 juil. 2014 pour les stock-options), même logique pour les AGA (position
+  // majoritaire) et les BSPCE. Les titres obtenus après levée suivent le droit commun (CTO).
+  if (isActionnariatSalarie(natureActif) && (isRegimeCommunautaire(regimeMatrimonial) || pacsIndivision)) {
+    if (isRegimeCommunautaire(regimeMatrimonial)) {
+      return {
+        qualification: 'Bien propre',
+        raison: "Droit attaché à la personne du bénéficiaire, propre par nature (art. 1404) même en communauté. Les titres obtenus après levée ou acquisition sont à saisir dans un compte-titres.",
+      };
+    }
+    return {
+      qualification: 'Bien personnel',
+      raison: "Droit attaché à la personne du bénéficiaire : exclu de l'indivision du PACS (art. 515-5-2).",
     };
   }
 

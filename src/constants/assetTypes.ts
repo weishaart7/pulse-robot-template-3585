@@ -492,10 +492,18 @@ export const NATURES_DEFISCALISATION = ['Parts de FIP', 'Parts de FIP Corse', 'P
 export const isDefiscalisation = (nature: string | null | undefined): boolean =>
   !!nature && (NATURES_DEFISCALISATION as readonly string[]).includes(nature);
 
+// Actionnariat salarié : droits NON exercés uniquement (option non levée, AGA en période
+// d'acquisition, BSPCE non exercé). Droit attaché à la personne, propre par nature (art. 1404 ;
+// Cass. 1re civ., 9 juil. 2014) ; ni prix d'achat ni origine. Les titres obtenus se saisissent
+// dans un CTO.
+export const NATURES_ACTIONNARIAT_SALARIE = ['Stock-options', 'Actions gratuites', 'BSPCE'] as const;
+export const isActionnariatSalarie = (nature: string | null | undefined): boolean =>
+  !!nature && (NATURES_ACTIONNARIAT_SALARIE as readonly string[]).includes(nature);
+
 // Titulaire unique (contrat souscrit ou PEA) : jamais « Le couple » ni indivision, même pour
 // un bien commun — la communauté porte sur la valeur, pas sur la qualité de titulaire.
 export const isTitulaireUnique = (nature: string | null | undefined): boolean =>
-  isContratSouscrit(nature) || isPEA(nature);
+  isContratSouscrit(nature) || isPEA(nature) || isActionnariatSalarie(nature);
 
 // Prévoyance sans valeur de rachat (temporaire décès, prévoyance individuelle) : rien à
 // partager entre époux, la qualification commun / propre est sans objet (art. L132-16 C. ass.).
@@ -719,7 +727,6 @@ export const LIQUIDITES_NATURES_CHAMPS: Record<string, LiquiditesChamp[]> = {
 export type ValeursMobilieresChamp =
   | 'duree_blocage'
   | 'reduction_ir_entree'
-  | 'date_attribution'
   | 'prix_exercice'
   | 'montant_engage'
   | 'sous_jacent'
@@ -732,8 +739,8 @@ export const VALEURS_MOBILIERES_NATURES_CHAMPS: Record<string, ValeursMobilieres
   'Parts de FIP Corse': ['duree_blocage', 'reduction_ir_entree'],
   'Parts de FCPI': ['duree_blocage', 'reduction_ir_entree'],
   'Parts de SOFICA': ['duree_blocage', 'reduction_ir_entree'],
-  'Stock-options': ['date_attribution', 'prix_exercice'],
-  'Actions gratuites': ['date_attribution'],
+  'Stock-options': ['prix_exercice'],
+  'BSPCE': ['prix_exercice'],
   'Fonds de private equity (LBO, growth, venture)': ['duree_blocage', 'montant_engage'],
   'Club deals': ['duree_blocage', 'montant_engage'],
   "SPV d'investissement (structures ad hoc)": ['duree_blocage', 'montant_engage'],

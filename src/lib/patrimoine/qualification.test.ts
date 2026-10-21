@@ -543,3 +543,25 @@ describe('qualifierBien — création et découverte : acquêts, pas des libéra
     expect(r.qualification).toBe('Indivision');
   });
 });
+
+describe('qualifierBien — actionnariat salarié non exercé (art. 1404)', () => {
+  const base = {
+    statutCouple: 'Marié(e)',
+    regimeMatrimonial: 'Communauté réduite aux acquêts',
+    dateMariage: '2015-06-01',
+    dateAcquisition: '2022-03-10',
+    detenteur: 'user',
+  };
+
+  it.each(['Stock-options', 'Actions gratuites', 'BSPCE'])('%s attribués pendant le mariage : propres', (natureActif) => {
+    expect(qualifierBien({ ...base, natureActif }).qualification).toBe('Bien propre');
+  });
+
+  it('propres même sous communauté universelle', () => {
+    expect(qualifierBien({ ...base, regimeMatrimonial: 'Communauté universelle', natureActif: 'Stock-options' }).qualification).toBe('Bien propre');
+  });
+
+  it('les titres obtenus (CTO) restent communs', () => {
+    expect(qualifierBien({ ...base, natureActif: 'Compte-titres (CTO)', origineActif: ['Acquisition à titre onéreux'] }).qualification).toBe('Bien commun');
+  });
+});

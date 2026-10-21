@@ -1,7 +1,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { AssetFormValues } from '@/schemas/assetSchema';
-import { NATURES_WITHOUT_ACQUISITION, isPEA, isCTO, isNonCote, isDefiscalisation } from '@/constants/assetTypes';
+import { NATURES_WITHOUT_ACQUISITION, isPEA, isCTO, isNonCote, isDefiscalisation, isActionnariatSalarie } from '@/constants/assetTypes';
 import { calculatePlusValue } from '@/lib/patrimoine/utils';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +24,7 @@ export const PlusValueBlock: React.FC<PlusValueBlockProps> = ({ form }) => {
   const valeurActuelle = form.watch('valeur_estimee');
   const frais = form.watch('frais_acquisition') || 0;
 
-  if (NATURES_WITHOUT_ACQUISITION.includes(nature) || !valeurAchat || !valeurActuelle) return null;
+  if (NATURES_WITHOUT_ACQUISITION.includes(nature) || isActionnariatSalarie(nature) || !valeurAchat || !valeurActuelle) return null;
 
   const { plusValue } = calculatePlusValue(valeurActuelle, valeurAchat, frais);
   const cout = valeurAchat + frais;

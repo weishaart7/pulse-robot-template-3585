@@ -752,7 +752,14 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   déduits), que le plan soit commun ou propre. Un PEA commun dont le conjoint survivant est titulaire
   n'est pas clôturé : la moitié de sa valeur entre dans la succession (part `Bien commun`) et se règle
   au partage, note dédiée. Un PEA propre du survivant reste hors succession. Tests :
-  `utils/transmissionHelpers.pea.test.ts`.
+  `utils/transmissionHelpers.placements.test.ts`.
+- **Actionnariat salarié non exercé (`index.ts`, note `explicationsTexte`).** Stock-options, AGA en
+  période d'acquisition et BSPCE du défunt (propres par nature) : une note commune, retenus pour leur
+  valeur saisie ; stock-options et BSPCE exerçables par les héritiers dans les 6 mois (gain de levée des
+  stock-options exonéré d'IR, art. 80 bis I CGI) ; AGA : attribution demandable dans les 6 mois
+  (art. L225-197-3 C. com.), sans conservation. Inclusion dans l'actif taxable signalée comme discutée.
+  Droits propres du conjoint survivant : hors succession, pas de note. Tests :
+  `utils/transmissionHelpers.placements.test.ts`.
 
 ## 3. Dette identifiée
 
