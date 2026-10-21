@@ -37,7 +37,12 @@ export const NaturePicker: React.FC<{
 }> = ({ value, onChange, placeholder = 'Choisir une nature', className }) => {
   const [open, setOpen] = useState(false);
   const [recherche, setRecherche] = useState('');
-  const premiereCategorie = Object.keys(ASSET_CATEGORIES)[0];
+  // Catégories triées par nombre de natures proposées, de la plus fournie à la moins fournie.
+  const toutes = useMemo(() => {
+    const nbProposees = (natures: readonly string[]) => natures.filter((n) => !NATURES_MASQUEES_SAISIE.includes(n) || n === value).length;
+    return Object.entries(ASSET_CATEGORIES).sort(([, a], [, b]) => nbProposees(b) - nbProposees(a));
+  }, [value]);
+  const premiereCategorie = toutes[0][0];
   // Catégorie affichée à droite : celle de la nature déjà choisie, sinon la première.
   const [categorie, setCategorie] = useState(premiereCategorie);
   const ouvrir = () => {
@@ -47,7 +52,7 @@ export const NaturePicker: React.FC<{
 
   const groupes = useMemo(() => {
     const q = normaliser(recherche.trim());
-    return Object.entries(ASSET_CATEGORIES)
+    return toutes
       .map(([categorie, natures]) => {
         const garder = (n: string) =>
           (!NATURES_MASQUEES_SAISIE.includes(n) || n === value) && (!q || normaliser(getNatureDisplayLabel(n)).includes(q) || normaliser(CATEGORY_LABELS[categorie] ?? categorie).includes(q));
@@ -61,7 +66,7 @@ export const NaturePicker: React.FC<{
         return { categorie, sousGroupes, natures: sousGroupes.flatMap((sg) => sg.natures) };
       })
       .filter((g) => g.natures.length > 0);
-  }, [recherche]);
+  }, [recherche, toutes, value]);
 
   const choisir = (nature: string) => {
     onChange(nature);
@@ -72,7 +77,6 @@ export const NaturePicker: React.FC<{
   // Sans recherche : la seule catégorie sélectionnée. Avec recherche : tous les résultats,
   // groupés par catégorie.
   const affiches = recherche.trim() ? groupes : groupes.filter((g) => g.categorie === categorie);
-  const toutes = Object.entries(ASSET_CATEGORIES);
 
   return (
     <>
