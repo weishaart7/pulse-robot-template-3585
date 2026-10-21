@@ -125,7 +125,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
       : 'Établissement';
   const regimeFiscalPartsOptions = REGIME_FISCAL_PARTS_OPTIONS[watchedNature] || [];
   const corpsChamps = CORPS_NATURES_CHAMPS[watchedNature] || [];
-  const showNumeroSerie = corpsChamps.includes('numero_serie');
   const showQuantiteMillesime = corpsChamps.includes('quantite_millesime');
   const retraitePrevoyanceChamps = RETRAITE_PREVOYANCE_NATURES_CHAMPS[watchedNature] || [];
   const showModeSortie = retraitePrevoyanceChamps.includes('mode_sortie');
@@ -324,18 +323,6 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
               </FormItem>
             )}
           />
-        )}
-
-        {showNumeroSerie && (
-          <FormField control={form.control} name="numero_serie" render={({ field }) => (
-            <FormItem>
-              <FormLabel>Numéro de série</FormLabel>
-              <FormControl>
-                <Input className="bg-background border-border shadow-none" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
         )}
 
         {showQuantiteMillesime && (

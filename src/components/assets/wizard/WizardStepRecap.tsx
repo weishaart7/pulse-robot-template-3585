@@ -62,7 +62,6 @@ const PARTICULARITES_RECAP_FIELDS: { key: keyof AssetFormValues; label: string }
   { key: 'sous_jacent', label: 'Sous-jacent' },
   { key: 'lieu_stockage', label: 'Lieu de stockage' },
   { key: 'quantite', label: 'Quantité' },
-  { key: 'numero_serie', label: 'Numéro de série' },
   { key: 'quantite_millesime', label: 'Quantité / Millésime' },
 ];
 

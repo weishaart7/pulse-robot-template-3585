@@ -308,8 +308,6 @@ export type Database = {
           bien_etranger: boolean | null
           capital_garanti: number | null
           categorie_objet_art: string | null
-          certificat_expertise: boolean | null
-          certificat_expertise_reference: string | null
           cession_depart_retraite: boolean | null
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
@@ -355,7 +353,6 @@ export type Database = {
           montant_immeuble: number | null
           motif_deblocage_anticipe: string | null
           nature: string
-          numero_serie: string | null
           origine_actif: string[] | null
           part_licitation_personnelle: number | null
           plafond_verse: number | null
@@ -411,8 +408,6 @@ export type Database = {
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           categorie_objet_art?: string | null
-          certificat_expertise?: boolean | null
-          certificat_expertise_reference?: string | null
           cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
@@ -458,7 +453,6 @@ export type Database = {
           montant_immeuble?: number | null
           motif_deblocage_anticipe?: string | null
           nature: string
-          numero_serie?: string | null
           origine_actif?: string[] | null
           part_licitation_personnelle?: number | null
           plafond_verse?: number | null
@@ -514,8 +508,6 @@ export type Database = {
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           categorie_objet_art?: string | null
-          certificat_expertise?: boolean | null
-          certificat_expertise_reference?: string | null
           cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
@@ -561,7 +553,6 @@ export type Database = {
           montant_immeuble?: number | null
           motif_deblocage_anticipe?: string | null
           nature?: string
-          numero_serie?: string | null
           origine_actif?: string[] | null
           part_licitation_personnelle?: number | null
           plafond_verse?: number | null

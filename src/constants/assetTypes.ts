@@ -612,7 +612,7 @@ export const REGIME_FISCAL_PARTS_OPTIONS: Record<string, string[]> = {
 // natures de la famille "actifs corporels" — les natures absentes de ce mapping (Meubles
 // meublants, Véhicules motorisés, Matériel informatique/audiovisuel haut de gamme, Matériel
 // sportif de valeur, Autres placements divers) n'affichent aucun champ additionnel.
-export type CorpsChamp = 'numero_serie' | 'quantite_millesime';
+export type CorpsChamp = 'quantite_millesime';
 
 // Objets d'art et de collection : catégorie de l'art. 98 A, annexe III CGI (informative, sans effet
 // sur les calculs ; une collection n'est jamais un meuble meublant, art. 534 C. civ.).
@@ -624,7 +624,6 @@ export const CATEGORIES_OBJET_ART = [
 ] as const;
 
 export const CORPS_NATURES_CHAMPS: Record<string, CorpsChamp[]> = {
-  "Montres": ['numero_serie'],
   "Vins & spiritueux d'investissement": ['quantite_millesime'],
 };
 

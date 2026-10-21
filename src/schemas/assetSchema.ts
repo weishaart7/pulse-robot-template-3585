@@ -175,7 +175,6 @@ export const assetSchema = z.object({
   regime_fiscal_parts: z.string().optional(),
   // Champs additionnels "actifs corporels" — cf. CORPS_NATURES_CHAMPS.
   categorie_objet_art: z.enum(['objet_art', 'antiquite', 'objet_collection']).optional(),
-  numero_serie: z.string().optional(),
   quantite_millesime: z.string().optional(),
   // Champs additionnels "épargne retraite" et "prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.
   capital_garanti: z.number().finite().nonnegative().optional(),

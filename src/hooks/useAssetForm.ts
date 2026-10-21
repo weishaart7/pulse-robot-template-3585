@@ -278,7 +278,6 @@ export const useAssetForm = ({ asset, onSubmit }: UseAssetFormProps) => {
         revenus_distribues_12m: asset.revenus_distribues_12m ?? undefined,
         regime_fiscal_parts: asset.regime_fiscal_parts || undefined,
         categorie_objet_art: (asset.categorie_objet_art as AssetFormValues['categorie_objet_art']) || undefined,
-        numero_serie: asset.numero_serie || undefined,
         quantite_millesime: asset.quantite_millesime ?? undefined,
         capital_garanti: asset.capital_garanti ?? undefined,
         beneficiaire_designe: asset.beneficiaire_designe || undefined,
