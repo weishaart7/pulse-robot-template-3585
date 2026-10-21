@@ -11,7 +11,8 @@ import { mapDetenteurToDisplay, mapDetenteurToDb, FamilyInfo } from '@/lib/patri
 import { EMPRUNT_NATURES } from '@/constants/assetTypes';
 import { qualifierDette, QualificationContext } from '@/lib/patrimoine/qualification';
 
-export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'libelle' in item;
+// `capital_restant_du` n'existe que sur emprunts (passifs a aussi un libellé depuis la migration 20261022100000).
+export const isEmpruntRecord = (item: Emprunt | Passif): item is Emprunt => 'capital_restant_du' in item;
 
 interface UsePassifEmpruntFormProps {
   item?: Emprunt | Passif;
@@ -109,7 +110,7 @@ export const usePassifEmpruntForm = ({
 
       form.reset({
         nature: item.nature,
-        libelle: isEmpruntItem ? item.libelle : '',
+        libelle: item.libelle || '',
         date_souscription: item.date_souscription || '',
         montant_du: !isEmpruntItem ? (item as Passif).montant_du : undefined,
         capital_restant_du: isEmpruntItem ? item.capital_restant_du : undefined,
@@ -126,7 +127,7 @@ export const usePassifEmpruntForm = ({
         qualification_bien: item.qualification_bien || undefined,
         qualification_auto: item.qualification_auto !== false,
         asset_id: isEmpruntItem ? (item.asset_id || undefined) : undefined,
-        type_garantie: isEmpruntItem ? ((item.type_garantie as 'Aucune' | 'Caution' | 'Hypothèque' | 'Nantissement') || 'Aucune') : 'Aucune',
+        type_garantie: isEmpruntItem ? ((item.type_garantie as PassifEmpruntFormValues['type_garantie']) || 'Aucune') : 'Aucune',
         assure: isEmpruntItem ? (item.assure || false) : false,
         quotite_assuree_utilisateur: isEmpruntItem ? item.quotite_assuree_utilisateur : undefined,
         quotite_assuree_conjoint: isEmpruntItem ? item.quotite_assuree_conjoint : undefined,
@@ -342,6 +343,7 @@ export const usePassifEmpruntForm = ({
       } else {
         const passifData: any = {
           nature: values.nature,
+          libelle: values.libelle?.trim() || null,
           montant_du: values.montant_du ?? 0,
           date_souscription: values.date_souscription || null,
           detenteur: dbDetenteur,

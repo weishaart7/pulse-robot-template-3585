@@ -59,7 +59,9 @@ export const DETTE_SOUS_GROUPES: { titre: string; natures: readonly string[] }[]
 
 export const TYPE_GARANTIE_OPTIONS = [
   "Hypothèque",
+  "Privilège de prêteur de deniers",
   "Caution",
+  "Caution d'un organisme",
   "Nantissement",
   "Aucune",
 ] as const;

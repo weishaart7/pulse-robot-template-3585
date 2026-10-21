@@ -160,12 +160,12 @@ export const PatrimoinePassifs = () => {
                   key={passif.id}
                   icon={<Receipt className="h-3.5 w-3.5" />}
                   tone="bg-[#f8e9e6] text-[#a8473d]"
-                  title={passif.nature}
+                  title={passif.libelle || passif.nature}
                   amount={euros(passif.montant_du)}
                   amountLabel="Montant dû"
                   onOpen={() => setSelectedPassif(passif)}
                   onEdit={() => setEditingItem(passif)}
-                  onDelete={() => setPendingDelete({ id: passif.id, type: 'passif', label: passif.nature })}
+                  onDelete={() => setPendingDelete({ id: passif.id, type: 'passif', label: passif.libelle || passif.nature })}
                 />
               ))}
             </ul>

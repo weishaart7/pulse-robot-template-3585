@@ -19,7 +19,7 @@ interface PassifDetailViewProps {
   onEdit: () => void;
 }
 
-const isEmprunt = (p: Emprunt | Passif): p is Emprunt => 'libelle' in p && 'capital_restant_du' in p;
+const isEmprunt = (p: Emprunt | Passif): p is Emprunt => 'capital_restant_du' in p;
 
 const eur = (v: number | null | undefined) => (v == null ? null : formatCurrency(v));
 const pct = (v: number | null | undefined) => (v == null ? null : `${v.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`);
@@ -62,7 +62,7 @@ export const PassifDetailView: React.FC<PassifDetailViewProps> = ({ item, assets
   const emprunt = isEmprunt(item) ? item : null;
   const dette = emprunt ? null : (item as Passif);
   const linkedAsset = emprunt?.asset_id ? assets.find((a) => a.id === emprunt.asset_id) : undefined;
-  const titre = emprunt ? (emprunt.libelle || emprunt.nature) : dette!.nature;
+  const titre = (emprunt ?? dette)!.libelle || (emprunt ?? dette)!.nature;
 
   // Contrat complet : tableau d'amortissement, il fait foi (capital restant dû, fin, coût).
   const contrat = emprunt ? contratDepuisEmprunt(emprunt) : null;
@@ -96,7 +96,7 @@ export const PassifDetailView: React.FC<PassifDetailViewProps> = ({ item, assets
       <div className="px-8 pt-6 pb-4">
         <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">{titre}</h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
-          {emprunt?.libelle ? emprunt.nature : emprunt ? 'Emprunt' : 'Dette'}
+          {(emprunt ?? dette)?.libelle ? (emprunt ?? dette)!.nature : emprunt ? 'Emprunt' : 'Dette'}
           {emprunt?.societe_id && <Chip>Société · hors totaux</Chip>}
         </p>
       </div>

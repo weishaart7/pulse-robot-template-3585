@@ -23,7 +23,7 @@ export interface Emprunt {
   // (cf. transmissionHelpers.ts::buildPassifLines). Déjà renvoyé par le
   // `select('*')` de getEmprunts, simplement jamais typé jusqu'ici.
   societe_id?: string | null;
-  type_garantie?: 'Hypothèque' | 'Caution' | 'Nantissement' | 'Aucune' | string | null;
+  type_garantie?: string | null;
   assure?: boolean;
   quotite_assuree_utilisateur?: number;
   quotite_assuree_conjoint?: number;
@@ -57,6 +57,7 @@ export interface Passif {
   id: string;
   user_id: string;
   nature: string;
+  libelle?: string | null;
   montant_du: number;
   date_souscription?: string | null;
   detenteur?: string;

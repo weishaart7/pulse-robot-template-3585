@@ -12,6 +12,9 @@ import * as z from 'zod';
 const facultatif = <T extends z.ZodTypeAny>(schema: T) => z.preprocess((v) => (v === null ? undefined : v), schema.optional());
 const montant = facultatif(z.number().min(0, 'Le montant ne peut pas être négatif'));
 const pourcentage = facultatif(z.number().min(0, 'Minimum 0 %').max(100, 'Maximum 100 %'));
+// Nature sans contenu propre : le libellé est la seule façon de savoir de quelle dette il s'agit.
+export const LIBELLE_OBLIGATOIRE = 'Autres dettes diverses';
+
 export const passifEmpruntSchema = z.object({
   nature: z.string().min(1, 'La nature est requise'),
   libelle: z.string().optional(),
@@ -29,7 +32,7 @@ export const passifEmpruntSchema = z.object({
   qualification_bien: z.string().optional(),
   qualification_auto: z.boolean().optional(),
   asset_id: z.string().optional(),
-  type_garantie: z.enum(['Hypothèque', 'Caution', 'Nantissement', 'Aucune']).optional(),
+  type_garantie: z.enum(['Hypothèque', 'Privilège de prêteur de deniers', 'Caution', "Caution d'un organisme", 'Nantissement', 'Aucune']).optional(),
   assure: z.boolean().optional(),
   quotite_assuree_utilisateur: pourcentage,
   quotite_assuree_conjoint: pourcentage,
@@ -49,6 +52,9 @@ export const passifEmpruntSchema = z.object({
   frais_dossier: montant,
   frais_garantie: montant,
 }).refine(
+  (v) => v.nature !== LIBELLE_OBLIGATOIRE || !!v.libelle?.trim(),
+  { message: 'Précisez de quelle dette il s\'agit', path: ['libelle'] },
+).refine(
   (v) => v.differe_mois == null || v.duree_totale_mois == null || v.differe_mois < v.duree_totale_mois,
   { message: 'Le différé doit être plus court que la durée totale', path: ['differe_mois'] },
 );

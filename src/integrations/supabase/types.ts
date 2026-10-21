@@ -2088,6 +2088,7 @@ export type Database = {
           date_souscription: string | null
           detenteur: string | null
           id: string
+          libelle: string | null
           montant_du: number
           nature: string
           pourcentage_conjoint: number | null
@@ -2102,6 +2103,7 @@ export type Database = {
           date_souscription?: string | null
           detenteur?: string | null
           id?: string
+          libelle?: string | null
           montant_du: number
           nature: string
           pourcentage_conjoint?: number | null
@@ -2116,6 +2118,7 @@ export type Database = {
           date_souscription?: string | null
           detenteur?: string | null
           id?: string
+          libelle?: string | null
           montant_du?: number
           nature?: string
           pourcentage_conjoint?: number | null

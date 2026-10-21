@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ActifFormFrame } from '@/components/assets/ActifFormFrame';
 import { panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
@@ -6,6 +6,9 @@ import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PASSIF } from '@/lib/palette';
+import { reglesEmprunt } from '@/lib/credit/reglesNature';
+import { RequiredMark } from '@/components/ui/required-mark';
+import { LIBELLE_OBLIGATOIRE } from '@/schemas/passifEmpruntSchema';
 import { NaturePicker, type NatureCategorie } from '@/components/assets/NaturePicker';
 import {
   Select, SelectContent, SelectItem,
@@ -120,6 +123,40 @@ export const PassifEmpruntForm = ({
   const watchedAssure = form.watch('assure');
   const watchedQualificationBien = form.watch('qualification_bien');
   const isEmprunt = EMPRUNT_NATURES.includes(watchedNature);
+  const regles = reglesEmprunt(watchedNature);
+  const watchedAssetId = form.watch('asset_id');
+  // L'actif déjà relié reste proposé même s'il ne correspond plus à la nature.
+  const actifsLiables = assets.filter((a) => regles.actifLiable(a.nature) || a.id === watchedAssetId);
+  const garantiesProposees = regles.garantiesProposees ?? TYPE_GARANTIE_OPTIONS;
+
+  // Changement de nature : valeurs imposées ou par défaut de la nouvelle nature (cf. reglesNature.ts).
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name !== 'nature') return;
+      const r = reglesEmprunt(value.nature);
+      if (r.tauxZero) {
+        form.setValue('taux_interet', 0);
+        form.setValue('taeg', 0);
+        form.setValue('type_taux', 'Fixe');
+      }
+      const mode = r.modeImpose ?? r.modeParDefaut;
+      if (mode) form.setValue('mode_amortissement', mode);
+      const garantie = r.garantieImposee ?? r.garantieParDefaut;
+      if (garantie) form.setValue('type_garantie', garantie);
+      else if (r.garantiesProposees && value.type_garantie && !r.garantiesProposees.includes(value.type_garantie)) form.setValue('type_garantie', 'Aucune');
+      if (r.sansActifNiGarantie) form.setValue('type_garantie', 'Aucune');
+      if (r.sansTableau) {
+        form.setValue('capital_initial', undefined);
+        form.setValue('date_premiere_echeance', '');
+        form.setValue('duree_totale_mois', undefined);
+        form.setValue('differe_mois', undefined);
+        form.setValue('mode_amortissement', 'Amortissable');
+      }
+      const actif = value.asset_id ? assets.find((a) => a.id === value.asset_id) : undefined;
+      if (actif && !r.actifLiable(actif.nature)) form.setValue('asset_id', undefined);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, assets]);
   // Un emprunt existant ne devient pas une dette simple (et inversement) : tables distinctes.
   const categoriesPassif = useMemo<NatureCategorie[]>(() => [
     ...(originalIsEmprunt !== false ? [{ cle: 'emprunts', libelle: 'Emprunts', couleur: PASSIF.emprunt, sousGroupes: EMPRUNT_SOUS_GROUPES }] : []),
@@ -202,12 +239,12 @@ export const PassifEmpruntForm = ({
                 </FormItem>
               )} />
 
-              {isEmprunt && (
+              {watchedNature && (
                 <FormField control={form.control} name="libelle" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Libellé</FormLabel>
+                    <FormLabel>Libellé{watchedNature === LIBELLE_OBLIGATOIRE && <RequiredMark />}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex. Prêt résidence principale — Crédit Agricole" {...field} />
+                      <Input placeholder={isEmprunt ? 'Ex. Prêt résidence principale — Crédit Agricole' : 'Ex. Solde IR 2025, soulte due à…'} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -217,7 +254,7 @@ export const PassifEmpruntForm = ({
 
             {watchedNature && (
               <FormSection title={isEmprunt ? 'Le prêt' : 'La dette'}>
-                {isEmprunt && (
+                {isEmprunt && !regles.sansActifNiGarantie && (
                   <FormField control={form.control} name="asset_id" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Actif financé / garanti</FormLabel>
@@ -231,7 +268,7 @@ export const PassifEmpruntForm = ({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {assets.map((a) => (
+                          {actifsLiables.map((a) => (
                             <SelectItem key={a.id} value={a.id!}>{a.denomination || a.nature}</SelectItem>
                           ))}
                         </SelectContent>
@@ -243,9 +280,9 @@ export const PassifEmpruntForm = ({
 
                 <FormField control={form.control} name="date_souscription" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date de souscription</FormLabel>
+                    <FormLabel>{isEmprunt ? 'Date de souscription' : 'Date de naissance de la dette'}</FormLabel>
                     <FieldHelp>
-                      Date à laquelle la dette a été contractée. Une dette antérieure au mariage ou au PACS reste personnelle à celui qui l'a contractée. Sans date, elle est présumée contractée pendant l'union.
+                      {isEmprunt ? 'Date à laquelle le prêt a été souscrit.' : 'Date à laquelle la dette est née (avis d\'imposition, jugement, ouverture de la succession…).'} Une dette antérieure au mariage ou au PACS reste personnelle à celui qui l'a contractée. Sans date, elle est présumée contractée pendant l'union.
                     </FieldHelp>
                     <FormControl>
                       <DateInput
@@ -265,7 +302,7 @@ export const PassifEmpruntForm = ({
                     {apercu
                       ? <CalculatedValue label="Durée restante" value={`${apercu.dureeRestante} mois`} />
                       : numberField('duree_restante', 'Durée restante', { suffix: 'mois', integer: true })}
-                    {numberField('taux_interet', "Taux d'intérêt", { suffix: '%', step: '0.01', help: 'Taux nominal. Un taux variable est projeté au taux actuel, supposé constant.' })}
+                    {!regles.tauxZero && numberField('taux_interet', "Taux d'intérêt", { suffix: '%', step: '0.01', help: 'Taux nominal. Un taux variable est projeté au taux actuel, supposé constant.' })}
                     {/* Contrat complet : mensualité du tableau d'amortissement (capital + intérêts), non modifiable. */}
                     {apercu
                       ? <CalculatedValue label="Mensualité hors assurance" value={formatCurrency(apercu.mensualite)} />
@@ -277,7 +314,7 @@ export const PassifEmpruntForm = ({
               </FormSection>
             )}
 
-            {isEmprunt && (
+            {isEmprunt && !regles.sansTableau && (
               <FormSection title="Offre de prêt" intro="Facultatif : avec le capital emprunté, la première échéance et la durée totale, le tableau d'amortissement est calculé et le capital restant dû se met à jour chaque mois.">
                 {numberField('capital_initial', 'Capital emprunté')}
                 <FormField control={form.control} name="date_premiere_echeance" render={({ field }) => (
@@ -319,10 +356,10 @@ export const PassifEmpruntForm = ({
 
             {isEmprunt && (
               <FormSection title="Conditions de l'offre">
-                <FormField control={form.control} name="mode_amortissement" render={({ field }) => (
+                {!regles.sansTableau && <FormField control={form.control} name="mode_amortissement" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Mode d'amortissement</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!regles.modeImpose}>
                       <FormControl>
                         <SelectTrigger size="lg">
                           <SelectValue placeholder="Choisir un mode" />
@@ -336,9 +373,9 @@ export const PassifEmpruntForm = ({
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} />}
 
-                <FormField control={form.control} name="type_taux" render={({ field }) => (
+                {!regles.tauxZero && <FormField control={form.control} name="type_taux" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type de taux</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -355,33 +392,33 @@ export const PassifEmpruntForm = ({
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} />}
 
-                {numberField('taeg', 'TAEG', { suffix: '%', step: '0.01', help: "Tel que figurant sur l'offre de prêt." })}
+                {!regles.tauxZero && numberField('taeg', 'TAEG', { suffix: '%', step: '0.01', help: "Tel que figurant sur l'offre de prêt." })}
                 {numberField('cout_total_credit', 'Coût total du crédit', { help: "Tel que figurant sur l'offre de prêt." })}
               </FormSection>
             )}
 
             {isEmprunt && (
               <FormSection title="Garantie et assurance">
-                <FormField control={form.control} name="type_garantie" render={({ field }) => (
+                {!regles.sansActifNiGarantie && <FormField control={form.control} name="type_garantie" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type de garantie</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!regles.garantieImposee}>
                       <FormControl>
                         <SelectTrigger size="lg">
                           <SelectValue placeholder="Choisir un type de garantie" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {TYPE_GARANTIE_OPTIONS.map((option) => (
+                        {garantiesProposees.map((option) => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )} />
+                )} />}
 
                 <FormField control={form.control} name="assure" render={({ field }) => (
                   <FormItem className="flex flex-row items-center space-x-3 space-y-0 md:pt-7">
