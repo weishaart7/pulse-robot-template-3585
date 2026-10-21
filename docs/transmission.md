@@ -700,7 +700,7 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   sur le bien (art. 769 II). Non remplies : pleine valeur, signalé. Une entreprise individuelle saisie
   dans Sociétés avec pacte Dutreil reste traitée par l'art. 787 B (aucune en base).
 - **Bijoux, objets d'art et de collection (art. 764 II CGI).** « Bijoux et pierres précieuses »,
-  « Montres », « Objets d'art et antiquités », « Objets de collection » (`NATURES_PLANCHER_ASSURANCE`) :
+  « Montres », « Objets d'art et de collection » (`NATURES_PLANCHER_ASSURANCE`) :
   valeur fiscale = max(valeur estimée, 60 % de `assets.valeur_assuree` × part du défunt) — contrat
   d'assurance vol/incendie en cours conclu depuis moins de 10 ans, sauf preuve contraire. Fiscal
   seulement (masse civile inchangée) ; sans valeur assurée, valeur estimée.

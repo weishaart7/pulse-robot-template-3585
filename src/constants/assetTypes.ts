@@ -100,10 +100,9 @@ export const ASSET_CATEGORIES = {
   ],
   "actifs corporels": [
     "Meubles meublants",
-    "Objets d'art et antiquités",
+    "Objets d'art et de collection",
     "Véhicules motorisés",
     "Montres",
-    "Objets de collection",
     "Bijoux et pierres précieuses",
     "Sacs et accessoires de luxe",
     "Matériel informatique ou audiovisuel haut de gamme",
@@ -223,7 +222,7 @@ export const NATURE_SOUS_GROUPES: Partial<Record<keyof typeof ASSET_CATEGORIES, 
   ],
   "actifs corporels": [
     { titre: "Cadre de vie", natures: ["Meubles meublants", "Véhicules motorisés", "Matériel informatique ou audiovisuel haut de gamme", "Matériel sportif de valeur"] },
-    { titre: "Objets de valeur", natures: ["Objets d'art et antiquités", "Objets de collection", "Montres", "Bijoux et pierres précieuses", "Sacs et accessoires de luxe"] },
+    { titre: "Objets de valeur", natures: ["Objets d'art et de collection", "Montres", "Bijoux et pierres précieuses", "Sacs et accessoires de luxe"] },
     { titre: "Placements tangibles", natures: ["Vins & spiritueux d'investissement", "Or (physique)"] },
   ],
   "épargne retraite": [
@@ -594,8 +593,7 @@ export const isExonere787C = (asset: { nature?: string | null; conditions_787c?:
 export const NATURES_PLANCHER_ASSURANCE = [
   "Bijoux et pierres précieuses",
   "Montres",
-  "Objets d'art et antiquités",
-  "Objets de collection",
+  "Objets d'art et de collection",
 ];
 export const TAUX_PLANCHER_ASSURANCE = 0.6;
 
@@ -614,14 +612,19 @@ export const REGIME_FISCAL_PARTS_OPTIONS: Record<string, string[]> = {
 // natures de la famille "actifs corporels" — les natures absentes de ce mapping (Meubles
 // meublants, Véhicules motorisés, Matériel informatique/audiovisuel haut de gamme, Matériel
 // sportif de valeur, Autres placements divers) n'affichent aucun champ additionnel.
-export type CorpsChamp = 'certificat_expertise' | 'numero_serie' | 'quantite_millesime';
+export type CorpsChamp = 'numero_serie' | 'quantite_millesime';
+
+// Objets d'art et de collection : catégorie de l'art. 98 A, annexe III CGI (informative, sans effet
+// sur les calculs ; une collection n'est jamais un meuble meublant, art. 534 C. civ.).
+export const NATURE_OBJETS_ART_COLLECTION = "Objets d'art et de collection";
+export const CATEGORIES_OBJET_ART = [
+  { value: 'objet_art', label: "Objet d'art", aide: 'Tableau, dessin, gravure, sculpture originale, tapisserie…' },
+  { value: 'antiquite', label: 'Antiquité', aide: 'Objet de plus de 100 ans.' },
+  { value: 'objet_collection', label: 'Objet de collection', aide: "Timbres, monnaies, collections d'histoire naturelle, d'archéologie…" },
+] as const;
 
 export const CORPS_NATURES_CHAMPS: Record<string, CorpsChamp[]> = {
-  "Objets d'art et antiquités": ['certificat_expertise'],
-  "Montres": ['certificat_expertise', 'numero_serie'],
-  "Objets de collection": ['certificat_expertise'],
-  "Bijoux et pierres précieuses": ['certificat_expertise'],
-  "Sacs et accessoires de luxe": ['certificat_expertise'],
+  "Montres": ['numero_serie'],
   "Vins & spiritueux d'investissement": ['quantite_millesime'],
 };
 

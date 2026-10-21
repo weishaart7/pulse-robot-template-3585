@@ -112,8 +112,8 @@ export interface Asset {
   revenus_distribues_budget?: boolean;
   regime_fiscal_parts?: string;
   // Champs additionnels "actifs corporels" — cf. CORPS_NATURES_CHAMPS.
-  certificat_expertise?: boolean;
-  certificat_expertise_reference?: string;
+  // Objets d'art et de collection : catégorie de l'art. 98 A, annexe III CGI (informative).
+  categorie_objet_art?: string | null;
   numero_serie?: string;
   quantite_millesime?: string;
   // Champs additionnels "épargne retraite" et "prévoyance" — cf. RETRAITE_PREVOYANCE_NATURES_CHAMPS.

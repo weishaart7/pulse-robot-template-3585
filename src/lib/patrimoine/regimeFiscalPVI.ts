@@ -379,7 +379,7 @@ export const computePVIRegime = ({
 // 5 000 €, ou option pour la plus-value réelle (régime des biens meubles). Autres biens meubles :
 // régime des biens meubles. L'or physique relève de regimeFiscalPlusValue.ts (métaux précieux).
 const NATURES_CORPORELS_EXONERES = ['Meubles meublants', 'Véhicules motorisés'];
-const NATURES_OBJETS_PRECIEUX = ["Objets d'art et antiquités", 'Montres', 'Objets de collection', 'Bijoux et pierres précieuses'];
+const NATURES_OBJETS_PRECIEUX = ["Objets d'art et de collection", 'Montres', 'Bijoux et pierres précieuses'];
 const NATURES_BIENS_MEUBLES = [
   'Sacs et accessoires de luxe',
   'Matériel informatique ou audiovisuel haut de gamme',

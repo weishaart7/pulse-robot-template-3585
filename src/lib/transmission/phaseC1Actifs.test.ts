@@ -56,8 +56,8 @@ describe('N8 — plancher de 60 % de la valeur d\'assurance (art. 764 II CGI)', 
   });
 
   it('valeur estimée supérieure, ou sans valeur assurée : valeur estimée', () => {
-    expect(run([bien(40000, "Objets d'art et antiquités", { valeur_assuree: 50000 })]).dmtg.perBeneficiary.E1.baseHorsAV).toBe(38500);
-    expect(run([bien(20000, 'Objets de collection')]).dmtg.perBeneficiary.E1.baseHorsAV).toBe(18500);
+    expect(run([bien(40000, "Objets d'art et de collection", { valeur_assuree: 50000 })]).dmtg.perBeneficiary.E1.baseHorsAV).toBe(38500);
+    expect(run([bien(20000, "Objets d'art et de collection")]).dmtg.perBeneficiary.E1.baseHorsAV).toBe(18500);
   });
 
   it('bien commun : plancher sur la part du défunt', () => {

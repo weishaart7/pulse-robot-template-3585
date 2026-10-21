@@ -61,7 +61,7 @@ const computeNftRegime = (
       return pfu(plusValue, 'NFT titre financier — PFU 31,4%',
         "Droits financiers ou de gouvernance (art. 150-0 A CGI) : PFU ou barème sur option ; pas de sursis en cas d'échange contre des cryptoactifs.");
     case 'oeuvre_art': {
-      const r = computeCorporelRegime("Objets d'art et antiquités", plusValue, valeurEstimee, dateAcquisition);
+      const r = computeCorporelRegime("Objets d'art et de collection", plusValue, valeurEstimee, dateAcquisition);
       if (r) return { ...r, note: `NFT certifiant une œuvre physique (art. 150 VI CGI). ${r.note ?? ''}`.trim() };
       break;
     }

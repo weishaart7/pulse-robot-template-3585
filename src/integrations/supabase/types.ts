@@ -307,6 +307,7 @@ export type Database = {
           beneficiaire_designe: string | null
           bien_etranger: boolean | null
           capital_garanti: number | null
+          categorie_objet_art: string | null
           certificat_expertise: boolean | null
           certificat_expertise_reference: string | null
           cession_depart_retraite: boolean | null
@@ -409,6 +410,7 @@ export type Database = {
           beneficiaire_designe?: string | null
           bien_etranger?: boolean | null
           capital_garanti?: number | null
+          categorie_objet_art?: string | null
           certificat_expertise?: boolean | null
           certificat_expertise_reference?: string | null
           cession_depart_retraite?: boolean | null
@@ -511,6 +513,7 @@ export type Database = {
           beneficiaire_designe?: string | null
           bien_etranger?: boolean | null
           capital_garanti?: number | null
+          categorie_objet_art?: string | null
           certificat_expertise?: boolean | null
           certificat_expertise_reference?: string | null
           cession_depart_retraite?: boolean | null

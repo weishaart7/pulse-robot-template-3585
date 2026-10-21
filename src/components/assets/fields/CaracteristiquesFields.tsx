@@ -41,6 +41,8 @@ import {
   NATURE_GROUPEMENT_FONCIER,
   NATURE_SEF,
   FRACTION_FORESTIERE_GFI_DEFAUT,
+  NATURE_OBJETS_ART_COLLECTION,
+  CATEGORIES_OBJET_ART,
   isGfi,
 } from '@/constants/assetTypes';
 import { NATURES_LIQUIDITES_FR } from '@/schemas/assetSchema';
@@ -123,10 +125,8 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
       : 'Établissement';
   const regimeFiscalPartsOptions = REGIME_FISCAL_PARTS_OPTIONS[watchedNature] || [];
   const corpsChamps = CORPS_NATURES_CHAMPS[watchedNature] || [];
-  const showCertificatExpertise = corpsChamps.includes('certificat_expertise');
   const showNumeroSerie = corpsChamps.includes('numero_serie');
   const showQuantiteMillesime = corpsChamps.includes('quantite_millesime');
-  const watchedCertificatExpertise = form.watch('certificat_expertise');
   const retraitePrevoyanceChamps = RETRAITE_PREVOYANCE_NATURES_CHAMPS[watchedNature] || [];
   const showModeSortie = retraitePrevoyanceChamps.includes('mode_sortie');
   const watchedSousTypePer = form.watch('sous_type_per');
@@ -351,38 +351,34 @@ export const CaracteristiquesFields: React.FC<CaracteristiquesFieldsProps> = ({ 
         )}
       </div>
 
-      {showCertificatExpertise && (
-        <FormField
-          control={form.control}
-          name="certificat_expertise"
-          render={({ field }) => (
-            <FormItem className="rounded-[2px] border border-border p-4 space-y-3">
-              <div className="flex flex-row items-start space-x-3 space-y-0">
+      {watchedNature === NATURE_OBJETS_ART_COLLECTION && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="categorie_objet_art" render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Catégorie
+                <FieldHelp>
+                  Catégories de l'art. 98 A, annexe III du CGI. Informatif : le régime fiscal est le même pour les trois
+                  (plus-value des objets précieux, plancher de 60 % de la valeur assurée en succession). Une collection
+                  n'est jamais un meuble meublant (art. 534 C. civ.).
+                </FieldHelp>
+              </FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
-                  <Checkbox
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
+                  <SelectTrigger className="bg-background border-border shadow-none" size="lg">
+                    <SelectValue placeholder="Choisir" />
+                  </SelectTrigger>
                 </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>Certificat d'authenticité ou expertise</FormLabel>
-                </div>
-              </div>
-
-              {watchedCertificatExpertise && (
-                <FormField control={form.control} name="certificat_expertise_reference" render={({ field: refField }) => (
-                  <FormItem className="pl-7">
-                    <FormLabel>Référence</FormLabel>
-                    <FormControl>
-                      <Input className="bg-background border-border shadow-none" {...refField} value={refField.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              )}
+                <SelectContent>
+                  {CATEGORIES_OBJET_ART.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label} <span className="text-muted-foreground">· {c.aide}</span></SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
             </FormItem>
-          )}
-        />
+          )} />
+        </div>
       )}
 
       {showBienEtranger && !isPrevoyanceDeces(watchedNature) && (
