@@ -45,6 +45,8 @@ près : « Parts de SCI », seule nature à la fois immobilière et « parts » 
 « Société liée », `societe_id`) est indépendant : une même « Parts de SCI » peut figurer dans Immobilier
 et être reliée à sa SCI.
 
+Les biens détenus par une société du foyer (`assets.societe_proprietaire_id`) sont lus à part (`useImmobilierAssets` → `biensSocietes`) : absents de la Vue d'ensemble, de la synthèse foncière et de Gestion, ils apparaissent dans « Mes biens » sous un groupe « Détenus via [société] · hors totaux du foyer », avec leur fiche et leurs crédits.
+
 **Écrans** (`ImmobilierSection.tsx`, 3 onglets) :
 
 | Onglet | Composant | Rôle |

@@ -377,6 +377,7 @@ export type Database = {
           revenus_distribues_budget: boolean
           situation_particuliere: string[] | null
           societe_id: string | null
+          societe_proprietaire_id: string | null
           sous_jacent: string | null
           sous_type_per: string | null
           statut_bien: string | null
@@ -478,6 +479,7 @@ export type Database = {
           revenus_distribues_budget?: boolean
           situation_particuliere?: string[] | null
           societe_id?: string | null
+          societe_proprietaire_id?: string | null
           sous_jacent?: string | null
           sous_type_per?: string | null
           statut_bien?: string | null
@@ -579,6 +581,7 @@ export type Database = {
           revenus_distribues_budget?: boolean
           situation_particuliere?: string[] | null
           societe_id?: string | null
+          societe_proprietaire_id?: string | null
           sous_jacent?: string | null
           sous_type_per?: string | null
           statut_bien?: string | null
@@ -3449,6 +3452,7 @@ export type Database = {
           type_societe: string
           updated_at: string
           user_id: string
+          valeur_auto: boolean
           valeur_estimee: number | null
           valeur_ifi: number | null
         }
@@ -3492,6 +3496,7 @@ export type Database = {
           type_societe: string
           updated_at?: string
           user_id: string
+          valeur_auto?: boolean
           valeur_estimee?: number | null
           valeur_ifi?: number | null
         }
@@ -3535,6 +3540,7 @@ export type Database = {
           type_societe?: string
           updated_at?: string
           user_id?: string
+          valeur_auto?: boolean
           valeur_estimee?: number | null
           valeur_ifi?: number | null
         }

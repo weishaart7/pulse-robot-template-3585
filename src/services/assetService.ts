@@ -1,5 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ASSET_CATEGORIES, PARTS_FONCIERES_NATURES } from '@/constants/assetTypes';
+import { societeService } from '@/services/societeService';
+
+// Bien détenu par une société : sa valeur entre dans celle de la société, à recalculer.
+const recalculerSocieteProprietaire = async (societeId?: string | null) => {
+  if (societeId) await societeService.recalculerSociete(societeId);
+};
 
 // Biens retenus par la synthèse foncière (location nue) : actifs transférés dans Immobilier, de nature
 // immobilière hors meublé — un meublé (LMNP ou LMP) relève des BIC, jamais des revenus fonciers.
@@ -61,6 +67,8 @@ export interface Asset {
   qualification_auto?: boolean;
   transfert_societe?: boolean;
   societe_id?: string | null;
+  // Bien détenu par une société du foyer (≠ societe_id, parts) : hors totaux du foyer.
+  societe_proprietaire_id?: string | null;
   sous_type_per?: 'Bancaire' | 'Assurantiel' | string;
   garantie_deces?: boolean | null;
   conditions_exoneration_990i?: boolean | null;
@@ -185,10 +193,28 @@ export const assetService = {
       .from('assets')
       .select('*')
       .eq('user_id', user.id)
+      // Biens détenus par une société du foyer : hors patrimoine direct (le foyer n'en a que des parts).
+      .is('societe_proprietaire_id', null)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data as Asset[];
+  },
+
+  /** Biens détenus par une société du foyer (assets.societe_proprietaire_id), pour sa fiche. */
+  async getBiensSociete(societeId: string): Promise<Asset[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('societe_proprietaire_id', societeId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as Asset[];
   },
 
   async getAsset(id: string): Promise<Asset> {
@@ -217,6 +243,7 @@ export const assetService = {
       .single();
 
     if (error) throw error;
+    await recalculerSocieteProprietaire(data.societe_proprietaire_id);
     return data as Asset;
   },
 
@@ -244,6 +271,7 @@ export const assetService = {
       .single();
 
     if (error) throw error;
+    await recalculerSocieteProprietaire(data.societe_proprietaire_id);
     return data as Asset;
   },
 
@@ -284,6 +312,7 @@ export const assetService = {
       .select('*')
       .eq('user_id', user.id)
       .eq('type_location', 'Location nue')
+      .is('societe_proprietaire_id', null)
       .eq('transfert_immobilier', true)
       .in('nature', NATURES_LOCATION_NUE)
       .order('created_at', { ascending: false });
@@ -303,6 +332,7 @@ export const assetService = {
       .select('*')
       .eq('user_id', user.id)
       .eq('regime_fiscal_parts', 'Revenus fonciers')
+      .is('societe_proprietaire_id', null)
       .in('nature', PARTS_FONCIERES_NATURES as unknown as string[])
       .order('created_at', { ascending: false });
 
@@ -317,7 +347,7 @@ export const assetService = {
     // Verify user owns this asset before deleting
     const { data: existingAsset, error: existingError } = await supabase
       .from('assets')
-      .select('user_id')
+      .select('user_id, societe_proprietaire_id')
       .eq('id', id)
       .single();
 
@@ -330,6 +360,7 @@ export const assetService = {
       .from('assets')
       .delete()
       .eq('id', id);
+    if (!error) await recalculerSocieteProprietaire(existingAsset.societe_proprietaire_id);
 
     if (error) throw error;
   },

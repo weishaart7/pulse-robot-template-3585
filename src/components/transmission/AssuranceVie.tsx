@@ -97,6 +97,7 @@ export const AssuranceVie = () => {
             .from('assets')
             .select('*')
             .eq('user_id', user.id)
+            .is('societe_proprietaire_id', null)
             .in('nature', AV_NATURES)
             .order('created_at', { ascending: false }),
           supabase
@@ -257,7 +258,7 @@ export const AssuranceVie = () => {
             );
             setAvContractsBuilt(builtAvContracts);
 
-            const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id);
+            const { data: allAssets } = await supabase.from('assets').select('*').eq('user_id', user.id).is('societe_proprietaire_id', null);
             // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété
             // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).
             const assetDemembrements = await assetDemembrementService.getAllForUser();

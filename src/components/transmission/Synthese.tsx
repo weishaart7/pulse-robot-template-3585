@@ -128,7 +128,8 @@ export const Synthese = () => {
       const { data: assets } = await supabase
         .from('assets')
         .select('*')
-        .eq('user_id', user!.id);
+        .eq('user_id', user!.id)
+        .is('societe_proprietaire_id', null);
 
       setHasAssets((assets || []).length > 0);
 

@@ -9,6 +9,7 @@ import { Link2, Unlink, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Emprunt } from '@/services/passifService';
+import { societeService } from '@/services/societeService';
 
 // Sous-ensemble des colonnes réellement sélectionnées ci-dessous (pas de
 // select('*')) — dérivé du type canonique de passifService.ts pour éviter la
@@ -76,6 +77,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
 
       if (error) throw error;
 
+      await societeService.recalculerSociete(societeId);
       toast.success('Emprunt lié à la société');
       setSelectedEmpruntId('');
       setIsDialogOpen(false);
@@ -95,6 +97,7 @@ export const SocieteFinancesEmprunts: React.FC<SocieteFinancesEmpruntsProps> = (
 
       if (error) throw error;
 
+      await societeService.recalculerSociete(societeId);
       toast.success('Emprunt délié de la société');
       fetchEmprunts();
     } catch (error) {

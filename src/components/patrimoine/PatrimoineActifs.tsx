@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { societeService } from '@/services/societeService';
 import { PatrimoinePanel } from './PatrimoinePanel';
 import { AddButton } from '@/components/layout/workspace-panel';
 import { toast } from 'sonner';
@@ -36,6 +38,18 @@ export const PatrimoineActifs = () => {
   // Bien créé avec « Bien financé par un crédit » : proposition, puis saisie de l'emprunt relié.
   const [creditAProposer, setCreditAProposer] = useState<Asset | null>(null);
   const [creditEnSaisie, setCreditEnSaisie] = useState<Asset | null>(null);
+  // `?societe=<id>` (« Ajouter un bien » de la fiche société) : le bien créé est rattaché à cette
+  // société (hors patrimoine direct), puis retour à sa fiche.
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const societeProprietaireId = searchParams.get('societe');
+  const [societeProprietaire, setSocieteProprietaire] = useState<string | null>(null);
+  useEffect(() => {
+    if (!societeProprietaireId) return;
+    setShowAssetForm(true);
+    societeService.getById(societeProprietaireId).then((s) => setSocieteProprietaire(s.denomination)).catch(() => undefined);
+  }, [societeProprietaireId]);
+  const retourFicheSociete = () => navigate(`/dashboard/societes?fiche=${societeProprietaireId}&onglet=biens`);
 
   // Retourne true en cas de succès (ou si l'étape ne s'applique pas), false en cas d'échec.
   const syncValorisationFromAsset = async (savedAsset: Asset, previousValeurEstimee: number | undefined): Promise<boolean> => {
@@ -166,18 +180,29 @@ export const PatrimoineActifs = () => {
       }
     }
 
-    if (!editingAsset && extras?.financeParCredit) setCreditAProposer(savedAsset);
+    if (!editingAsset && societeProprietaireId) {
+      try {
+        await societeService.rattacherBien(societeProprietaireId, savedAsset.id!);
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Rattachement à la société échoué:', error);
+        stepErrors.push("le bien n'a pas pu être rattaché à la société");
+      }
+      if (extras?.financeParCredit) {
+        toast.info("Crédit de la société : saisissez-le dans Passifs, puis liez-le dans l'onglet Finances de la société.");
+      }
+    } else if (!editingAsset && extras?.financeParCredit) setCreditAProposer(savedAsset);
 
     setShowAssetForm(false);
     setEditingAsset(null);
 
     if (stepErrors.length === 0) {
-      toast.success(editingAsset ? 'Actif mis à jour avec succès' : 'Actif créé avec succès');
+      toast.success(editingAsset ? 'Actif mis à jour avec succès' : societeProprietaireId ? 'Bien ajouté à la société' : 'Actif créé avec succès');
     } else {
       toast.error(
         `L'actif a bien été enregistré, mais : ${stepErrors.join(' ; ')}. Merci de rouvrir la fiche pour vérifier.`
       );
     }
+    if (!editingAsset && societeProprietaireId) retourFicheSociete();
   };
 
   if (creditEnSaisie) {
@@ -211,6 +236,7 @@ export const PatrimoineActifs = () => {
     const handleCancel = () => {
       setShowAssetForm(false);
       setEditingAsset(null);
+      if (societeProprietaireId) retourFicheSociete();
     };
 
     return (
@@ -227,6 +253,7 @@ export const PatrimoineActifs = () => {
           <AssetCreationWizard
             onSubmit={handleAssetSubmit}
             onCancel={handleCancel}
+            societeProprietaire={societeProprietaireId ? societeProprietaire || 'la société' : undefined}
           />
         )}
       </div>

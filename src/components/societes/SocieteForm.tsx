@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
+import { FieldHelp } from '@/components/ui/field-help';
 import { format } from 'date-fns';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,6 +64,8 @@ interface SocieteFormProps {
   activeTab?: string;
   // Signale des modifications non enregistrées (le formulaire est démonté au changement d'onglet de la fiche).
   onDirtyChange?: (dirty: boolean) => void;
+  /** Valeur calculée depuis les biens détenus (onglet Biens détenus) : affichée, non saisie. */
+  valeurCalculee?: boolean;
 }
 
 const TYPES_SOCIETE = [
@@ -136,7 +139,7 @@ const HOLDINGS = ['Non', 'Passive', 'Animatrice'];
 const isSCI = (typeSociete: string, formeSocieteCivile?: string) =>
   typeSociete === 'societe-civile' && ['sci', 'sci-familiale'].includes(formeSocieteCivile || '');
 
-export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'informations', onDirtyChange }: SocieteFormProps) => {
+export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'informations', onDirtyChange, valeurCalculee }: SocieteFormProps) => {
   const [formData, setFormData] = useState<SocieteFormData>({
     denomination: '',
     typeSociete: '',
@@ -473,7 +476,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </PanelCardDescription>
         </PanelCardHeader>
         <PanelCardContent>
-          <div className="flex max-w-3xl gap-2">
+          <div className="flex max-w-6xl gap-2">
             <Input
               placeholder="SIREN ou dénomination sociale"
               value={searchQuery}
@@ -492,7 +495,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
 
           {searchResults.length > 0 && (
-            <div className="max-h-64 max-w-3xl divide-y divide-border overflow-y-auto border-y border-border">
+            <div className="max-h-64 max-w-6xl divide-y divide-border overflow-y-auto border-y border-border">
               {searchResults.map((result, index) => (
                 <button
                   type="button"
@@ -517,9 +520,9 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
 
       <PanelCard>
         <PanelCardHeader>
-          <PanelCardTitle>Identité et détention</PanelCardTitle>
+          <PanelCardTitle>La société</PanelCardTitle>
         </PanelCardHeader>
-      <div className="grid max-w-3xl grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="md:col-span-2">
           <Label htmlFor="denomination">Dénomination sociale *</Label>
           <Input
@@ -642,7 +645,6 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
         )}
 
-        <div className="contents">
           <div>
             <Label htmlFor="dateCreation">Date de création</Label>
             <DateInput
@@ -650,86 +652,16 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
               onChange={(d) => handleInputChange('dateCreation', d ? format(d, 'yyyy-MM-dd') : '')}
             />
           </div>
-          <div>
-            <Label htmlFor="valeurEstimee">Valeur estimée (€)</Label>
-            <Input
-              id="valeurEstimee"
-              type="number"
-              value={formData.valeurEstimee || ''}
-              onChange={(e) => handleInputChange('valeurEstimee', Number(e.target.value))}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Valeur nette des emprunts de la société : ceux-ci ne sont pas comptés séparément dans les passifs du foyer.
-            </p>
-          </div>
         </div>
+      </PanelCard>
 
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="partsNegociables"
-            checked={formData.partsNegociables}
-            onCheckedChange={(checked) => handleInputChange('partsNegociables', checked as boolean)}
-          />
-          <Label htmlFor="partsNegociables" className="cursor-pointer">
-            Parts négociables (actions)
-          </Label>
-        </div>
-
-        <div className="contents">
-          <div>
-            <Label htmlFor="pourcentageIFI">% de parts soumises à l'IFI</Label>
-            <Input
-              id="pourcentageIFI"
-              type="number"
-              min="0"
-              max="100"
-              value={formData.pourcentageIFI || ''}
-              onChange={(e) => handleInputChange('pourcentageIFI', Number(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label htmlFor="capitalSocial">Capital social (€)</Label>
-            <Input
-              id="capitalSocial"
-              type="number"
-              value={formData.capitalSocial || ''}
-              onChange={(e) => handleInputChange('capitalSocial', Number(e.target.value))}
-            />
-          </div>
-        </div>
-
-        <div className="contents">
-          <div>
-            <Label htmlFor="nombreTitres">Nombre de titres</Label>
-            <Input
-              id="nombreTitres"
-              type="number"
-              value={formData.nombreTitres || ''}
-              onChange={(e) => handleInputChange('nombreTitres', Number(e.target.value))}
-            />
-          </div>
-          <div>
-            <Label htmlFor="nombreSalaries">Nombre de salariés</Label>
-            <Input
-              id="nombreSalaries"
-              type="number"
-              value={formData.nombreSalaries || ''}
-              onChange={(e) => handleInputChange('nombreSalaries', Number(e.target.value))}
-            />
-          </div>
-        </div>
-
-        {/* Entrée du foyer dans la société : origine, date, montant et quotités, d'où la
-            qualification des parts (calculée, modifiable à la main) et le détenteur. */}
-        <div className="space-y-4 border-t border-border pt-6 md:col-span-2">
-          <div>
-            <p className="text-sm font-medium">Votre entrée dans la société</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              D'où viennent vos parts et quelle part du capital chacun détient : la qualification des parts en découle.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:col-span-2">
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Votre entrée dans la société</PanelCardTitle>
+          <PanelCardDescription>D'où viennent vos parts et quelle part du capital chacun détient : la qualification des parts en découle.</PanelCardDescription>
+        </PanelCardHeader>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="contents">
             <div>
               <Label htmlFor="origineEntree">Origine des parts *</Label>
               <Select value={formData.origineEntree || ''} onValueChange={(value) => handleInputChange('origineEntree', value)}>
@@ -754,24 +686,26 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
                 />
               </div>
             ) : formData.origineEntree === 'Création' ? (
-              <p className="self-end pb-2 text-xs text-muted-foreground">Date d'entrée : la date de création de la société, ci-dessus.</p>
-            ) : <div />}
+              <p className="self-end pb-2.5 text-[12.5px] text-muted-foreground">Date d'entrée : la date de création de la société.</p>
+            ) : null}
           </div>
 
           {formData.origineEntree && (
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 items-end md:col-span-2">
+            <div className="contents">
               <div>
-                <Label htmlFor="montantEntree">{libelleMontantEntree}</Label>
+                <Label htmlFor="montantEntree">
+                  {libelleMontantEntree}
+                  <FieldHelp>Pour l'ensemble des parts du foyer. Prix de revient des parts, base de la plus-value en cas de cession.</FieldHelp>
+                </Label>
                 <Input
                   id="montantEntree"
                   type="number"
                   value={formData.montantEntree ?? ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, montantEntree: e.target.value === '' ? undefined : Number(e.target.value) }))}
                 />
-                <p className="text-xs text-muted-foreground mt-1">Pour l'ensemble des parts du foyer. Prix de revient des parts, base de la plus-value en cas de cession.</p>
               </div>
               {showRemploi && (
-                <div className="flex items-center space-x-2 pb-7">
+                <div className="flex items-center space-x-2 self-center">
                   <Checkbox
                     id="remploiEntree"
                     checked={!!formData.remploiEntree}
@@ -785,7 +719,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
             </div>
           )}
 
-          <div>
+          <div className="md:col-span-2">
             <Label>Part du capital détenue</Label>
             <div className="grid grid-cols-2 gap-4 mt-2">
               <div>
@@ -822,7 +756,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
 
           {formData.qualificationAuto ? (
             qualificationCalculee && (
-              <div className="border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3">
+              <div className="border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3 md:col-span-2">
                 <p className="text-sm">
                   <span className="font-medium">{qualificationCalculee.qualification}</span>
                   {formData.detenteur && <span className="text-muted-foreground"> · {formData.detenteur === 'Le couple' ? 'associés : le couple' : `associé : ${formData.detenteur}`}</span>}
@@ -839,7 +773,7 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
               </div>
             )
           ) : (
-            <div>
+            <div className="md:col-span-2">
               <div className="flex items-center justify-between">
                 <Label>Qualification civile des parts</Label>
                 <button
@@ -887,10 +821,122 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
             </div>
           )}
         </div>
+      </PanelCard>
 
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Valeur et capital</PanelCardTitle>
+        </PanelCardHeader>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <Label htmlFor="valeurEstimee">
+              Valeur estimée (€)
+              <FieldHelp>
+                {valeurCalculee
+                  ? 'Calculée depuis les biens détenus, les emprunts, la trésorerie et les comptes courants (onglet Biens détenus).'
+                  : 'Valeur de toute la société, nette de ses emprunts : ceux-ci ne sont pas comptés séparément dans les passifs du foyer.'}
+              </FieldHelp>
+            </Label>
+            <Input
+              id="valeurEstimee"
+              type="number"
+              value={formData.valeurEstimee || ''}
+              onChange={(e) => handleInputChange('valeurEstimee', Number(e.target.value))}
+              disabled={valeurCalculee}
+            />
+          </div>
+          <div>
+            <Label htmlFor="capitalSocial">Capital social (€)</Label>
+            <Input
+              id="capitalSocial"
+              type="number"
+              value={formData.capitalSocial || ''}
+              onChange={(e) => handleInputChange('capitalSocial', Number(e.target.value))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="nombreTitres">Nombre de titres</Label>
+            <Input
+              id="nombreTitres"
+              type="number"
+              value={formData.nombreTitres || ''}
+              onChange={(e) => handleInputChange('nombreTitres', Number(e.target.value))}
+            />
+          </div>
+        <div className="flex items-center space-x-2 self-end pb-2.5">
+          <Checkbox
+            id="partsNegociables"
+            checked={formData.partsNegociables}
+            onCheckedChange={(checked) => handleInputChange('partsNegociables', checked as boolean)}
+          />
+          <Label htmlFor="partsNegociables" className="cursor-pointer">
+            Parts négociables (actions)
+          </Label>
+        </div>
+
+          <div>
+            <Label htmlFor="pourcentageIFI">% de parts soumises à l'IFI</Label>
+            <Input
+              id="pourcentageIFI"
+              type="number"
+              min="0"
+              max="100"
+              value={formData.pourcentageIFI || ''}
+              onChange={(e) => handleInputChange('pourcentageIFI', Number(e.target.value))}
+            />
+          </div>
+        <div>
+          <Label htmlFor="valeurIFI">Valeur IFI (€)</Label>
+          <Input
+            id="valeurIFI"
+            type="number"
+            value={formData.valeurIFI || ''}
+            onChange={(e) => handleInputChange('valeurIFI', Number(e.target.value))}
+          />
+        </div>
+
+        {/* Ne sert qu'à la création : ensuite, l'actif se rattache depuis Patrimoine (« Société liée »). */}
+        {!initialData && (
+          <div className="flex items-center space-x-2 self-end pb-2.5">
+            <Checkbox
+              id="transfertVersActifs"
+              checked={formData.transfertVersActifs}
+              onCheckedChange={(checked) => handleInputChange('transfertVersActifs', checked as boolean)}
+            />
+            <Label htmlFor="transfertVersActifs" className="cursor-pointer">
+              Ajouter les parts à la liste d'actifs
+            </Label>
+          </div>
+        )}
+        </div>
+      </PanelCard>
+
+      <PanelCard>
+        <PanelCardHeader>
+          <PanelCardTitle>Informations administratives</PanelCardTitle>
+        </PanelCardHeader>
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2 xl:grid-cols-4">
+        <div>
+          <Label htmlFor="siret">SIRET</Label>
+          <Input
+            id="siret"
+            value={formData.siret}
+            onChange={(e) => handleInputChange('siret', e.target.value)}
+          />
+        </div>
+
+          <div>
+            <Label htmlFor="nombreSalaries">Nombre de salariés</Label>
+            <Input
+              id="nombreSalaries"
+              type="number"
+              value={formData.nombreSalaries || ''}
+              onChange={(e) => handleInputChange('nombreSalaries', Number(e.target.value))}
+            />
+          </div>
         <div className="md:col-span-2">
           <Label>Date de clôture d'exercice</Label>
-          <div className="grid grid-cols-2 gap-4 mt-2">
+          <div className="grid grid-cols-2 gap-x-6">
             <Select
               value={formData.jourCloture}
               onValueChange={(value) => handleInputChange('jourCloture', value)}
@@ -927,67 +973,23 @@ export const SocieteForm = ({ onSubmit, onCancel, initialData, activeTab = 'info
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="siret">SIRET</Label>
-          <Input
-            id="siret"
-            value={formData.siret}
-            onChange={(e) => handleInputChange('siret', e.target.value)}
-          />
+        <div className="md:col-span-2">
+          <Label htmlFor="rueAdresse">Siège social</Label>
+          <Input id="rueAdresse" placeholder="Rue" value={formData.rueAdresse} onChange={(e) => handleInputChange('rueAdresse', e.target.value)} />
         </div>
-
         <div>
-          <Label>Siège social</Label>
-          <div className="space-y-2 mt-2">
-            <Input
-              placeholder="Rue"
-              value={formData.rueAdresse}
-              onChange={(e) => handleInputChange('rueAdresse', e.target.value)}
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                placeholder="Code postal"
-                value={formData.codePostal}
-                onChange={(e) => handleInputChange('codePostal', e.target.value)}
-              />
-              <Input
-                placeholder="Commune"
-                value={formData.commune}
-                onChange={(e) => handleInputChange('commune', e.target.value)}
-              />
-            </div>
-            <Input
-              placeholder="Pays"
-              value={formData.pays}
-              onChange={(e) => handleInputChange('pays', e.target.value)}
-            />
-          </div>
+          <Label htmlFor="codePostal">Code postal</Label>
+          <Input id="codePostal" value={formData.codePostal} onChange={(e) => handleInputChange('codePostal', e.target.value)} />
         </div>
-
         <div>
-          <Label htmlFor="valeurIFI">Valeur IFI (€)</Label>
-          <Input
-            id="valeurIFI"
-            type="number"
-            value={formData.valeurIFI || ''}
-            onChange={(e) => handleInputChange('valeurIFI', Number(e.target.value))}
-          />
+          <Label htmlFor="commune">Commune</Label>
+          <Input id="commune" value={formData.commune} onChange={(e) => handleInputChange('commune', e.target.value)} />
         </div>
-
-        {/* Ne sert qu'à la création : ensuite, l'actif se rattache depuis Patrimoine (« Société liée »). */}
-        {!initialData && (
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="transfertVersActifs"
-              checked={formData.transfertVersActifs}
-              onCheckedChange={(checked) => handleInputChange('transfertVersActifs', checked as boolean)}
-            />
-            <Label htmlFor="transfertVersActifs" className="cursor-pointer">
-              Ajouter les parts à la liste d'actifs
-            </Label>
-          </div>
-        )}
-      </div>
+        <div>
+          <Label htmlFor="pays">Pays</Label>
+          <Input id="pays" value={formData.pays} onChange={(e) => handleInputChange('pays', e.target.value)} />
+        </div>
+        </div>
       </PanelCard>
 
       <div className="flex justify-end gap-2 px-8 py-4">

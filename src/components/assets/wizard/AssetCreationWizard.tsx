@@ -34,12 +34,14 @@ const STEP_INTROS: Record<string, string> = {
 interface AssetCreationWizardProps {
   onSubmit: (asset: any, charges: AssetCharge[], indivisaires: IndivisaireDraft[], demembrements: DemembrementDraft[], extras?: AssetSaisieExtras) => Promise<boolean | void>;
   onCancel: () => void;
+  /** Bien ajouté à une société du foyer (dénomination) : ni détenteur ni qualification à saisir. */
+  societeProprietaire?: string;
 }
 
 // Orchestrateur du wizard de création d'un actif en étapes adaptatives
 // (cf. brief du 2026-09-10). Le formulaire de modification (AssetForm.tsx,
 // 4 onglets) n'est pas concerné par ce composant.
-export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubmit, onCancel }) => {
+export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubmit, onCancel, societeProprietaire }) => {
   const wizard = useAssetWizard({ onSubmit });
   const {
     form,
@@ -151,6 +153,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
             demembrements={demembrements}
             setDemembrements={setDemembrements}
             qualificationRaison={qualificationRaison}
+            bienDeSociete={societeProprietaire}
           />
         );
       case 'prix':
@@ -200,7 +203,7 @@ export const AssetCreationWizard: React.FC<AssetCreationWizardProps> = ({ onSubm
   return (
     <div>
       <ActifFormFrame
-        title="Ajouter un actif"
+        title={societeProprietaire ? `Ajouter un bien à ${societeProprietaire}` : "Ajouter un actif"}
         aside={
           <p className="text-[12.5px] text-muted-foreground">
             Étape {currentStepIndex + 1} sur {totalSteps}

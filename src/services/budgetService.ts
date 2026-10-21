@@ -206,6 +206,7 @@ export const budgetService = {
         .select('id, denomination, nature, detenteur, revenus_distribues_12m, pourcentage_utilisateur, pourcentage_conjoint, created_at, updated_at')
         .eq('user_id', user.id)
         .eq('revenus_distribues_budget', true)
+        .is('societe_proprietaire_id', null)
         .in('nature', PARTS_FONCIERES_NATURES as unknown as string[])
         .gt('revenus_distribues_12m', 0),
       getFamilyInfoForDetenteur(),

@@ -32,7 +32,7 @@ pattern `lib/ifi/`/`lib/patrimoine/` demandé par `CLAUDE.md`, mais très incomp
 
 **Habillage** : « panneau de travail » comme Famille, Patrimoine, Immobilier et Retraite (cf. [design-system.md](design-system.md)) — barre d'en-tête à fil d'Ariane « Sociétés / onglet », titre 24 px et rappel, contenu bord à bord. Synthèse sur le modèle de la Vue d'ensemble Immobilier : valeur globale (34 px) et lignes `SummaryRow` (capital, CA, rentabilité, trésorerie, CCA, IFI, valeur successorale) à gauche, répartitions par type et par régime fiscal en barres segmentées lagon / citron à droite (les deux camemberts ont disparu), alertes en lignes filetées. Mes sociétés : barre d'outils filetée (Gérer les participations, `AddButton` « Ajouter une société »), nœuds du graphe à angles 2 px et liseré lagon. Gouvernance, Stratégies, Transmission, Bilans, Parts du foyer et Finances : sections filetées à repère lagon (`PanelCard*`, [panel-section.tsx](src/components/layout/panel-section.tsx)), choix de la société en bandeau, indicateurs en bandes divisées, listes en lignes `divide-y`, étiquettes `Chip` (ton `alerte` pour les incohérences). Fiche société : fil d'Ariane « Sociétés / Mes sociétés / nom » portant le retour, onglets `GooeyNav`, Finances sans zone de défilement interne.
 
-Le formulaire société (créer/modifier) : section « Identité et détention » en grille à deux colonnes (dénomination et « Votre entrée dans la société » sur toute la largeur, champs conditionnels qui s'enchaînent sans trou), dates via `DateInput` (saisie jj/mm/aaaa et calendrier de l'app). Il est en mode page pleine largeur avec ses propres onglets
+Le formulaire société (créer/modifier) : quatre bandes filetées — « La société » (dénomination, type, forme, activité, régime, holding, date de création), « Votre entrée dans la société », « Valeur et capital » (valeur estimée, capital, titres, parts négociables, IFI, case d'ajout aux actifs), « Informations administratives » (SIRET, salariés, clôture, siège) —, chacune en grille régulière de 2 colonnes, 4 sur grand écran, textes d'aide en infobulle (`FieldHelp`) pour garder des lignes de même hauteur ; dates via `DateInput` (saisie jj/mm/aaaa et calendrier de l'app). Il est en mode page pleine largeur avec ses propres onglets
 (Synthèse à venir / Informations / Finances / Bilans / Parts du foyer), piloté par
 [SocietesSection.tsx](src/pages/societes/SocietesSection.tsx), seul point d'entrée : la route
 `/societes/form` n'est plus déclarée dans `App.tsx` (le fichier `SocieteFormPage.tsx`, orphelin, reste à
@@ -95,6 +95,26 @@ identité SIRENE, régime fiscal — obligatoire pour une SCI ou SCI familiale, 
   d'entrée, le prix de revient (`valeur_acquisition`) et la qualification (`qualification_auto` = false
   côté actif). Dans le wizard d'actif, une nature « parts » (`isPartsSocieteNature`) affiche un encart
   renvoyant vers `/dashboard/societes?nouvelle=1`, qui ouvre directement le formulaire de création.
+- **Biens détenus par la société** (`assets.societe_proprietaire_id → societes(id) ON DELETE CASCADE`,
+  distinct de `assets.societe_id` ; contrainte : un bien de société n'est pas des parts). Onglet « Biens
+  détenus » de la fiche ([SocieteBiensDetenus.tsx](src/components/societes/actifs/SocieteBiensDetenus.tsx)) :
+  liste, « Ajouter un bien » (wizard d'actif via `/dashboard/patrimoine?tab=actifs&societe=<id>`, étape
+  détention / qualification remplacée par un encart « Propriétaire : … », retour sur
+  `/dashboard/societes?fiche=<id>&onglet=biens`), « Rattacher » un bien immobilier déjà saisi, « Retirer »
+  (avec confirmation). `societeService.rattacherBien` vide détenteur, qualification et quotités, passe
+  revenus et charges hors budget et rattache les emprunts du bien (`emprunts.asset_id`) à la société ;
+  `detacherBien` fait l'inverse (détenteur et qualification à ressaisir). Alerte « possible doublon »
+  (`doublonsProbables` : bien direct de même nature, valeur à ± 5 %).
+- **Valeur calculée** ([valeurSociete.ts](src/lib/societes/valeurSociete.ts)) : biens détenus + trésorerie −
+  emprunts de la société (capital restant dû) − comptes courants d'associés, jamais négative. Retenue dans
+  `societes.valeur_estimee` si `valeur_auto` (par défaut) et au moins un bien détenu ; sinon valeur saisie.
+  `societeService.recalculerSociete` la recalcule puis recopie l'actif « parts » à chaque sauvegarde de la
+  société, création / modification / suppression d'un bien de société (`assetService`) ou d'un emprunt de
+  société (`passifService`), liaison d'un emprunt (onglet Finances). Champ « Valeur estimée » désactivé dans
+  Informations quand elle est calculée ; bascule « Saisir la valeur à la main » dans l'onglet Biens détenus.
+- **Limites** : un crédit pour un bien de société se saisit dans Passifs puis se lie dans l'onglet Finances
+  (le formulaire d'emprunt ne propose que les biens directs) ; revenus fonciers d'une SCI à l'IR (quote-part
+  des associés) et valeur IFI calculée depuis les biens : non traités (phase 2b).
   - Dans Patrimoine, la liste « Société liée » de l'actif rattache des titres à une société existante.
   - À la création d'une société, « Transférer vers la liste d'actifs » (coché par défaut) crée l'actif
     correspondant, rattaché à la société.

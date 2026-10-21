@@ -19,7 +19,8 @@ const MEUBLE_NATURES = ['Immeubles locatifs (meublés)'];
 
 export const ImmobilierSection = () => {
   const [activeTab, setActiveTab] = useState('biens');
-  const { assets, emprunts, isLoading, refetch } = useImmobilierAssets();
+  const { assets, biensSocietes, emprunts, isLoading, refetch } = useImmobilierAssets();
+  const tousLesBiens = [...assets, ...biensSocietes];
   // Biens ouverts mémorisés par identifiant et relus dans `assets` : après une sauvegarde, la fiche
   // reçoit la version rechargée par refetch() (et non une copie figée au moment du clic).
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -28,8 +29,8 @@ export const ImmobilierSection = () => {
   const [lmnpAssetId, setLmnpAssetId] = useState<string | null>(null);
   // Fiche ouverte par « Revenus et charges » : positionnée sur cette section.
   const [focusRevenusCharges, setFocusRevenusCharges] = useState(false);
-  const selectedAsset = selectedAssetId ? assets.find(a => a.id === selectedAssetId) ?? null : null;
-  const lmnpAsset = lmnpAssetId ? assets.find(a => a.id === lmnpAssetId) ?? null : null;
+  const selectedAsset = selectedAssetId ? tousLesBiens.find(a => a.id === selectedAssetId) ?? null : null;
+  const lmnpAsset = lmnpAssetId ? tousLesBiens.find(a => a.id === lmnpAssetId) ?? null : null;
 
   const isMeuble = (asset: Asset) => MEUBLE_NATURES.includes(asset.nature || '');
 
@@ -130,7 +131,26 @@ export const ImmobilierSection = () => {
       case 'valorisation':
         return isLoading
           ? <div className="px-8 py-6"><LoadingSpinner text="Chargement des biens..." /></div>
-          : <MesBiensList assets={assets} emprunts={emprunts} isMeuble={isMeuble} onOpen={handleManageInfo} onGestion={handleGestion} />;
+          : (
+            <>
+              <MesBiensList assets={assets} emprunts={emprunts} isMeuble={isMeuble} onOpen={handleManageInfo} onGestion={handleGestion} />
+              {/* Biens détenus par une société du foyer : hors totaux du foyer, qui n'en détient que des parts. */}
+              {[...new Set(biensSocietes.map((b) => b.societeDenomination))].map((societe) => (
+                <div key={societe} className="border-t border-border">
+                  <p className="px-8 pt-6 text-[13px] font-medium">
+                    Détenus via {societe} <span className="font-normal text-muted-foreground">· hors totaux du foyer</span>
+                  </p>
+                  <MesBiensList
+                    assets={biensSocietes.filter((b) => b.societeDenomination === societe)}
+                    emprunts={emprunts}
+                    isMeuble={isMeuble}
+                    onOpen={handleManageInfo}
+                    onGestion={handleGestion}
+                  />
+                </div>
+              ))}
+            </>
+          );
       case 'revenus':
         return isLoading
           ? <div className="px-8 py-6"><LoadingSpinner text="Chargement..." /></div>

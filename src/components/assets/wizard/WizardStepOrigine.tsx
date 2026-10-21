@@ -21,6 +21,8 @@ interface WizardStepOrigineProps {
   setDemembrements: (value: DemembrementDraft[]) => void;
   qualificationRaison?: string;
   assetId?: string;
+  /** Bien d'une société du foyer (dénomination) : la société en est propriétaire, rien à qualifier. */
+  bienDeSociete?: string;
 }
 
 // Étape "Origine et propriété" : d'où vient le bien (date, origine, clauses
@@ -44,7 +46,8 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
   demembrements,
   setDemembrements,
   qualificationRaison,
-  assetId
+  assetId,
+  bienDeSociete
 }) => {
   const watchedNature = form.watch('nature');
   // Créance : origine et date demandées malgré l'absence de prix (cf. OrigineFields).
@@ -54,6 +57,13 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
     <div className="space-y-6">
       {!sansAcquisition && <OrigineFields form={form} maritalContext={maritalContext} section="origine" />}
 
+      {bienDeSociete ? (
+        <div className="max-w-2xl border-l-2 border-lagon bg-lagon-soft/60 px-4 py-3 text-[13px] leading-snug">
+          Propriétaire : <span className="font-medium">{bienDeSociete}</span>. Le bien n'appartient pas au foyer, qui n'en
+          détient que des parts : ni détenteur ni qualification à saisir.
+        </div>
+      ) : (
+      <>
       {/* Détention et qualification ensemble, comme dans l'onglet Propriété du formulaire de
           modification : mode de détention et détenteur côte à côte, la qualification juste dessous. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -81,6 +91,8 @@ export const WizardStepOrigine: React.FC<WizardStepOrigineProps> = ({
       </div>
 
       <LicitationPacsFields form={form} familyData={familyData} maritalContext={maritalContext} />
+      </>
+      )}
     </div>
   );
 };

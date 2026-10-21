@@ -101,7 +101,8 @@ export async function loadTransmissionData(userId: string): Promise<Transmission
   const { data: assets } = await supabase
     .from('assets')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .is('societe_proprietaire_id', null);
 
   // Démembrement (barème 669 CGI) des actifs déjà en Usufruit/Nue-propriété
   // — même pondération que le Résumé Patrimoine (usePatrimoineCalculations.ts).

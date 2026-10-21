@@ -1,5 +1,6 @@
 import { actualiserEmprunt } from '@/lib/credit/contrat';
 import { supabase } from '@/integrations/supabase/client';
+import { societeService } from '@/services/societeService';
 
 export interface Emprunt {
   id: string;
@@ -104,16 +105,20 @@ export const passifService = {
       .single();
     
     if (error) throw error;
+    // Emprunt de société : il entre dans la valeur de la société (lib/societes/valeurSociete.ts).
+    if (data.societe_id) await societeService.recalculerSociete(data.societe_id);
     return actualiserEmprunt(data as Emprunt);
   },
 
   async deleteEmprunt(id: string): Promise<void> {
+    const { data: existant } = await supabase.from('emprunts').select('societe_id').eq('id', id).single();
     const { error } = await supabase
       .from('emprunts')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
+    if (existant?.societe_id) await societeService.recalculerSociete(existant.societe_id);
   },
 
   async getEmpruntsByAssetId(assetId: string): Promise<Emprunt[]> {

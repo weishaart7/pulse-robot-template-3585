@@ -10,6 +10,7 @@ import { SocietesStrategiesFiscales } from '@/components/societes/strategies/Soc
 import { SocietesTransmission } from '@/components/societes/transmission/SocietesTransmission';
 import { SocietesBilans } from '@/components/societes/bilans/SocietesBilans';
 import { SocieteActifsDetenus } from '@/components/societes/actifs/SocieteActifsDetenus';
+import { SocieteBiensDetenus } from '@/components/societes/actifs/SocieteBiensDetenus';
 import { SocieteForm } from '@/components/societes/SocieteForm';
 import { SocieteFinances } from '@/components/societes/finances/SocieteFinances';
 import { societeService } from '@/services/societeService';
@@ -33,13 +34,17 @@ import { type SocieteFormData, societeToFormData, formDataToSociete } from '@/li
 export const SocietesSection = () => {
   const [activeTab, setActiveTab] = useState('synthese');
   // `?nouvelle=1` (lien « Créer la société » du wizard d'actif) ouvre directement le formulaire de création.
+  // `?fiche=<id>&onglet=…` (retour depuis l'ajout d'un bien de société) ouvre la fiche sur cet onglet.
+  const parametresUrl = new URLSearchParams(window.location.search);
   const [editingMode, setEditingMode] = useState<'list' | 'edit' | 'create'>(() =>
-    new URLSearchParams(window.location.search).has('nouvelle') ? 'create' : 'list');
-  const [editingSocieteId, setEditingSocieteId] = useState<string | null>(null);
+    parametresUrl.has('nouvelle') ? 'create' : parametresUrl.get('fiche') ? 'edit' : 'list');
+  const [editingSocieteId, setEditingSocieteId] = useState<string | null>(() => parametresUrl.get('fiche'));
   const [formData, setFormData] = useState<SocieteFormData | null>(null);
   const [loading, setLoading] = useState(false);
+  // Valeur calculée depuis les biens détenus (valeur_auto) : non modifiable dans Informations.
+  const [valeurCalculee, setValeurCalculee] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formTab, setFormTab] = useState('informations');
+  const [formTab, setFormTab] = useState(() => parametresUrl.get('onglet') || 'informations');
   // Société choisie dans les onglets Gouvernance et Transmission, conservée de l'un à l'autre.
   const [societeSelectionnee, setSocieteSelectionnee] = useState<string | null>(null);
   // Modifications non enregistrées de l'onglet Informations : SocieteForm est démonté
@@ -60,6 +65,7 @@ export const SocietesSection = () => {
     { id: 'informations', label: 'Informations' },
     { id: 'finances', label: 'Finances' },
     { id: 'bilans', label: 'Bilans' },
+    { id: 'biens', label: 'Biens détenus' },
     { id: 'actifs', label: 'Parts du foyer' },
   ];
   const TABS = [
@@ -84,9 +90,10 @@ export const SocietesSection = () => {
   const loadSociete = async (id: string) => {
     try {
       setLoading(true);
-      const societe = await societeService.getById(id);
+      const [societe, calcul] = await Promise.all([societeService.getById(id), societeService.getValeurCalculee(id)]);
       if (societe) {
         setFormData(societeToFormData(societe));
+        setValeurCalculee(societe.valeur_auto !== false && calcul.nbBiens > 0);
       }
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error loading societe:', error);
@@ -243,6 +250,7 @@ export const SocietesSection = () => {
                 initialData={formData}
                 activeTab={formTab}
                 onDirtyChange={setInformationsDirty}
+                valeurCalculee={editingMode === 'edit' && valeurCalculee}
               />
             )}
             {formTab === 'finances' && formData && (
@@ -295,6 +303,12 @@ export const SocietesSection = () => {
             )}
             {formTab === 'bilans' && !editingSocieteId && (
               <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour saisir ses bilans.</p>
+            )}
+            {formTab === 'biens' && editingSocieteId && (
+              <SocieteBiensDetenus societeId={editingSocieteId} denomination={formData?.denomination || 'la société'} />
+            )}
+            {formTab === 'biens' && !editingSocieteId && (
+              <p className="px-8 py-6 text-[13px] text-muted-foreground">Enregistrez d'abord la société pour lui rattacher des biens.</p>
             )}
             {formTab === 'actifs' && editingSocieteId && (
               <SocieteActifsDetenus societeId={editingSocieteId} />

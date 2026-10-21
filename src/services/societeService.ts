@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { secureService } from './secureService';
 import { sanitizeObject } from '@/lib/security';
 import { actifDepuisSociete } from '@/lib/societes/partsFoyer';
+import { calculerValeurSociete, valeurSocieteRetenue } from '@/lib/societes/valeurSociete';
 
 export interface Societe {
   id: string;
@@ -37,6 +38,8 @@ export interface Societe {
   montant_entree?: number | null;
   remploi_entree?: boolean;
   qualification_auto?: boolean;
+  /** Valeur calculée depuis les biens et dettes de la société (true) ou saisie à la main. */
+  valeur_auto?: boolean;
   // Financial fields
   chiffre_affaires?: number;
   resultat_net?: number;
@@ -82,7 +85,84 @@ const syncQualificationToLinkedAsset = async (societe: Societe): Promise<void> =
   }
 };
 
+// Valeur de la société depuis ses biens (assets.societe_proprietaire_id), ses emprunts
+// (emprunts.societe_id), sa trésorerie et ses comptes courants (lib/societes/valeurSociete.ts) :
+// enregistrée dans valeur_estimee si valeur_auto, puis recopiée sur l'actif « parts » lié.
+const recalculerSociete = async (societeId: string): Promise<Societe | null> => {
+  const [{ data: societe }, { data: biens }, { data: emprunts }] = await Promise.all([
+    supabase.from('societes').select('*').eq('id', societeId).single(),
+    supabase.from('assets').select('valeur_estimee').eq('societe_proprietaire_id', societeId),
+    supabase.from('emprunts').select('capital_restant_du').eq('societe_id', societeId),
+  ]);
+  if (!societe) return null;
+  const detail = calculerValeurSociete({
+    biens: biens || [],
+    emprunts: emprunts || [],
+    compteCourantAssocies: societe.compte_courant_associes,
+    tresorerie: societe.tresorerie_disponible,
+  });
+  const valeur = valeurSocieteRetenue(societe.valeur_estimee, societe.valeur_auto, detail, (biens || []).length);
+  let aJour = societe as Societe;
+  if (valeur !== societe.valeur_estimee) {
+    const { data } = await supabase.from('societes').update({ valeur_estimee: valeur }).eq('id', societeId).select().single();
+    if (data) aJour = data as Societe;
+  }
+  await syncQualificationToLinkedAsset(aJour);
+  return aJour;
+};
+
 export const societeService = {
+  recalculerSociete,
+
+  /** Valeur calculée (détail) d'une société depuis ce qu'elle détient et doit. */
+  async getValeurCalculee(societeId: string) {
+    const [{ data: societe }, { data: biens }, { data: emprunts }] = await Promise.all([
+      supabase.from('societes').select('compte_courant_associes, tresorerie_disponible').eq('id', societeId).single(),
+      supabase.from('assets').select('valeur_estimee').eq('societe_proprietaire_id', societeId),
+      supabase.from('emprunts').select('capital_restant_du').eq('societe_id', societeId),
+    ]);
+    return {
+      nbBiens: (biens || []).length,
+      ...calculerValeurSociete({
+        biens: biens || [],
+        emprunts: emprunts || [],
+        compteCourantAssocies: societe?.compte_courant_associes,
+        tresorerie: societe?.tresorerie_disponible,
+      }),
+    };
+  },
+
+  /**
+   * Rattache un bien à la société propriétaire : il sort du patrimoine direct (plus de détenteur,
+   * de qualification ni de quotités, revenus et charges hors budget du foyer) et ses emprunts
+   * deviennent ceux de la société.
+   */
+  async rattacherBien(societeId: string, assetId: string): Promise<void> {
+    const { error } = await supabase.from('assets').update({
+      societe_proprietaire_id: societeId,
+      detenteur: null,
+      qualification_bien: null,
+      qualification_auto: true,
+      pourcentage_utilisateur: null,
+      pourcentage_conjoint: null,
+    }).eq('id', assetId);
+    if (error) throw error;
+    await Promise.all([
+      supabase.from('emprunts').update({ societe_id: societeId }).eq('asset_id', assetId),
+      supabase.from('asset_revenus').update({ impact_budget: false }).eq('asset_id', assetId),
+      supabase.from('asset_charges').update({ impact_budget: false }).eq('asset_id', assetId),
+    ]);
+    await recalculerSociete(societeId);
+  },
+
+  /** Rend un bien au patrimoine direct (détenteur et qualification à ressaisir sur sa fiche). */
+  async detacherBien(societeId: string, assetId: string): Promise<void> {
+    const { error } = await supabase.from('assets').update({ societe_proprietaire_id: null }).eq('id', assetId);
+    if (error) throw error;
+    await supabase.from('emprunts').update({ societe_id: null }).eq('asset_id', assetId).eq('societe_id', societeId);
+    await recalculerSociete(societeId);
+  },
+
   async getAll(): Promise<Societe[]> {
     const { user } = await secureService.getCurrentUserSecure();
     if (!user) return [];
@@ -159,9 +239,8 @@ export const societeService = {
     // Log modification of sensitive financial data
     await secureService.logDataModification(user.id, 'societes', `Updated company: ${id}`);
 
-    await syncQualificationToLinkedAsset(data);
-
-    return data;
+    // Valeur recalculée (trésorerie, comptes courants ou valeur_auto modifiés) puis actif lié recopié.
+    return (await recalculerSociete(id)) ?? data;
   },
 
   async delete(id: string): Promise<void> {
