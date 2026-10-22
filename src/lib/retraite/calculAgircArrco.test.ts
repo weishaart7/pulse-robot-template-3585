@@ -57,27 +57,27 @@ describe('coefficientAnticipationAgircArrco', () => {
 describe('pensionAgircArrco', () => {
   it('majoration enfants : 10 % des droits avant coefficient, non minorée', () => {
     const r = pensionAgircArrco({ pointsAcquis: 5000, pointsProjetes: 0, coefficientAnticipation: 0.88, nombreEnfantsEligibles: 3 });
-    const brut = 5000 * 1.4386;
+    const brut = 5000 * 1.4587;
     expect(r.majorationEnfants).toBeCloseTo(brut * 0.1, 6);
     expect(r.pensionAnnuelle).toBeCloseTo(brut * 0.88 + brut * 0.1, 6);
   });
-  it('majoration enfants plafonnée à 2 367,48 €/an', () => {
+  it('majoration enfants plafonnée à 2 400,55 €/an', () => {
     const r = pensionAgircArrco({ pointsAcquis: 30000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 4 });
-    expect(r.majorationEnfants).toBe(2367.48);
+    expect(r.majorationEnfants).toBe(2400.55);
   });
   it('enfants à charge : 5 % par enfant des droits avant minoration, sans plafond', () => {
     const r = pensionAgircArrco({ pointsAcquis: 30000, pointsProjetes: 0, coefficientAnticipation: 0.9, nombreEnfantsEligibles: 2, nombreEnfantsACharge: 2 });
-    const brut = 30000 * 1.4386;
+    const brut = 30000 * 1.4587;
     expect(r.majorationEnfants).toBeCloseTo(brut * 0.1, 6);
     expect(r.typeMajorationEnfants).toBe('enfantsACharge');
     expect(r.pensionAnnuelle).toBeCloseTo(brut * 0.9 + brut * 0.1, 6);
   });
   it('non cumulable avec la majoration 3 enfants : la plus élevée est retenue', () => {
     const plafonnee = pensionAgircArrco({ pointsAcquis: 50000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 3, nombreEnfantsACharge: 1 });
-    expect(plafonnee.majorationEnfants).toBeCloseTo(50000 * 1.4386 * 0.05, 6);
+    expect(plafonnee.majorationEnfants).toBeCloseTo(50000 * 1.4587 * 0.05, 6);
     expect(plafonnee.typeMajorationEnfants).toBe('enfantsACharge');
     const petite = pensionAgircArrco({ pointsAcquis: 5000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 3, nombreEnfantsACharge: 1 });
-    expect(petite.majorationEnfants).toBeCloseTo(5000 * 1.4386 * 0.1, 6);
+    expect(petite.majorationEnfants).toBeCloseTo(5000 * 1.4587 * 0.1, 6);
     expect(petite.typeMajorationEnfants).toBe('troisEnfants');
   });
   it('moins de 3 enfants : pas de majoration', () => {

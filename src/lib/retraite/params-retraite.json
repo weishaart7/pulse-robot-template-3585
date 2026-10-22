@@ -2,7 +2,7 @@
   "millesimes": [
     {
       "annee": 2026,
-      "verifieLe": "2026-09-29",
+      "verifieLe": "2026-10-22",
       "pass": 48060,
       "micoNonMajoreAnnuel": 9075.48,
       "micoMajoreAnnuel": 10847.16,
@@ -19,16 +19,16 @@
         "rafpValeurServicePoint": "ERAFP, communiqué du 16/12/2025 (rafp.fr)",
         "cnavplValeurPoint": "CNAVPL (cnavpl.fr), valeur au 01/01/2026",
         "agircArrcoPrixAchatPoint": "LégiSocial, repères 2026 (salaire de référence 20,1877 €)",
-        "agircArrcoValeurServicePoint": "Circulaire Agirc-Arrco 2025-15-DT du 23/10/2025 (valeur inchangée au 01/11/2025 : 1,4386 €)",
-        "agircArrcoPlafondMajorationEnfantsAnnuel": "altis-conseil.fr, majorations pour enfants Agirc-Arrco 2026 (2 367,48 €/an depuis le 01/11/2025)",
+        "agircArrcoValeurServicePoint": "Le Particulier, 22/10/2026 : décision du conseil d'administration Agirc-Arrco du 14/10/2026, 1,4587 € au 01/11/2026 (+1,4 % ; 1,4386 € auparavant)",
+        "agircArrcoPlafondMajorationEnfantsAnnuel": "Le Particulier, 22/10/2026 : plafond des majorations pour enfants nés ou élevés 2 400,55 €/an au 01/11/2026 (2 367,48 € auparavant)",
         "prelevementsSociauxPensions": "L'Assurance retraite, « Prélèvements sociaux en 2026 : augmentation des seuils » (métropole, RFR N-2)",
         "reversionRegimeGeneral": "moinsdimpots.fr et mes-allocs.fr, pension de réversion 2026 (plafonds 2 080 × SMIC horaire 12,02 € et × 1,6 ; minimum 334,92 €/mois ; maximum 1 081,35 €/mois)",
         "per": "Linxea, PER 2026 : 10 % de 8 PASS 2025 (37 680 €), minimum 10 % du PASS 2025 (4 710 €), report 5 ans",
         "rafpValeurAcquisitionPoint": "ERAFP, délibération n° 5 du CA du 16/12/2025 (valeur d'acquisition 1,45960 € au 01/01/2026)"
       },
       "agircArrcoPrixAchatPoint": 20.1877,
-      "agircArrcoValeurServicePoint": 1.4386,
-      "agircArrcoPlafondMajorationEnfantsAnnuel": 2367.48,
+      "agircArrcoValeurServicePoint": 1.4587,
+      "agircArrcoPlafondMajorationEnfantsAnnuel": 2400.55,
       "prelevementsSociauxPensions": {
         "seuilsRfrUnePart": {
           "exoneration": 13048,

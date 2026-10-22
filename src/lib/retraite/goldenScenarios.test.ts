@@ -24,11 +24,11 @@ describe('Golden scenarios — Retraite', () => {
       ...base,
       salaireAnnuelMoyen: 40000,
       trimestresValides: 172,
-      regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 10000, valeurPoint: 1.4386 }],
+      regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 10000, valeurPoint: 1.4587 }],
     });
     expect(r.detailRegimeGeneral.decote).toBe(0);
     expect(r.repartitionParRegime.baseRegimeGeneral).toBeCloseTo(20000, 2);
-    expect(r.pensionTotaleConsolidee).toBeCloseTo(34386, 2);
+    expect(r.pensionTotaleConsolidee).toBeCloseTo(34587, 2);
   });
 
   it('S2 : salarié décoté (-15 %), MICO exclu', () => {
@@ -86,14 +86,14 @@ describe('Golden scenarios — Retraite', () => {
       dateEffet: new Date(Date.UTC(2045, 3, 1)),
       salaireAnnuelMoyen: 45000,
       trimestresValides: 150,
-      regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 9000, valeurPoint: 1.4386 }],
+      regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 9000, valeurPoint: 1.4587 }],
       projectionComplementaire: { salaireAnnuel: 90000, trimestresProjetes: 76 },
     });
     expect(r.detailRegimeGeneral.decote).toBe(-15);
     expect(r.detailAgircArrco?.pointsProjetes).toBeCloseTo(9514.75, 2);
     expect(r.detailAgircArrco?.coefficientAnticipation).toBe(0.88);
-    expect(r.detailAgircArrco?.pensionAnnuelle).toBeCloseTo(23439.08, 2);
+    expect(r.detailAgircArrco?.pensionAnnuelle).toBeCloseTo(23766.57, 2);
     expect(r.repartitionParRegime.baseRegimeGeneral).toBeCloseTo(16678.78, 2);
-    expect(r.pensionTotaleConsolidee).toBeCloseTo(40117.86, 2);
+    expect(r.pensionTotaleConsolidee).toBeCloseTo(40445.35, 2);
   });
 });

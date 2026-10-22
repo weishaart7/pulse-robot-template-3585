@@ -48,7 +48,7 @@ describe('creerSimulateurDepart — non-régression de l\'extraction (scénarios
     const r = creerSimulateurDepart(
       contexte({ regimesPoints: [{ nom: 'Agirc-Arrco', type: 'points', points: 10000 }] })
     ).simuler(dateEffet);
-    expect(r.pensionComplementaires).toBeCloseTo(10000 * 1.4386 * 0.88, 2);
+    expect(r.pensionComplementaires).toBeCloseTo(10000 * 1.4587 * 0.88, 2);
   });
 
   it('trimestres enfants : ajoutés aux validés, décote réduite d\'autant (−15 % → −5 %)', () => {
@@ -86,7 +86,7 @@ describe('creerSimulateurDepart — non-régression de l\'extraction (scénarios
     expect(r.departAnticipe).toBe('confirme');
     expect(r.avantAgeLegal).toBe(false);
     expect(r.decote).toBe(0);
-    expect(r.pensionComplementaires).toBeCloseTo(10000 * 1.4386, 2);
+    expect(r.pensionComplementaires).toBeCloseTo(10000 * 1.4587, 2);
     expect(simulateur.dateEffetDepartConfirme?.toISOString().slice(0, 10)).toBe('2032-04-01');
   });
 });

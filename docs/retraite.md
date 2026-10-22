@@ -168,12 +168,12 @@ Les cartes FP et CNAVPL n'affichent que le détail du moteur (`detailFonctionPub
 
 ### A3.7. Complémentaires
 - **Agirc-Arrco** (`calculAgircArrco.ts`) : (points RIS + projetés) × valeur de service du millésime
-  (1,4386 €) × coefficient d'anticipation + majoration enfants. Points projetés : (salaire ≤ PASS ×
+  (1,4587 € au 01/11/2026) × coefficient d'anticipation + majoration enfants. Points projetés : (salaire ≤ PASS ×
   6,20 % + salaire de 1 à 8 PASS × 17 %) ÷ 20,1877 €, année par année. Salaire : `salaire_brut_annuel`,
   sinon revenu hypothèse (plafonné au PASS en mode RIS, signalé). Coefficient d'anticipation seulement
   si la base RG est décotée : plus favorable entre grille par âge (au trimestre, 57 ans 0,43 → 67 ans 1)
   et grille par trimestres manquants (jusqu'à 20). Majorations non cumulables, la plus élevée : 3 enfants
-  10 % plafonnée (2 367,48 €/an) ou 5 % par enfant à charge à la date d'effet (< 18 ans, 18-25 ans
+  10 % plafonnée (2 400,55 €/an au 01/11/2026) ou 5 % par enfant à charge à la date d'effet (< 18 ans, 18-25 ans
   `enfant_a_charge`, handicap).
 - **Caisses à points** (`calculCaissesPoints.ts`, bloc `caissesPoints`) : caisse reconnue au libellé du
   RIS ou déclarée (`caisse_liberale`, `liberal_conventionne` pour ASV / PCV) ; (points RIS + projetés) ×
@@ -1808,15 +1808,15 @@ pas l'exactitude des règles elles-mêmes.
 
 ### Scénario 1 — Salarié à taux plein, avec Agirc-Arrco
 
-**Entrées** : SAM 40 000 €, 172 trimestres validés (régime général), 10 000 points Agirc-Arrco à 1,4386 €.
+**Entrées** : SAM 40 000 €, 172 trimestres validés (régime général), 10 000 points Agirc-Arrco à 1,4587 €.
 
 | Étape | Calcul | Résultat |
 |---|---|---:|
 | Pension de base brute | 40 000 × 50 % × 172/172 | 20 000,00 € |
 | Décote | durée : 0 ; âge : −15 % → plus favorable : 0 | 0 % |
 | MICO | 9 075,48 € < 20 000 € | 0 € |
-| Agirc-Arrco | 10 000 × 1,4386 | 14 386,00 € |
-| **Total** | | **34 386,00 €** |
+| Agirc-Arrco | 10 000 × 1,4587 | 14 587,00 € |
+| **Total** | | **34 587,00 €** |
 
 ### Scénario 2 — Salarié décoté
 
@@ -1873,12 +1873,12 @@ salaire brut 90 000 €/an ; 76 trimestres projetés d'ici au départ.
 | Base décotée | 19 622,09 × 0,85 | 16 678,78 € |
 | Points Agirc-Arrco par an | (48 060 × 6,20 % + 41 940 × 17 %) ÷ 20,1877 | 500,78 |
 | Points projetés | 500,78 × 76/4 | 9 514,75 |
-| Pension Agirc-Arrco avant coefficient | (9 000 + 9 514,75) × 1,4386 | 26 635,32 € |
+| Pension Agirc-Arrco avant coefficient | (9 000 + 9 514,75) × 1,4587 | 27 007,47 € |
 | Coefficient d'anticipation | base décotée ; âge 64 ans → 0,88 ; 22 trimestres manquants > 20 → grille âge seule | 0,88 |
-| Agirc-Arrco retenue | 26 635,32 × 0,88 | 23 439,08 € |
-| **Total** | | **40 117,86 €** |
+| Agirc-Arrco retenue | 27 007,47 × 0,88 | 23 766,57 € |
+| **Total** | | **40 445,35 €** |
 
-Avant la phase 2, l'outil aurait affiché 9 000 × 1,4386 = 12 947,40 € d'Agirc-Arrco, sans projection
+Avant la phase 2, l'outil aurait affiché 9 000 × 1,4587 = 13 128,30 € d'Agirc-Arrco, sans projection
 ni abattement.
 
 ### Scénario N1 — Revenu net d'un couple marié (phase 3)
