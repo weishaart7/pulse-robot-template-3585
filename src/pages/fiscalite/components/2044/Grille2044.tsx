@@ -13,9 +13,11 @@ export const formatEuros = (v: number) =>
  * Champ montant : NULL = non saisi, la valeur préremplie (Immobilier / Passifs) s'affiche en grisé et
  * compte dans le calcul. Une saisie la remplace ; le bouton de retour efface la saisie (NULL).
  */
-export function MontantCellule({ value, prerempli, onCommit, step, suffixe, ariaLabel }: {
+export function MontantCellule({ value, prerempli, onCommit, step, suffixe, ariaLabel, min = 0 }: {
   value: number | null;
   prerempli?: number;
+  /** Valeur minimale acceptée (1 pour le nombre de locaux). */
+  min?: number;
   onCommit: (v: number | null) => void;
   step?: number;
   suffixe?: string;
@@ -25,7 +27,7 @@ export function MontantCellule({ value, prerempli, onCommit, step, suffixe, aria
   useEffect(() => { setBrouillon(value === null ? '' : String(value)); }, [value]);
 
   const valider = () => {
-    const prochaine = brouillon.trim() === '' ? null : Math.max(0, Number(brouillon.replace(',', '.')));
+    const prochaine = brouillon.trim() === '' ? null : Math.max(min, Number(brouillon.replace(',', '.')));
     if (prochaine !== null && Number.isNaN(prochaine)) { setBrouillon(value === null ? '' : String(value)); return; }
     if (prochaine !== value) onCommit(prochaine);
   };
@@ -48,7 +50,7 @@ export function MontantCellule({ value, prerempli, onCommit, step, suffixe, aria
       <input
         type="number"
         inputMode="decimal"
-        min={0}
+        min={min}
         step={step}
         aria-label={ariaLabel}
         value={brouillon}

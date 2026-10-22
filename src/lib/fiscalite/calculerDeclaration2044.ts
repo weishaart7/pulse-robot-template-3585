@@ -8,7 +8,7 @@ import { PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE } from '@/lib/immobilier
 // en déduit les cases 4BA à 4BD de la 2042. Le micro-foncier (4BE) ne relève
 // pas de la 2044 : voir foncierFoyer.ts pour le choix du régime.
 
-/** Forfait de la ligne 222 « Autres frais de gestion », par local. */
+/** Forfait de la ligne 222 « Autres frais de gestion », par local (au moins un local par immeuble). */
 export const FORFAIT_FRAIS_GESTION_PAR_LOCAL = 20;
 
 /** Durée de report des déficits fonciers antérieurs sur les revenus fonciers (rubrique 450). */
@@ -29,7 +29,7 @@ export interface Immeuble2044Input {
   valeurLocativeReservee?: number;
   /** 221 Frais d'administration et de gestion. */
   fraisAdministrationGestion?: number;
-  /** Nombre de locaux, pour le forfait de 20 € de la ligne 222. */
+  /** Nombre de locaux, pour le forfait de 20 € de la ligne 222 ; au moins 1 par immeuble (défaut 1). */
   nombreLocaux?: number;
   /** 223 Primes d'assurance. */
   primesAssurance?: number;
@@ -191,7 +191,8 @@ function calculerImmeuble(i: Immeuble2044Input): Immeuble2044Result {
   const ligne215 = ligne211 + ligne212 + ligne213 + ligne214;
 
   const ligne221 = euros(i.fraisAdministrationGestion);
-  const ligne222 = Math.max(0, Math.floor(i.nombreLocaux || 0)) * FORFAIT_FRAIS_GESTION_PAR_LOCAL;
+  // Forfait de 20 € par local, toujours déductible : chaque immeuble compte au moins un local.
+  const ligne222 = Math.max(1, Math.floor(i.nombreLocaux ?? 1)) * FORFAIT_FRAIS_GESTION_PAR_LOCAL;
   const ligne223 = euros(i.primesAssurance);
   const ligne224 = euros(i.travaux);
   const ligne224bis = euros(i.travauxRenovationEnergetique);

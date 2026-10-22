@@ -36,7 +36,7 @@ const RECETTES: LigneImmeuble[] = [
 
 const FRAIS: LigneImmeuble[] = [
   { code: '221', libelle: 'Frais d’administration et de gestion', colonne: 'frais_administration_gestion', resultat: 'ligne221', aide: 'Rémunération des gardiens, concierges, agences, honoraires, frais de procédure.' },
-  { code: '222', libelle: `Autres frais de gestion (${FORFAIT_FRAIS_GESTION_PAR_LOCAL} € par local)`, colonne: 'nombre_locaux', resultat: 'ligne222', unite: 'locaux', aide: 'Saisissez le nombre de locaux : le forfait est calculé.' },
+  { code: '222', libelle: `Autres frais de gestion (${FORFAIT_FRAIS_GESTION_PAR_LOCAL} € par local)`, colonne: 'nombre_locaux', resultat: 'ligne222', unite: 'locaux', aide: 'Forfait de 20 € par local, toujours déductible : 1 local par défaut, saisissez le nombre de locaux de l’immeuble s’il y en a plusieurs.' },
   { code: '223', libelle: 'Primes d’assurance', colonne: 'primes_assurance', resultat: 'ligne223' },
   { code: '224', libelle: 'Dépenses de réparation, d’entretien et d’amélioration', colonne: 'travaux', resultat: 'ligne224' },
   { code: '224bis', libelle: 'Travaux de rénovation énergétique (sortie des classes E, F, G)', colonne: 'travaux_renovation_energetique', resultat: 'ligne224bis', aide: 'Travaux faisant passer le bien d’une classe E, F ou G à A, B, C ou D. Ils relèvent le plafond du déficit imputable sur le revenu global (au plus 21 400 €).' },
@@ -66,7 +66,10 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
           <MontantCellule
             ariaLabel={`Ligne ${l.code} — ${i.denomination ?? ''}`}
             value={i[l.colonne] === null ? null : Number(i[l.colonne])}
-            prerempli={prerempliImmeubles[i.id]?.valeurs[COLONNES_IMMEUBLE_2044[l.colonne]] as number | undefined}
+            prerempli={l.colonne === 'nombre_locaux'
+              ? 1
+              : prerempliImmeubles[i.id]?.valeurs[COLONNES_IMMEUBLE_2044[l.colonne]] as number | undefined}
+            min={l.colonne === 'nombre_locaux' ? 1 : 0}
             step={l.unite === 'locaux' ? 1 : undefined}
             suffixe={l.unite === 'locaux' ? '×' : l.unite === '%' ? '%' : '€'}
             onCommit={(v) => modifierImmeuble(i.id, { [l.colonne]: l.unite === '%' && v !== null ? Math.min(100, v) : v })}
