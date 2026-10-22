@@ -930,6 +930,21 @@
     "fpTrimestresBonification": 4,
     "fpTauxMaximalAvecBonificationsPct": 80
   },
+  "cumulEmploiRetraite": {
+    "source": "Seconde pension de base plafonnée à 5 % du PASS : CSS art. D. 161-2-22-1 (décret n° 2023-753 du 10/08/2023, application de l'art. 26 de la loi n° 2023-270), liquidations depuis le 01/09/2023. Nouveaux droits par régime : docs Fidroit 2025 (sources par régime ci-dessous). Liquidations à compter du 01/01/2027 : art. 102 LFSS 2026, décrets non publiés",
+    "plafondSecondePensionEnPass": 0.05,
+    "regimes": {
+      "REGIME_GENERAL": { "libelle": "Régime général (base)", "nouveauxDroits": "oui", "depuis": "2023-09-01", "source": "Fidroit CNAV : seconde pension de base, SAM des seuls salaires du cumul (CSS art. R. 351-29, III)" },
+      "SSI": { "libelle": "Indépendants SSI (base)", "nouveauxDroits": "oui", "depuis": "2023-09-01", "source": "Fidroit SSI : seconde pension de base en cumul intégral" },
+      "AGIRC_ARRCO": { "libelle": "Agirc-Arrco", "nouveauxDroits": "oui", "depuis": "2023-01-01", "source": "Fidroit Agirc-Arrco : points sur les cotisations versées depuis le 01/01/2023, pensions liquidées depuis le 01/09/2023 (ANI 17/11/2017 art. 91) ; aucun point pour le chômage ou l'activité partielle pendant le cumul" },
+      "RCI": { "libelle": "RCI (complémentaire des indépendants)", "nouveauxDroits": "oui", "depuis": "2025-01-01", "source": "Fidroit RCI : points sur les cotisations versées depuis le 01/01/2025 (communiqué CPSTI du 16/05/2024)" },
+      "CARCDSF": { "libelle": "CARCDSF", "nouveauxDroits": "oui", "source": "Fidroit CARCDSF : droits supplémentaires en cumul intégral (statuts art. 54)" },
+      "CIPAV": { "libelle": "CIPAV (complémentaire)", "nouveauxDroits": "oui", "source": "Fidroit CIPAV : cotisation pouvant générer des points en cumul intégral (statuts art. 3.6)" },
+      "CAVEC": { "libelle": "CAVEC", "nouveauxDroits": "non", "source": "Fidroit CAVEC : cotisation due sans attribution de points, sous réserve d'une mise à jour des statuts" },
+      "CAVOM": { "libelle": "CAVOM", "nouveauxDroits": "non", "source": "Fidroit CAVOM : cotisation due sans attribution de points" },
+      "CAVP": { "libelle": "CAVP", "nouveauxDroits": "a_verifier", "source": "Fidroit CAVP : cotisation en classe 3 en cumul, droits non précisés" }
+    }
+  },
   "ratioNetBrutActivite": {
     "source": "Convention du bilan retraite Sapiendo (taux de remplacement net sur net) : net = 77 % du brut dans le privé, 79 % dans le public (contractuels), 80 % pour les fonctionnaires — convention de place, non officielle. Non-salariés (revenu = bénéfice, déjà net de cotisations) : 97 %, hypothèse interne (CSG non déductible 2,4 % et CRDS 0,5 %)",
     "salarie_prive": 0.77,

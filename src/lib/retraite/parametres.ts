@@ -274,6 +274,7 @@ interface ParamsRetraite {
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
   ratioNetBrutActivite: { source: string } & Record<string, number | string>;
+  cumulEmploiRetraite: ParametresCumulEmploiRetraite;
   caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; cprnB: ParametresCaissePoints; cprnC: ParametresCaissePoints; cavamac: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   cavpCapitalisation: ParametresCAVPCapitalisation;
@@ -329,6 +330,20 @@ export const PARAMETRES_CAISSES_POINTS = PARAMS.caissesPoints;
 export const PARAMETRES_CNBF: ParametresCNBF = PARAMS.cnbf;
 export const PARAMETRES_CAVP_CAPITALISATION: ParametresCAVPCapitalisation = PARAMS.cavpCapitalisation;
 export const PARAMETRES_PROJECTION_STATUT: ParametresProjectionStatut = PARAMS.projectionStatut;
+export interface RegleNouveauxDroitsCumul {
+  libelle: string;
+  nouveauxDroits: 'oui' | 'non' | 'a_verifier';
+  /** Date (ISO) des premières cotisations ou liquidations concernées. */
+  depuis?: string;
+  source: string;
+}
+export interface ParametresCumulEmploiRetraite {
+  source: string;
+  plafondSecondePensionEnPass: number;
+  regimes: Record<string, RegleNouveauxDroitsCumul>;
+}
+export const PARAMETRES_CUMUL_EMPLOI_RETRAITE: ParametresCumulEmploiRetraite = PARAMS.cumulEmploiRetraite as ParametresCumulEmploiRetraite;
+
 /** Ratio revenu d'activité net / brut par statut actuel (taux de remplacement net). */
 export const RATIO_NET_BRUT_ACTIVITE = PARAMS.ratioNetBrutActivite;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =

@@ -1,5 +1,11 @@
 import { useMemo } from 'react';
-import { calculerPointsCles, PointsCles } from '@/lib/retraite/pointsCles';
+import {
+  calculerPointsCles,
+  droitsCumulEmploiRetraite,
+  regimesPourCumul,
+  DroitCumulRegime,
+  PointsCles,
+} from '@/lib/retraite/pointsCles';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
@@ -19,13 +25,15 @@ import {
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import { evaluerCarriereLongue } from '@/lib/retraite/calculCarriereLongue';
 import { DonneesCNBF } from '@/lib/retraite/calculCNBF';
-import { caisseADassietteDediee } from '@/lib/retraite/calculCaissesPoints';
+import { caisseADassietteDediee, caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
+import { separerRegimesPoints } from '@/lib/retraite/calculAgircArrco';
 import {
   appliquerProjectionStatut,
   caisseProjetee,
   statutActuelDepuisTexte,
   ResultatProjectionStatut,
   StatutActuel,
+  projeteAuRegimeGeneral,
 } from '@/lib/retraite/projectionStatut';
 import { revenuActiviteBrutFinDeCarriere } from '@/lib/retraite/calculNetRetraite';
 import {
@@ -67,6 +75,8 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   dateCarriereLongue: Date | null;
   /** En-tête « points clés » (âge légal, taux plein, cumul intégral), `null` si date de naissance inconnue. */
   pointsCles: PointsCles | null;
+  /** Nouveaux droits en cumul emploi-retraite intégral, par régime de la personne. */
+  droitsCumul: DroitCumulRegime[];
   /** Répartition de la carrière projetée selon le statut actuel. */
   projectionStatut: ResultatProjectionStatut;
 }
@@ -106,6 +116,29 @@ export function donneesAutresRegimesDepuisRetraiteData(
       ? { trimestresCNBF: data.trimestres_cnbf ?? 0, classe: data.cnbf_classe ?? 'C1' }
       : null,
   };
+}
+
+/**
+ * Régimes d'une personne pour les nouveaux droits en cumul intégral, à partir
+ * des données persistées. Partagé par la Synthèse et l'onglet Optimisation.
+ */
+export function regimesPourCumulDepuisRetraiteData(data: RetraiteData): string[] {
+  const statut = statutActuelDepuisTexte(data.statut_actuel);
+  const regimesPoints = data.regimes_points ?? [];
+  const caissesDetectees = regimesPoints
+    .map((r) => caisseDuRegime(r.nom, data.caisse_liberale ?? null))
+    .filter((id): id is NonNullable<typeof id> => id !== null);
+  return regimesPourCumul({
+    statut,
+    aRegimeGeneral: (data.trimestres_valides ?? 0) > 0 || projeteAuRegimeGeneral(statut),
+    aAgircArrco: separerRegimesPoints(regimesPoints).aUnRegimeAgircArrco || statut === 'salarie_prive',
+    aRCI: statut === 'independant_ssi',
+    aFonctionPublique: data.has_fonction_publique ?? false,
+    aCNAVPL: (data.has_cnavpl ?? false) || statut === 'liberal',
+    aIrcantec: statut === 'contractuel_public',
+    caisseLiberale: statut === 'liberal' || statut === 'avocat_cnbf' ? data.caisse_liberale ?? null : null,
+    caissesDetectees,
+  });
 }
 
 /**
@@ -341,5 +374,6 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     statutActuel: statutActuelDepuisTexte(data.statut_actuel),
     dateCarriereLongue,
     pointsCles,
+    droitsCumul: droitsCumulEmploiRetraite(regimesPourCumulDepuisRetraiteData(data)),
   };
 };

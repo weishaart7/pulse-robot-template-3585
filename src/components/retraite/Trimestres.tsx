@@ -1,5 +1,6 @@
 import { caisseADassietteDediee, caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
-import { cumulSelonReformeLFSS2026 } from '@/lib/retraite/pointsCles';
+import { cumulSelonReformeLFSS2026, droitsCumulEmploiRetraite, plafondSecondePension } from '@/lib/retraite/pointsCles';
+import { DroitsCumulEmploiRetraite } from '@/components/retraite/DroitsCumulEmploiRetraite';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
@@ -19,7 +20,11 @@ import {
   estRegimeAgircArrco,
 } from '@/lib/retraite/calculAgircArrco';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
-import { donneesAutresRegimesDepuisRetraiteData, trimestresEnfantsDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
+import {
+  donneesAutresRegimesDepuisRetraiteData,
+  regimesPourCumulDepuisRetraiteData,
+  trimestresEnfantsDepuisRetraiteData,
+} from '@/hooks/usePensionConsolidee';
 import { liensFamiliauxDeLaPersonne } from '@/lib/retraite/trimestresEnfants';
 import { statutActuelDepuisTexte } from '@/lib/retraite/projectionStatut';
 import {
@@ -260,6 +265,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
       ? revenuAnnuelHypotheseDerniereAnneeConnue(resultatTrimestresDetailCarriere.parAnnee)
       : retraiteData.revenu_hypothese_manuel ?? null;
   const salaireComplementaire = salaireProjectionComplementaire(retraiteData.salaire_brut_annuel, revenuHypothese);
+  const droitsCumul = droitsCumulEmploiRetraite(regimesPourCumulDepuisRetraiteData(retraiteData));
 
   // Simulation par date de départ : moteur pur partagé avec la décision de
   // départ (simulationDepart.ts) — base, décote/surcote, départs anticipés,
@@ -1129,7 +1135,8 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               </p>
               <p>
                 Un cumul intégral ouvre une seconde pension de base, plafonnée à 5 % du PASS (
-                {formatEuro2(0.05 * MILLESIME_COURANT.pass)} / an en {MILLESIME_COURANT.annee}).
+                {formatEuro2(plafondSecondePension(MILLESIME_COURANT.pass))} / an en {MILLESIME_COURANT.annee}, CSS art.
+                D. 161-2-22-1), calculée sur les seules cotisations du cumul, sans décote ni surcote.
               </p>
             </>
           ) : (
@@ -1140,6 +1147,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
               non chiffrés ici.
             </p>
           )}
+          <p className="pt-1 text-foreground">Nouveaux droits en cumul intégral, par régime</p>
+          <DroitsCumulEmploiRetraite droits={droitsCumul} />
+          <p>Informatif : seconde pension et points acquis pendant le cumul non chiffrés.</p>
         </PanelCardContent>
       </PanelCard>
     </div>

@@ -5,7 +5,8 @@ import { PanelTitle, SummaryRow, Chip, panelButtonClass } from '@/components/lay
 import { PanelCardTitle } from '@/components/layout/panel-section';
 import { LAGON, CITRON_MID, DISPONIBLE } from '@/components/budget/budgetColors';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
-import { AGE_TAUX_PLEIN_AUTOMATIQUE, PointsCles } from '@/lib/retraite/pointsCles';
+import { AGE_TAUX_PLEIN_AUTOMATIQUE, DroitCumulRegime, PointsCles } from '@/lib/retraite/pointsCles';
+import { resumeDroitsCumul } from '@/components/retraite/DroitsCumulEmploiRetraite';
 import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
 import { useEcartRevenuRetraite } from '@/hooks/useEcartRevenuRetraite';
 import { analyserEcartRevenu } from '@/lib/retraite/calculEpargneRetraite';
@@ -277,7 +278,17 @@ const ChiffreCle = ({ libelle, valeur, unite, date }: { libelle: string; valeur:
   </div>
 );
 
-const ColonnePointsCles = ({ nom, points, afficherNom }: { nom: string; points: PointsCles; afficherNom: boolean }) => (
+const ColonnePointsCles = ({
+  nom,
+  points,
+  droitsCumul,
+  afficherNom,
+}: {
+  nom: string;
+  points: PointsCles;
+  droitsCumul: DroitCumulRegime[];
+  afficherNom: boolean;
+}) => (
   <div className="min-w-0">
     {afficherNom && <p className="mb-3 text-[13px] font-medium text-foreground">{nom}</p>}
     <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
@@ -309,6 +320,7 @@ const ColonnePointsCles = ({ nom, points, afficherNom }: { nom: string; points: 
         </span>
       </SummaryRow>
     </dl>
+    {droitsCumul.length > 0 && <p className="mt-1.5 text-[12px] text-muted-foreground">{resumeDroitsCumul(droitsCumul)}.</p>}
     {points.dateCarriereLongue && (
       <p className="mt-2 text-[12px] text-positive">
         Carrière longue : départ anticipé à taux plein possible dès le {formatDateCourte(points.dateCarriereLongue)}.
@@ -324,8 +336,10 @@ const BandePointsCles = ({ hasConjoint, nomUtilisateur, nomConjoint }: Personnes
     return null;
   }
   const colonnes = [
-    { nom: nomUtilisateur, points: utilisateur.pointsCles },
-    ...(hasConjoint && conjoint.aDesDonnees && conjoint.pointsCles ? [{ nom: nomConjoint, points: conjoint.pointsCles }] : []),
+    { nom: nomUtilisateur, points: utilisateur.pointsCles, droitsCumul: utilisateur.droitsCumul },
+    ...(hasConjoint && conjoint.aDesDonnees && conjoint.pointsCles
+      ? [{ nom: nomConjoint, points: conjoint.pointsCles, droitsCumul: conjoint.droitsCumul }]
+      : []),
   ];
   const reforme = colonnes.some((c) => c.points.cumulSelonReforme);
 
@@ -334,7 +348,7 @@ const BandePointsCles = ({ hasConjoint, nomUtilisateur, nomConjoint }: Personnes
       <PanelCardTitle>Points clés</PanelCardTitle>
       <div className={`mt-4 grid grid-cols-1 gap-y-6 ${colonnes.length > 1 ? 'lg:grid-cols-2 lg:gap-x-0 lg:divide-x lg:divide-border [&>*:first-child]:lg:pr-8 [&>*:last-child]:lg:pl-8' : ''}`}>
         {colonnes.map((c) => (
-          <ColonnePointsCles key={c.nom} nom={c.nom} points={c.points} afficherNom={colonnes.length > 1} />
+          <ColonnePointsCles key={c.nom} {...c} afficherNom={colonnes.length > 1} />
         ))}
       </div>
       <Notes>

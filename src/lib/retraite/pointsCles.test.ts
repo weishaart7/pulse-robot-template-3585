@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { calculerPointsCles, cumulSelonReformeLFSS2026, dateEffetAgeTauxPleinAutomatique, EntreePointsCles } from './pointsCles';
+import {
+  calculerPointsCles,
+  cumulSelonReformeLFSS2026,
+  dateEffetAgeTauxPleinAutomatique,
+  droitsCumulEmploiRetraite,
+  plafondSecondePension,
+  regimesPourCumul,
+  EntreePointsCles,
+} from './pointsCles';
 import { trimestresRequisPourGeneration } from './calcul';
 
 const naissance = { annee: 1968, mois: 6 };
@@ -64,5 +72,50 @@ describe('cumulSelonReformeLFSS2026', () => {
   it('liquidations à compter du 01/01/2027', () => {
     expect(cumulSelonReformeLFSS2026(new Date(Date.UTC(2026, 11, 1)))).toBe(false);
     expect(cumulSelonReformeLFSS2026(new Date(Date.UTC(2027, 0, 1)))).toBe(true);
+  });
+});
+
+describe('cumul emploi-retraite : nouveaux droits par régime', () => {
+  const base = {
+    statut: 'salarie_prive',
+    aRegimeGeneral: true,
+    aAgircArrco: true,
+    aRCI: false,
+    aFonctionPublique: false,
+    aCNAVPL: false,
+    aIrcantec: false,
+    caisseLiberale: null,
+  };
+  it('salarié du privé : régime général et Agirc-Arrco, nouveaux droits', () => {
+    const droits = droitsCumulEmploiRetraite(regimesPourCumul(base));
+    expect(droits.map((d) => [d.regime, d.nouveauxDroits])).toEqual([
+      ['REGIME_GENERAL', 'oui'],
+      ['AGIRC_ARRCO', 'oui'],
+    ]);
+    expect(droits[1].depuis?.toISOString().slice(0, 10)).toBe('2023-01-01');
+  });
+  it('indépendant : SSI et RCI (depuis 2025)', () => {
+    const droits = droitsCumulEmploiRetraite(
+      regimesPourCumul({ ...base, statut: 'independant_ssi', aAgircArrco: false, aRCI: true })
+    );
+    expect(droits.map((d) => d.regime)).toEqual(['SSI', 'RCI']);
+    expect(droits[1].depuis?.toISOString().slice(0, 10)).toBe('2025-01-01');
+  });
+  it('libéraux : CAVEC sans droits, CARCDSF avec, CNAVPL et CARMF à vérifier ; volets ASV/PCV rattachés', () => {
+    const regimes = regimesPourCumul({
+      ...base,
+      statut: 'liberal',
+      aRegimeGeneral: false,
+      aAgircArrco: false,
+      aCNAVPL: true,
+      caisseLiberale: 'CAVEC',
+      caissesDetectees: ['carcdsfPcvCd', 'carmfAsv'],
+    });
+    expect(regimes).toEqual(['CNAVPL', 'CAVEC', 'CARCDSF', 'CARMF']);
+    const droits = Object.fromEntries(droitsCumulEmploiRetraite(regimes).map((d) => [d.regime, d.nouveauxDroits]));
+    expect(droits).toEqual({ CNAVPL: 'a_verifier', CAVEC: 'non', CARCDSF: 'oui', CARMF: 'a_verifier' });
+  });
+  it('seconde pension de base plafonnée à 5 % du PASS', () => {
+    expect(plafondSecondePension(48060)).toBeCloseTo(2403, 6);
   });
 });

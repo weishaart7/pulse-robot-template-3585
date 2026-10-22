@@ -82,6 +82,16 @@ uniquement applicatif via `familyService`.
   date du cumul emploi-retraite intégral (taux plein si liquidation avant le 01/01/2027, sinon 67 ans,
   art. 102 LFSS 2026 — `cumulSelonReformeLFSS2026()`, partagé avec la carte de l'Optimisation).
   Logique du régime général : l'âge d'annulation de la décote FP (catégorie active) n'est pas retenu.
+- **Cumul emploi-retraite : nouveaux droits** (`droitsCumulEmploiRetraite()`, `regimesPourCumul()` dans
+  `pointsCles.ts`, bloc `cumulEmploiRetraite` de `params-retraite.json`). Régimes de la personne déduits
+  du statut, des régimes cochés, de la caisse libérale et des caisses reconnues au RIS (volets ASV/PCV
+  rattachés à leur caisse). Nouveaux droits en cumul intégral : régime général et SSI (seconde pension,
+  liquidations depuis le 01/09/2023), Agirc-Arrco (cotisations depuis le 01/01/2023), RCI (depuis le
+  01/01/2025), CARCDSF, CIPAV ; aucun : CAVEC, CAVOM ; à vérifier : CAVP, CARMF, CNAVPL, fonction
+  publique, Ircantec et autres (non précisés par Fidroit 2025). Seconde pension de base plafonnée à
+  5 % du PASS (CSS art. D. 161-2-22-1, décret 2023-753). Affichage : liste par régime dans la carte
+  Cumul emploi-retraite de l'Optimisation, résumé d'une ligne dans les points clés de la Synthèse.
+  Informatif : ni la seconde pension ni les points acquis pendant le cumul ne sont chiffrés.
 - **Optimisation** simule un scénario de date de liquidation (sélecteur de date, pas un slider d'âge
   depuis le 2026-08-13) avec le même moteur de décote/surcote, plus un simulateur de rachat de
   trimestres (coût, gain de pension, point mort) — sandbox non persistée.
@@ -855,6 +865,20 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   tous régimes ou 67 ans) ; un fonctionnaire de catégorie active peut avoir un âge d'annulation de
   décote plus précoce, non pris en compte (signalé à l'écran). La ligne « Taux plein » de la carte par
   personne garde le texte `ageTauxPleinAffiche` (utilisé aussi par Carrière et l'export PDF).
+- **Export PDF à refondre (reporté, à traiter une fois le module stabilisé).** Le PDF actuel (Synthèse +
+  annexe) ignore les points clés, le net et les taux de remplacement, les scénarios de départ, le détail
+  du calcul par régime, la vérification de carrière et les hypothèses A4/A5 ; il affiche encore le texte
+  `ageTauxPlein`. Plan retenu : pages Points clés, Synthèse, Scénarios (carrière longue, âge légal, taux
+  plein, 67 ans), Détail du calcul par régime à l'âge légal, Vérification de carrière (gains bruts et
+  nets), Hypothèses et sources. Prérequis : construire le contexte du simulateur de départ hors de
+  `Trimestres.tsx` (partagé via `usePensionConsolidee`), y exposer la vérification de carrière, et
+  projeter le SAM à chaque date d'effet du simulateur — sinon le scénario « âge légal » du PDF et de
+  l'Optimisation diffère de la pension de la Synthèse.
+- **Cumul emploi-retraite après 2027** : une source secondaire (bourseinside.fr) indique que la LFSS 2026
+  supprimerait le plafond de 5 % du PASS de la seconde pension pour les premières pensions prenant effet
+  à compter du 01/01/2027 ; non confirmé sur texte officiel, le plafond n'est affiché que pour les
+  liquidations antérieures. Régimes « à vérifier » (CARMF, CNAVPL, fonction publique, Ircantec, CAVP…) :
+  règles de nouveaux droits non sourcées.
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
