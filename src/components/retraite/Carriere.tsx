@@ -39,6 +39,7 @@ import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { TrimestresEnfantsPanel } from '@/components/retraite/TrimestresEnfantsPanel';
 import {
   appliquerProjectionStatut,
+  caisseProjetee,
   statutActuelDepuisTexte,
   StatutActuel,
   LIBELLES_STATUT_ACTUEL,
@@ -215,6 +216,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Caisse complémentaire d'un libéral et conventionnement (calculCaissesPoints.ts).
   const [caisseLiberale, setCaisseLiberale] = useState<string>('');
   const [liberalConventionne, setLiberalConventionne] = useState(false);
+  // Avocats : retraite de base CNBF et classe de la complémentaire (calculCNBF.ts).
+  const [hasCNBF, setHasCNBF] = useState(false);
+  const [trimestresCNBF, setTrimestresCNBF] = useState<string>('');
+  const [cnbfClasse, setCnbfClasse] = useState<string>('C1');
   // Départ anticipé confirmé par la caisse (handicap, incapacité
   // permanente…) — utilisé par l'onglet Optimisation (taux plein dès cet âge).
   const [motifDepartAnticipeConfirme, setMotifDepartAnticipeConfirme] = useState<MotifDepartAnticipeConfirme | ''>('');
@@ -400,6 +405,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.liberal_conventionne !== undefined) {
         setLiberalConventionne(data.liberal_conventionne);
       }
+      if (data.has_cnbf !== undefined) {
+        setHasCNBF(data.has_cnbf);
+      }
+      if (data.trimestres_cnbf !== undefined && data.trimestres_cnbf !== null) {
+        setTrimestresCNBF(data.trimestres_cnbf.toString());
+      }
+      if (data.cnbf_classe) {
+        setCnbfClasse(data.cnbf_classe);
+      }
       if (data.primes_annuelles_fp !== undefined && data.primes_annuelles_fp !== null) {
         setPrimesAnnuellesFP(data.primes_annuelles_fp.toString());
       }
@@ -459,6 +473,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             primes_annuelles_fp: parseFloat(primesAnnuellesFP) || null,
             caisse_liberale: caisseLiberale || null,
             liberal_conventionne: liberalConventionne,
+            has_cnbf: hasCNBF,
+            trimestres_cnbf: parseInt(trimestresCNBF) || 0,
+            cnbf_classe: cnbfClasse,
             depart_anticipe_confirme_motif: motifDepartAnticipeConfirme === '' ? null : motifDepartAnticipeConfirme,
             depart_anticipe_confirme_age:
               motifDepartAnticipeConfirme === '' ? null : parseFloat(ageDepartAnticipeConfirme) || null,
@@ -480,6 +497,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       primesAnnuellesFP,
       caisseLiberale,
       liberalConventionne,
+      hasCNBF,
+      trimestresCNBF,
+      cnbfClasse,
       hasFonctionPublique,
       trimestresLiquidablesFP,
       hasCNAVPL,
@@ -710,6 +730,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       salaireAnnuelMoyenProjete: projectionRevenuFutur.salaireAnnuelMoyenProjete,
       fonctionPublique: fonctionPubliqueSaisie,
       cnavpl: cnavplSaisie,
+      cnbf: hasCNBF ? { trimestresCNBF: parseInt(trimestresCNBF) || 0, classe: cnbfClasse } : null,
     });
   }, [
     hasFonctionPublique,
@@ -733,6 +754,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     primesAnnuellesFP,
     trimestresValides,
     salaireAnnuelMoyen,
+    hasCNBF,
+    trimestresCNBF,
+    cnbfClasse,
   ]);
 
   // Trimestres enfants (MDA) sur la saisie en cours, même fonction que la
@@ -751,7 +775,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         dureeTousRegimesHorsMDA:
           trimestresValidesHorsMDA +
           (projectionStatut.fonctionPublique?.trimestresLiquidables ?? 0) +
-          (projectionStatut.cnavpl?.trimestresCNAVPL ?? 0),
+          (projectionStatut.cnavpl?.trimestresCNAVPL ?? 0) +
+          (projectionStatut.cnbf?.trimestresCNBF ?? 0),
         mdaDejaAuRis,
       }),
     [
@@ -785,6 +810,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       autresPensionsMensuelles: parseFloat(autresPensionsMensuelles) || 0,
       fonctionPublique: projectionStatut.fonctionPublique,
       cnavpl: projectionStatut.cnavpl,
+      cnbf: projectionStatut.cnbf,
       projectionComplementaire: salaireComplementaire && projectionStatut.projeterAgircArrco
         ? {
             salaireAnnuel: salaireComplementaire.salaireAnnuel,
@@ -793,15 +819,16 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         : undefined,
       trimestresEnfants: trimestresEnfantsPersonne,
       caissesPoints: {
-        caisseLiberale: caisseLiberale || null,
+        caisseLiberale: caisseProjetee(statutActuel, caisseLiberale || null),
         conventionne: liberalConventionne,
         revenuAnnuel: projectionRevenuFutur.revenuHypothese,
-        trimestresProjetes: projectionStatut.trimestresCNAVPLProjetes,
+        trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
       },
     }),
     [
       caisseLiberale,
       liberalConventionne,
+      statutActuel,
       trimestresEnfantsPersonne,
       projectionStatut,
       projectionRevenuFutur,
@@ -995,6 +1022,43 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   )}
                 </>
               )}
+              {(statutActuel === 'avocat_cnbf' || hasCNBF) && (
+                <>
+                  <label className="flex items-center gap-2 text-xs pb-1.5">
+                    <Checkbox checked={hasCNBF} onCheckedChange={(checked) => setHasCNBF(checked === true)} />
+                    Affilié à la CNBF
+                  </label>
+                  {hasCNBF && (
+                    <>
+                      <div className="space-y-1.5 max-w-[10rem]">
+                        <Label htmlFor={`trimestres-cnbf-${personne}`} className="text-xs">Trimestres CNBF</Label>
+                        <Input
+                          id={`trimestres-cnbf-${personne}`}
+                          type="number"
+                          className="h-8 text-xs"
+                          value={trimestresCNBF}
+                          onChange={(e) => setTrimestresCNBF(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1.5 min-w-[8rem]">
+                        <Label htmlFor={`classe-cnbf-${personne}`} className="text-xs">Classe complémentaire</Label>
+                        <Select value={cnbfClasse} onValueChange={setCnbfClasse}>
+                          <SelectTrigger id={`classe-cnbf-${personne}`} className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['C1', 'C2', 'C2+'].map((classe) => (
+                              <SelectItem key={classe} value={classe} className="text-xs">
+                                {classe}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
               {statutActuel === 'fonctionnaire' && (
                 <div className="space-y-1.5 max-w-[12rem]">
                   <Label htmlFor={`primes-fp-${personne}`} className="text-xs">Primes annuelles (€)</Label>
@@ -1024,6 +1088,17 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               <p className="text-xs text-muted-foreground">
                 Projeté à la CNAVPL : {projectionStatut.trimestresCNAVPLProjetes} trimestres,{' '}
                 {Math.round(projectionStatut.pointsCNAVPLProjetes).toLocaleString('fr-FR')} points de base.
+              </p>
+            )}
+            {projectionStatut.trimestresCNBFProjetes > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Projeté à la CNBF : {projectionStatut.trimestresCNBFProjetes} trimestres.
+              </p>
+            )}
+            {repartitionParRegime.cnbf > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Retraite de base CNBF : {formatEuro2(repartitionParRegime.cnbf)} / an (forfait 2026 au prorata des
+                trimestres, décote tous régimes, majoration pour 3 enfants ; surcote non calculée).
               </p>
             )}
             {projectionStatut.avertissement && (
@@ -1554,7 +1629,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         trimestresAutresRegimes={
           (parseInt(trimestresValides) || 0) +
           trimestresEnfantsPersonne.rg +
-          (hasCNAVPL ? (parseInt(trimestresCNAVPL) || 0) + trimestresEnfantsPersonne.cnavpl : 0)
+          (hasCNAVPL ? (parseInt(trimestresCNAVPL) || 0) + trimestresEnfantsPersonne.cnavpl : 0) +
+          (hasCNBF ? parseInt(trimestresCNBF) || 0 : 0)
         }
         bonificationEnfants={trimestresEnfantsPersonne.fpBonification}
         majorationDureeEnfants={trimestresEnfantsPersonne.fpMajorationDuree}
@@ -1597,7 +1673,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             ? (parseInt(trimestresLiquidablesFP) || 0) +
               trimestresEnfantsPersonne.fpBonification +
               trimestresEnfantsPersonne.fpMajorationDuree
-            : 0)
+            : 0) +
+          (hasCNBF ? parseInt(trimestresCNBF) || 0 : 0)
         }
         trimestresEnfantsCNAVPL={trimestresEnfantsPersonne.cnavpl}
         hasCNAVPL={hasCNAVPL}

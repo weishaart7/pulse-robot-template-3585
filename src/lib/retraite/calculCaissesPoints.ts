@@ -11,7 +11,9 @@
  * service du millésime → coefficient d'âge (surcote) → majoration pour 3
  * enfants → réversion au taux de la caisse.
  *
- * Caisses paramétrées : CARMF complémentaire et ASV (médecins), CIPAV, CAVEC.
+ * Caisses paramétrées : CARMF complémentaire et ASV (médecins), CIPAV, CAVEC,
+ * CNBF complémentaire (taux de la classe choisie sur 5 tranches de revenu ÷
+ * coût d'acquisition ; minoration alignée sur la base).
  * - Taux plein à l'âge légal ; un départ plus tôt n'est possible que par un
  *   dispositif de départ anticipé, retenu ici à taux plein (coefficient 1).
  * - Surcote : +1,25 % par trimestre de l'âge légal à 65 ans, puis la
@@ -54,9 +56,23 @@ export function caissesDuLiberal(caisseLiberale: string | null, conventionne: bo
 }
 
 /** Points acquis sur une année complète pour un revenu annuel. */
-export function pointsAnnuelsCaisse(caisse: ParametresCaissePoints, revenuAnnuel: number): number {
+export function pointsAnnuelsCaisse(
+  caisse: ParametresCaissePoints,
+  revenuAnnuel: number,
+  classe?: string | null
+): number {
   const revenu = Math.max(0, revenuAnnuel);
   const { acquisition } = caisse;
+  if (acquisition.mode === 'tranchesEurosParClasse') {
+    const taux = acquisition.tauxParClasse[classe ?? ''] ?? acquisition.tauxParClasse[acquisition.classeParDefaut];
+    let cotisation = 0;
+    let plancher = 0;
+    acquisition.bornes.forEach((borne, i) => {
+      cotisation += Math.max(0, Math.min(revenu, borne) - plancher) * taux[i];
+      plancher = borne;
+    });
+    return cotisation / acquisition.prixAchatPoint;
+  }
   if (acquisition.mode === 'classes') {
     const classe = acquisition.classes.find((c) => c.revenuMax === null || revenu <= c.revenuMax);
     return classe?.points ?? 0;
@@ -120,6 +136,8 @@ export interface EntreeCaissesPoints {
   trimestresProjetes: number;
   /** Trimestres manquants tous régimes à la date d'effet (minoration liée à la base). */
   trimestresManquants: number;
+  /** Classe de cotisation choisie (CNBF : C1, C2, C2+). */
+  classe?: string | null;
 }
 
 export interface ResultatCaissesPoints {
@@ -149,7 +167,7 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
     const caisse = PARAMETRES_CAISSES_POINTS[id];
     const pointsProjetes =
       caissesProjetees.includes(id) && entree.revenuAnnuel !== null
-        ? (pointsAnnuelsCaisse(caisse, entree.revenuAnnuel) * Math.max(0, entree.trimestresProjetes)) / 4
+        ? (pointsAnnuelsCaisse(caisse, entree.revenuAnnuel, entree.classe) * Math.max(0, entree.trimestresProjetes)) / 4
         : 0;
     const coefficientSurcote =
       ageDepart !== null && ageLegal !== null ? coefficientAgeCaisse(caisse, ageDepart, ageLegal) : 1;

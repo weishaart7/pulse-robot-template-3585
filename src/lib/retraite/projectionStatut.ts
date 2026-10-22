@@ -18,12 +18,14 @@
  * - Libéral : trimestres CNAVPL ; points de base = 557 × min(revenu, PASS) ÷
  *   PASS + 25 × min(revenu, 5 PASS) ÷ 5 PASS par année (cotisation
  *   proportionnelle au revenu), au prorata des trimestres projetés.
- * - Avocat CNBF : régime traité en phase 3.3, rien n'est projeté d'ici là.
- * - Le régime cible doit être renseigné (fonction publique ou CNAVPL coché) :
+ * - Avocat : trimestres CNBF (base forfaitaire) ; la complémentaire CNBF est
+ *   projetée par le moteur des caisses à points (caisse `CNBF`).
+ * - Le régime cible doit être renseigné (fonction publique, CNAVPL ou CNBF coché) :
  *   sinon la projection est perdue et `avertissement` le signale.
  */
 
 import type { DonneesFonctionPublique, DonneesCNAVPL } from './pensionConsolidee';
+import type { DonneesCNBF } from './calculCNBF';
 import { MILLESIME_COURANT, PARAMETRES_PROJECTION_STATUT } from './parametres';
 
 export type StatutActuel =
@@ -58,6 +60,12 @@ export const LIBELLES_REVENU_STATUT: Record<StatutActuel, string> = {
 
 export function statutActuelDepuisTexte(valeur: string | null | undefined): StatutActuel {
   return valeur && valeur in LIBELLES_STATUT_ACTUEL ? (valeur as StatutActuel) : 'salarie_prive';
+}
+
+/** Caisse complémentaire projetée : CNBF pour un avocat, caisse déclarée pour un libéral. */
+export function caisseProjetee(statut: StatutActuel, caisseLiberale: string | null): string | null {
+  if (statut === 'avocat_cnbf') return 'CNBF';
+  return statut === 'liberal' ? caisseLiberale : null;
 }
 
 export function projeteAuRegimeGeneral(statut: StatutActuel): boolean {
@@ -102,6 +110,7 @@ export interface EntreeProjectionStatut {
   salaireAnnuelMoyenProjete: number;
   fonctionPublique: DonneesFonctionPublique | null;
   cnavpl: DonneesCNAVPL | null;
+  cnbf?: DonneesCNBF | null;
 }
 
 export interface ResultatProjectionStatut {
@@ -109,6 +118,7 @@ export interface ResultatProjectionStatut {
   salaireAnnuelMoyen: number;
   fonctionPublique: DonneesFonctionPublique | null;
   cnavpl: DonneesCNAVPL | null;
+  cnbf: DonneesCNBF | null;
   /** Points Agirc-Arrco futurs projetés (salarié du privé seulement). */
   projeterAgircArrco: boolean;
   /** Détail de ce qui a été projeté hors régime général, pour l'écran. */
@@ -116,6 +126,9 @@ export interface ResultatProjectionStatut {
   pointsRAFPProjetes: number;
   trimestresCNAVPLProjetes: number;
   pointsCNAVPLProjetes: number;
+  trimestresCNBFProjetes: number;
+  /** Caisse complémentaire alimentée par la projection (libéral : caisse déclarée, avocat : CNBF). */
+  trimestresCaisseProjetes: number;
   avertissement: string | null;
 }
 
@@ -126,11 +139,14 @@ export function appliquerProjectionStatut(entree: EntreeProjectionStatut): Resul
     salaireAnnuelMoyen: entree.salaireAnnuelMoyenRIS,
     fonctionPublique,
     cnavpl,
+    cnbf: entree.cnbf ?? null,
     projeterAgircArrco: false,
     trimestresFPProjetes: 0,
     pointsRAFPProjetes: 0,
     trimestresCNAVPLProjetes: 0,
     pointsCNAVPLProjetes: 0,
+    trimestresCNBFProjetes: 0,
+    trimestresCaisseProjetes: 0,
     avertissement: null,
   };
 
@@ -176,8 +192,17 @@ export function appliquerProjectionStatut(entree: EntreeProjectionStatut): Resul
       },
       trimestresCNAVPLProjetes: trimestresProjetes,
       pointsCNAVPLProjetes,
+      trimestresCaisseProjetes: trimestresProjetes,
     };
   }
   // avocat_cnbf
-  return { ...sansProjection, avertissement: 'Statut avocat : la CNBF n’est pas encore modélisée, carrière future non projetée.' };
+  if (!entree.cnbf) {
+    return { ...sansProjection, avertissement: 'Statut avocat : renseignez la CNBF pour projeter la carrière.' };
+  }
+  return {
+    ...sansProjection,
+    cnbf: { ...entree.cnbf, trimestresCNBF: entree.cnbf.trimestresCNBF + trimestresProjetes },
+    trimestresCNBFProjetes: trimestresProjetes,
+    trimestresCaisseProjetes: trimestresProjetes,
+  };
 }

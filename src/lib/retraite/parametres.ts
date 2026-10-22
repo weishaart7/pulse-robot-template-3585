@@ -102,7 +102,15 @@ export type AcquisitionCaissePoints =
   | { mode: 'forfaitPlusRevenuParPoint'; pointsForfait: number; revenuParPoint: number; pointsMaxProportionnels: number }
   | { mode: 'tranchesPrixAchat'; prixAchatPoint: number; tranches: { jusquAPass: number; taux: number }[] }
   /** Classe selon le revenu (`revenuMax` null : dernière classe). */
-  | { mode: 'classes'; classes: { revenuMax: number | null; points: number }[] };
+  | { mode: 'classes'; classes: { revenuMax: number | null; points: number }[] }
+  /** Taux par tranche de revenu en euros, selon la classe de cotisation choisie. */
+  | {
+      mode: 'tranchesEurosParClasse';
+      prixAchatPoint: number;
+      bornes: number[];
+      tauxParClasse: Record<string, number[]>;
+      classeParDefaut: string;
+    };
 
 export interface ParametresCaissePoints {
   nom: string;
@@ -122,6 +130,15 @@ export interface ParametresCaissePoints {
   /** Versement unique (multiple de l'annuité) sous un nombre de points, après minoration ou surcote. */
   capital?: { seuilPoints: number; multipleAnnuites: number };
   surcote: TrancheSurcoteCaisse[];
+  majorationTroisEnfantsPct: number;
+  tauxReversion: number;
+}
+
+export interface ParametresCNBF {
+  source: string;
+  retraiteBaseForfaitaire: number;
+  seuilTrimestresAVTS: number;
+  avtsPour60Trimestres: number;
   majorationTroisEnfantsPct: number;
   tauxReversion: number;
 }
@@ -193,7 +210,8 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints };
+  cnbf: ParametresCNBF;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
@@ -243,6 +261,7 @@ export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
 export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
 export const PARAMETRES_MDA: ParametresMDA = PARAMS.mda;
 export const PARAMETRES_CAISSES_POINTS = PARAMS.caissesPoints;
+export const PARAMETRES_CNBF: ParametresCNBF = PARAMS.cnbf;
 export const PARAMETRES_PROJECTION_STATUT: ParametresProjectionStatut = PARAMS.projectionStatut;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;

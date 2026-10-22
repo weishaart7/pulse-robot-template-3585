@@ -173,3 +173,33 @@ describe('CAVEC 2026', () => {
     expect(reversionCaissesPoints(r.details)).toBe(0);
   });
 });
+
+describe('CNBF 2026', () => {
+  const { cnbf } = PARAMETRES_CAISSES_POINTS;
+  it('complémentaire : taux de la classe sur 5 tranches ÷ 12,5229 €', () => {
+    const cotisationC1 = 42507 * 0.07 + (60000 - 42507) * 0.104;
+    expect(pointsAnnuelsCaisse(cnbf, 60000, 'C1')).toBeCloseTo(cotisationC1 / 12.5229, 6);
+    const cotisationC2 = 42507 * 0.07 + (60000 - 42507) * 0.116;
+    expect(pointsAnnuelsCaisse(cnbf, 60000, 'C2')).toBeCloseTo(cotisationC2 / 12.5229, 6);
+  });
+  it('classe inconnue : C1 ; rien au-delà de 212 535 €', () => {
+    expect(pointsAnnuelsCaisse(cnbf, 60000, null)).toBeCloseTo(pointsAnnuelsCaisse(cnbf, 60000, 'C1'), 10);
+    expect(pointsAnnuelsCaisse(cnbf, 400000, 'C2+')).toBeCloseTo(pointsAnnuelsCaisse(cnbf, 212535, 'C2+'), 10);
+  });
+  it('avocat : complémentaire projetée et valorisée à 1,0262 €', () => {
+    const r = calculerCaissesPoints({
+      regimesPoints: [{ nom: 'CNBF', type: 'points', points: 10000 }],
+      dateNaissance: { annee: 1970, mois: 3 },
+      dateEffet: new Date(Date.UTC(2034, 3, 1)),
+      nombreEnfantsEligibles: 0,
+      caisseLiberale: 'CNBF',
+      conventionne: false,
+      revenuAnnuel: 60000,
+      trimestresProjetes: 40,
+      trimestresManquants: 0,
+      classe: 'C1',
+    });
+    expect(r.details[0].pointsProjetes).toBeCloseTo(10 * pointsAnnuelsCaisse(cnbf, 60000, 'C1'), 6);
+    expect(r.total).toBeCloseTo((10000 + r.details[0].pointsProjetes) * 1.0262, 6);
+  });
+});

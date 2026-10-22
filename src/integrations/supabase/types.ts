@@ -2484,6 +2484,9 @@ export type Database = {
           trimestres_valides: number | null
           statut_actuel: string
           caisse_liberale: string | null
+          has_cnbf: boolean
+          trimestres_cnbf: number | null
+          cnbf_classe: string
           liberal_conventionne: boolean
           primes_annuelles_fp: number | null
           updated_at: string
@@ -2525,6 +2528,9 @@ export type Database = {
           trimestres_valides?: number | null
           statut_actuel?: string
           caisse_liberale?: string | null
+          has_cnbf?: boolean
+          trimestres_cnbf?: number | null
+          cnbf_classe?: string
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string
@@ -2566,6 +2572,9 @@ export type Database = {
           trimestres_valides?: number | null
           statut_actuel?: string
           caisse_liberale?: string | null
+          has_cnbf?: boolean
+          trimestres_cnbf?: number | null
+          cnbf_classe?: string
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string

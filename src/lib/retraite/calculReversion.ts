@@ -36,6 +36,8 @@ export interface DetailReversion {
   rafp: number;
   /** Caisses à points paramétrées (CARMF…), au taux de chaque caisse. */
   caissesPoints: number;
+  /** Retraite de base CNBF (avocats). */
+  cnbf: number;
   total: number;
   /** Réversion régime général + CNAVPL réduite par le plafond de ressources. */
   reduiteParPlafondRessources: boolean;
@@ -48,6 +50,7 @@ const AUCUNE_REVERSION: DetailReversion = {
   fonctionPublique: 0,
   rafp: 0,
   caissesPoints: 0,
+  cnbf: 0,
   total: 0,
   reduiteParPlafondRessources: false,
 };
@@ -88,6 +91,7 @@ export function reversionPourSurvivant(
   const fonctionPublique = defunt.fonctionPublique * PARAMETRES_REVERSION.tauxFonctionPublique;
   const rafp = defunt.rafp * PARAMETRES_REVERSION.tauxRAFP;
   const caissesPoints = defunt.reversionCaissesPoints ?? 0;
+  const cnbf = defunt.reversionCNBF ?? 0;
 
   return {
     regimeGeneral,
@@ -96,7 +100,8 @@ export function reversionPourSurvivant(
     fonctionPublique,
     rafp,
     caissesPoints,
-    total: regimeGeneral + cnavpl + agircArrco + fonctionPublique + rafp + caissesPoints,
+    cnbf,
+    total: regimeGeneral + cnavpl + agircArrco + fonctionPublique + rafp + caissesPoints + cnbf,
     reduiteParPlafondRessources: soumisAuPlafond > 0 && depassement > 0,
   };
 }

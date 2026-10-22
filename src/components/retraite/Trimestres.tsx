@@ -188,9 +188,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // Fonction publique / CNAVPL (données persistées, même conversion que la
   // Synthèse) : leurs trimestres comptent dans la durée tous régimes (décote,
   // condition de durée de la surcote) et leurs pensions dans le total.
-  const { fonctionPublique, cnavpl } = donneesAutresRegimesDepuisRetraiteData(retraiteData);
+  const { fonctionPublique, cnavpl, cnbf } = donneesAutresRegimesDepuisRetraiteData(retraiteData);
   const trimestresAutresRegimes =
-    (fonctionPublique?.trimestresLiquidables ?? 0) + (cnavpl?.trimestresCNAVPL ?? 0);
+    (fonctionPublique?.trimestresLiquidables ?? 0) + (cnavpl?.trimestresCNAVPL ?? 0) + (cnbf?.trimestresCNBF ?? 0);
   const nombreEnfantsEligibles = nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks);
 
   const regimesPointsExclusCount = regimesPoints.filter(
@@ -278,6 +278,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     revenuFutur: revenuHypothese,
     primesAnnuellesFP: retraiteData.primes_annuelles_fp ?? null,
     caisseLiberale: retraiteData.caisse_liberale ?? null,
+    cnbf,
     liberalConventionne: retraiteData.liberal_conventionne ?? false,
     // Trimestres enfants recalculés à chaque date (éducation acquise année par
     // année) ; condition des 8 trimestres appréciée sur les droits actuels.

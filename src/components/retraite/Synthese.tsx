@@ -345,7 +345,13 @@ const revenuSurvivant = (survivant: ResultatPersonne, defunt: ResultatPersonne, 
   const net = calculerNetRetraiteFoyer(
     [
       {
-        base: propres.base + reversion.regimeGeneral + reversion.cnavpl + reversion.fonctionPublique + reversion.rafp,
+        base:
+          propres.base +
+          reversion.regimeGeneral +
+          reversion.cnavpl +
+          reversion.fonctionPublique +
+          reversion.rafp +
+          reversion.cnbf,
         complementaires: propres.complementaires + reversion.agircArrco + reversion.caissesPoints,
       },
     ],
@@ -377,6 +383,7 @@ const DetailSurvivant = ({
       ['RAFP', reversion.rafp],
       ['CNAVPL', reversion.cnavpl],
       ['Caisses à points (CARMF…)', reversion.caissesPoints],
+      ['CNBF', reversion.cnbf],
     ] as [string, number][]
   )
     .filter(([, montant]) => montant > 0)

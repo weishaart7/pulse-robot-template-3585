@@ -143,6 +143,18 @@ uniquement applicatif via `familyService`.
     trimestre après, 20 trimestres au plus ; pas de majoration pour enfants ; sous 500 points (après
     minoration ou surcote), versement unique de 15 annuités, affiché dans Carrière et exclu de la
     pension annuelle et de la réversion ; réversion 60 %.
+  - *CNBF complémentaire* : taux de la classe choisie (C1, C2, C2+, `retraite_data.cnbf_classe`) sur
+    5 tranches de revenu jusqu'à 212 535 € ÷ coût d'acquisition 12,5229 €, valeur 1,0262 € (barème
+    CNBF 2026) ; minoration alignée sur la base ; réversion 60 % (à confirmer).
+- **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
+  bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
+  (migration `20261022160000`), saisie dans le panneau « Statut actuel » de Carrière. Forfait 2026 de
+  19 154 € × trimestres CNBF ÷ durée requise (plafonnés), fraction de l'AVTS (4 059,72 € pour 60
+  trimestres) sous 60 trimestres ; décote de 1,25 % par trimestre manquant tous régimes, 25 % au plus,
+  plus favorable avec l'âge ; +10 % à partir de 3 enfants. Trimestres CNBF comptés dans la durée tous
+  régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
+  complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
+  majoration, ligne « CNBF » de la Synthèse).
   - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
     évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -589,6 +601,11 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   sources donnent 0,75 % ou 0,65 %. Grille 2026 et valeur 1,3850 € non lues sur cavec.fr (source
   secondaire). Réversion à 50 % pour les points d'avant 2009 non distinguée (60 % sur tout), option
   « conjoint » à 100 % non modélisée. Le versement unique n'entre pas dans les totaux de la Synthèse.
+- **CNBF — limites.** Surcote non calculée (pas de trimestres CNBF datés : ni 1,25 % par trimestre
+  cotisé après l'âge légal et la durée, ni le forfait de 4 811 € au-delà de 220 trimestres). Taux de
+  réversion de la base (54 %) et de la complémentaire (60 %), minoration de la complémentaire et
+  majoration pour enfants de la complémentaire (non appliquée) à confirmer : absents du barème et du
+  doc Fidroit. Retraite des avocats retraités actifs (2 403 €) non modélisée.
 - **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
   partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
   éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation

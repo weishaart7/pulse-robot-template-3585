@@ -62,6 +62,8 @@ import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
 import { PARAMETRES_MDA } from './parametres';
 import { TrimestresEnfantsParRegime, AUCUN_TRIMESTRE_ENFANT } from './trimestresEnfants';
 import { calculerCaissesPoints, reversionCaissesPoints, DetailCaissePoints } from './calculCaissesPoints';
+import { pensionBaseCNBF, DonneesCNBF, ResultatCNBF } from './calculCNBF';
+import { PARAMETRES_CNBF } from './parametres';
 import {
   separerRegimesPoints,
   pointsAgircArrcoAnnuels,
@@ -161,6 +163,8 @@ export interface EntreePensionConsolidee {
    * par un libéral, conventionnement (ASV) et projection de ses points.
    * Absent = points du RIS seulement, sans projection.
    */
+  /** Retraite de base des avocats (CNBF), absente = non affilié. */
+  cnbf?: DonneesCNBF | null;
   caissesPoints?: {
     caisseLiberale: string | null;
     conventionne: boolean;
@@ -201,6 +205,8 @@ export interface RepartitionParRegime {
   fonctionPublique: number;
   rafp: number;
   cnavpl: number;
+  /** Retraite de base CNBF (avocats). */
+  cnbf: number;
   /** Capital RAFP versé en une fois (moins de 5 125 points) — hors pension annuelle. */
   rafpCapital: number;
   /** Autres pensions déclarées (régimes non modélisés : étranger…), annuelles. */
@@ -263,6 +269,8 @@ export interface AssietteReversion {
   cnavpl: number;
   /** Caisses à points paramétrées : réversion déjà calculée au taux de chaque caisse. */
   reversionCaissesPoints: number;
+  /** Base CNBF : réversion déjà calculée (hors majoration pour enfants). */
+  reversionCNBF: number;
 }
 
 export function calculerResultatFonctionPublique(
@@ -429,17 +437,20 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   const hasFonctionPublique = fonctionPublique !== null;
   const hasCNAVPL = cnavpl !== null;
 
+  const trimestresCNBF = entree.cnbf?.trimestresCNBF ?? 0;
   const trimestresTousRegimes =
     trimestresValides +
     (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0) +
-    (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0);
+    (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0) +
+    trimestresCNBF;
 
   const taux = salaireAnnuelMoyen > 0 && trimestresValides > 0 ? tauxProratisation(trimestresValides, trimestresRequis) : 0;
   const pensionBaseBrute = salaireAnnuelMoyen > 0 && trimestresValides > 0 ? pensionBase(salaireAnnuelMoyen, taux, 0) : 0;
 
   const trimAutresRegimes =
     (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0) +
-    (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0);
+    (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0) +
+    trimestresCNBF;
   const decoteTrimestresSeule = Math.min(
     decoteSurTrimestres(trimestresValides + trimAutresRegimes, trimestresRequis),
     0
@@ -543,6 +554,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     revenuAnnuel: entree.caissesPoints?.revenuAnnuel ?? null,
     trimestresProjetes: entree.caissesPoints?.trimestresProjetes ?? 0,
     trimestresManquants: trimestresRequis - trimestresTousRegimes,
+    classe: entree.cnbf?.classe ?? null,
   });
   const totalPensionComplementaireAnnuelle =
     (detailAgircArrco?.pensionAnnuelle ?? 0) +
@@ -556,7 +568,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     ? calculerResultatFonctionPublique(
         fonctionPublique!,
         trimestresRequis,
-        trimestresValides + (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0),
+        trimestresValides + (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0) + trimestresCNBF,
         dateNaissance,
         dateEffet,
         auMoinsUnTrimestreMajorationEnfant,
@@ -568,13 +580,23 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     ? calculerResultatCNAVPL(
         cnavpl!,
         trimestresRequis,
-        trimestresValides + (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0),
+        trimestresValides +
+          (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0) +
+          trimestresCNBF,
         dateNaissance,
         dateEffet,
         auMoinsUnTrimestreMajorationEnfant,
         nombreEnfantsEligibles
       )
     : { pensionFinale: 0, pensionHorsMajorationEnfants: 0 };
+
+  const resultatCNBF: ResultatCNBF = pensionBaseCNBF({
+    trimestresCNBF,
+    trimestresRequis,
+    trimestresTousRegimes,
+    ageDepartAnnees: dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null,
+    nombreEnfantsEligibles,
+  });
 
   // Écrêtement du MICO (référentiel §3.5.5) : le plafond porte sur le total
   // des pensions personnelles brutes tous régimes, base et complémentaires —
@@ -584,7 +606,8 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     autresPensionsMensuelles * 12 +
     totalPensionComplementaireAnnuelle +
     (hasFonctionPublique ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle : 0) +
-    (hasCNAVPL ? resultatCNAVPL.pensionFinale : 0);
+    (hasCNAVPL ? resultatCNAVPL.pensionFinale : 0) +
+    resultatCNBF.pensionFinale;
   const majorationMicoTotaleAvantEcretement = majorationPalier1 + majorationPalier2;
   const majorationMicoTotaleApresEcretement = ecretementMICO(
     pensionBaseHorsMicoHorsSurcote,
@@ -610,7 +633,9 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       resultatFonctionPublique,
       hasCNAVPL,
       resultatCNAVPL
-    ) + autresPensionsDeclarees;
+    ) +
+    resultatCNBF.pensionFinale +
+    autresPensionsDeclarees;
 
   return {
     trimestresEnfants: trimestresEnfants ?? AUCUN_TRIMESTRE_ENFANT,
@@ -622,6 +647,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       fonctionPublique: resultatFonctionPublique.pensionFinale,
       rafp: resultatFonctionPublique.rafpAnnuelle,
       cnavpl: resultatCNAVPL.pensionFinale,
+      cnbf: resultatCNBF.pensionFinale,
       rafpCapital: resultatFonctionPublique.rafpCapital,
       autresPensions: autresPensionsDeclarees,
     },
@@ -652,6 +678,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       rafp: resultatFonctionPublique.rafpAnnuelle,
       cnavpl: resultatCNAVPL.pensionHorsMajorationEnfants,
       reversionCaissesPoints: reversionCaissesPoints(caisses.details),
+      reversionCNBF: resultatCNBF.pensionHorsMajorationEnfants * PARAMETRES_CNBF.tauxReversion,
     },
   };
 }

@@ -210,6 +210,7 @@ const TableRepartitionRegime = ({ donnees }: { donnees: DonneesPersonneExportPDF
     { label: 'Fonction publique', valeur: repartitionParRegime.fonctionPublique },
     { label: 'RAFP', valeur: repartitionParRegime.rafp },
     { label: 'CNAVPL', valeur: repartitionParRegime.cnavpl },
+    { label: 'CNBF (avocats) — base', valeur: repartitionParRegime.cnbf },
     { label: 'Autres pensions déclarées', valeur: repartitionParRegime.autresPensions },
   ].filter((ligne) => ligne.valeur !== 0);
 

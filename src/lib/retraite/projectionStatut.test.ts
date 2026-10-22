@@ -83,7 +83,7 @@ describe('appliquerProjectionStatut', () => {
     expect(r.trimestresValidesRG).toBe(100);
     expect(r.avertissement).not.toBeNull();
   });
-  it('avocat : non projeté avant la phase CNBF', () => {
+  it('avocat sans CNBF renseignée : avertissement', () => {
     expect(appliquerProjectionStatut({ ...base, statut: 'avocat_cnbf' }).avertissement).not.toBeNull();
   });
   it('statut inconnu ou vide : salarié du privé', () => {

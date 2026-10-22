@@ -52,7 +52,8 @@ import {
 import { EnfantAgircArrco, nombreEnfantsAChargeAgircArrco } from './enfantsEligiblesMajoration';
 import { TrimestresEnfantsParRegime } from './trimestresEnfants';
 import { calculerCaissesPoints } from './calculCaissesPoints';
-import { appliquerProjectionStatut, projeteAuRegimeGeneral, StatutActuel } from './projectionStatut';
+import { appliquerProjectionStatut, caisseProjetee, projeteAuRegimeGeneral, StatutActuel } from './projectionStatut';
+import { pensionBaseCNBF, DonneesCNBF } from './calculCNBF';
 import { evaluerCarriereLongue, carriereLongueOuverteA, ResultatCarriereLongue } from './calculCarriereLongue';
 
 export interface ContexteSimulationDepart {
@@ -73,6 +74,8 @@ export interface ContexteSimulationDepart {
   /** Revenu futur (libéral : points CNAVPL) et primes (fonctionnaire : RAFP). */
   revenuFutur?: number | null;
   primesAnnuellesFP?: number | null;
+  /** Retraite de base des avocats (CNBF), absente = non affilié. */
+  cnbf?: DonneesCNBF | null;
   /** Caisse complémentaire d'un libéral et conventionnement (ASV). */
   caisseLiberale?: string | null;
   liberalConventionne?: boolean;
@@ -131,7 +134,8 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
   const { dateNaissance, aujourdHui, trimestresCarriere, fonctionPublique, cnavpl } = ctx;
   const statut: StatutActuel = ctx.statutActuel ?? 'salarie_prive';
 
-  const trimestresAutresRegimes = (fonctionPublique?.trimestresLiquidables ?? 0) + (cnavpl?.trimestresCNAVPL ?? 0);
+  const trimestresAutresRegimes =
+    (fonctionPublique?.trimestresLiquidables ?? 0) + (cnavpl?.trimestresCNAVPL ?? 0) + (ctx.cnbf?.trimestresCNBF ?? 0);
   const trimestresProjetesJusqua = (dateEffet: Date) =>
     trimestresProjetesParAnnee(trimestresCarriere.parAnnee, aujourdHui, dateEffet).reduce(
       (total, a) => total + a.trimestres,
@@ -188,11 +192,13 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       dateNaissance,
       dateEffet,
       nombreEnfantsEligibles: ctx.nombreEnfantsEligibles,
-      caisseLiberale: ctx.caisseLiberale ?? null,
+      caisseLiberale: caisseProjetee(statut, ctx.caisseLiberale ?? null),
       conventionne: ctx.liberalConventionne ?? false,
       revenuAnnuel: ctx.revenuFutur ?? null,
-      trimestresProjetes: statut === 'liberal' && cnavpl ? trimestresProjetes : 0,
+      trimestresProjetes:
+        (statut === 'liberal' && cnavpl) || (statut === 'avocat_cnbf' && ctx.cnbf) ? trimestresProjetes : 0,
       trimestresManquants,
+      classe: ctx.cnbf?.classe ?? null,
     });
     return (
       caisses.total +
@@ -242,7 +248,9 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       salaireAnnuelMoyenProjete: ctx.salaireAnnuelMoyen,
       fonctionPublique,
       cnavpl,
+      cnbf: ctx.cnbf ?? null,
     });
+    const trimestresCNBF = projection.cnbf?.trimestresCNBF ?? 0;
     const trimestresValidesProjetes = projection.trimestresValidesRG + (enfants?.rg ?? 0);
     const { fonctionPublique: fonctionPubliqueDepart, cnavpl: cnavplDepart } = appliquerTrimestresEnfantsAutresRegimes(
       projection.fonctionPublique,
@@ -253,7 +261,8 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     const trimestresTousRegimes =
       trimestresValidesProjetes +
       (fonctionPubliqueDepart ? dureeAssuranceFonctionPublique(fonctionPubliqueDepart) : 0) +
-      (cnavplDepart?.trimestresCNAVPL ?? 0);
+      (cnavplDepart?.trimestresCNAVPL ?? 0) +
+      trimestresCNBF;
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissance, dateEffet);
     const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
 
@@ -313,7 +322,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       ? calculerResultatFonctionPublique(
           fonctionPubliqueDepart,
           trimestresRequis,
-          trimestresValidesProjetes + (cnavplDepart?.trimestresCNAVPL ?? 0),
+          trimestresValidesProjetes + (cnavplDepart?.trimestresCNAVPL ?? 0) + trimestresCNBF,
           dateNaissance,
           dateEffet,
           auMoinsUnTrimestreMajorationEnfant,
@@ -324,14 +333,24 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       ? calculerResultatCNAVPL(
           cnavplDepart,
           trimestresRequis,
-          trimestresValidesProjetes + (fonctionPubliqueDepart ? dureeAssuranceFonctionPublique(fonctionPubliqueDepart) : 0),
+          trimestresValidesProjetes +
+            (fonctionPubliqueDepart ? dureeAssuranceFonctionPublique(fonctionPubliqueDepart) : 0) +
+            trimestresCNBF,
           dateNaissance,
           dateEffet,
           auMoinsUnTrimestreMajorationEnfant,
           ctx.nombreEnfantsEligibles
         )
       : { pensionFinale: 0 };
-    const pensionAutresRegimes = resultatFP.pensionFinale + resultatFP.rafpAnnuelle + resultatCNAVPL.pensionFinale;
+    const resultatCNBF = pensionBaseCNBF({
+      trimestresCNBF,
+      trimestresRequis,
+      trimestresTousRegimes,
+      ageDepartAnnees,
+      nombreEnfantsEligibles: ctx.nombreEnfantsEligibles,
+    });
+    const pensionAutresRegimes =
+      resultatFP.pensionFinale + resultatFP.rafpAnnuelle + resultatCNAVPL.pensionFinale + resultatCNBF.pensionFinale;
 
     const pensionComplementaires = complementairesPourDepart(
       decote,

@@ -17,8 +17,10 @@ import {
   trimestresProjetesParAnnee,
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import { evaluerCarriereLongue } from '@/lib/retraite/calculCarriereLongue';
+import { DonneesCNBF } from '@/lib/retraite/calculCNBF';
 import {
   appliquerProjectionStatut,
+  caisseProjetee,
   statutActuelDepuisTexte,
   ResultatProjectionStatut,
 } from '@/lib/retraite/projectionStatut';
@@ -68,7 +70,7 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
  */
 export function donneesAutresRegimesDepuisRetraiteData(
   data: RetraiteData
-): { fonctionPublique: DonneesFonctionPublique | null; cnavpl: DonneesCNAVPL | null } {
+): { fonctionPublique: DonneesFonctionPublique | null; cnavpl: DonneesCNAVPL | null; cnbf: DonneesCNBF | null } {
   return {
     fonctionPublique: data.has_fonction_publique
       ? {
@@ -92,6 +94,9 @@ export function donneesAutresRegimesDepuisRetraiteData(
           valeurPointCNAVPL: data.valeur_point_cnavpl ?? 0,
         }
       : null,
+    cnbf: data.has_cnbf
+      ? { trimestresCNBF: data.trimestres_cnbf ?? 0, classe: data.cnbf_classe ?? 'C1' }
+      : null,
   };
 }
 
@@ -112,7 +117,8 @@ export function trimestresEnfantsDepuisRetraiteData(params: {
 }): TrimestresEnfantsParRegime {
   const { data } = params;
   const trimestresFP = data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0;
-  const trimestresCNAVPL = data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0;
+  const trimestresCNAVPL =
+    (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0) + (data.has_cnbf ? data.trimestres_cnbf ?? 0 : 0);
   return calculerTrimestresEnfants({
     familyLinks: params.familyLinks,
     attributions: params.attributions,
@@ -240,15 +246,16 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     autresPensionsMensuelles: data.autres_pensions_mensuelles ?? 0,
     fonctionPublique: projectionStatut.fonctionPublique,
     cnavpl: projectionStatut.cnavpl,
+    cnbf: projectionStatut.cnbf,
     projectionComplementaire: salaireComplementaire && projectionStatut.projeterAgircArrco
       ? { salaireAnnuel: salaireComplementaire.salaireAnnuel, trimestresProjetes: trimestresProjetesJusquADateEffet }
       : undefined,
     trimestresEnfants,
     caissesPoints: {
-      caisseLiberale: data.caisse_liberale ?? null,
+      caisseLiberale: caisseProjetee(statutActuelDepuisTexte(data.statut_actuel), data.caisse_liberale ?? null),
       conventionne: data.liberal_conventionne ?? false,
       revenuAnnuel: revenuHypothese,
-      trimestresProjetes: projectionStatut.trimestresCNAVPLProjetes,
+      trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
     },
   });
 
@@ -258,11 +265,13 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     projectionStatut.trimestresValidesRG +
     trimestresEnfants.total +
     (projectionStatut.fonctionPublique?.trimestresLiquidables ?? 0) +
-    (projectionStatut.cnavpl?.trimestresCNAVPL ?? 0);
+    (projectionStatut.cnavpl?.trimestresCNAVPL ?? 0) +
+    (projectionStatut.cnbf?.trimestresCNBF ?? 0);
 
   const trimestresAutresRegimes =
     (data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0) +
-    (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0);
+    (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0) +
+    (data.has_cnbf ? data.trimestres_cnbf ?? 0 : 0);
   const dateCarriereLongue = dateNaissanceDetail
     ? evaluerCarriereLongue({
         dateNaissance: dateNaissanceDetail,

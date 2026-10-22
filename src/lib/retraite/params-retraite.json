@@ -1085,6 +1085,60 @@
       },
       "majorationTroisEnfantsPct": 0,
       "tauxReversion": 0.6
+    },
+    "cnbf": {
+      "nom": "CNBF (complémentaire)",
+      "motifNom": "CNBF|barreaux",
+      "caisseLiberale": "CNBF",
+      "source": "Barème CNBF 2026 du 19/01/2026 (cnbf.fr) : taux par classe sur 5 tranches de revenu (42 507 / 85 014 / 127 521 / 170 028 / 212 535 €), coût d'acquisition du point 12,5229 €, valeur de service 1,0262 €. Minoration alignée sur la base et réversion 60 % : à confirmer (non documentées dans le barème ni dans Fidroit)",
+      "valeurServicePoint": 1.0262,
+      "acquisition": {
+        "mode": "tranchesEurosParClasse",
+        "prixAchatPoint": 12.5229,
+        "bornes": [
+          42507,
+          85014,
+          127521,
+          170028,
+          212535
+        ],
+        "tauxParClasse": {
+          "C1": [
+            0.07,
+            0.104,
+            0.122,
+            0.14,
+            0.158
+          ],
+          "C2": [
+            0.07,
+            0.116,
+            0.137,
+            0.158,
+            0.179
+          ],
+          "C2+": [
+            0.07,
+            0.116,
+            0.137,
+            0.158,
+            0.204
+          ]
+        },
+        "classeParDefaut": "C1"
+      },
+      "decoteCommeBase": true,
+      "surcote": [],
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6
     }
+  },
+  "cnbf": {
+    "source": "Barème CNBF 2026 du 19/01/2026 (cnbf.fr) : retraite de base forfaitaire 19 154 € pour une carrière complète, au prorata en deçà ; moins de 60 trimestres CNBF : fraction de l'AVTS 4 059,72 € au prorata de 60 trimestres. Règles : Fidroit CNBF 2025 §3.2 (décote 1,25 %/trimestre manquant, 25 % au plus ; +10 % à partir de 3 enfants, pensions depuis le 01/09/2023). Réversion de la base : 54 % (alignement sur le régime général, à confirmer)",
+    "retraiteBaseForfaitaire": 19154,
+    "seuilTrimestresAVTS": 60,
+    "avtsPour60Trimestres": 4059.72,
+    "majorationTroisEnfantsPct": 10,
+    "tauxReversion": 0.54
   }
 }

@@ -25,6 +25,10 @@ export interface RetraiteData {
   /** Statut actuel : oriente la projection de carrière (projectionStatut.ts). */
   statut_actuel?: string;
   caisse_liberale?: string | null;
+  /** Avocat : retraite de base CNBF et classe de la complémentaire. */
+  has_cnbf?: boolean;
+  trimestres_cnbf?: number | null;
+  cnbf_classe?: string;
   /** Libéral conventionné : régime supplémentaire (ASV…). */
   liberal_conventionne?: boolean;
   /** Primes annuelles d’un fonctionnaire (assiette RAFP). */
