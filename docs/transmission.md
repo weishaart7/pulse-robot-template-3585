@@ -72,10 +72,28 @@ lecture côté Famille/Patrimoine : `family_links`, `marital_status`, `assets`, 
   d'un enfant non commun et d'une option comportant de l'usufruit, un message informatif rappelle
   la faculté de conversion de l'art. 1098, non exercée d'office (les parts restent celles de
   l'option choisie). Tests : `lib/transmission/ddvEnfantNonCommun.test.ts`.
+- **Abattements par héritier (Synthèse).** Pour chaque héritier, une ligne par parent : vis-à-vis du
+  défunt, abattement de départ, part consommée par les donations rappelées (15 ans), part consommée par
+  cette succession et solde (`DMTGBeneficiaryResult.abattementDetail`, exposé par `dmtg/index.ts` à partir
+  du rappel de `recall.ts` ; la succession consomme le solde dans la limite de l'assiette fiscale, forfait
+  mobilier inclus) ; pour un enfant commun, vis-à-vis du parent survivant, abattement moins les donations
+  de ce parent rappelées à la date de simulation (`lib/transmission/abattementParentSurvivant.ts`, même
+  rappel, donations de biens communs pour moitié via `liberalitesDuDefunt`, exonérations 790 G / 790 A bis
+  retenues sur la seule nature du don), succession « non ouverte ». Barre en trois segments (libéralités,
+  succession, restant). Conjoint ou partenaire : ligne « exonéré ». L'ancienne carte « Abattements
+  restants » recalculait l'abattement de départ selon le lien (sans handicap ni représentation) et ne
+  distinguait pas libéralités et succession.
+- **Coût total de la succession, même définition partout.** Droits de succession (`droitsHorsAV`)
+  + prélèvement 990 I + frais de notaire + droit de partage + frais funéraires : carte « Coûts » et
+  tableau « Coûts de la succession » de la Synthèse (colonne « Prélèvement AV », lue dans
+  `dmtg.perBeneficiary[].prelev990I` et ajoutée à `netBreakdown.totalCouts`, qui l'exclut car le capital
+  décès net en est déjà diminué), étape 7 du Processus de calcul (droits hors AV et prélèvement listés
+  séparément, par héritier aussi). Avant : la Synthèse omettait le 990 I et le Processus l'incluait
+  dans « droits de succession » en omettant partage et funéraires — deux totaux différents.
 - **Comparaison des options du conjoint (onglet Optimisation).** `ComparaisonOptionsConjoint.tsx`
   affiche, sous le sélecteur d'option, une colonne par option ouverte (au moins deux, sinon rien) :
-  net reçu par le conjoint et par les autres héritiers au 1er décès, droits au 1er puis au 2nd décès,
-  total des droits, frais de notaire cumulés, net cumulé des héritiers hors conjoint (réunion
+  net reçu par le conjoint et par les autres héritiers au 1er décès, droits et prélèvement 990 I au
+  1er puis au 2nd décès (`dmtg.totals.droitsTotaux`, libellés « droits et prélèvement AV »), leur total, frais de notaire cumulés, net cumulé des héritiers hors conjoint (réunion
   d'usufruit incluse). Ordre normal seulement (l'Utilisateur décède en premier), deux décès à la date
   du jour. Chaque colonne est un appel à `computeOrdreNormal(base, option)`
   ([transmissionOrdreNormal.ts](src/utils/transmissionOrdreNormal.ts)), la même fonction que l'ordre

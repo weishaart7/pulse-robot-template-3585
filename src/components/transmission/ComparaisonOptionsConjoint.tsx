@@ -91,13 +91,14 @@ export const ComparaisonOptionsConjoint: React.FC<Props> = ({ options, selectedO
       get: s => s.netConjoint
     },
     { label: '1er décès — net reçu par les autres héritiers', get: s => s.netAutresHeritiers1erDeces },
-    { label: '1er décès — droits de succession', get: s => s.droits1erDeces },
+    // droitsTotaux du moteur DMTG : droits de succession + prélèvement 990 I sur les capitaux décès.
+    { label: '1er décès — droits et prélèvement AV', help: "Droits de succession et prélèvement sur les capitaux décès d'assurance-vie (art. 990 I CGI).", get: s => s.droits1erDeces },
     {
-      label: '2nd décès — droits de succession',
+      label: '2nd décès — droits et prélèvement AV',
       help: "Succession du conjoint : ses biens propres et ce qu'il a reçu en pleine propriété au 1er décès. L'usufruit s'éteint et se réunit à la nue-propriété sans taxation (art. 1133 CGI).",
       get: s => s.droits2ndDeces
     },
-    { label: 'Total des droits sur les deux décès', get: s => s.droitsTotaux, best: minDroits, fort: true },
+    { label: 'Total des droits et prélèvements AV sur les deux décès', get: s => s.droitsTotaux, best: minDroits, fort: true },
     { label: 'Frais de notaire cumulés', get: s => s.fraisNotaireTotaux },
     {
       label: 'Net cumulé reçu par les héritiers (hors conjoint)',

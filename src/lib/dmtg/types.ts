@@ -267,6 +267,14 @@ export interface AssuranceVieResult {
   notes: string[];
 }
 
+export interface AbattementDetail {
+  base: Money;
+  consommeDonations: Money;
+  nbDonations: number;
+  consommeSuccession: Money;
+  restant: Money;
+}
+
 export interface DMTGBeneficiaryResult {
   baseHorsAV: Money;
   fraisFunerairesImputes: Money;
@@ -276,6 +284,10 @@ export interface DMTGBeneficiaryResult {
   // baseApresFrais (patrimoine réel), uniquement dans taxableAfterAllowance.
   forfaitMobilierImpute: Money;
   allowanceGeneralResidual: Money;
+  // Abattement personnel vis-à-vis du défunt, décomposé pour l'affichage (Synthèse) : abattement
+  // de départ (lien, handicap, représentation ; Infinity si exonéré), part consommée par les
+  // donations rappelées (15 ans), part consommée par cette succession, solde.
+  abattementDetail: AbattementDetail;
   taxableAfterAllowance: Money;
   consumedBracketsAmount: Money;
   droitsHorsAV: Money;

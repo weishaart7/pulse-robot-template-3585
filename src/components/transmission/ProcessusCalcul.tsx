@@ -275,6 +275,8 @@ export const ProcessusCalcul = () => {
     }, new Map<string, { nom: string; montant: number }>()).values()
   ).filter(sl => Math.round(sl.montant) !== 0);
 
+  const partageTotal = (transmissionResult.netBreakdown?.heirs ?? []).reduce((t, n) => t + n.droitPartage, 0);
+  const funerairesTotal = (transmissionResult.netBreakdown?.heirs ?? []).reduce((t, n) => t + n.fraisFuneraires, 0);
   const calculSteps = [
     {
       icon: Users,
@@ -432,17 +434,22 @@ export const ProcessusCalcul = () => {
       title: "7. Fiscalité de la transmission",
       description: "Calcul des droits de succession et prélèvements",
       details: [
-        `Total droits de succession : ${transmissionResult.dmtg.totals.droitsTotaux.toLocaleString('fr-FR')} €`,
+        // Même décomposition et même total que la Synthèse (« Coûts de la succession ») :
+        // droits hors assurance-vie, prélèvement 990 I, notaire, partage, frais funéraires.
+        `Droits de succession : ${transmissionResult.dmtg.totals.droitsHorsAV.toLocaleString('fr-FR')} €`,
         `Prélèvement 990 I (AV) : ${transmissionResult.dmtg.totals.prelev990I.toLocaleString('fr-FR')} €`,
         `Frais de notaire : ${transmissionResult.fraisNotaire.toLocaleString('fr-FR')} €`,
-        `= Coût fiscal total : ${(transmissionResult.dmtg.totals.droitsTotaux + transmissionResult.fraisNotaire).toLocaleString('fr-FR')} €`,
+        `Droit de partage : ${partageTotal.toLocaleString('fr-FR')} €`,
+        `Frais funéraires : ${funerairesTotal.toLocaleString('fr-FR')} €`,
+        `= Coût total : ${(transmissionResult.dmtg.totals.droitsHorsAV + transmissionResult.dmtg.totals.prelev990I + transmissionResult.fraisNotaire + partageTotal + funerairesTotal).toLocaleString('fr-FR')} €`,
         "",
         "Détail par héritier :",
         ...transmissionResult.heirs.map(h => {
           const dmtgHeir = transmissionResult.dmtg.perBeneficiary[h.personId];
           const assiette = (dmtgHeir?.baseApresFrais || 0) + (dmtgHeir?.forfaitMobilierImpute || 0);
           const mobilier = dmtgHeir?.forfaitMobilierImpute ? `, dont forfait mobilier ${dmtgHeir.forfaitMobilierImpute.toLocaleString('fr-FR')} €` : '';
-          return `• ${h.nom} : ${(dmtgHeir?.droitsTotaux || 0).toLocaleString('fr-FR')} € (assiette ${assiette.toLocaleString('fr-FR')} €${mobilier}, taxable après abattement ${(dmtgHeir?.taxableAfterAllowance || 0).toLocaleString('fr-FR')} €)`;
+          const av = dmtgHeir?.prelev990I ? ` + prélèvement AV ${dmtgHeir.prelev990I.toLocaleString('fr-FR')} €` : '';
+          return `• ${h.nom} : droits ${(dmtgHeir?.droitsHorsAV || 0).toLocaleString('fr-FR')} €${av} (assiette ${assiette.toLocaleString('fr-FR')} €${mobilier}, taxable après abattement ${(dmtgHeir?.taxableAfterAllowance || 0).toLocaleString('fr-FR')} €)`;
         })
       ],
       formula: `Taux effectif = ${((transmissionResult.dmtg.totals.droitsTotaux / patrimony.biensExistants) * 100).toFixed(1)}%`,

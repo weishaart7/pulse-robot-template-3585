@@ -1,4 +1,4 @@
-import { DMTGContext, DMTGResult, DmtgParams } from './types';
+import { AbattementDetail, DMTGContext, DMTGResult, DmtgParams, RecallAndAllowancesResult } from './types';
 import { filterAndValueEstateAssets } from './assets';
 import { buildTaxBaseByBeneficiary } from './beneficiary';
 import { computeRecallAndAllowances, filterDonations15Years } from './recall';
@@ -6,6 +6,24 @@ import { computeProgressiveTax } from './tax';
 import { computeAssuranceVie } from './assurance-vie';
 import dmtgParamsData from './params-dmtg.json';
 import { BAREME_669_CGI } from '@/lib/patrimoine/bareme669CGI';
+
+// Décomposition de l'abattement personnel (affichage) : la succession consomme le solde laissé
+// par les donations rappelées, dans la limite de l'assiette fiscale (forfait mobilier inclus).
+function detailAbattement(recall: RecallAndAllowancesResult, baseFiscale: number): AbattementDetail {
+  const base: number = recall.details.abattementBase;
+  if (base === Infinity) {
+    return { base, consommeDonations: 0, nbDonations: recall.details.donationsTraitees, consommeSuccession: 0, restant: Infinity };
+  }
+  const residuel = recall.allowanceGeneralResidual;
+  const consommeSuccession = Math.round(Math.min(residuel, Math.max(0, baseFiscale)));
+  return {
+    base: Math.round(base),
+    consommeDonations: recall.details.abattementConsomme,
+    nbDonations: recall.details.donationsTraitees,
+    consommeSuccession,
+    restant: Math.max(0, residuel - consommeSuccession),
+  };
+}
 
 /**
  * Orchestrateur principal : calcule les droits de mutation à titre gratuit (DMTG)
@@ -132,6 +150,7 @@ export function computeDMTG(ctx: DMTGContext): DMTGResult {
       baseApresFrais: Math.round(baseApresFrais),
       forfaitMobilierImpute: Math.round(forfaitMobilierImpute),
       allowanceGeneralResidual: recallResult.allowanceGeneralResidual,
+      abattementDetail: detailAbattement(recallResult, baseFiscale),
       taxableAfterAllowance: Math.round(taxableAfterAllowance),
       consumedBracketsAmount: recallResult.consumedBracketsAmount,
       droitsHorsAV,

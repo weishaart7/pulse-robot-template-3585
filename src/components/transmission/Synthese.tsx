@@ -31,7 +31,9 @@ import {
   LegsCaduc,
   buildPassifsParBien
 } from '@/utils/transmissionHelpers';
-import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
+import { computeTransmission, FamilyGraph, getDecedentRole, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
+import type { Liberalite } from '@/lib/transmission/types';
+import { abattementParentSurvivant } from '@/lib/transmission/abattementParentSurvivant';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
@@ -73,6 +75,9 @@ export const Synthese = () => {
   const [transmissionResult, setTransmissionResult] = useState<any>(null);
   const [hasAssets, setHasAssets] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
+  // Libéralités (avec leur donateur) et date de simulation : abattements vis-à-vis du parent survivant.
+  const [liberalitesCalcul, setLiberalitesCalcul] = useState<Liberalite[]>([]);
+  const [dateSimulation, setDateSimulation] = useState('');
   const [hasDeceasedAVBeneficiaire, setHasDeceasedAVBeneficiaire] = useState(false);
   const [hasPERConjointNonReintegre, setHasPERConjointNonReintegre] = useState(false);
   const [contratsSouscripteurCouple, setContratsSouscripteurCouple] = useState<string[]>([]);
@@ -344,6 +349,8 @@ export const Synthese = () => {
       });
 
       setTransmissionResult(combinedResult);
+      setLiberalitesCalcul(liberalitesFormatted);
+      setDateSimulation(referenceDate);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Erreur lors du calcul de transmission:', error);
@@ -616,7 +623,10 @@ export const Synthese = () => {
         const masse = transmissionResult.masseCalcul || 0;
         const quotite = Math.max(0, masse - transmissionResult.reserve);
         const pctMasse = (v: number) => (masse > 0 ? `${((v / masse) * 100).toFixed(1).replace('.', ',')} %` : '0 %');
-        const coutsTotaux = (transmissionResult.netBreakdown?.heirs || []).reduce((t: number, h: any) => t + (h.totalCouts || 0), 0);
+        // Même total que « Coûts de la succession » et le Processus de calcul : le prélèvement 990 I
+        // (déjà retranché du capital décès net) y est ajouté, sans quoi les écrans divergeaient.
+        const coutsTotaux = (transmissionResult.netBreakdown?.heirs || []).reduce((t: number, h: any) => t + (h.totalCouts || 0), 0)
+          + (transmissionResult.dmtg?.totals.prelev990I || 0);
         type HeritierAffiche = {
           name: string; value: number; percentage: string; lien: string;
           typeQuotePart?: string; droitsDetail?: string; representation?: boolean;
@@ -649,7 +659,7 @@ export const Synthese = () => {
                 {transmissionResult.dmtg && (
                   <SummaryRow label="Coûts">
                     <span className="kairos-num">{formatCurrency(coutsTotaux)}</span>
-                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">droits, notaire, partage, funéraires</span>
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">droits, prélèvement AV, notaire, partage, funéraires</span>
                   </SummaryRow>
                 )}
               </dl>
@@ -751,7 +761,7 @@ export const Synthese = () => {
         <PanelCard>
           <PanelCardHeader>
             <PanelCardTitle>Coûts de la succession
-              <FieldHelp>Droits de mutation (DMTG), frais de notaire, droit de partage et quote-part des frais funéraires (forfait de 1 500 €), par héritier.</FieldHelp>
+              <FieldHelp>Droits de mutation (DMTG), prélèvement sur les capitaux décès d'assurance-vie (art. 990 I CGI), frais de notaire, droit de partage et quote-part des frais funéraires (forfait de 1 500 €), par héritier.</FieldHelp>
             </PanelCardTitle>
           </PanelCardHeader>
           <PanelCardContent>
@@ -765,12 +775,15 @@ export const Synthese = () => {
                 const droitsDMTG = net?.droitsDMTG || 0;
                 const fraisNotaireHeritier = net?.fraisNotaire || 0;
                 const droitPartageHeritier = net?.droitPartage || 0;
-                const totalCouts = net?.totalCouts || 0;
+                // Prélèvement 990 I : retranché du capital décès net (netBreakdown), affiché ici comme un coût.
+                const prelev990I = transmissionResult.dmtg?.perBeneficiary[heritier.personId]?.prelev990I || 0;
+                const totalCouts = (net?.totalCouts || 0) + prelev990I;
 
                 return {
                   name: heritier.name,
                   lien: heritier.lien,
                   droitsDMTG,
+                  prelev990I,
                   fraisNotaire: fraisNotaireHeritier,
                   droitPartage: droitPartageHeritier,
                   fraisFuneraires: net?.fraisFuneraires || 0,
@@ -780,6 +793,7 @@ export const Synthese = () => {
               });
 
               const totalDMTG = rows.reduce((s, r) => s + r.droitsDMTG, 0);
+              const totalPrelev990I = rows.reduce((s, r) => s + r.prelev990I, 0);
               const totalFrais = rows.reduce((s, r) => s + r.fraisNotaire, 0);
               const totalPartage = rows.reduce((s, r) => s + r.droitPartage, 0);
               const totalFuneraires = rows.reduce((s, r) => s + r.fraisFuneraires, 0);
@@ -793,6 +807,7 @@ export const Synthese = () => {
                         <TableRow className="border-[var(--kt-border)]">
                           <TableHead className="text-[var(--text-secondary)]">Héritier</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">DMTG</TableHead>
+                          <TableHead className="text-right text-[var(--text-secondary)]">Prélèvement AV</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Frais de notaire</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Droit de partage</TableHead>
                           <TableHead className="text-right text-[var(--text-secondary)]">Frais funéraires</TableHead>
@@ -812,6 +827,7 @@ export const Synthese = () => {
                               </div>
                             </TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitsDMTG)}</TableCell>
+                            <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.prelev990I)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisNotaire)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.droitPartage)}</TableCell>
                             <TableCell className="kairos-num text-right tabular-nums text-[var(--text-primary)]">{formatCurrency(row.fraisFuneraires)}</TableCell>
@@ -821,6 +837,7 @@ export const Synthese = () => {
                         <TableRow className="border-t-2 border-[var(--kt-border-strong)]">
                           <TableCell className="font-medium text-[var(--text-primary)]">Total</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalDMTG)}</TableCell>
+                          <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalPrelev990I)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalFrais)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalPartage)}</TableCell>
                           <TableCell className="kairos-num text-right tabular-nums font-medium text-[var(--text-primary)]">{formatCurrency(totalFuneraires)}</TableCell>
@@ -839,6 +856,7 @@ export const Synthese = () => {
                         <YAxis type="category" dataKey="name" width={100} stroke="var(--ink-500)" fontSize={12} />
                         <Tooltip formatter={(value: number) => formatCurrency(value)} />
                         <Bar dataKey="droitsDMTG" name="DMTG" fill="var(--data-green)" stackId="costs" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="prelev990I" name="Prélèvement AV" fill="var(--data-amber, var(--ink-300))" stackId="costs" />
                         <Bar dataKey="fraisNotaire" name="Frais de notaire" fill="var(--data-blue)" stackId="costs" />
                         <Bar dataKey="droitPartage" name="Droit de partage" fill="var(--data-teal)" stackId="costs" />
                         <Bar dataKey="fraisFuneraires" name="Frais funéraires" fill="var(--ink-400)" stackId="costs" radius={[0, 1, 1, 0]} />
@@ -853,115 +871,109 @@ export const Synthese = () => {
         </PanelCard>
       )}
 
-      {/* Abattements restants par héritier */}
+      {/* Abattements par héritier : vis-à-vis du défunt (libéralités rappelées puis succession) et,
+          pour un enfant commun, vis-à-vis du parent survivant (libéralités seulement). */}
       {transmissionResult.dmtg && (
         <PanelCard>
           <PanelCardHeader>
-            <PanelCardTitle>Abattements restants
-              <FieldHelp>Abattements fiscaux résiduels de chaque héritier, selon son lien avec le défunt.</FieldHelp>
+            <PanelCardTitle>Abattements par héritier
+              <FieldHelp>Abattement personnel de chaque héritier vis-à-vis de chaque parent (art. 779 CGI) : ce qu'en ont déjà consommé les donations des 15 dernières années, ce qu'en consomme cette succession, et ce qu'il reste. Pour un enfant commun, l'abattement vis-à-vis du parent survivant reste disponible pour ses donations ou sa succession.</FieldHelp>
             </PanelCardTitle>
           </PanelCardHeader>
           <PanelCardContent>
             {(() => {
               const dmtg = transmissionResult.dmtg;
-              const family = transmissionResult.family;
+              const family = transmissionResult.family as FamilyGraph;
+              const prenomDe = (id?: string) => {
+                const p = family?.persons?.find((x) => x.id === id);
+                return p ? (p.prenom || p.nom) : '';
+              };
+              const defunt = prenomDe(family?.decedentId);
+              const survivant = family?.hasSurvivingSpouse ? prenomDe(family.survivingSpouseId) : '';
+              // Rôle du parent survivant dans les libéralités (donateur 'user' ou 'spouse').
+              const roleSurvivant: 'user' | 'spouse' = family?.decedentId && getDecedentRole(family.decedentId) === 'spouse' ? 'user' : 'spouse';
+              const eur = (v: number) => formatCurrency(Math.round(v));
 
-              // `lien` vient soit du graphe familial (family_links.lien_familial,
-              // capitalisé : 'Enfant', 'Parent', 'Frère/Sœur'…), soit du moteur
-              // (minuscules) — comparaison insensible à la casse.
-              const getAbattementLegal = (lien: string): { montant: number; label: string } => {
-                switch (lien.toLowerCase()) {
-                  case 'enfant': return { montant: 100000, label: 'Enfant / Ascendant (100 000 €)' };
-                  case 'conjoint': return { montant: Infinity, label: 'Conjoint / Partenaire (exonéré)' };
-                  case 'parent': case 'grand-parent': return { montant: 100000, label: 'Ascendant (100 000 €)' };
-                  case 'frère': case 'sœur': case 'frère/sœur': case 'frere_soeur': return { montant: 15932, label: 'Frère / Sœur (15 932 €)' };
-                  case 'neveu': case 'nièce': case 'neveu/nièce': case 'neveu_niece': return { montant: 7967, label: 'Neveu / Nièce (7 967 €)' };
-                  default: return { montant: 1594, label: 'Autre (1 594 €)' };
-                }
+              type Ligne = { parent: string; statut: string; base: number; donations: number; nbDonations: number; succession: number | null; restant: number };
+              const Barre = ({ l }: { l: Ligne }) => {
+                const pct = (v: number) => `${l.base > 0 ? Math.min(100, (v / l.base) * 100) : 0}%`;
+                return (
+                  <div className="flex h-1.5 w-full overflow-hidden rounded-[1px] bg-[#e9e5e0]">
+                    <div style={{ width: pct(l.donations), backgroundColor: 'var(--data-amber, #dcae78)' }} />
+                    {l.succession !== null && <div style={{ width: pct(l.succession), backgroundColor: 'var(--data-blue, #55b4bd)' }} />}
+                  </div>
+                );
               };
 
-              const abattementRows = heritiersData.map((heritier, idx) => {
-                const personId = heritier.personId;
-                const person = family?.persons?.find((p: any) => p.id === personId);
-                const dmtgData = personId ? dmtg.perBeneficiary[personId] : null;
-                const lienFamilial = person?.lienFamilial || heritier.lien;
-                const abattementInfo = getAbattementLegal(lienFamilial);
-                const abattementLegal = abattementInfo.montant;
-                const residuel = dmtgData?.allowanceGeneralResidual ?? abattementLegal;
-                const isExonere = abattementLegal === Infinity;
-                // Consommé = donations des 15 dernières années (légal − résiduel avant décès)
-                // + part utilisée par cette succession (assiette taxable, dans la limite du résiduel).
-                const residuelAvantDeces = typeof residuel === 'number' && residuel !== Infinity ? residuel : abattementLegal;
-                const assietteSuccession = (dmtgData?.baseApresFrais || 0) + (dmtgData?.forfaitMobilierImpute || 0);
-                const consommeSuccession = Math.min(residuelAvantDeces, Math.max(0, assietteSuccession));
-                const consomme = isExonere ? 0 : Math.max(0, abattementLegal - residuelAvantDeces) + consommeSuccession;
-                const restant = Math.max(0, residuelAvantDeces - consommeSuccession);
-                const pctUtilise = isExonere ? 0 : abattementLegal > 0 ? (consomme / abattementLegal) * 100 : 0;
-
-                return {
-                  name: heritier.name,
-                  lien: lienFamilial,
-                  qualite: abattementInfo.label,
-                  abattementLegal: isExonere ? 'Exonéré' : formatCurrency(abattementLegal),
-                  residuel: isExonere ? 'Exonéré' : formatCurrency(restant),
-                  consomme: isExonere ? '-' : formatCurrency(consomme),
-                  pctUtilise: isExonere ? 0 : pctUtilise,
-                  isExonere,
-                  color: getColorForLien(heritier.lien, idx)
-                };
-              });
-
               return (
-                <div className="divide-y divide-border border-y border-border">
-                  {abattementRows.map((row) => (
-                    <div key={row.name} className="space-y-2 py-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: row.color }} />
-                          <span className="font-medium text-[var(--text-primary)]">{row.name}</span>
+                <>
+                  <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[1px]" style={{ backgroundColor: 'var(--data-amber, #dcae78)' }} />Libéralités (15 ans)</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[1px]" style={{ backgroundColor: 'var(--data-blue, #55b4bd)' }} />Cette succession</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-[1px] bg-[#e9e5e0]" />Restant</span>
+                  </div>
+                  <div className="divide-y divide-border border-y border-border">
+                    {heritiersData.map((heritier, idx) => {
+                      const d = heritier.personId ? dmtg.perBeneficiary[heritier.personId] : null;
+                      const detail = d?.abattementDetail;
+                      if (!detail) return null;
+                      const exonere = detail.base === Infinity;
+                      const lignes: Ligne[] = exonere ? [] : [{
+                        parent: defunt, statut: 'défunt', base: detail.base, donations: detail.consommeDonations,
+                        nbDonations: detail.nbDonations, succession: detail.consommeSuccession, restant: detail.restant,
+                      }];
+                      if (!exonere && survivant && family.childrenCommonWithSpouse?.includes(heritier.personId)) {
+                        const person = family.persons.find((p) => p.id === heritier.personId);
+                        const a = abattementParentSurvivant({
+                          liberalites: liberalitesCalcul, parent: roleSurvivant, beneficiaireId: heritier.personId,
+                          isHandicapped: person?.handicap, referenceDate: dateSimulation,
+                        });
+                        lignes.push({ parent: survivant, statut: 'parent survivant', base: a.base, donations: a.consommeDonations, nbDonations: a.nbDonations, succession: null, restant: a.restant });
+                      }
+                      return (
+                        <div key={heritier.personId ?? heritier.name} className="py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2.5 w-2.5 shrink-0 rounded-[2px] ring-1 ring-inset ring-black/10" style={{ backgroundColor: getColorForLien(heritier.lien, idx) }} />
+                            <span className="font-medium text-foreground">{heritier.name}</span>
+                            <span className="text-[12px] text-muted-foreground">{heritier.lien}</span>
+                          </div>
+                          {exonere ? (
+                            <p className="mt-1.5 text-[13px] text-muted-foreground">Exonéré de droits de succession (conjoint ou partenaire de PACS, art. 796-0 bis CGI) : pas d'abattement à consommer.</p>
+                          ) : (
+                            <table className="mt-2 w-full text-[13px]">
+                              <thead>
+                                <tr className="text-left text-[12px] text-muted-foreground">
+                                  <th className="w-[26%] pb-1 font-normal">Vis-à-vis de</th>
+                                  <th className="pb-1 text-right font-normal">Abattement</th>
+                                  <th className="pb-1 text-right font-normal">Libéralités</th>
+                                  <th className="pb-1 text-right font-normal">Cette succession</th>
+                                  <th className="pb-1 text-right font-normal">Restant</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {lignes.map((l) => (
+                                  <React.Fragment key={l.parent + l.statut}>
+                                    <tr className="tabular-nums">
+                                      <td className="pt-1">{l.parent} <span className="text-[12px] text-muted-foreground">({l.statut})</span></td>
+                                      <td className="kairos-num pt-1 text-right">{eur(l.base)}</td>
+                                      <td className="kairos-num pt-1 text-right">
+                                        {l.donations > 0 ? `− ${eur(l.donations)}` : '—'}
+                                        {l.nbDonations > 0 && <span className="ml-1 text-[11.5px] text-muted-foreground">({l.nbDonations} don{l.nbDonations > 1 ? 's' : ''})</span>}
+                                      </td>
+                                      <td className="kairos-num pt-1 text-right">{l.succession === null ? <span className="text-muted-foreground">non ouverte</span> : l.succession > 0 ? `− ${eur(l.succession)}` : '—'}</td>
+                                      <td className="kairos-num pt-1 text-right font-medium">{eur(l.restant)}</td>
+                                    </tr>
+                                    <tr><td colSpan={5} className="pb-1.5 pt-1"><Barre l={l} /></td></tr>
+                                  </React.Fragment>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
                         </div>
-                        <span className="inline-flex h-6 items-center rounded-[2px] bg-[#e9e5e0] px-2 text-[12px] font-medium text-foreground">
-                          {row.qualite}
-                        </span>
-                      </div>
-
-                      {row.isExonere ? (
-                        <div className="text-sm text-[var(--kt-positive)] font-medium">
-                          Exonéré de droits de succession (conjoint ou partenaire de PACS)
-                        </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <div className="text-[var(--text-secondary)]">Abattement légal</div>
-                              <div className="kairos-num font-medium text-[var(--text-primary)]">{row.abattementLegal}</div>
-                            </div>
-                            <div>
-                              <div className="text-[var(--text-secondary)]">Consommé</div>
-                              <div className="kairos-num font-medium text-[var(--warning)]">{row.consomme}</div>
-                            </div>
-                            <div>
-                              <div className="text-[var(--text-secondary)]">Restant</div>
-                              <div className="kairos-num font-medium text-[var(--kt-positive)]">{row.residuel}</div>
-                            </div>
-                          </div>
-                          <div className="h-1.5 w-full rounded-[1px] bg-[#e9e5e0]">
-                            <div
-                              className="h-1.5 rounded-[1px] transition-all"
-                              style={{
-                                width: `${Math.min(100, row.pctUtilise)}%`,
-                                backgroundColor: row.pctUtilise > 75 ? 'var(--negative)' : row.pctUtilise > 50 ? 'var(--warning)' : 'var(--data-green)'
-                              }}
-                            />
-                          </div>
-                          <div className="text-xs text-[var(--text-secondary)] text-right">
-                            {row.pctUtilise.toFixed(0)}% utilisé
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                      );
+                    })}
+                  </div>
+                </>
               );
             })()}
           </PanelCardContent>

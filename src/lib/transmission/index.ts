@@ -212,6 +212,14 @@ export function getConjointAge(family: FamilyGraph, referenceDateISO: string): n
   return getAgeAtDate(conjoint.dateNaissance, referenceDateISO);
 }
 
+// Natures de dons exonérés (DonationForm.tsx) : don familial de sommes d'argent (art. 790 G) et
+// dons d'argent exonérés de l'art. 790 A bis, avec leur période d'application.
+export const NATURE_790G = "Dons familiaux de sommes d'argent";
+export const NATURES_790A_BIS: Record<string, { debut: string; fin: string }> = {
+  "Don d'argent pour résidence principale (2025)": { debut: '2025-02-15', fin: '2026-12-31' },
+  "Don d'argent sous condition de remploi (2020)": { debut: '2020-07-15', fin: '2021-06-30' }
+};
+
 /**
  * Libéralités du défunt simulé (`role`), pondérées selon leur donateur :
  * 100 % pour ses propres donations, 50 % pour une donation de biens communs
@@ -1408,7 +1416,6 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // Condition non remplie : don ordinaire (consomme l'abattement général),
   // signalé. Donnée manquante (date de naissance) : exonération maintenue,
   // signalée comme non vérifiable (décision actée, audit 2026-09).
-  const NATURE_790G = "Dons familiaux de sommes d'argent";
   const donateur = family.persons.find(p => p.id === family.decedentId);
   const aDesDescendants = family.childrenOfDecedent.length > 0;
   const verifier790G = (l: Liberalite): boolean => {
@@ -1456,10 +1463,6 @@ export function computeTransmission(ctx: TransmissionContext): TransmissionResul
   // 100 000 € par donateur, fraction exonérée exclue du rappel fiscal
   // (BOI-ENR-DMTG-20-20-20 § 980). Même cercle de donataires que l'art. 790 G,
   // sans condition d'âge. L'emploi des fonds dans les 6 mois est présumé.
-  const NATURES_790A_BIS: Record<string, { debut: string; fin: string }> = {
-    "Don d'argent pour résidence principale (2025)": { debut: '2025-02-15', fin: '2026-12-31' },
-    "Don d'argent sous condition de remploi (2020)": { debut: '2020-07-15', fin: '2021-06-30' }
-  };
   const verifier790ABis = (l: Liberalite): boolean => {
     const periode = NATURES_790A_BIS[l.nature || ''];
     const donataire = family.persons.find(p => p.id === l.beneficiaireId);
