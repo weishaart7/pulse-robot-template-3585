@@ -125,6 +125,17 @@ export interface ParametresCaissePoints {
   acquisition: AcquisitionCaissePoints;
   /** Minoration identique à celle de la retraite de base (1,25 %/trimestre manquant, âge ou durée). */
   decoteCommeBase?: boolean;
+  /**
+   * Abattement par trimestres manquants (plus favorable entre durée tous régimes et âge de taux
+   * plein), barème par paliers (RCI : 1 % jusqu'à 12, puis 1,25 %).
+   */
+  abattementTrimestres?: {
+    ageTauxPlein: number;
+    trimestresMax: number;
+    palier: number;
+    tauxJusquAuPalier: number;
+    tauxAuDela: number;
+  };
   /** Minoration propre à la caisse par trimestre manquant avant un âge de taux plein fixe. */
   decoteAge?: { ageTauxPlein: number; tauxParTrimestre: number };
   /** Versement unique (multiple de l'annuité) sous un nombre de points, après minoration ou surcote. */
@@ -210,7 +221,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;

@@ -1131,6 +1131,37 @@
       "surcote": [],
       "majorationTroisEnfantsPct": 0,
       "tauxReversion": 0.6
+    },
+    "rci": {
+      "nom": "RCI (indépendants)",
+      "motifNom": "\\bRCI\\b|compl[ée]mentaire des (travailleurs )?ind[ée]pendants|\\bRCO\\b|\\bNRCO\\b|artisans|commer[çc]ants",
+      "caisseLiberale": "RCI",
+      "source": "Circulaire CNAV n° 2025-31 du 22/12/2025 : point RCI cotisé 1,347 €, revenu de référence 21,726 € au 01/01/2026 ; taux 8,1 % jusqu'au PASS et 9,1 % de 1 à 4 PASS (Fidroit RCI 2025 §4.2.1.1) ; abattement 1 % par trimestre manquant jusqu'à 12 puis 1,25 %, 20 trimestres et 22 % au plus, trimestres manquants = plus favorable entre durée et âge de 67 ans (§6.3) ; réversion 60 % (Previssima, Alptis). Points des anciens régimes (RCO 1979-1996 à 1,205 €…) valorisés comme les points RCI faute de ventilation au RIS",
+      "valeurServicePoint": 1.347,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 21.726,
+        "tranches": [
+          {
+            "jusquAPass": 1,
+            "taux": 0.081
+          },
+          {
+            "jusquAPass": 4,
+            "taux": 0.091
+          }
+        ]
+      },
+      "abattementTrimestres": {
+        "ageTauxPlein": 67,
+        "trimestresMax": 20,
+        "palier": 12,
+        "tauxJusquAuPalier": 0.01,
+        "tauxAuDela": 0.0125
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6
     }
   },
   "cnbf": {

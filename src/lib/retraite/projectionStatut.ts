@@ -10,8 +10,9 @@
  * - Régime général et alignés (salarié du privé, contractuel public,
  *   indépendant SSI, artiste-auteur) : trimestres et salaire annuel moyen
  *   projetés au régime général (comportement antérieur). Points Agirc-Arrco
- *   projetés pour le seul salarié du privé (contractuel : Ircantec, SSI :
- *   RCI, artiste : RAAP — caisses de la phase 3.2).
+ *   projetés pour le seul salarié du privé ; points RCI pour l'indépendant
+ *   (moteur des caisses à points) ; contractuel (Ircantec) et artiste (RAAP)
+ *   non projetés.
  * - Fonctionnaire : trimestres liquidables FP ; points RAFP = 10 % des
  *   primes plafonnées à 20 % du TIB ÷ valeur d'acquisition, au prorata des
  *   trimestres projetés. TIB inchangé (euros constants).
@@ -65,6 +66,7 @@ export function statutActuelDepuisTexte(valeur: string | null | undefined): Stat
 /** Caisse complémentaire projetée : CNBF pour un avocat, caisse déclarée pour un libéral. */
 export function caisseProjetee(statut: StatutActuel, caisseLiberale: string | null): string | null {
   if (statut === 'avocat_cnbf') return 'CNBF';
+  if (statut === 'independant_ssi') return 'RCI';
   return statut === 'liberal' ? caisseLiberale : null;
 }
 
@@ -156,6 +158,8 @@ export function appliquerProjectionStatut(entree: EntreeProjectionStatut): Resul
       trimestresValidesRG: entree.trimestresValidesRG + trimestresProjetes,
       salaireAnnuelMoyen: entree.salaireAnnuelMoyenProjete,
       projeterAgircArrco: statut === 'salarie_prive',
+      // Indépendant : points RCI projetés sur les mêmes trimestres.
+      trimestresCaisseProjetes: statut === 'independant_ssi' ? trimestresProjetes : 0,
     };
   }
   if (trimestresProjetes <= 0) return sansProjection;

@@ -146,6 +146,11 @@ uniquement applicatif via `familyService`.
   - *CNBF complémentaire* : taux de la classe choisie (C1, C2, C2+, `retraite_data.cnbf_classe`) sur
     5 tranches de revenu jusqu'à 212 535 € ÷ coût d'acquisition 12,5229 €, valeur 1,0262 € (barème
     CNBF 2026) ; minoration alignée sur la base ; réversion 60 % (à confirmer).
+  - *RCI* (indépendants, anciens RCO/NRCO) : 8,1 % jusqu'au PASS et 9,1 % de 1 à 4 PASS ÷ revenu de
+    référence 21,726 €, valeur 1,347 € (circulaire CNAV 2025-31) ; abattement de 1 % par trimestre
+    manquant jusqu'à 12 puis 1,25 %, 20 trimestres et 22 % au plus, trimestres retenus = plus
+    favorable entre durée tous régimes et âge de 67 ans (`abattementTrimestres`) ; pas de majoration
+    pour enfants ; réversion 60 %. Statut indépendant : points projetés sur le revenu futur.
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
   (migration `20261022160000`), saisie dans le panneau « Statut actuel » de Carrière. Forfait 2026 de
@@ -606,6 +611,10 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   réversion de la base (54 %) et de la complémentaire (60 %), minoration de la complémentaire et
   majoration pour enfants de la complémentaire (non appliquée) à confirmer : absents du barème et du
   doc Fidroit. Retraite des avocats retraités actifs (2 403 €) non modélisée.
+- **RCI — limites.** Points des anciens régimes (RCO 1979-1996 à 1,205 €, avant 1979, NRCO)
+  valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
+  réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
+  modélisés ; arrondi des points à l'entier non appliqué.
 - **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
   partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
   éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation

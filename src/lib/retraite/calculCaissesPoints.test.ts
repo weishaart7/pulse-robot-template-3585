@@ -6,6 +6,7 @@ import {
   coefficientAgeCaisse,
   calculerCaissesPoints,
   reversionCaissesPoints,
+  abattementParTrimestres,
   EntreeCaissesPoints,
 } from './calculCaissesPoints';
 import { PARAMETRES_CAISSES_POINTS } from './parametres';
@@ -201,5 +202,53 @@ describe('CNBF 2026', () => {
     });
     expect(r.details[0].pointsProjetes).toBeCloseTo(10 * pointsAnnuelsCaisse(cnbf, 60000, 'C1'), 6);
     expect(r.total).toBeCloseTo((10000 + r.details[0].pointsProjetes) * 1.0262, 6);
+  });
+});
+
+describe('RCI 2026', () => {
+  const { rci } = PARAMETRES_CAISSES_POINTS;
+  const bareme = rci.abattementTrimestres!;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'RCI', type: 'points', points: 5000 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2034, 3, 1)), // 64 ans
+    nombreEnfantsEligibles: 3,
+    caisseLiberale: null,
+    conventionne: false,
+    revenuAnnuel: null,
+    trimestresProjetes: 0,
+    trimestresManquants: 0,
+  };
+
+  it('reconnue au libellé du RIS (RCI, anciens RCO)', () => {
+    expect(caisseDuRegime('RCI')).toBe('rci');
+    expect(caisseDuRegime('Retraite complémentaire des indépendants')).toBe('rci');
+    expect(caisseDuRegime('RCO artisans')).toBe('rci');
+  });
+  it('points : 8,1 % jusqu’au PASS, 9,1 % de 1 à 4 PASS ÷ 21,726 €', () => {
+    expect(pointsAnnuelsCaisse(rci, 50000)).toBeCloseTo((48060 * 0.081 + 1940 * 0.091) / 21.726, 6);
+    expect(pointsAnnuelsCaisse(rci, 10 * 48060)).toBeCloseTo((48060 * 0.081 + 3 * 48060 * 0.091) / 21.726, 6);
+  });
+  it('taux plein : 5 000 × 1,347 €, sans majoration pour enfants', () => {
+    expect(calculerCaissesPoints(base).total).toBeCloseTo(5000 * 1.347, 6);
+  });
+  it('abattement : 1 %/trimestre jusqu’à 12, puis 1,25 %, 22 % au plus (grille Fidroit)', () => {
+    expect(abattementParTrimestres(bareme, 3, 60)).toBeCloseTo(0.03, 10);
+    expect(abattementParTrimestres(bareme, 12, 60)).toBeCloseTo(0.12, 10);
+    expect(abattementParTrimestres(bareme, 13, 60)).toBeCloseTo(0.1325, 10);
+    expect(abattementParTrimestres(bareme, 30, 60)).toBeCloseTo(0.22, 10);
+  });
+  it('trimestres retenus bornés par l’âge de 67 ans (64 ans : 12 au plus)', () => {
+    expect(abattementParTrimestres(bareme, 20, 64)).toBeCloseTo(0.12, 10);
+    expect(abattementParTrimestres(bareme, 20, 67)).toBe(0);
+    expect(abattementParTrimestres(bareme, 0, 62)).toBe(0);
+  });
+  it('appliqué à la pension : 4 trimestres manquants à 64 ans → −4 %', () => {
+    const r = calculerCaissesPoints({ ...base, trimestresManquants: 4 });
+    expect(r.details[0].coefficientAge).toBeCloseTo(0.96, 10);
+  });
+  it('indépendant : points RCI projetés sur le revenu futur', () => {
+    const r = calculerCaissesPoints({ ...base, caisseLiberale: 'RCI', revenuAnnuel: 50000, trimestresProjetes: 40 });
+    expect(r.details[0].pointsProjetes).toBeCloseTo(10 * pointsAnnuelsCaisse(rci, 50000), 6);
   });
 });

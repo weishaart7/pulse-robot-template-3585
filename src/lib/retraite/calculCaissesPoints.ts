@@ -13,7 +13,10 @@
  *
  * Caisses paramétrées : CARMF complémentaire et ASV (médecins), CIPAV, CAVEC,
  * CNBF complémentaire (taux de la classe choisie sur 5 tranches de revenu ÷
- * coût d'acquisition ; minoration alignée sur la base).
+ * coût d'acquisition ; minoration alignée sur la base), RCI (8,1 % jusqu'au
+ * PASS et 9,1 % de 1 à 4 PASS ÷ revenu de référence ; abattement de 1 % par
+ * trimestre manquant jusqu'à 12 puis 1,25 %, 22 % au plus, trimestres
+ * manquants = plus favorable entre durée et âge de 67 ans).
  * - Taux plein à l'âge légal ; un départ plus tôt n'est possible que par un
  *   dispositif de départ anticipé, retenu ici à taux plein (coefficient 1).
  * - Surcote : +1,25 % par trimestre de l'âge légal à 65 ans, puis la
@@ -109,6 +112,27 @@ export function coefficientAgeCaisse(caisse: ParametresCaissePoints, ageDepart: 
   return coefficient;
 }
 
+/**
+ * Abattement par trimestres manquants (RCI) : nombre retenu = le plus
+ * favorable entre les trimestres manquants tous régimes et les trimestres
+ * jusqu'à l'âge de taux plein, borné ; 0 si la durée est atteinte.
+ */
+export function abattementParTrimestres(
+  bareme: NonNullable<ParametresCaissePoints['abattementTrimestres']>,
+  trimestresManquants: number,
+  ageDepart: number | null
+): number {
+  const manquantsDuree = Math.max(0, Math.ceil(trimestresManquants));
+  if (manquantsDuree === 0) return 0;
+  const manquantsAge =
+    ageDepart === null ? manquantsDuree : Math.max(0, Math.ceil((bareme.ageTauxPlein - ageDepart) * 4 - 1e-6));
+  const retenus = Math.min(manquantsDuree, manquantsAge, bareme.trimestresMax);
+  return (
+    Math.min(retenus, bareme.palier) * bareme.tauxJusquAuPalier +
+    Math.max(0, retenus - bareme.palier) * bareme.tauxAuDela
+  );
+}
+
 export interface DetailCaissePoints {
   id: IdentifiantCaisse;
   nom: string;
@@ -181,7 +205,10 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
         ? -Math.max(0, Math.ceil((caisse.decoteAge.ageTauxPlein - ageDepart) * 4 - 1e-6)) *
           caisse.decoteAge.tauxParTrimestre
         : 0;
-    const coefficientAge = coefficientSurcote * (1 + minoration / 100) * (1 + minorationAge);
+    const abattement = caisse.abattementTrimestres
+      ? -abattementParTrimestres(caisse.abattementTrimestres, entree.trimestresManquants, ageDepart)
+      : 0;
+    const coefficientAge = coefficientSurcote * (1 + minoration / 100) * (1 + minorationAge) * (1 + abattement);
     const pensionAvantMajoration = (pointsAcquis + pointsProjetes) * caisse.valeurServicePoint * coefficientAge;
     const majorationEnfants =
       entree.nombreEnfantsEligibles >= 3 ? (pensionAvantMajoration * caisse.majorationTroisEnfantsPct) / 100 : 0;

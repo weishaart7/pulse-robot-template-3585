@@ -64,6 +64,7 @@ describe('appliquerProjectionStatut', () => {
     const r = appliquerProjectionStatut({ ...base, statut: 'independant_ssi' });
     expect(r.trimestresValidesRG).toBe(140);
     expect(r.projeterAgircArrco).toBe(false);
+    expect(r.trimestresCaisseProjetes).toBe(40);
   });
   it('fonctionnaire : trimestres liquidables et points RAFP, RG figé', () => {
     const r = appliquerProjectionStatut({ ...base, statut: 'fonctionnaire', fonctionPublique: fp, primesAnnuellesFP: 5000 });

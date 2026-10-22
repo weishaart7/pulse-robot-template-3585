@@ -196,7 +196,9 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       conventionne: ctx.liberalConventionne ?? false,
       revenuAnnuel: ctx.revenuFutur ?? null,
       trimestresProjetes:
-        (statut === 'liberal' && cnavpl) || (statut === 'avocat_cnbf' && ctx.cnbf) ? trimestresProjetes : 0,
+        (statut === 'liberal' && cnavpl) || (statut === 'avocat_cnbf' && ctx.cnbf) || statut === 'independant_ssi'
+          ? trimestresProjetes
+          : 0,
       trimestresManquants,
       classe: ctx.cnbf?.classe ?? null,
     });
