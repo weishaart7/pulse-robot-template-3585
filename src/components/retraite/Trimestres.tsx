@@ -1,4 +1,5 @@
 import { caisseADassietteDediee, caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
+import { cumulSelonReformeLFSS2026 } from '@/lib/retraite/pointsCles';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
@@ -1118,7 +1119,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
           <PanelCardDescription>Règles applicables à la date de liquidation simulée ci-dessus</PanelCardDescription>
         </PanelCardHeader>
         <PanelCardContent className="space-y-2 text-xs text-muted-foreground">
-          {dateLiquidationEffet.getTime() < Date.UTC(2027, 0, 1) ? (
+          {!cumulSelonReformeLFSS2026(dateLiquidationEffet) ? (
             <>
               <p>
                 Liquidation avant le 01/01/2027 :{' '}

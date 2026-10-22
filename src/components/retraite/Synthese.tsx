@@ -5,6 +5,7 @@ import { PanelTitle, SummaryRow, Chip, panelButtonClass } from '@/components/lay
 import { PanelCardTitle } from '@/components/layout/panel-section';
 import { LAGON, CITRON_MID, DISPONIBLE } from '@/components/budget/budgetColors';
 import { usePensionConsolidee } from '@/hooks/usePensionConsolidee';
+import { AGE_TAUX_PLEIN_AUTOMATIQUE, PointsCles } from '@/lib/retraite/pointsCles';
 import { exporterSyntheseRetraitePDF, DonneesPersonneExportPDF } from '@/lib/retraite/exportSyntheseRetraitePDF';
 import { useEcartRevenuRetraite } from '@/hooks/useEcartRevenuRetraite';
 import { analyserEcartRevenu } from '@/lib/retraite/calculEpargneRetraite';
@@ -257,6 +258,98 @@ const BlocPersonne = ({
         </p>
       </div>
     </div>
+  );
+};
+
+// ── Bande 0 : points clés (bilan Sapiendo p. 3) ─────────────────────────────────────
+
+const formatDateCourte = (date: Date) =>
+  date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+const ChiffreCle = ({ libelle, valeur, unite, date }: { libelle: string; valeur: string; unite: string; date?: Date }) => (
+  <div className="min-w-0">
+    <p className="text-[12px] text-muted-foreground">{libelle}</p>
+    <p className="mt-1.5 flex items-baseline gap-1.5">
+      <span className="text-[28px] font-medium leading-none tracking-[-0.03em] tabular-nums text-foreground">{valeur}</span>
+      <span className="text-[12.5px] text-muted-foreground">{unite}</span>
+    </p>
+    {date && <p className="mt-1 text-[12px] tabular-nums text-muted-foreground">{formatDateCourte(date)}</p>}
+  </div>
+);
+
+const ColonnePointsCles = ({ nom, points, afficherNom }: { nom: string; points: PointsCles; afficherNom: boolean }) => (
+  <div className="min-w-0">
+    {afficherNom && <p className="mb-3 text-[13px] font-medium text-foreground">{nom}</p>}
+    <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+      <ChiffreCle
+        libelle="Âge légal de départ"
+        valeur={String(points.ageLegal.ans)}
+        unite={points.ageLegal.mois > 0 ? `ans et ${points.ageLegal.mois} mois` : 'ans'}
+        date={points.dateAgeLegal}
+      />
+      <ChiffreCle
+        libelle={points.tauxPleinParAge ? 'Taux plein (par l\'âge)' : 'Taux plein'}
+        valeur={String(points.ageTauxPlein.ans)}
+        unite={points.ageTauxPlein.mois > 0 ? `ans et ${points.ageTauxPlein.mois} mois` : 'ans'}
+        date={points.dateTauxPlein}
+      />
+      <ChiffreCle libelle="Trimestres requis" valeur={String(points.trimestresRequis)} unite="trimestres" />
+      <ChiffreCle
+        libelle="Acquis aujourd'hui"
+        valeur={String(points.trimestresAcquis)}
+        unite={points.trimestresManquantsAgeLegal > 0 ? `· ${points.trimestresManquantsAgeLegal} manquants à l'âge légal` : '· complet à l\'âge légal'}
+      />
+    </div>
+    <dl className="mt-4">
+      <SummaryRow label="Cumul emploi-retraite intégral">
+        <span className="tabular-nums">dès le {formatDateCourte(points.dateCumulIntegral)}</span>
+        <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
+          {points.cumulSelonReforme ? `${AGE_TAUX_PLEIN_AUTOMATIQUE} ans, ` : 'taux plein, '}
+          toutes pensions liquidées
+        </span>
+      </SummaryRow>
+    </dl>
+    {points.dateCarriereLongue && (
+      <p className="mt-2 text-[12px] text-positive">
+        Carrière longue : départ anticipé à taux plein possible dès le {formatDateCourte(points.dateCarriereLongue)}.
+      </p>
+    )}
+  </div>
+);
+
+const BandePointsCles = ({ hasConjoint, nomUtilisateur, nomConjoint }: PersonnesProps) => {
+  const utilisateur = usePensionConsolidee('utilisateur');
+  const conjoint = usePensionConsolidee('conjoint');
+  if (utilisateur.loading || (hasConjoint && conjoint.loading) || !utilisateur.aDesDonnees || !utilisateur.pointsCles) {
+    return null;
+  }
+  const colonnes = [
+    { nom: nomUtilisateur, points: utilisateur.pointsCles },
+    ...(hasConjoint && conjoint.aDesDonnees && conjoint.pointsCles ? [{ nom: nomConjoint, points: conjoint.pointsCles }] : []),
+  ];
+  const reforme = colonnes.some((c) => c.points.cumulSelonReforme);
+
+  return (
+    <section className="border-b border-border px-8 py-6">
+      <PanelCardTitle>Points clés</PanelCardTitle>
+      <div className={`mt-4 grid grid-cols-1 gap-y-6 ${colonnes.length > 1 ? 'lg:grid-cols-2 lg:gap-x-0 lg:divide-x lg:divide-border [&>*:first-child]:lg:pr-8 [&>*:last-child]:lg:pl-8' : ''}`}>
+        {colonnes.map((c) => (
+          <ColonnePointsCles key={c.nom} nom={c.nom} points={c.points} afficherNom={colonnes.length > 1} />
+        ))}
+      </div>
+      <Notes>
+        <p>
+          Taux plein : première date à partir de l'âge légal où les trimestres tous régimes (acquis, projetés en
+          carrière continue et trimestres enfants) atteignent la durée requise, sinon 67 ans. Logique du régime
+          général : l'âge d'annulation de la décote de la fonction publique (catégorie active) n'est pas retenu.
+        </p>
+        {reforme && (
+          <p>
+            Cumul intégral à compter du 01/01/2027 : 67 ans (art. 102 LFSS 2026, décrets d'application non publiés).
+          </p>
+        )}
+      </Notes>
+    </section>
   );
 };
 
@@ -574,6 +667,7 @@ export const Synthese = ({ hasConjoint, nomUtilisateur, nomConjoint, statutCoupl
   const personnes = { hasConjoint, nomUtilisateur, nomConjoint };
   return (
     <>
+      <BandePointsCles {...personnes} />
       <BandePension {...personnes} />
       <BandeRevenuNet {...personnes} />
       <BandeConjointSurvivant {...personnes} statutCouple={statutCouple} />

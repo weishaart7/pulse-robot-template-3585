@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { calculerPointsCles, PointsCles } from '@/lib/retraite/pointsCles';
 import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
@@ -64,6 +65,8 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   // Première date de départ anticipé pour carrière longue (circulaire Cnav
   // 2026-29), `null` si non ouverte ou date de naissance inconnue.
   dateCarriereLongue: Date | null;
+  /** En-tête « points clés » (âge légal, taux plein, cumul intégral), `null` si date de naissance inconnue. */
+  pointsCles: PointsCles | null;
   /** Répartition de la carrière projetée selon le statut actuel. */
   projectionStatut: ResultatProjectionStatut;
 }
@@ -291,18 +294,30 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     (data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0) +
     (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0) +
     (data.has_cnbf ? data.trimestres_cnbf ?? 0 : 0);
+  const trimestresProjetesJusqua = (d: Date) =>
+    trimestresProjetesParAnnee(resultat.historiqueTrimestres.parAnnee, new Date(), d).reduce(
+      (total, a) => total + a.trimestres,
+      0
+    );
   const dateCarriereLongue = dateNaissanceDetail
     ? evaluerCarriereLongue({
         dateNaissance: dateNaissanceDetail,
         trimestres: resultat.historiqueTrimestres,
         trimestresAutresRegimes,
-        trimestresProjetesJusqua: (d) =>
-          trimestresProjetesParAnnee(resultat.historiqueTrimestres.parAnnee, new Date(), d).reduce(
-            (total, a) => total + a.trimestres,
-            0
-          ),
+        trimestresProjetesJusqua,
         aujourdHui: new Date(),
       }).premiereDateEligible
+    : null;
+
+  const pointsCles = dateNaissanceDetail
+    ? calculerPointsCles({
+        dateNaissance: dateNaissanceDetail,
+        aujourdHui: new Date(),
+        trimestresAcquis: trimestresValides + trimestresAutresRegimes,
+        trimestresEnfants: trimestresEnfants.total,
+        trimestresProjetesJusqua,
+        dateCarriereLongue,
+      })
     : null;
 
   return {
@@ -325,5 +340,6 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     }),
     statutActuel: statutActuelDepuisTexte(data.statut_actuel),
     dateCarriereLongue,
+    pointsCles,
   };
 };

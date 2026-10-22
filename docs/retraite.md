@@ -74,6 +74,14 @@ uniquement applicatif via `familyService`.
   l'Optimisation suit sa propre trajectoire. Sans effet sur la vérification de carrière (passé).
   Fonctions : `trajectoireRevenu()`, `sommeSurAnneesProjetees()`, `revenuFinDeProjection()` dans
   `hypotheseRevenuFutur.ts` ; à évolution nulle, résultat identique au revenu constant.
+- **Points clés** (bande en tête de la Synthèse, modèle Sapiendo p. 3) — `pointsCles.ts`,
+  exposé par `usePensionConsolidee` sous `pointsCles` : âge et date légale ; date et âge du taux plein
+  (première date, de trimestre civil en trimestre civil à partir de l'âge légal, où trimestres acquis
+  tous régimes + projetés jusqu'à cette date + trimestres enfants ≥ durée requise, sinon 67 ans) ;
+  trimestres requis, acquis aujourd'hui et manquants à l'âge légal ; carrière longue si antérieure ;
+  date du cumul emploi-retraite intégral (taux plein si liquidation avant le 01/01/2027, sinon 67 ans,
+  art. 102 LFSS 2026 — `cumulSelonReformeLFSS2026()`, partagé avec la carte de l'Optimisation).
+  Logique du régime général : l'âge d'annulation de la décote FP (catégorie active) n'est pas retenu.
 - **Optimisation** simule un scénario de date de liquidation (sélecteur de date, pas un slider d'âge
   depuis le 2026-08-13) avec le même moteur de décote/surcote, plus un simulateur de rachat de
   trimestres (coût, gain de pension, point mort) — sandbox non persistée.
@@ -843,6 +851,10 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   général. Limite antérieure à A4, non corrigée.
 - **Deux taux voisins dans l'Optimisation** : l'actualisation (0-3 %) de la décision de départ et
   l'évolution des revenus (0 / 1,5 / 3 %) sont distinctes ; l'évolution se règle dans Carrière.
+- **Points clés et fonction publique** : la date du taux plein suit la règle du régime général (durée
+  tous régimes ou 67 ans) ; un fonctionnaire de catégorie active peut avoir un âge d'annulation de
+  décote plus précoce, non pris en compte (signalé à l'écran). La ligne « Taux plein » de la carte par
+  personne garde le texte `ageTauxPleinAffiche` (utilisé aussi par Carrière et l'export PDF).
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
