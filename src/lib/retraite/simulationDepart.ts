@@ -81,6 +81,9 @@ export interface ContexteSimulationDepart {
   liberalConventionne?: boolean;
   /** Capital du volet par capitalisation CAVP (extrait de compte). */
   capitalCAVP?: number;
+  /** Notaires (CPRN) : classe de la section B et produits moyens de l'office (section C). */
+  classeCPRN?: number;
+  produitsCPRN?: number | null;
   /** MDA à une date d'effet (éducation acquise année après année), absent = aucune. */
   trimestresEnfantsA?: (dateEffet: Date) => TrimestresEnfantsParRegime;
   /** Salaire de projection des points Agirc-Arrco, `null` si inconnu. */
@@ -202,9 +205,10 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
           ? trimestresProjetes
           : 0,
       trimestresManquants,
-      classe: ctx.cnbf?.classe ?? null,
+      classe: ctx.cnbf?.classe ?? ctx.classeCPRN?.toString() ?? null,
       trimestresRequis: dateNaissance ? trimestresRequisPourGeneration(dateNaissance, dateEffet) : undefined,
       capitalCAVP: ctx.capitalCAVP ?? 0,
+      assietteCaisse: ctx.produitsCPRN ?? null,
     });
     return (
       caisses.total +

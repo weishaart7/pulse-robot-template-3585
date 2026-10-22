@@ -115,6 +115,8 @@ export type AcquisitionCaissePoints =
       pointsForfait?: number;
       assietteMinEnPass?: number;
     }
+  /** Points = n° de classe déclaré × points par classe (CPRN section B : 10 à 80 points). */
+  | { mode: 'parNumeroDeClasse'; pointsParClasse: number; classeMax: number; classeParDefaut: number }
   /** Classe selon le revenu (`revenuMax` null : dernière classe). */
   | { mode: 'classes'; classes: { revenuMax: number | null; points: number }[] }
   /** Taux par tranche de revenu en euros, selon la classe de cotisation choisie. */
@@ -160,6 +162,8 @@ export interface ParametresCaissePoints {
     /** Anticipation comptée par année entière entamée (CAVOM : 5 % par année manquante, sans fractionnement). */
     parAnneeEntiere?: boolean;
   };
+  /** Assiette propre à la caisse (`assietteCaisse` de l'entrée) au lieu du revenu (CPRN C : produits de l'office). */
+  assietteDediee?: boolean;
   /** Points (annuités) plafonnés à la durée requise de la génération ÷ 4 (CAVP : retraite entière). */
   plafondPointsDureeRequise?: boolean;
   /**
@@ -261,7 +265,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; cprnB: ParametresCaissePoints; cprnC: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   cavpCapitalisation: ParametresCAVPCapitalisation;
   rafp: ParametresRAFP;

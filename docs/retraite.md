@@ -205,8 +205,15 @@ uniquement applicatif via `familyService`.
     d'achat 55,1390 €, valeur 3,3745 € (paramètres officiels 2026) ; taux plein à 67 ans, minoration de
     5 % par année manquante entamée (`decoteAge.parAnneeEntiere`) ; pas de surcote ; pas de majoration
     pour enfants retenue ; réversion 60 %.
+  - *CPRN* (notaires), colonnes `retraite_data.cprn_classe` (1 à 8, défaut 1) et `cprn_produits_moyens`
+    (migration `20261022180000`, saisies dans Carrière quand la CPRN est choisie) : section B =
+    10 points × n° de classe (`parNumeroDeClasse`), valeur 17,7710 € ; section C = 4,10 % des produits
+    moyens de l'office (assiette propre `assietteDediee`, pas le bénéfice) ÷ 17,69 €, valeur 0,9422 €
+    (guide officiel CPRN 2026) ; taux plein à 67 ans, minoration de 1,25 % par trimestre avant, surcote
+    de 1 % par trimestre après, sans plafond ; +10 % pour 3 enfants ; réversion 60 % (hypothèse). Points
+    du RIS : section B si le libellé la nomme, sinon section C.
   - Sélecteur « Caisse complémentaire » de Carrière : CARMF, CIPAV, CAVEC, CARPIMKO, CARCDSF
-    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens), CARPV (vétérinaires), CAVOM (officiers ministériels) ; case « Conventionné » pour les caisses à régime
+    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens), CARPV (vétérinaires), CAVOM (officiers ministériels), CPRN (notaires) ; case « Conventionné » pour les caisses à régime
     supplémentaire (ASV ou PCV).
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
@@ -217,8 +224,8 @@ uniquement applicatif via `familyService`.
   régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
   complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
   majoration, ligne « CNBF » de la Synthèse).
-  - Non couverts : caisses à points non paramétrées (CPRN,
-    CAVAMAC, RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
+  - Non couverts : caisses à points non paramétrées (CAVAMAC,
+    RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
     (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
   carte « Revenu net à la retraite » de `Synthese.tsx` :
@@ -673,6 +680,13 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
+- **CPRN — valeurs à confirmer et limites.** Réversion 60 % sans source (hypothèse validée). Classe B et
+  produits de l'office saisis à la main (appel de cotisations), constants jusqu'au départ ; moyenne
+  nationale des produits non publiée (classe non déduite). Libellés RIS des sections non vérifiés sur un
+  RIS réel. Non modélisés : majoration de 30 % par enfant à charge de moins de 21 ans, minimum de points
+  C après 10 ans d'exercice (Fidroit ambigu : 64 % de la moyenne ou 575 points), capital de 10 ans sous
+  15 € par mois, réversion à 100 % avec abattement, régime supplémentaire de Colmar et Metz,
+  coefficients d'âge en cas de montée de classe, maintien de classe des notaires d'avant 2014.
 - **CAVOM — limites.** Taux des officiers ministériels salariés (7,50 %) non modélisé (sélecteur réservé
   au statut libéral) ; majoration pour enfants de la complémentaire sans source (non appliquée) ; points
   d'avant 2013 (multipliés par 10 au changement d'échelle) supposés déjà convertis au RIS. Non

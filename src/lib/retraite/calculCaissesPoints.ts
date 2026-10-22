@@ -63,6 +63,10 @@
  * - CAVOM (officiers ministériels) : 12,50 % du revenu ramené entre 0,19 et
  *   8 PASS ÷ prix d'achat ; taux plein à 67 ans, minoration de 5 % par année
  *   manquante entamée (`parAnneeEntiere`) ; pas de surcote.
+ * - CPRN (notaires) : section B = 10 points × n° de classe déclaré (1 à 8,
+ *   `classe`) ; section C = 4,10 % des produits moyens de l'office déclarés
+ *   (`assietteCaisse`) ÷ coût du point ; taux plein à 67 ans, minoration de
+ *   1,25 % par trimestre avant, surcote de 1 % par trimestre après, sans plafond.
  */
 
 import { RegimeDetecte } from './parseRIS';
@@ -118,6 +122,11 @@ export function pointsAnnuelsCaisse(
       plancher = borne;
     });
     return cotisation / acquisition.prixAchatPoint;
+  }
+  if (acquisition.mode === 'parNumeroDeClasse') {
+    const numero = Math.round(Number(classe));
+    const retenu = numero >= 1 && numero <= acquisition.classeMax ? numero : acquisition.classeParDefaut;
+    return retenu * acquisition.pointsParClasse;
   }
   if (acquisition.mode === 'classes') {
     const classe = acquisition.classes.find((c) => c.revenuMax === null || revenu <= c.revenuMax);
@@ -247,6 +256,8 @@ export interface EntreeCaissesPoints {
   trimestresRequis?: number;
   /** Capital acquis dans le volet par capitalisation de la CAVP (extrait de compte). */
   capitalCAVP?: number | null;
+  /** Assiette propre aux caisses `assietteDediee` (CPRN C : produits moyens de l'office), `null` si inconnue. */
+  assietteCaisse?: number | null;
 }
 
 export interface ResultatCaissesPoints {
@@ -274,9 +285,11 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
   const details: DetailCaissePoints[] = [];
   for (const [id, pointsAcquis] of pointsParCaisse) {
     const caisse = PARAMETRES_CAISSES_POINTS[id];
+    // Assiette : revenu futur, ou assiette propre (produits de l'office pour la CPRN C).
+    const assiette = caisse.assietteDediee ? entree.assietteCaisse ?? null : entree.revenuAnnuel;
     const pointsProjetesBruts =
-      caissesProjetees.includes(id) && entree.revenuAnnuel !== null
-        ? (pointsAnnuelsCaisse(caisse, entree.revenuAnnuel, entree.classe) * Math.max(0, entree.trimestresProjetes)) / 4
+      caissesProjetees.includes(id) && assiette !== null
+        ? (pointsAnnuelsCaisse(caisse, assiette, entree.classe) * Math.max(0, entree.trimestresProjetes)) / 4
         : 0;
     // Retraite entière (CAVP) : annuités plafonnées à la durée requise ÷ 4.
     const pointsProjetes =

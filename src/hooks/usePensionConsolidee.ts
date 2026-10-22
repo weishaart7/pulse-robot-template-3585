@@ -257,6 +257,8 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
       revenuAnnuel: revenuHypothese,
       trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
       capitalCAVP: data.caisse_liberale === 'CAVP' ? data.cavp_capital_capitalisation ?? 0 : 0,
+      classeCPRN: data.cprn_classe ?? 1,
+      produitsCPRN: data.caisse_liberale === 'CPRN' ? data.cprn_produits_moyens ?? null : null,
     },
   });
 

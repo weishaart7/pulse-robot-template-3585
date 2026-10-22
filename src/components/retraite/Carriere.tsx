@@ -227,6 +227,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const [liberalConventionne, setLiberalConventionne] = useState(false);
   // Capital du volet par capitalisation CAVP (extrait de compte), calculCAVPCapitalisation.ts.
   const [capitalCAVP, setCapitalCAVP] = useState<string>('');
+  // Notaires (CPRN) : classe de la section B et produits moyens de l'office (section C).
+  const [cprnClasse, setCprnClasse] = useState<string>('1');
+  const [cprnProduitsMoyens, setCprnProduitsMoyens] = useState<string>('');
   // Avocats : retraite de base CNBF et classe de la complémentaire (calculCNBF.ts).
   const [hasCNBF, setHasCNBF] = useState(false);
   const [trimestresCNBF, setTrimestresCNBF] = useState<string>('');
@@ -419,6 +422,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.cavp_capital_capitalisation !== undefined && data.cavp_capital_capitalisation !== null) {
         setCapitalCAVP(data.cavp_capital_capitalisation.toString());
       }
+      if (data.cprn_classe !== undefined) {
+        setCprnClasse(data.cprn_classe.toString());
+      }
+      if (data.cprn_produits_moyens !== undefined && data.cprn_produits_moyens !== null) {
+        setCprnProduitsMoyens(data.cprn_produits_moyens.toString());
+      }
       if (data.has_cnbf !== undefined) {
         setHasCNBF(data.has_cnbf);
       }
@@ -488,6 +497,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             caisse_liberale: caisseLiberale || null,
             liberal_conventionne: liberalConventionne,
             cavp_capital_capitalisation: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || null : null,
+            cprn_classe: parseInt(cprnClasse) || 1,
+            cprn_produits_moyens: caisseLiberale === 'CPRN' ? parseFloat(cprnProduitsMoyens) || null : null,
             has_cnbf: hasCNBF,
             trimestres_cnbf: parseInt(trimestresCNBF) || 0,
             cnbf_classe: cnbfClasse,
@@ -513,6 +524,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       caisseLiberale,
       liberalConventionne,
       capitalCAVP,
+      cprnClasse,
+      cprnProduitsMoyens,
       hasCNBF,
       trimestresCNBF,
       cnbfClasse,
@@ -840,12 +853,16 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         revenuAnnuel: projectionRevenuFutur.revenuHypothese,
         trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
         capitalCAVP: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || 0 : 0,
+        classeCPRN: parseInt(cprnClasse) || 1,
+        produitsCPRN: caisseLiberale === 'CPRN' ? parseFloat(cprnProduitsMoyens) || null : null,
       },
     }),
     [
       caisseLiberale,
       liberalConventionne,
       capitalCAVP,
+      cprnClasse,
+      cprnProduitsMoyens,
       statutActuel,
       trimestresEnfantsPersonne,
       projectionStatut,
@@ -1032,6 +1049,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         <SelectItem value="CAVP" className="text-xs">CAVP (pharmaciens)</SelectItem>
                         <SelectItem value="CARPV" className="text-xs">CARPV (vétérinaires)</SelectItem>
                         <SelectItem value="CAVOM" className="text-xs">CAVOM (officiers ministériels)</SelectItem>
+                        <SelectItem value="CPRN" className="text-xs">CPRN (notaires)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1058,6 +1076,37 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         onChange={(e) => setCapitalCAVP(e.target.value)}
                       />
                     </div>
+                  )}
+                  {caisseLiberale === 'CPRN' && (
+                    <>
+                      <div className="space-y-1.5 min-w-[8rem]">
+                        <Label htmlFor={`classe-cprn-${personne}`} className="text-xs">Classe section B</Label>
+                        <Select value={cprnClasse} onValueChange={setCprnClasse}>
+                          <SelectTrigger id={`classe-cprn-${personne}`} className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {['1', '2', '3', '4', '5', '6', '7', '8'].map((classe) => (
+                              <SelectItem key={classe} value={classe} className="text-xs">
+                                Classe {classe} ({Number(classe) * 10} points)
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5 max-w-[12rem]">
+                        <Label htmlFor={`produits-cprn-${personne}`} className="text-xs">
+                          Produits moyens de l'office (€)
+                        </Label>
+                        <Input
+                          id={`produits-cprn-${personne}`}
+                          type="number"
+                          className="h-8 text-xs"
+                          value={cprnProduitsMoyens}
+                          onChange={(e) => setCprnProduitsMoyens(e.target.value)}
+                        />
+                      </div>
+                    </>
                   )}
                 </>
               )}

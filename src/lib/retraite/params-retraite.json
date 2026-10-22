@@ -1482,6 +1482,64 @@
       "surcote": [],
       "majorationTroisEnfantsPct": 0,
       "tauxReversion": 0.6
+    },
+    "cprnB": {
+      "nom": "CPRN section B (notaires)",
+      "motifNom": "(CPRN|notaires).*(section|sect\\.?) ?B\\b",
+      "caisseLiberale": "CPRN",
+      "source": "Valeurs 2026 : guide officiel CPRN « Nouveau notaire libéral » 2026 (section B : coût d'acquisition 279,12 €, valeur 17,7710 € ; section C : 4,10 % de la moyenne des produits de l'office, coût 17,69 €, valeur 0,9422 €). Règles : Fidroit CPRN 2025 §4.1.2 et §5.1 (classes 1 à 8 = 10 à 80 points ; taux plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote 1 % par trimestre après, jusqu'à la fin d'activité ; +10 % pour 3 enfants). Réversion 60 % : hypothèse validée le 2026-10-22, aucune source. Non modélisés : majoration de 30 % par enfant à charge, minimum de points C après 10 ans, capital sous 15 €/mois, réversion à 100 %, régime de Colmar et Metz",
+      "valeurServicePoint": 17.771,
+      "acquisition": {
+        "mode": "parNumeroDeClasse",
+        "pointsParClasse": 10,
+        "classeMax": 8,
+        "classeParDefaut": 1
+      },
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125
+      },
+      "surcote": [
+        {
+          "depuis": 67,
+          "jusquA": 120,
+          "tauxParTrimestre": 0.01
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
+    },
+    "cprnC": {
+      "nom": "CPRN section C (notaires)",
+      "motifNom": "CPRN|notaires",
+      "exclureMotifNom": "(section|sect\\.?) ?B\\b",
+      "caisseLiberale": "CPRN",
+      "source": "Valeurs 2026 : guide officiel CPRN « Nouveau notaire libéral » 2026 (section B : coût d'acquisition 279,12 €, valeur 17,7710 € ; section C : 4,10 % de la moyenne des produits de l'office, coût 17,69 €, valeur 0,9422 €). Règles : Fidroit CPRN 2025 §4.1.2 et §5.1 (classes 1 à 8 = 10 à 80 points ; taux plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote 1 % par trimestre après, jusqu'à la fin d'activité ; +10 % pour 3 enfants). Réversion 60 % : hypothèse validée le 2026-10-22, aucune source. Non modélisés : majoration de 30 % par enfant à charge, minimum de points C après 10 ans, capital sous 15 €/mois, réversion à 100 %, régime de Colmar et Metz",
+      "valeurServicePoint": 0.9422,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 17.69,
+        "tranches": [
+          {
+            "jusquAPass": 1000,
+            "taux": 0.041
+          }
+        ]
+      },
+      "assietteDediee": true,
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125
+      },
+      "surcote": [
+        {
+          "depuis": 67,
+          "jusquA": 120,
+          "tauxParTrimestre": 0.01
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
     }
   },
   "cnbf": {

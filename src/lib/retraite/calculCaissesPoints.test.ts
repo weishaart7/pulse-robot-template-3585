@@ -561,3 +561,58 @@ describe('CAVOM (officiers ministériels)', () => {
     expect(reversionCaissesPoints(r.details)).toBeCloseTo(r.total * 0.6, 6);
   });
 });
+
+describe('CPRN (notaires), sections B et C', () => {
+  const { cprnB, cprnC } = PARAMETRES_CAISSES_POINTS;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2037, 3, 1)), // 67 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: 'CPRN',
+    conventionne: false,
+    revenuAnnuel: 150000,
+    trimestresProjetes: 40,
+    trimestresManquants: 0,
+    classe: '5',
+    assietteCaisse: 400000,
+  };
+  const detail = (r: ReturnType<typeof calculerCaissesPoints>, id: string) => r.details.find((d) => d.id === id)!;
+
+  it('reconnaissance au RIS : section B si le libellé la donne, sinon section C', () => {
+    expect(caisseDuRegime('CPRN - Section B')).toBe('cprnB');
+    expect(caisseDuRegime('CPRN - Section C')).toBe('cprnC');
+    expect(caisseDuRegime('CPRN')).toBe('cprnC');
+    expect(caissesDuLiberal('CPRN', false)).toEqual(['cprnB', 'cprnC']);
+  });
+  it('section B : 10 points × n° de classe, classe 1 par défaut', () => {
+    expect(pointsAnnuelsCaisse(cprnB, 0, '5')).toBe(50);
+    expect(pointsAnnuelsCaisse(cprnB, 0, '8')).toBe(80);
+    expect(pointsAnnuelsCaisse(cprnB, 0, null)).toBe(10);
+    expect(pointsAnnuelsCaisse(cprnB, 0, '12')).toBe(10);
+  });
+  it('section C : 4,10 % des produits de l’office ÷ 17,69 €, pas du revenu', () => {
+    expect(pointsAnnuelsCaisse(cprnC, 400000)).toBeCloseTo((400000 * 0.041) / 17.69, 6);
+    const r = calculerCaissesPoints(base);
+    expect(detail(r, 'cprnC').pointsProjetes).toBeCloseTo((10 * 400000 * 0.041) / 17.69, 6);
+    expect(detail(r, 'cprnB').pointsProjetes).toBe(500);
+    expect(r.total).toBeCloseTo(500 * 17.771 + ((10 * 400000 * 0.041) / 17.69) * 0.9422, 6);
+  });
+  it('sans produits déclarés : aucun point C projeté', () => {
+    const r = calculerCaissesPoints({ ...base, assietteCaisse: null });
+    expect(detail(r, 'cprnC').pointsProjetes).toBe(0);
+  });
+  it('minoration 1,25 % par trimestre avant 67 ans ; surcote 1 % par trimestre après, sans plafond', () => {
+    expect(1 - tauxDecoteAge(cprnB.decoteAge!, 64)).toBeCloseTo(0.85, 6);
+    expect(coefficientAgeCaisse(cprnB, 69, 64)).toBeCloseTo(1.08, 6);
+    expect(coefficientAgeCaisse(cprnC, 75, 64)).toBeCloseTo(1.32, 6);
+  });
+  it('+10 % pour 3 enfants ; réversion 60 %', () => {
+    const r = calculerCaissesPoints({ ...base, nombreEnfantsEligibles: 3 });
+    expect(detail(r, 'cprnB').majorationEnfants).toBeCloseTo(500 * 17.771 * 0.1, 6);
+    expect(reversionCaissesPoints(r.details)).toBeCloseTo(
+      r.details.reduce((t, d) => t + (d.pensionAnnuelle - d.majorationEnfants) * 0.6, 0),
+      6
+    );
+  });
+});

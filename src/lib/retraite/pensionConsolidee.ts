@@ -172,6 +172,9 @@ export interface EntreePensionConsolidee {
     trimestresProjetes: number;
     /** Capital du volet par capitalisation CAVP (extrait de compte). */
     capitalCAVP?: number;
+    /** Notaires (CPRN) : classe de la section B et produits moyens de l'office (section C). */
+    classeCPRN?: number;
+    produitsCPRN?: number | null;
   };
 }
 
@@ -556,9 +559,11 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     revenuAnnuel: entree.caissesPoints?.revenuAnnuel ?? null,
     trimestresProjetes: entree.caissesPoints?.trimestresProjetes ?? 0,
     trimestresManquants: trimestresRequis - trimestresTousRegimes,
-    classe: entree.cnbf?.classe ?? null,
+    // Classe CNBF (avocat) ou CPRN section B (notaire), statuts exclusifs.
+    classe: entree.cnbf?.classe ?? entree.caissesPoints?.classeCPRN?.toString() ?? null,
     trimestresRequis,
     capitalCAVP: entree.caissesPoints?.capitalCAVP ?? 0,
+    assietteCaisse: entree.caissesPoints?.produitsCPRN ?? null,
   });
   const totalPensionComplementaireAnnuelle =
     (detailAgircArrco?.pensionAnnuelle ?? 0) +
