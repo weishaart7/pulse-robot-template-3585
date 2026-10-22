@@ -60,6 +60,14 @@ import { trimestresEnfants as calculerTrimestresEnfants, liensFamiliauxDeLaPerso
 // docs/audit/audit-retraite.md pour le détail de ce choix.
 const SEUIL_ECART_COHERENCE_TRIMESTRES = 4;
 
+/** Caisses libérales ayant un régime supplémentaire des conventionnés (case « Conventionné »). */
+const REGIME_CONVENTIONNE: Record<string, string> = {
+  CARMF: 'ASV',
+  CARPIMKO: 'ASV',
+  CARCDSF_CD: 'PCV',
+  CARCDSF_SF: 'PCV',
+};
+
 const formatDateFr = (dateIso: string) => {
   const [annee, mois, jour] = dateIso.split('-');
   return `${jour}/${mois}/${annee}`;
@@ -1008,16 +1016,19 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         <SelectItem value="CARMF" className="text-xs">CARMF (médecins)</SelectItem>
                         <SelectItem value="CIPAV" className="text-xs">CIPAV</SelectItem>
                         <SelectItem value="CAVEC" className="text-xs">CAVEC (experts-comptables)</SelectItem>
+                        <SelectItem value="CARPIMKO" className="text-xs">CARPIMKO (auxiliaires médicaux)</SelectItem>
+                        <SelectItem value="CARCDSF_CD" className="text-xs">CARCDSF (chirurgiens-dentistes)</SelectItem>
+                        <SelectItem value="CARCDSF_SF" className="text-xs">CARCDSF (sages-femmes)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {caisseLiberale === 'CARMF' && (
+                  {caisseLiberale in REGIME_CONVENTIONNE && (
                     <label className="flex items-center gap-2 text-xs pb-1.5">
                       <Checkbox
                         checked={liberalConventionne}
                         onCheckedChange={(checked) => setLiberalConventionne(checked === true)}
                       />
-                      Conventionné (ASV)
+                      Conventionné ({REGIME_CONVENTIONNE[caisseLiberale]})
                     </label>
                   )}
                 </>

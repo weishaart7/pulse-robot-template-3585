@@ -312,3 +312,107 @@ describe('Ircantec (contractuels publics)', () => {
     expect(reversionCaissesPoints(r.details)).toBeCloseTo(r.total * 0.5, 6);
   });
 });
+
+describe('CARPIMKO (auxiliaires médicaux) et ASV', () => {
+  const { carpimko, carpimkoAsv } = PARAMETRES_CAISSES_POINTS;
+  const pass = MILLESIME_COURANT.pass;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2037, 3, 1)), // 67 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: 'CARPIMKO',
+    conventionne: false,
+    revenuAnnuel: 60000,
+    trimestresProjetes: 40,
+    trimestresManquants: 0,
+  };
+
+  it('reconnaissance au RIS : complémentaire et ASV distinguées, pas confondues avec la CARMF', () => {
+    expect(caisseDuRegime('CARPIMKO')).toBe('carpimko');
+    expect(caisseDuRegime('CARPIMKO - ASV')).toBe('carpimkoAsv');
+    expect(caisseDuRegime('CARMF - ASV')).toBe('carmfAsv');
+  });
+  it('points 2026 : 8,70 % du revenu ramené entre 0,5 et 3 PASS ÷ 391 €', () => {
+    expect(pointsAnnuelsCaisse(carpimko, 0)).toBeCloseTo((0.5 * pass * 0.087) / 391, 6);
+    expect(pointsAnnuelsCaisse(carpimko, 60000)).toBeCloseTo((60000 * 0.087) / 391, 6);
+    expect(pointsAnnuelsCaisse(carpimko, 10 * pass)).toBeCloseTo((3 * pass * 0.087) / 391, 6);
+  });
+  it('ASV : 24,5 points + 0,40 % du revenu (5 PASS) ÷ 27,43 €', () => {
+    expect(pointsAnnuelsCaisse(carpimkoAsv, 50000)).toBeCloseTo(24.5 + (50000 * 0.004) / 27.43, 6);
+    expect(pointsAnnuelsCaisse(carpimkoAsv, 10 * pass)).toBeCloseTo(24.5 + (5 * pass * 0.004) / 27.43, 6);
+  });
+  it('ASV ajoutée seulement si conventionné', () => {
+    expect(caissesDuLiberal('CARPIMKO', false)).toEqual(['carpimko']);
+    expect(caissesDuLiberal('CARPIMKO', true)).toEqual(['carpimko', 'carpimkoAsv']);
+  });
+  it('surcote 1,25 % par trimestre au-delà de la durée, 20 trimestres au plus', () => {
+    expect(coefficientAgeCaisse(carpimko, 66, 64, 4)).toBeCloseTo(1.05, 6);
+    expect(coefficientAgeCaisse(carpimko, 70, 64, 40)).toBeCloseTo(1.25, 6);
+  });
+  it('réversion 60 % (complémentaire) et 50 % (ASV)', () => {
+    const r = calculerCaissesPoints({ ...base, conventionne: true });
+    const [c, a] = r.details;
+    expect(reversionCaissesPoints(r.details)).toBeCloseTo(c.pensionAnnuelle * 0.6 + a.pensionAnnuelle * 0.5, 6);
+  });
+});
+
+describe('CARCDSF (chirurgiens-dentistes et sages-femmes)', () => {
+  const { carcdsf, carcdsfPcvCd, carcdsfPcvSf } = PARAMETRES_CAISSES_POINTS;
+  const pass = MILLESIME_COURANT.pass;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2037, 3, 1)), // 67 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: 'CARCDSF_CD',
+    conventionne: true,
+    revenuAnnuel: 100000,
+    trimestresProjetes: 4,
+    trimestresManquants: 0,
+  };
+
+  it('complémentaire : 6 points + 11,35 % du revenu entre 0,65 et 5 PASS ÷ 535,10 €', () => {
+    expect(pointsAnnuelsCaisse(carcdsf, 20000)).toBeCloseTo(6, 6);
+    expect(pointsAnnuelsCaisse(carcdsf, 100000)).toBeCloseTo(6 + ((100000 - 0.65 * pass) * 0.1135) / 535.1, 6);
+    expect(pointsAnnuelsCaisse(carcdsf, 10 * pass)).toBeCloseTo(6 + (4.35 * pass * 0.1135) / 535.1, 6);
+  });
+  it('PCV dentiste : 10 points + 1,93 au prorata de 5 PASS ; sage-femme : 18 points', () => {
+    expect(pointsAnnuelsCaisse(carcdsfPcvCd, 5 * pass)).toBeCloseTo(11.93, 2);
+    expect(pointsAnnuelsCaisse(carcdsfPcvCd, 10 * pass)).toBeCloseTo(11.93, 6);
+    expect(pointsAnnuelsCaisse(carcdsfPcvSf, 30000)).toBe(18);
+  });
+  it('profession déclarée : complémentaire commune, PCV propre', () => {
+    expect(caissesDuLiberal('CARCDSF_CD', true)).toEqual(['carcdsf', 'carcdsfPcvCd']);
+    expect(caissesDuLiberal('CARCDSF_SF', true)).toEqual(['carcdsf', 'carcdsfPcvSf']);
+    expect(caissesDuLiberal('CARCDSF_SF', false)).toEqual(['carcdsf']);
+  });
+  it('points PCV du RIS attribués à la PCV de la profession déclarée (dentiste par défaut)', () => {
+    expect(caisseDuRegime('CARCDSF')).toBe('carcdsf');
+    expect(caisseDuRegime('CARCDSF - PCV')).toBe('carcdsfPcvCd');
+    expect(caisseDuRegime('CARCDSF - PCV', 'CARCDSF_SF')).toBe('carcdsfPcvSf');
+  });
+  it('minoration 1,25 % par trimestre avant 67 ans ; PCV dentiste plafonnée à 15 %', () => {
+    const a62 = { ...base, dateEffet: new Date(Date.UTC(2032, 3, 1)) }; // 62 ans, 20 trimestres
+    const r = calculerCaissesPoints(a62);
+    expect(r.details.find((d) => d.id === 'carcdsf')!.coefficientAge).toBeCloseTo(0.75, 6);
+    expect(r.details.find((d) => d.id === 'carcdsfPcvCd')!.coefficientAge).toBeCloseTo(0.85, 6);
+  });
+  it('PCV sage-femme : plus favorable entre âge et durée, 15 % au plus', () => {
+    const r = calculerCaissesPoints({
+      ...base,
+      caisseLiberale: 'CARCDSF_SF',
+      dateEffet: new Date(Date.UTC(2034, 3, 1)), // 64 ans, 12 trimestres avant 67
+      trimestresManquants: 2,
+    });
+    expect(r.details.find((d) => d.id === 'carcdsfPcvSf')!.coefficientAge).toBeCloseTo(1 - 2 * 0.0125, 6);
+  });
+  it('surcote 1,25 % par trimestre après 67 ans, 25 % au plus ; +10 % pour 3 enfants', () => {
+    expect(coefficientAgeCaisse(carcdsf, 68, 64)).toBeCloseTo(1.05, 6);
+    expect(coefficientAgeCaisse(carcdsf, 75, 64)).toBeCloseTo(1.25, 6);
+    const r = calculerCaissesPoints({ ...base, nombreEnfantsEligibles: 3 });
+    const c = r.details.find((d) => d.id === 'carcdsf')!;
+    expect(c.majorationEnfants).toBeCloseTo((c.pensionAnnuelle * 10) / 110, 6);
+    expect(r.details.find((d) => d.id === 'carcdsfPcvSf')).toBeUndefined();
+  });
+});

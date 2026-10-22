@@ -39,6 +39,17 @@
  *   de la durée requise entre l'âge légal et 67 ans, puis 0,75 % par trimestre ;
  *   majoration de 10 % (3 enfants) à 30 % (7 et plus) ; sous 300 points,
  *   capital = points × salaire de référence.
+ * - CARPIMKO complémentaire : depuis 2026, 8,70 % du revenu ramené entre 0,5 et
+ *   3 PASS ÷ coût d'acquisition ; minoration identique à la base ; surcote de
+ *   1,25 % par trimestre au-delà de la durée requise, 20 trimestres au plus.
+ *   ASV (conventionnés) : 24,5 points + 0,40 % du revenu (5 PASS) ÷ coût du point,
+ *   taux plein à 65 ans.
+ * - CARCDSF complémentaire (dentistes et sages-femmes) : 6 points + 11,35 % du
+ *   revenu entre 0,65 et 5 PASS ÷ coût d'acquisition ; taux plein à 67 ans,
+ *   minoration et surcote de 1,25 % par trimestre. PCV propre à la profession
+ *   déclarée (`CARCDSF_CD` : 10 + 1,93 points ; `CARCDSF_SF` : 18 points) ; les
+ *   points PCV lus au RIS vont à la PCV de la profession déclarée (dentiste par
+ *   défaut).
  */
 
 import { RegimeDetecte } from './parseRIS';
@@ -49,20 +60,30 @@ import { coefficientAnticipationAgircArrco } from './calculAgircArrco';
 
 export type IdentifiantCaisse = keyof typeof PARAMETRES_CAISSES_POINTS;
 
-export function caisseDuRegime(nom: string): IdentifiantCaisse | null {
-  for (const [id, caisse] of Object.entries(PARAMETRES_CAISSES_POINTS) as [IdentifiantCaisse, ParametresCaissePoints][]) {
-    if (!new RegExp(caisse.motifNom, 'i').test(nom)) continue;
-    if (caisse.exclureMotifNom && new RegExp(caisse.exclureMotifNom, 'i').test(nom)) continue;
-    return id;
-  }
-  return null;
+function ouvertePar(caisse: ParametresCaissePoints, caisseLiberale: string | null): boolean {
+  if (!caisseLiberale) return false;
+  return Array.isArray(caisse.caisseLiberale)
+    ? caisse.caisseLiberale.includes(caisseLiberale)
+    : caisse.caisseLiberale === caisseLiberale;
 }
 
-/** Caisses ouvertes à un libéral déclarant cette caisse (ASV si conventionné). */
+/**
+ * Caisse reconnue au libellé du RIS. Plusieurs caisses possibles (PCV des
+ * dentistes et des sages-femmes) : celle de la caisse déclarée, sinon la première.
+ */
+export function caisseDuRegime(nom: string, caisseLiberale: string | null = null): IdentifiantCaisse | null {
+  const candidates = (Object.entries(PARAMETRES_CAISSES_POINTS) as [IdentifiantCaisse, ParametresCaissePoints][]).filter(
+    ([, caisse]) =>
+      new RegExp(caisse.motifNom, 'i').test(nom) &&
+      !(caisse.exclureMotifNom && new RegExp(caisse.exclureMotifNom, 'i').test(nom))
+  );
+  return (candidates.find(([, caisse]) => ouvertePar(caisse, caisseLiberale)) ?? candidates[0])?.[0] ?? null;
+}
+
+/** Caisses ouvertes à un libéral déclarant cette caisse (ASV, PCV si conventionné). */
 export function caissesDuLiberal(caisseLiberale: string | null, conventionne: boolean): IdentifiantCaisse[] {
-  if (!caisseLiberale) return [];
   return (Object.entries(PARAMETRES_CAISSES_POINTS) as [IdentifiantCaisse, ParametresCaissePoints][])
-    .filter(([, caisse]) => caisse.caisseLiberale === caisseLiberale && (!caisse.conventionneSeulement || conventionne))
+    .filter(([, caisse]) => ouvertePar(caisse, caisseLiberale) && (!caisse.conventionneSeulement || conventionne))
     .map(([id]) => id);
 }
 
@@ -89,14 +110,15 @@ export function pointsAnnuelsCaisse(
     return classe?.points ?? 0;
   }
   if (acquisition.mode === 'tranchesPrixAchat') {
+    const assiette = Math.max(revenu, (acquisition.assietteMinEnPass ?? 0) * MILLESIME_COURANT.pass);
     let cotisation = 0;
     let plancher = 0;
     for (const tranche of acquisition.tranches) {
       const plafond = tranche.jusquAPass * MILLESIME_COURANT.pass;
-      cotisation += Math.max(0, Math.min(revenu, plafond) - plancher) * tranche.taux;
+      cotisation += Math.max(0, Math.min(assiette, plafond) - plancher) * tranche.taux;
       plancher = plafond;
     }
-    return cotisation / acquisition.prixAchatPoint;
+    return (acquisition.pointsForfait ?? 0) + cotisation / acquisition.prixAchatPoint;
   }
   if (acquisition.mode === 'revenuParPoint') {
     return Math.min(acquisition.pointsMaxAnnuels, revenu / acquisition.revenuParPoint);
@@ -120,9 +142,10 @@ export function coefficientAgeCaisse(
   for (const tranche of caisse.surcote) {
     const debut = tranche.depuis === 'ageLegal' ? ageLegal : tranche.depuis;
     const trimestresAge = Math.max(0, Math.floor((Math.min(ageDepart, tranche.jusquA) - debut) * 4 + 1e-6));
-    const trimestres = tranche.conditionDuree
-      ? Math.min(trimestresAge, Math.max(0, Math.floor(trimestresExcedentaires)))
-      : trimestresAge;
+    const trimestres = Math.min(
+      tranche.conditionDuree ? Math.min(trimestresAge, Math.max(0, Math.floor(trimestresExcedentaires))) : trimestresAge,
+      tranche.trimestresMax ?? Infinity
+    );
     const majoration = trimestres * tranche.tauxParTrimestre;
     coefficient = tranche.multiplicatif ? coefficient * (1 + majoration) : coefficient + majoration;
   }
@@ -204,7 +227,7 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
   const pointsParCaisse = new Map<IdentifiantCaisse, number>();
   const regimesNonReconnus: RegimeDetecte[] = [];
   for (const regime of entree.regimesPoints) {
-    const id = caisseDuRegime(regime.nom);
+    const id = caisseDuRegime(regime.nom, entree.caisseLiberale);
     if (id === null) regimesNonReconnus.push(regime);
     else pointsParCaisse.set(id, (pointsParCaisse.get(id) ?? 0) + (regime.points ?? 0));
   }
@@ -233,8 +256,10 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
     // Minoration propre (âge de taux plein fixe) : trimestres manquants arrondis au supérieur.
     const minorationAge =
       caisse.decoteAge && ageDepart !== null
-        ? -Math.max(0, Math.ceil((caisse.decoteAge.ageTauxPlein - ageDepart) * 4 - 1e-6)) *
-          caisse.decoteAge.tauxParTrimestre
+        ? -Math.min(
+            Math.max(0, Math.ceil((caisse.decoteAge.ageTauxPlein - ageDepart) * 4 - 1e-6)),
+            caisse.decoteAge.trimestresMax ?? Infinity
+          ) * caisse.decoteAge.tauxParTrimestre
         : 0;
     const abattement = caisse.abattementTrimestres
       ? -abattementParTrimestres(caisse.abattementTrimestres, entree.trimestresManquants, ageDepart)

@@ -161,6 +161,28 @@ uniquement applicatif via `familyService`.
     salaire de référence (`capital.prixParPoint`), exclu de la rente ; réversion 50 %. Statut
     contractuel public : points projetés sur le revenu futur ; pas d'entrée au sélecteur « Caisse
     complémentaire » (caisse déduite du statut).
+  - *CARPIMKO complémentaire* (auxiliaires médicaux) : depuis la réforme du 01/01/2026 (arrêté du
+    14/11/2025), 8,70 % du revenu ramené entre 0,5 et 3 PASS ÷ coût d'acquisition 391 €, sans forfait
+    (points 1996-2025 conservés), valeur 21,48 € ; minoration identique à la base (`decoteCommeBase`) ;
+    surcote de 1,25 % par trimestre au-delà de la durée requise, 20 trimestres au plus
+    (`trimestresMax`) ; pas de majoration pour enfants ; réversion 60 %.
+  - *CARPIMKO ASV* (conventionnés) : 24,5 points + 0,40 % du revenu dans la limite de 5 PASS ÷ 27,43 €
+    (35,04 points d'ajustement au plus), valeur 1,50 € ; taux plein à 65 ans, minoration de 1,25 % par
+    trimestre avant ; réversion 50 %.
+  - *CARCDSF complémentaire* (dentistes et sages-femmes, caisse déclarée `CARCDSF_CD` ou
+    `CARCDSF_SF`) : 6 points + 11,35 % du revenu entre 0,65 et 5 PASS ÷ 535,10 € (= forfait 3 210,60 €
+    ÷ 6 points), valeur 31,82 € ; taux plein à 67 ans, minoration de 1,25 % par trimestre avant
+    (`decoteAge`), surcote de 1,25 % par trimestre après, 25 % au plus ; +10 % pour 3 enfants ;
+    réversion 60 %.
+  - *CARCDSF PCV* (conventionnés), propre à la profession déclarée : dentistes 10 points + 1,93 point
+    au prorata du revenu jusqu'à 5 PASS, valeur 28,8321 €, minoration de 1,25 % par trimestre avant
+    67 ans, 15 % au plus, +10 % pour 3 enfants ; sages-femmes 18 points par an, valeur 6,10 €,
+    minoration de 1,25 % par trimestre, plus favorable entre âge et durée, 15 % au plus, pas de
+    majoration familiale ; réversion 60 %. Les points PCV lus au RIS vont à la PCV de la profession
+    déclarée (dentiste par défaut, `caisseDuRegime`).
+  - Sélecteur « Caisse complémentaire » de Carrière : CARMF, CIPAV, CAVEC, CARPIMKO, CARCDSF
+    (chirurgiens-dentistes), CARCDSF (sages-femmes) ; case « Conventionné » pour les caisses à régime
+    supplémentaire (ASV ou PCV).
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
   (migration `20261022160000`), saisie dans le panneau « Statut actuel » de Carrière. Forfait 2026 de
@@ -170,7 +192,7 @@ uniquement applicatif via `familyService`.
   régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
   complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
   majoration, ligne « CNBF » de la Synthèse).
-  - Non couverts : caisses à points non paramétrées (CARPIMKO, CARCDSF, CAVP, CARPV, CAVOM, CPRN,
+  - Non couverts : caisses à points non paramétrées (CAVP, CARPV, CAVOM, CPRN,
     CAVAMAC, RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
     (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -626,6 +648,18 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
+- **CARPIMKO — valeurs à confirmer et limites.** Coût d'acquisition 2026 (391 €) et valeur de service
+  (21,48 €) de la complémentaire, coût (27,43 €) et valeur (1,50 €) du point ASV : sources secondaires
+  (Perspectives Retraite, 06/2026), cohérentes entre elles mais non publiées par la caisse ; taux et
+  bornes de la réforme 2026 (8,70 %, 0,5 à 3 PASS) donnés par la FNO, l'arrêté ne les chiffrant pas.
+  Âge du taux plein de l'ASV (65 ans, Fidroit 2025) peut-être relevé. Surcote non calculée pour un
+  départ après 67 ans sans la durée requise. Valeurs de service ASV par période (R1-R3) non distinguées.
+- **CARCDSF — valeurs à confirmer et limites.** Taux de réversion (60 %, Altis Conseil ; hypothèse pour
+  la PCV des sages-femmes). Points PCV des anciennes périodes (R1-R3 : 23,25 à 27,50 €) valorisés comme
+  R4 (28,8321 €). Point éventuel au titre de la part CPAM de la PCV (FSDL) non retenu. Libellés RIS
+  « PCV » non vérifiés sur un RIS réel. Non modélisés : départ anticipé à taux plein des mères (1 an par
+  enfant, 3 au plus), préretraite à 60 %, points gratuits et rachats des sages-femmes avant 2009,
+  dispenses de début d'activité, assiette N-2 de la cotisation d'ajustement PCV.
 - **Ircantec — valeurs à confirmer et limites.** Grille de minoration par trimestres manquants supposée
   identique à l'Agirc-Arrco (tableau officiel fourni sur demande par l'Ircantec ; grille par âge
   vérifiée) ; surcote après 67 ans additive à la première ; réversion 50 % (condition d'âge du conjoint

@@ -97,12 +97,24 @@ export interface TrancheSurcoteCaisse {
   multiplicatif?: boolean;
   /** Trimestres de surcote plafonnés aux trimestres en excédent sur la durée requise (Ircantec). */
   conditionDuree?: boolean;
+  /** Nombre maximal de trimestres de surcote dans la tranche (CARPIMKO : 20). */
+  trimestresMax?: number;
 }
 
 export type AcquisitionCaissePoints =
   | { mode: 'revenuParPoint'; revenuParPoint: number; pointsMaxAnnuels: number }
   | { mode: 'forfaitPlusRevenuParPoint'; pointsForfait: number; revenuParPoint: number; pointsMaxProportionnels: number }
-  | { mode: 'tranchesPrixAchat'; prixAchatPoint: number; tranches: { jusquAPass: number; taux: number }[] }
+  /**
+   * Cotisation par tranches de PASS ÷ prix d'achat ; `pointsForfait` ajoutés chaque année (CARCDSF),
+   * revenu relevé au plancher `assietteMinEnPass` (CARPIMKO).
+   */
+  | {
+      mode: 'tranchesPrixAchat';
+      prixAchatPoint: number;
+      tranches: { jusquAPass: number; taux: number }[];
+      pointsForfait?: number;
+      assietteMinEnPass?: number;
+    }
   /** Classe selon le revenu (`revenuMax` null : dernière classe). */
   | { mode: 'classes'; classes: { revenuMax: number | null; points: number }[] }
   /** Taux par tranche de revenu en euros, selon la classe de cotisation choisie. */
@@ -119,8 +131,8 @@ export interface ParametresCaissePoints {
   /** Expression reconnaissant le régime dans le libellé du RIS. */
   motifNom: string;
   exclureMotifNom?: string;
-  /** Caisse déclarée par un libéral (`retraite_data.caisse_liberale`). */
-  caisseLiberale: string;
+  /** Caisse(s) déclarée(s) par un libéral (`retraite_data.caisse_liberale`) ouvrant cette caisse. */
+  caisseLiberale: string | string[];
   conventionneSeulement?: boolean;
   source: string;
   valeurServicePoint: number;
@@ -139,7 +151,7 @@ export interface ParametresCaissePoints {
     tauxAuDela: number;
   };
   /** Minoration propre à la caisse par trimestre manquant avant un âge de taux plein fixe. */
-  decoteAge?: { ageTauxPlein: number; tauxParTrimestre: number };
+  decoteAge?: { ageTauxPlein: number; tauxParTrimestre: number; trimestresMax?: number };
   /**
    * Minoration selon les grilles d'anticipation Agirc-Arrco (âge et trimestres manquants, la plus
    * favorable), seulement si la retraite de base est minorée (Ircantec).
@@ -233,7 +245,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;

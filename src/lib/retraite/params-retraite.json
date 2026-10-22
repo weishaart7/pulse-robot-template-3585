@@ -994,7 +994,8 @@
         }
       ],
       "majorationTroisEnfantsPct": 10,
-      "tauxReversion": 0.5
+      "tauxReversion": 0.5,
+      "exclureMotifNom": "CARPIMKO|auxiliaires"
     },
     "cipav": {
       "nom": "CIPAV (complémentaire)",
@@ -1212,6 +1213,151 @@
         "7": 30
       },
       "tauxReversion": 0.5
+    },
+    "carpimko": {
+      "nom": "CARPIMKO (complémentaire)",
+      "motifNom": "CARPIMKO|auxiliaires m[ée]dicaux",
+      "exclureMotifNom": "ASV|allocations? suppl[ée]mentaires?|suppl[ée]mentaire",
+      "caisseLiberale": "CARPIMKO",
+      "source": "Règles : Fidroit CARPIMKO 2025 §3.1.1 (taux plein à l'âge légal avec la durée, sinon 67 ans ; abattement 1,25 % par trimestre manquant pour la base dans la limite des trimestres jusqu'à 67 ans ; majoration 1,25 % par trimestre au-delà du taux plein, 20 trimestres au plus) ; réversion 60 % (§5). Réforme au 01/01/2026 : arrêté du 14/11/2025 (JORFTEXT000052604983, cotisation proportionnelle seule ÷ coût d'acquisition, points 1996-2025 conservés) ; taux 8,70 % sur un revenu ramené entre 0,5 et 3 PASS (FNO). À confirmer (sources secondaires) : coût d'acquisition 391 € et valeur de service 21,48 € en 2026 (Perspectives Retraite, 06/2026)",
+      "valeurServicePoint": 21.48,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 391,
+        "assietteMinEnPass": 0.5,
+        "tranches": [
+          {
+            "jusquAPass": 3,
+            "taux": 0.087
+          }
+        ]
+      },
+      "decoteCommeBase": true,
+      "surcote": [
+        {
+          "depuis": "ageLegal",
+          "jusquA": 120,
+          "tauxParTrimestre": 0.0125,
+          "conditionDuree": true,
+          "trimestresMax": 20
+        }
+      ],
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6
+    },
+    "carpimkoAsv": {
+      "nom": "CARPIMKO ASV (conventionnés)",
+      "motifNom": "(CARPIMKO|auxiliaires m[ée]dicaux).*(ASV|suppl[ée]mentaire)|(ASV|suppl[ée]mentaire).*(CARPIMKO|auxiliaires m[ée]dicaux)",
+      "caisseLiberale": "CARPIMKO",
+      "conventionneSeulement": true,
+      "source": "Règles : Fidroit CARPIMKO 2025 §2.2-2.3 (24,5 points pour la cotisation forfaitaire ; cotisation d'ajustement 0,40 % du revenu dans la limite de 5 PASS, points = ajustement × points forfaitaires ÷ cotisation forfaitaire) et §4 (taux plein à 65 ans, minoration 1,25 % par trimestre avant) ; réversion 50 % (§5). À confirmer (sources secondaires) : coût du point 27,43 € (plafond 35,04 points d'ajustement) et valeur de service 1,50 € en 2026 (Perspectives Retraite, orthofin.fr) ; âge du taux plein de 65 ans peut-être relevé",
+      "valeurServicePoint": 1.5,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 27.43,
+        "pointsForfait": 24.5,
+        "tranches": [
+          {
+            "jusquAPass": 5,
+            "taux": 0.004
+          }
+        ]
+      },
+      "decoteAge": {
+        "ageTauxPlein": 65,
+        "tauxParTrimestre": 0.0125
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.5
+    },
+    "carcdsf": {
+      "nom": "CARCDSF (complémentaire)",
+      "motifNom": "CARCDSF|chirurgiens?[- ]dentistes|sages?[- ]femmes",
+      "exclureMotifNom": "\\bPCV\\b|prestations? compl[ée]mentaires? de vieillesse|suppl[ée]mentaire",
+      "caisseLiberale": [
+        "CARCDSF_CD",
+        "CARCDSF_SF"
+      ],
+      "source": "Règles : Fidroit CARCDSF 2025 §2.3 (taux plein à 67 ans, minoration 1,25 % par trimestre avant ; majoration 1,25 % par trimestre après, 25 % au plus ; +10 % pour 3 enfants). Valeurs 2026 : carcdsf.fr (forfait 3 210,60 € pour 6 points, 11,35 % du revenu entre 0,65 et 5 PASS ; valeur du point 31,82 €) ; coût d'acquisition 535,10 € = forfait ÷ 6 points (FSDL : « 5535,10 € », coquille). Réversion 60 % (Altis Conseil, à confirmer). Départ anticipé des mères (1 an par enfant) non modélisé",
+      "valeurServicePoint": 31.82,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 535.1,
+        "pointsForfait": 6,
+        "tranches": [
+          {
+            "jusquAPass": 0.65,
+            "taux": 0
+          },
+          {
+            "jusquAPass": 5,
+            "taux": 0.1135
+          }
+        ]
+      },
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125
+      },
+      "surcote": [
+        {
+          "depuis": 67,
+          "jusquA": 72,
+          "tauxParTrimestre": 0.0125
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
+    },
+    "carcdsfPcvCd": {
+      "nom": "CARCDSF PCV (chirurgiens-dentistes conventionnés)",
+      "motifNom": "\\bPCV\\b|prestations? compl[ée]mentaires? de vieillesse|CARCDSF.*suppl[ée]mentaire",
+      "caisseLiberale": "CARCDSF_CD",
+      "conventionneSeulement": true,
+      "source": "Règles : Fidroit CARCDSF 2025 §2.4 (10 points forfaitaires ; 1,93 point pour un revenu de 5 PASS, au prorata en dessous, soit 1 point par 124 507 € = 5 × PASS 2026 ÷ 1,93 ; taux plein à 67 ans, minoration 1,25 % par trimestre, 15 % au plus ; +10 % pour 3 enfants). Valeur 2026 des points R4 : 28,8321 € (tableau officiel CARCDSF au 01/01/2026), points R1-R3 valorisés comme R4 faute de ventilation au RIS. Cotisations 2026 : FSDL. Réversion 60 % (Altis Conseil, à confirmer) ; point éventuel au titre de la part CPAM (FSDL) non retenu",
+      "valeurServicePoint": 28.8321,
+      "acquisition": {
+        "mode": "forfaitPlusRevenuParPoint",
+        "pointsForfait": 10,
+        "revenuParPoint": 124507,
+        "pointsMaxProportionnels": 1.93
+      },
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125,
+        "trimestresMax": 12
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
+    },
+    "carcdsfPcvSf": {
+      "nom": "CARCDSF PCV (sages-femmes conventionnées)",
+      "motifNom": "\\bPCV\\b|prestations? compl[ée]mentaires? de vieillesse|CARCDSF.*suppl[ée]mentaire",
+      "caisseLiberale": "CARCDSF_SF",
+      "conventionneSeulement": true,
+      "source": "Règles : Fidroit CARCDSF 2025 §3.1.2 et §3.3 (18 points par an, cotisation forfaitaire 780 € ; minoration 1,25 % par trimestre, plus favorable entre âge de 67 ans et durée tous régimes, 12 trimestres au plus ; pas de majoration familiale). Valeur 2026 : 6,10 € (tableau officiel CARCDSF au 01/01/2026). Réversion 60 % (hypothèse, aucune source)",
+      "valeurServicePoint": 6.1,
+      "acquisition": {
+        "mode": "classes",
+        "classes": [
+          {
+            "revenuMax": null,
+            "points": 18
+          }
+        ]
+      },
+      "abattementTrimestres": {
+        "ageTauxPlein": 67,
+        "trimestresMax": 12,
+        "palier": 12,
+        "tauxJusquAuPalier": 0.0125,
+        "tauxAuDela": 0.0125
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6
     }
   },
   "cnbf": {
