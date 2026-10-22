@@ -57,6 +57,9 @@
  *   conventionnés : 262 points + 50 au prorata du revenu (5 PASS). Volet par
  *   capitalisation : rente estimée (calculCAVPCapitalisation.ts), ligne `id`
  *   `cavpCapitalisation` sans réversion.
+ * - CARPV (vétérinaires) : points selon la classe de revenu (B 17 à E 28) ;
+ *   taux plein à 65 ans selon l'âge seul, minoration 1,25 % par trimestre
+ *   avant ; pas de surcote ; sous 6 points, versement unique au prix d'achat.
  */
 
 import { RegimeDetecte } from './parseRIS';

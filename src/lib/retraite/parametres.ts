@@ -259,7 +259,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   cavpCapitalisation: ParametresCAVPCapitalisation;
   rafp: ParametresRAFP;

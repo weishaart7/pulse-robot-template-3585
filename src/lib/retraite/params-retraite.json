@@ -1417,6 +1417,45 @@
       "surcote": [],
       "majorationTroisEnfantsPct": 10,
       "tauxReversion": 0.6
+    },
+    "carpv": {
+      "nom": "CARPV (vétérinaires)",
+      "motifNom": "CARPV|v[ée]t[ée]rinaires",
+      "caisseLiberale": "CARPV",
+      "source": "Guide officiel CARPV 2026 (février 2026) : classe selon l'assiette, B jusqu'à 76 994 € (17 points), C jusqu'à 102 659 € (21), D jusqu'à 128 324 € (25), E au-delà (28) ; prix d'achat 602 €, valeur de service 39,54 € ; taux plein à 65 ans selon l'âge seul, minoration 1,25 % par trimestre avant 65 ans (dès 60 ans) ; pas de surcote au régime complémentaire ; +10 % pour 3 enfants ; réversion 60 % (100 % pour les points payés avec une cotisation majorée de 20 %, non modélisé). Versement unique sous 6 points = points × prix d'achat : Fidroit CARPV 2025 §3.1.3. Classes d'allègement (sur demande, sous 51 330 €) non modélisées",
+      "valeurServicePoint": 39.54,
+      "acquisition": {
+        "mode": "classes",
+        "classes": [
+          {
+            "revenuMax": 76994,
+            "points": 17
+          },
+          {
+            "revenuMax": 102659,
+            "points": 21
+          },
+          {
+            "revenuMax": 128324,
+            "points": 25
+          },
+          {
+            "revenuMax": null,
+            "points": 28
+          }
+        ]
+      },
+      "decoteAge": {
+        "ageTauxPlein": 65,
+        "tauxParTrimestre": 0.0125
+      },
+      "capital": {
+        "seuilPoints": 6,
+        "prixParPoint": 602
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
     }
   },
   "cnbf": {

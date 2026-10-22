@@ -475,3 +475,48 @@ describe('CAVP (pharmaciens)', () => {
     expect(r.total).toBeCloseTo(repartition(r).pensionAnnuelle + c.pensionAnnuelle, 6);
   });
 });
+
+describe('CARPV (vétérinaires)', () => {
+  const { carpv } = PARAMETRES_CAISSES_POINTS;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'CARPV', type: 'points', points: 300 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2035, 3, 1)), // 65 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: 'CARPV',
+    conventionne: false,
+    revenuAnnuel: 90000,
+    trimestresProjetes: 40,
+    trimestresManquants: 0,
+  };
+
+  it('reconnaissance au RIS', () => {
+    expect(caisseDuRegime('CARPV')).toBe('carpv');
+    expect(caisseDuRegime('Caisse des vétérinaires')).toBe('carpv');
+  });
+  it('points par classe de revenu (B 17, C 21, D 25, E 28)', () => {
+    expect(pointsAnnuelsCaisse(carpv, 20000)).toBe(17);
+    expect(pointsAnnuelsCaisse(carpv, 76994)).toBe(17);
+    expect(pointsAnnuelsCaisse(carpv, 76995)).toBe(21);
+    expect(pointsAnnuelsCaisse(carpv, 128324)).toBe(25);
+    expect(pointsAnnuelsCaisse(carpv, 200000)).toBe(28);
+  });
+  it('à 65 ans : (acquis + projetés) × 39,54 €, réversion 60 %', () => {
+    const r = calculerCaissesPoints(base);
+    expect(r.total).toBeCloseTo((300 + 10 * 21) * 39.54, 6);
+    expect(reversionCaissesPoints(r.details)).toBeCloseTo(r.total * 0.6, 6);
+  });
+  it('minoration 1,25 % par trimestre avant 65 ans (tableau officiel), pas de surcote après', () => {
+    expect(1 - tauxDecoteAge(carpv.decoteAge!, 60)).toBeCloseTo(0.75, 6);
+    expect(1 - tauxDecoteAge(carpv.decoteAge!, 62)).toBeCloseTo(0.85, 6);
+    expect(1 - tauxDecoteAge(carpv.decoteAge!, 64)).toBeCloseTo(0.95, 6);
+    expect(coefficientAgeCaisse(carpv, 68, 64)).toBe(1);
+  });
+  it('sous 6 points : versement unique au prix d’achat ; +10 % pour 3 enfants', () => {
+    const petit = calculerCaissesPoints({ ...base, regimesPoints: [{ nom: 'CARPV', type: 'points', points: 5 }], revenuAnnuel: null });
+    expect(petit.details[0].pensionAnnuelle).toBe(0);
+    expect(petit.details[0].capital).toBeCloseTo(5 * 602, 6);
+    const enfants = calculerCaissesPoints({ ...base, nombreEnfantsEligibles: 3 });
+    expect(enfants.total).toBeCloseTo((300 + 10 * 21) * 39.54 * 1.1, 6);
+  });
+});
