@@ -1020,6 +1020,71 @@
       "surcote": [],
       "majorationTroisEnfantsPct": 10,
       "tauxReversion": 0.6
+    },
+    "cavec": {
+      "nom": "CAVEC (complémentaire)",
+      "motifNom": "CAVEC|experts?[- ]comptables",
+      "caisseLiberale": "CAVEC",
+      "source": "Classes 2026 (A à I, revenu N-1, points par an) et valeur de service 1,3850 € : Hagnere Patrimoine, guide CAVEC 2026 (coût du point 16,63 €, cohérent sur toutes les classes) ; règles : Fidroit CAVEC 2025 §3.2 (statuts art. 12 à 14 : taux plein à 65 ans, minoration de 1,25 %/trimestre manquant entre 60 et 65 ans, surcote de 1,25 %/trimestre au-delà de 65 ans dans la limite de 20 trimestres, versement unique de 15 annuités sous 500 points) ; réversion 60 % (points acquis depuis 2009, 50 % avant) : la-retraite-en-clair.fr",
+      "valeurServicePoint": 1.385,
+      "acquisition": {
+        "mode": "classes",
+        "classes": [
+          {
+            "revenuMax": 14919,
+            "points": 54
+          },
+          {
+            "revenuMax": 31842,
+            "points": 209
+          },
+          {
+            "revenuMax": 44822,
+            "points": 334
+          },
+          {
+            "revenuMax": 65572,
+            "points": 498
+          },
+          {
+            "revenuMax": 81454,
+            "points": 757
+          },
+          {
+            "revenuMax": 99946,
+            "points": 1098
+          },
+          {
+            "revenuMax": 134854,
+            "points": 1216
+          },
+          {
+            "revenuMax": 181208,
+            "points": 1541
+          },
+          {
+            "revenuMax": null,
+            "points": 1841
+          }
+        ]
+      },
+      "decoteAge": {
+        "ageTauxPlein": 65,
+        "tauxParTrimestre": 0.0125
+      },
+      "surcote": [
+        {
+          "depuis": 65,
+          "jusquA": 70,
+          "tauxParTrimestre": 0.0125
+        }
+      ],
+      "capital": {
+        "seuilPoints": 500,
+        "multipleAnnuites": 15
+      },
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6
     }
   }
 }

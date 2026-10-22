@@ -132,3 +132,44 @@ describe('CIPAV 2026', () => {
     expect(r.details[0].coefficientAge).toBeCloseTo(0.95, 10);
   });
 });
+
+describe('CAVEC 2026', () => {
+  const { cavec } = PARAMETRES_CAISSES_POINTS;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'CAVEC', type: 'points', points: 20000 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2035, 3, 1)), // 65 ans
+    nombreEnfantsEligibles: 3,
+    caisseLiberale: null,
+    conventionne: false,
+    revenuAnnuel: null,
+    trimestresProjetes: 0,
+    trimestresManquants: 0,
+  };
+
+  it('classe selon le revenu : 50 000 € → classe D, 498 points ; au-delà de 181 208 € → 1 841', () => {
+    expect(pointsAnnuelsCaisse(cavec, 50000)).toBe(498);
+    expect(pointsAnnuelsCaisse(cavec, 14919)).toBe(54);
+    expect(pointsAnnuelsCaisse(cavec, 250000)).toBe(1841);
+  });
+  it('taux plein à 65 ans, sans majoration pour enfants', () => {
+    const r = calculerCaissesPoints(base);
+    expect(r.details[0].coefficientAge).toBe(1);
+    expect(r.total).toBeCloseTo(20000 * 1.385, 6);
+  });
+  it('départ à 64 ans : minoration de 4 trimestres (−5 %)', () => {
+    const r = calculerCaissesPoints({ ...base, dateEffet: new Date(Date.UTC(2034, 3, 1)) });
+    expect(r.details[0].coefficientAge).toBeCloseTo(0.95, 10);
+  });
+  it('surcote après 65 ans : 1,25 %/trimestre, 20 trimestres au plus', () => {
+    expect(calculerCaissesPoints({ ...base, dateEffet: new Date(Date.UTC(2036, 3, 1)) }).details[0].coefficientAge).toBeCloseTo(1.05, 10);
+    expect(calculerCaissesPoints({ ...base, dateEffet: new Date(Date.UTC(2042, 3, 1)) }).details[0].coefficientAge).toBeCloseTo(1.25, 10);
+  });
+  it('moins de 500 points : versement unique de 15 annuités, pas de rente ni de réversion', () => {
+    const r = calculerCaissesPoints({ ...base, regimesPoints: [{ nom: 'CAVEC', type: 'points', points: 400 }] });
+    expect(r.details[0].pensionAnnuelle).toBe(0);
+    expect(r.details[0].capital).toBeCloseTo(400 * 1.385 * 15, 6);
+    expect(r.total).toBe(0);
+    expect(reversionCaissesPoints(r.details)).toBe(0);
+  });
+});

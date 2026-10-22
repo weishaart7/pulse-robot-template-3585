@@ -138,6 +138,11 @@ uniquement applicatif via `familyService`.
     service 2,89 € (fiches CIPAV 2026) ; minoration identique à la base (1,25 % par trimestre
     manquant, plus favorable entre âge et durée, `decoteCommeBase`), taux plein à 67 ans ; +10 % pour
     3 enfants ; réversion 60 %.
+  - *CAVEC* : classe selon le revenu (9 classes 2026, de 54 à 1 841 points par an), valeur 1,3850 € ;
+    taux plein à 65 ans, minoration de 1,25 % par trimestre manquant avant, surcote de 1,25 % par
+    trimestre après, 20 trimestres au plus ; pas de majoration pour enfants ; sous 500 points (après
+    minoration ou surcote), versement unique de 15 annuités, affiché dans Carrière et exclu de la
+    pension annuelle et de la réversion ; réversion 60 %.
   - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
     évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -579,6 +584,11 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   sur les points des 30 premières années), abattement de 5 %/an si la base n'est pas liquidée, réversion
   à 100 % des années de cotisation « conjoint » (avant 2023). En départ anticipé, la minoration
   CIPAV reste calculée sur les trimestres manquants et l'âge.
+- **CAVEC — à confirmer.** Surcote après 65 ans : le doc Fidroit cite les statuts (art. 13, 1,25 %
+  par trimestre depuis le 01/09/2023, 20 trimestres) mais garde un tableau à 0,75 % et 15 % ; d'autres
+  sources donnent 0,75 % ou 0,65 %. Grille 2026 et valeur 1,3850 € non lues sur cavec.fr (source
+  secondaire). Réversion à 50 % pour les points d'avant 2009 non distinguée (60 % sur tout), option
+  « conjoint » à 100 % non modélisée. Le versement unique n'entre pas dans les totaux de la Synthèse.
 - **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
   partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
   éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation

@@ -980,6 +980,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         <SelectItem value="aucune" className="text-xs">Non modélisée</SelectItem>
                         <SelectItem value="CARMF" className="text-xs">CARMF (médecins)</SelectItem>
                         <SelectItem value="CIPAV" className="text-xs">CIPAV</SelectItem>
+                        <SelectItem value="CAVEC" className="text-xs">CAVEC (experts-comptables)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1377,14 +1378,18 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               <Label className="text-xs">
                 {caisse.nom} au départ du {dateEffetScenario.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
               </Label>
-              <div className={`${panelFigureClass}`}>{formatEuro2(caisse.pensionAnnuelle)} / an</div>
+              <div className={`${panelFigureClass}`}>
+                {caisse.capital > 0
+                  ? `${formatEuro2(caisse.capital)} en versement unique`
+                  : `${formatEuro2(caisse.pensionAnnuelle)} / an`}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {caisse.pointsAcquis.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} points acquis
                 {caisse.pointsProjetes > 0 &&
                   ` + ${caisse.pointsProjetes.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} points projetés`}{' '}
                 × {caisse.valeurServicePoint.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
                 {caisse.coefficientAge !== 1 &&
-                  ` × ${caisse.coefficientAge.toLocaleString('fr-FR', { maximumFractionDigits: 4 })} (surcote d'âge)`}
+                  ` × ${caisse.coefficientAge.toLocaleString('fr-FR', { maximumFractionDigits: 4 })} (coefficient d'âge)`}
                 {caisse.majorationEnfants > 0 && `, + ${formatEuro2(caisse.majorationEnfants)} de majoration pour 3 enfants`}
                 . Réversion {Math.round(caisse.tauxReversion * 100)} %.
               </p>

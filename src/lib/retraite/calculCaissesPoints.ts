@@ -11,7 +11,7 @@
  * service du millésime → coefficient d'âge (surcote) → majoration pour 3
  * enfants → réversion au taux de la caisse.
  *
- * Caisses paramétrées : CARMF complémentaire et ASV (médecins), CIPAV.
+ * Caisses paramétrées : CARMF complémentaire et ASV (médecins), CIPAV, CAVEC.
  * - Taux plein à l'âge légal ; un départ plus tôt n'est possible que par un
  *   dispositif de départ anticipé, retenu ici à taux plein (coefficient 1).
  * - Surcote : +1,25 % par trimestre de l'âge légal à 65 ans, puis la
@@ -22,6 +22,11 @@
  *   d'achat ; minoration identique à la base (1,25 % par trimestre
  *   manquant, le plus favorable entre âge et durée, base liquidée en même
  *   temps) ; majoration de report (30 ans d'affiliation) non modélisée.
+ * - CAVEC : classe selon le revenu (points par an) ; taux plein à 65 ans,
+ *   minoration de 1,25 % par trimestre manquant avant, surcote de 1,25 % par
+ *   trimestre après, dans la limite de 20 trimestres ; sous 500 points
+ *   (après minoration ou surcote), versement unique de 15 annuités, exclu de
+ *   la pension annuelle.
  */
 
 import { RegimeDetecte } from './parseRIS';
@@ -52,6 +57,10 @@ export function caissesDuLiberal(caisseLiberale: string | null, conventionne: bo
 export function pointsAnnuelsCaisse(caisse: ParametresCaissePoints, revenuAnnuel: number): number {
   const revenu = Math.max(0, revenuAnnuel);
   const { acquisition } = caisse;
+  if (acquisition.mode === 'classes') {
+    const classe = acquisition.classes.find((c) => c.revenuMax === null || revenu <= c.revenuMax);
+    return classe?.points ?? 0;
+  }
   if (acquisition.mode === 'tranchesPrixAchat') {
     let cotisation = 0;
     let plancher = 0;
@@ -92,7 +101,10 @@ export interface DetailCaissePoints {
   valeurServicePoint: number;
   coefficientAge: number;
   majorationEnfants: number;
+  /** Rente annuelle (0 si versée en capital). */
   pensionAnnuelle: number;
+  /** Versement unique sous le seuil de points de la caisse, exclu de la pension annuelle. */
+  capital: number;
   tauxReversion: number;
 }
 
@@ -145,10 +157,19 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
     const minoration = caisse.decoteCommeBase
       ? decoteCNAVPL(-Math.max(0, entree.trimestresManquants), 0, ageDepart)
       : 0;
-    const coefficientAge = coefficientSurcote * (1 + minoration / 100);
+    // Minoration propre (âge de taux plein fixe) : trimestres manquants arrondis au supérieur.
+    const minorationAge =
+      caisse.decoteAge && ageDepart !== null
+        ? -Math.max(0, Math.ceil((caisse.decoteAge.ageTauxPlein - ageDepart) * 4 - 1e-6)) *
+          caisse.decoteAge.tauxParTrimestre
+        : 0;
+    const coefficientAge = coefficientSurcote * (1 + minoration / 100) * (1 + minorationAge);
     const pensionAvantMajoration = (pointsAcquis + pointsProjetes) * caisse.valeurServicePoint * coefficientAge;
     const majorationEnfants =
       entree.nombreEnfantsEligibles >= 3 ? (pensionAvantMajoration * caisse.majorationTroisEnfantsPct) / 100 : 0;
+    const enCapital =
+      caisse.capital !== undefined && (pointsAcquis + pointsProjetes) * coefficientAge < caisse.capital.seuilPoints;
+    const capital = enCapital ? (pensionAvantMajoration + majorationEnfants) * caisse.capital!.multipleAnnuites : 0;
     details.push({
       id,
       nom: caisse.nom,
@@ -157,7 +178,8 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
       valeurServicePoint: caisse.valeurServicePoint,
       coefficientAge,
       majorationEnfants,
-      pensionAnnuelle: pensionAvantMajoration + majorationEnfants,
+      pensionAnnuelle: enCapital ? 0 : pensionAvantMajoration + majorationEnfants,
+      capital,
       tauxReversion: caisse.tauxReversion,
     });
   }
@@ -171,5 +193,8 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
 /** Réversion annuelle des caisses à points (taux propre à chaque caisse). */
 export function reversionCaissesPoints(details: DetailCaissePoints[]): number {
   // Hors majoration pour enfants (non transmise, comme au régime général).
-  return details.reduce((total, d) => total + (d.pensionAnnuelle - d.majorationEnfants) * d.tauxReversion, 0);
+  return details.reduce(
+    (total, d) => total + (d.pensionAnnuelle > 0 ? (d.pensionAnnuelle - d.majorationEnfants) * d.tauxReversion : 0),
+    0
+  );
 }
