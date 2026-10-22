@@ -28,6 +28,7 @@ export interface MillesimeRetraite {
   rafpValeurServicePoint: number;
   cnavplValeurPoint: number;
   agircArrcoPrixAchatPoint: number;
+  rafpValeurAcquisitionPoint: number;
   agircArrcoValeurServicePoint: number;
   agircArrcoPlafondMajorationEnfantsAnnuel: number;
   reversionRegimeGeneral: {
@@ -76,6 +77,15 @@ export interface ParametresMDA {
   fpTrimestresMajorationDuree: number;
   fpTrimestresBonification: number;
   fpTauxMaximalAvecBonificationsPct: number;
+}
+
+export interface ParametresProjectionStatut {
+  source: string;
+  rafpTauxCotisationTotal: number;
+  rafpPlafondPrimesEnPartDuTIB: number;
+  cnavplPointsMaxT1: number;
+  cnavplPointsMaxT2: number;
+  cnavplPlafondT2EnPass: number;
 }
 
 export interface ParametresRAFP {
@@ -144,6 +154,7 @@ interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
+  projectionStatut: ParametresProjectionStatut;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
@@ -192,6 +203,7 @@ export const BAREME_RACHAT = PARAMS.rachat;
 export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
 export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
 export const PARAMETRES_MDA: ParametresMDA = PARAMS.mda;
+export const PARAMETRES_PROJECTION_STATUT: ParametresProjectionStatut = PARAMS.projectionStatut;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;
 export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;

@@ -378,6 +378,22 @@ uniquement applicatif via `familyService`.
   (`anneesPasseesSansDonnees()`, RIS ancien) ne sont jamais projetées, et sont signalées sur Carrière.
   SAM projeté avec des périodes synthétiques bornées aux mêmes trimestres, revenu au prorata.
   `Trimestres.tsx` utilise la même projection (auparavant 4 × écart d'âge en années entières).
+- **Projection selon le statut actuel** — [projectionStatut.ts](src/lib/retraite/projectionStatut.ts),
+  colonnes `retraite_data.statut_actuel` (défaut `salarie_prive`), `caisse_liberale` (phase 3.2) et
+  `primes_annuelles_fp` (migration `20261022140000`), sélecteur « Statut actuel » dans Carrière.
+  Statut unique conservé jusqu'au départ ; les trimestres projetés (carrière continue) vont au régime
+  du statut :
+  - salarié du privé, contractuel public, indépendant SSI, artiste-auteur : régime général (trimestres
+    et SAM projetés). Points Agirc-Arrco futurs pour le seul salarié du privé ; les complémentaires des
+    autres (Ircantec, RCI, RAAP) restent au RIS jusqu'à la phase 3.2 ;
+  - fonctionnaire : trimestres liquidables FP, points RAFP = 10 % des primes plafonnées à 20 % du TIB
+    ÷ 1,4596 € (valeur d'acquisition 2026), TIB inchangé ;
+  - libéral : trimestres CNAVPL, points de base = 557 × min(revenu, PASS) ÷ PASS + 25 × min(revenu,
+    5 PASS) ÷ 5 PASS par an ; revenu = revenu de l'hypothèse de revenu futur ;
+  - avocat : rien n'est projeté avant la phase CNBF (signalé).
+  Régime cible non renseigné (FP ou CNAVPL non coché) : projection perdue, signalée à l'écran. Même
+  répartition dans la Synthèse, Carrière et l'Optimisation (`simulationDepart.ts`, où la surcote ne
+  projette de trimestres cotisés au régime général que pour un statut qui y cotise).
 - **Écrêtement du MICO tous régimes.** Le plafond global (référentiel §3.5.5) est comparé à P0 + MICO +
   toutes les pensions personnelles connues : complémentaires à points (`regimes_points`), fonction
   publique (pension finale, majoration enfants et NBI comprises), RAFP, CNAVPL, plus les autres
@@ -500,6 +516,9 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   règle doit être reportée aux deux endroits (décotes désormais partagées, mais pas MIGA, surcote,
   majorations, NBI). `decoteSurTrimestresPlafond25()` (calcul.ts) n'est plus appelée que par des
   tests : code mort, doublon de `decoteSurTrimestres()`.
+- Projection par statut : pas de changement de statut avant le départ ; trimestres CNAVPL et FP
+  projetés à 4 par an quel que soit le revenu ; les cartes FP et CNAVPL de Carrière affichent les
+  valeurs saisies, sans la projection (seul le total et la ligne « Projeté en… » l'intègrent).
 - Limites connues de la projection (phase 3) : un client ayant dépassé l'âge légal se voit projeter le
   trimestre en cours comme travaillé (hypothèse de poursuite d'activité, même pour un RIS ancien) ;
   `Trimestres.tsx` ne projette pas le SAM (salaire annuel moyen saisi) ; l'export PDF garde le libellé

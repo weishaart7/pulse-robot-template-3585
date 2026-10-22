@@ -23,7 +23,8 @@
         "agircArrcoPlafondMajorationEnfantsAnnuel": "altis-conseil.fr, majorations pour enfants Agirc-Arrco 2026 (2 367,48 €/an depuis le 01/11/2025)",
         "prelevementsSociauxPensions": "L'Assurance retraite, « Prélèvements sociaux en 2026 : augmentation des seuils » (métropole, RFR N-2)",
         "reversionRegimeGeneral": "moinsdimpots.fr et mes-allocs.fr, pension de réversion 2026 (plafonds 2 080 × SMIC horaire 12,02 € et × 1,6 ; minimum 334,92 €/mois ; maximum 1 081,35 €/mois)",
-        "per": "Linxea, PER 2026 : 10 % de 8 PASS 2025 (37 680 €), minimum 10 % du PASS 2025 (4 710 €), report 5 ans"
+        "per": "Linxea, PER 2026 : 10 % de 8 PASS 2025 (37 680 €), minimum 10 % du PASS 2025 (4 710 €), report 5 ans",
+        "rafpValeurAcquisitionPoint": "ERAFP, délibération n° 5 du CA du 16/12/2025 (valeur d'acquisition 1,45960 € au 01/01/2026)"
       },
       "agircArrcoPrixAchatPoint": 20.1877,
       "agircArrcoValeurServicePoint": 1.4386,
@@ -49,7 +50,8 @@
       "per": {
         "plafondDeductionMinimum": 4710,
         "plafondDeductionMaximum": 37680
-      }
+      },
+      "rafpValeurAcquisitionPoint": 1.4596
     }
   ],
   "rachat": {
@@ -927,5 +929,13 @@
     "fpTrimestresMajorationDuree": 2,
     "fpTrimestresBonification": 4,
     "fpTauxMaximalAvecBonificationsPct": 80
+  },
+  "projectionStatut": {
+    "source": "RAFP : cotisation 5 % agent + 5 % employeur sur les primes, plafonnées à 20 % du traitement indiciaire brut (référentiel §7) ; CNAVPL : 557 points max en T1 (0 à 1 PASS) et 25 en T2 (0 à 5 PASS), au prorata de la cotisation (référentiel §5.2)",
+    "rafpTauxCotisationTotal": 0.1,
+    "rafpPlafondPrimesEnPartDuTIB": 0.2,
+    "cnavplPointsMaxT1": 557,
+    "cnavplPointsMaxT2": 25,
+    "cnavplPlafondT2EnPass": 5
   }
 }

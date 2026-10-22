@@ -51,6 +51,7 @@ import {
 } from './calculAgircArrco';
 import { EnfantAgircArrco, nombreEnfantsAChargeAgircArrco } from './enfantsEligiblesMajoration';
 import { TrimestresEnfantsParRegime } from './trimestresEnfants';
+import { appliquerProjectionStatut, projeteAuRegimeGeneral, StatutActuel } from './projectionStatut';
 import { evaluerCarriereLongue, carriereLongueOuverteA, ResultatCarriereLongue } from './calculCarriereLongue';
 
 export interface ContexteSimulationDepart {
@@ -66,6 +67,11 @@ export interface ContexteSimulationDepart {
   nombreEnfantsEligibles: number;
   /** Enfants pour la majoration Agirc-Arrco pour enfant à charge (évaluée à chaque date d'effet). */
   enfantsAgircArrco: EnfantAgircArrco[];
+  /** Statut actuel : régime des trimestres projetés (absent = salarié du privé). */
+  statutActuel?: StatutActuel;
+  /** Revenu futur (libéral : points CNAVPL) et primes (fonctionnaire : RAFP). */
+  revenuFutur?: number | null;
+  primesAnnuellesFP?: number | null;
   /** MDA à une date d'effet (éducation acquise année après année), absent = aucune. */
   trimestresEnfantsA?: (dateEffet: Date) => TrimestresEnfantsParRegime;
   /** Salaire de projection des points Agirc-Arrco, `null` si inconnu. */
@@ -119,6 +125,7 @@ const premierJourMoisSuivant = (date: Date) => new Date(Date.UTC(date.getUTCFull
 
 export function creerSimulateurDepart(ctx: ContexteSimulationDepart): SimulateurDepart {
   const { dateNaissance, aujourdHui, trimestresCarriere, fonctionPublique, cnavpl } = ctx;
+  const statut: StatutActuel = ctx.statutActuel ?? 'salarie_prive';
 
   const trimestresAutresRegimes = (fonctionPublique?.trimestresLiquidables ?? 0) + (cnavpl?.trimestresCNAVPL ?? 0);
   const trimestresProjetesJusqua = (dateEffet: Date) =>
@@ -177,10 +184,11 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     dateEffet: Date
   ): number => {
     if (!aUnRegimeAgircArrco) return pensionAutresRegimesPoints;
+    const projeterAgircArrco = statut === 'salarie_prive';
     const agirc = pensionAgircArrco({
       pointsAcquis: pointsAgircArrco,
       pointsProjetes:
-        ctx.salaireComplementaire !== null
+        ctx.salaireComplementaire !== null && projeterAgircArrco
           ? (pointsAgircArrcoAnnuels(ctx.salaireComplementaire) * trimestresProjetes) / 4
           : 0,
       coefficientAnticipation: coefficientAnticipationAgircArrco(decoteBase < 0, ageDepartAnnees, trimestresManquants),
@@ -196,10 +204,22 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     // MDA : régime général dans les trimestres validés, FP/CNAVPL dans leurs
     // données ; jamais dans la carrière longue ni la surcote.
     const enfants = ctx.trimestresEnfantsA?.(dateEffet);
-    const trimestresValidesProjetes = ctx.trimestresValidesActuels + trimestresProjetes + (enfants?.rg ?? 0);
-    const { fonctionPublique: fonctionPubliqueDepart, cnavpl: cnavplDepart } = appliquerTrimestresEnfantsAutresRegimes(
+    // Trimestres projetés dans le régime du statut actuel (projectionStatut.ts).
+    const projection = appliquerProjectionStatut({
+      statut: statut,
+      trimestresProjetes,
+      revenuAnnuel: ctx.revenuFutur ?? null,
+      primesAnnuellesFP: ctx.primesAnnuellesFP ?? null,
+      trimestresValidesRG: ctx.trimestresValidesActuels,
+      salaireAnnuelMoyenRIS: ctx.salaireAnnuelMoyen,
+      salaireAnnuelMoyenProjete: ctx.salaireAnnuelMoyen,
       fonctionPublique,
       cnavpl,
+    });
+    const trimestresValidesProjetes = projection.trimestresValidesRG + (enfants?.rg ?? 0);
+    const { fonctionPublique: fonctionPubliqueDepart, cnavpl: cnavplDepart } = appliquerTrimestresEnfantsAutresRegimes(
+      projection.fonctionPublique,
+      projection.cnavpl,
       enfants
     );
     const auMoinsUnTrimestreMajorationEnfant = enfants?.auMoinsUn || ctx.auMoinsUnTrimestreMajorationEnfant;
@@ -238,7 +258,8 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       dateEffet,
       trimestresTousRegimes,
       trimestresRequis,
-      projeterDepuis: aujourdHui,
+      // Trimestres futurs cotisés au régime général seulement si le statut y projette.
+      projeterDepuis: projeteAuRegimeGeneral(statut) ? aujourdHui : undefined,
     });
     const anneeReferenceSurcoteParentale = ageLegal.stable
       ? dateAnniversaireLegal(dateNaissance, ageLegal.age).getUTCFullYear() - 1

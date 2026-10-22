@@ -2482,6 +2482,9 @@ export type Database = {
           trimestres_liquidables_fp: number | null
           trimestres_liquidables_nbi: number | null
           trimestres_valides: number | null
+          statut_actuel: string
+          caisse_liberale: string | null
+          primes_annuelles_fp: number | null
           updated_at: string
           user_id: string
           valeur_point_cnavpl: number | null
@@ -2519,6 +2522,9 @@ export type Database = {
           trimestres_liquidables_fp?: number | null
           trimestres_liquidables_nbi?: number | null
           trimestres_valides?: number | null
+          statut_actuel?: string
+          caisse_liberale?: string | null
+          primes_annuelles_fp?: number | null
           updated_at?: string
           user_id: string
           valeur_point_cnavpl?: number | null
@@ -2556,6 +2562,9 @@ export type Database = {
           trimestres_liquidables_fp?: number | null
           trimestres_liquidables_nbi?: number | null
           trimestres_valides?: number | null
+          statut_actuel?: string
+          caisse_liberale?: string | null
+          primes_annuelles_fp?: number | null
           updated_at?: string
           user_id?: string
           valeur_point_cnavpl?: number | null

@@ -23,7 +23,12 @@ import {
   trimestresRequisPourGeneration,
   dateEffetDepartAgeLegal,
 } from '@/lib/retraite/calcul';
-import { calculerPensionConsolidee, EntreePensionConsolidee } from '@/lib/retraite/pensionConsolidee';
+import {
+  calculerPensionConsolidee,
+  EntreePensionConsolidee,
+  DonneesFonctionPublique,
+  DonneesCNAVPL,
+} from '@/lib/retraite/pensionConsolidee';
 import { calculerProjectionRevenuFutur, salaireProjectionComplementaire } from '@/lib/retraite/hypotheseRevenuFutur';
 import { estRegimeAgircArrco } from '@/lib/retraite/calculAgircArrco';
 import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
@@ -31,6 +36,13 @@ import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonction
 import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { TrimestresEnfantsPanel } from '@/components/retraite/TrimestresEnfantsPanel';
+import {
+  appliquerProjectionStatut,
+  statutActuelDepuisTexte,
+  StatutActuel,
+  LIBELLES_STATUT_ACTUEL,
+  LIBELLES_REVENU_STATUT,
+} from '@/lib/retraite/projectionStatut';
 import { trimestresEnfants as calculerTrimestresEnfants, liensFamiliauxDeLaPersonne } from '@/lib/retraite/trimestresEnfants';
 
 // Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
@@ -196,6 +208,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Salaire brut annuel total (non plafonné) — projection des points
   // Agirc-Arrco futurs (colonne salaire_brut_annuel, cf. calculAgircArrco.ts).
   const [salaireBrutAnnuel, setSalaireBrutAnnuel] = useState<string>('');
+  // Statut actuel : oriente la projection de carrière (projectionStatut.ts).
+  const [statutActuel, setStatutActuel] = useState<StatutActuel>('salarie_prive');
+  const [primesAnnuellesFP, setPrimesAnnuellesFP] = useState<string>('');
   // Départ anticipé confirmé par la caisse (handicap, incapacité
   // permanente…) — utilisé par l'onglet Optimisation (taux plein dès cet âge).
   const [motifDepartAnticipeConfirme, setMotifDepartAnticipeConfirme] = useState<MotifDepartAnticipeConfirme | ''>('');
@@ -372,6 +387,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.salaire_brut_annuel !== undefined && data.salaire_brut_annuel !== null) {
         setSalaireBrutAnnuel(data.salaire_brut_annuel.toString());
       }
+      if (data.statut_actuel !== undefined) {
+        setStatutActuel(statutActuelDepuisTexte(data.statut_actuel));
+      }
+      if (data.primes_annuelles_fp !== undefined && data.primes_annuelles_fp !== null) {
+        setPrimesAnnuellesFP(data.primes_annuelles_fp.toString());
+      }
       if (data.autres_pensions_mensuelles !== undefined && data.autres_pensions_mensuelles !== null) {
         setAutresPensionsMensuelles(data.autres_pensions_mensuelles.toString());
       }
@@ -424,6 +445,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             valeur_point_cnavpl: parseFloat(valeurPointCNAVPL) || 0,
             autres_pensions_mensuelles: parseFloat(autresPensionsMensuelles) || 0,
             salaire_brut_annuel: parseFloat(salaireBrutAnnuel) || null,
+            statut_actuel: statutActuel,
+            primes_annuelles_fp: parseFloat(primesAnnuellesFP) || null,
             depart_anticipe_confirme_motif: motifDepartAnticipeConfirme === '' ? null : motifDepartAnticipeConfirme,
             depart_anticipe_confirme_age:
               motifDepartAnticipeConfirme === '' ? null : parseFloat(ageDepartAnticipeConfirme) || null,
@@ -441,6 +464,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       JSON.stringify(detailCarriere),
       auMoinsUnTrimestreMajorationEnfant,
       mdaDejaAuRis,
+      statutActuel,
+      primesAnnuellesFP,
       hasFonctionPublique,
       trimestresLiquidablesFP,
       hasCNAVPL,
@@ -631,9 +656,71 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // pas seulement la dernière version sauvegardée. Salaire/trimestres déjà
   // augmentés de la projection de revenu futur ci-dessus (étape 2 de la
   // fusion).
+  // Carrière future dans le régime du statut actuel (cf. projectionStatut.ts),
+  // sur la saisie en cours des régimes fonction publique et CNAVPL.
+  const projectionStatut = useMemo(() => {
+    const fonctionPubliqueSaisie: DonneesFonctionPublique | null = hasFonctionPublique
+      ? {
+          traitementIndiciaireBrut: parseFloat(traitementIndiciaireBrut) || 0,
+          trimestresLiquidables: parseInt(trimestresLiquidablesFP) || 0,
+          pointsRAFP: parseFloat(pointsRAFP) || 0,
+          departAnticipeCategorieActive,
+          ageDepartAnticipe: parseFloat(ageDepartAnticipe),
+          ageAnnulationDecote: parseFloat(ageAnnulationDecote),
+          departPourInvalidite,
+          anneeOuvertureDroits: anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10),
+          regimeAffiliation:
+            regimeAffiliationFP === '' ? undefined : (regimeAffiliationFP as 'SRE' | 'CNRACL'),
+          moyenneAnnuelleNBI: parseFloat(moyenneAnnuelleNBI) || 0,
+          trimestresLiquidablesNBI: parseFloat(trimestresLiquidablesNBI) || 0,
+        }
+      : null;
+    const cnavplSaisie: DonneesCNAVPL | null = hasCNAVPL
+      ? {
+          trimestresCNAVPL: parseInt(trimestresCNAVPL) || 0,
+          pointsCNAVPL: parseFloat(pointsCNAVPL) || 0,
+          valeurPointCNAVPL: parseFloat(valeurPointCNAVPL) || 0,
+        }
+      : null;
+
+    return appliquerProjectionStatut({
+      statut: statutActuel,
+      trimestresProjetes: projectionRevenuFutur.trimestresValidesProjetes,
+      revenuAnnuel: projectionRevenuFutur.revenuHypothese,
+      primesAnnuellesFP: parseFloat(primesAnnuellesFP) || null,
+      trimestresValidesRG: parseInt(trimestresValides) || 0,
+      salaireAnnuelMoyenRIS: parseFloat(salaireAnnuelMoyen) || 0,
+      salaireAnnuelMoyenProjete: projectionRevenuFutur.salaireAnnuelMoyenProjete,
+      fonctionPublique: fonctionPubliqueSaisie,
+      cnavpl: cnavplSaisie,
+    });
+  }, [
+    hasFonctionPublique,
+    traitementIndiciaireBrut,
+    trimestresLiquidablesFP,
+    pointsRAFP,
+    departAnticipeCategorieActive,
+    ageDepartAnticipe,
+    ageAnnulationDecote,
+    departPourInvalidite,
+    anneeOuvertureDroits,
+    regimeAffiliationFP,
+    moyenneAnnuelleNBI,
+    trimestresLiquidablesNBI,
+    hasCNAVPL,
+    trimestresCNAVPL,
+    pointsCNAVPL,
+    valeurPointCNAVPL,
+    statutActuel,
+    projectionRevenuFutur,
+    primesAnnuellesFP,
+    trimestresValides,
+    salaireAnnuelMoyen,
+  ]);
+
   // Trimestres enfants (MDA) sur la saisie en cours, même fonction que la
   // Synthèse et l'Optimisation.
-  const trimestresValidesHorsMDA = (parseInt(trimestresValides) || 0) + projectionRevenuFutur.trimestresValidesProjetes;
+  const trimestresValidesHorsMDA = projectionStatut.trimestresValidesRG;
   const trimestresEnfantsPersonne = useMemo(
     () =>
       calculerTrimestresEnfants({
@@ -646,8 +733,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         dateEffet: dateEffetScenario,
         dureeTousRegimesHorsMDA:
           trimestresValidesHorsMDA +
-          (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
-          (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0),
+          (projectionStatut.fonctionPublique?.trimestresLiquidables ?? 0) +
+          (projectionStatut.cnavpl?.trimestresCNAVPL ?? 0),
         mdaDejaAuRis,
       }),
     [
@@ -661,8 +748,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       hasCNAVPL,
       dateEffetScenario,
       trimestresValidesHorsMDA,
-      trimestresLiquidablesFP,
-      trimestresCNAVPL,
+      projectionStatut,
       mdaDejaAuRis,
     ]
   );
@@ -670,8 +756,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
 
   const entreePensionConsolidee = useMemo<EntreePensionConsolidee>(
     () => ({
-      salaireAnnuelMoyen: projectionRevenuFutur.salaireAnnuelMoyenProjete,
-      trimestresValides: (parseInt(trimestresValides) || 0) + projectionRevenuFutur.trimestresValidesProjetes,
+      salaireAnnuelMoyen: projectionStatut.salaireAnnuelMoyen,
+      trimestresValides: projectionStatut.trimestresValidesRG,
       trimestresRequis,
       dateNaissance: dateNaissanceDetail,
       dateEffet: dateEffetScenario,
@@ -680,30 +766,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       familyLinks,
       auMoinsUnTrimestreMajorationEnfant,
       autresPensionsMensuelles: parseFloat(autresPensionsMensuelles) || 0,
-      fonctionPublique: hasFonctionPublique
-        ? {
-            traitementIndiciaireBrut: parseFloat(traitementIndiciaireBrut) || 0,
-            trimestresLiquidables: parseInt(trimestresLiquidablesFP) || 0,
-            pointsRAFP: parseFloat(pointsRAFP) || 0,
-            departAnticipeCategorieActive,
-            ageDepartAnticipe: parseFloat(ageDepartAnticipe),
-            ageAnnulationDecote: parseFloat(ageAnnulationDecote),
-            departPourInvalidite,
-            anneeOuvertureDroits: anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10),
-            regimeAffiliation:
-              regimeAffiliationFP === '' ? undefined : (regimeAffiliationFP as 'SRE' | 'CNRACL'),
-            moyenneAnnuelleNBI: parseFloat(moyenneAnnuelleNBI) || 0,
-            trimestresLiquidablesNBI: parseFloat(trimestresLiquidablesNBI) || 0,
-          }
-        : null,
-      cnavpl: hasCNAVPL
-        ? {
-            trimestresCNAVPL: parseInt(trimestresCNAVPL) || 0,
-            pointsCNAVPL: parseFloat(pointsCNAVPL) || 0,
-            valeurPointCNAVPL: parseFloat(valeurPointCNAVPL) || 0,
-          }
-        : null,
-      projectionComplementaire: salaireComplementaire
+      fonctionPublique: projectionStatut.fonctionPublique,
+      cnavpl: projectionStatut.cnavpl,
+      projectionComplementaire: salaireComplementaire && projectionStatut.projeterAgircArrco
         ? {
             salaireAnnuel: salaireComplementaire.salaireAnnuel,
             trimestresProjetes: projectionRevenuFutur.trimestresProjetesJusquADateEffet,
@@ -713,8 +778,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     }),
     [
       trimestresEnfantsPersonne,
+      projectionStatut,
       projectionRevenuFutur,
-      trimestresValides,
       trimestresRequis,
       dateNaissanceDetail,
       dateEffetScenario,
@@ -723,22 +788,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       familyLinks,
       auMoinsUnTrimestreMajorationEnfant,
       autresPensionsMensuelles,
-      hasFonctionPublique,
-      traitementIndiciaireBrut,
-      trimestresLiquidablesFP,
-      pointsRAFP,
-      departAnticipeCategorieActive,
-      ageDepartAnticipe,
-      ageAnnulationDecote,
-      departPourInvalidite,
-      anneeOuvertureDroits,
-      regimeAffiliationFP,
-      moyenneAnnuelleNBI,
-      trimestresLiquidablesNBI,
-      hasCNAVPL,
-      trimestresCNAVPL,
-      pointsCNAVPL,
-      valeurPointCNAVPL,
       salaireComplementaire,
     ]
   );
@@ -871,6 +920,59 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 Valeur fixée selon votre date de naissance
               </p>
             </div>
+          </div>
+
+          <div className={`${panelInsetClass} space-y-2`}>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1.5 min-w-[16rem]">
+                <Label htmlFor={`statut-actuel-${personne}`} className="text-xs">Statut actuel</Label>
+                <Select value={statutActuel} onValueChange={(valeur) => setStatutActuel(valeur as StatutActuel)}>
+                  <SelectTrigger id={`statut-actuel-${personne}`} className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(LIBELLES_STATUT_ACTUEL) as StatutActuel[]).map((statut) => (
+                      <SelectItem key={statut} value={statut} className="text-xs">
+                        {LIBELLES_STATUT_ACTUEL[statut]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {statutActuel === 'fonctionnaire' && (
+                <div className="space-y-1.5 max-w-[12rem]">
+                  <Label htmlFor={`primes-fp-${personne}`} className="text-xs">Primes annuelles (€)</Label>
+                  <Input
+                    id={`primes-fp-${personne}`}
+                    type="number"
+                    className="h-8 text-xs"
+                    value={primesAnnuellesFP}
+                    onChange={(e) => setPrimesAnnuellesFP(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              La carrière future est projetée dans le régime de ce statut, conservé jusqu'au départ. Le revenu
+              hypothétique ci-dessous s'entend comme {LIBELLES_REVENU_STATUT[statutActuel]}.
+              {statutActuel === 'fonctionnaire' &&
+                ' Les primes, plafonnées à 20 % du traitement indiciaire, alimentent la RAFP (10 % de cotisation).'}
+            </p>
+            {projectionStatut.trimestresFPProjetes > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Projeté en fonction publique : {projectionStatut.trimestresFPProjetes} trimestres liquidables,{' '}
+                {Math.round(projectionStatut.pointsRAFPProjetes).toLocaleString('fr-FR')} points RAFP.
+              </p>
+            )}
+            {projectionStatut.trimestresCNAVPLProjetes > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Projeté à la CNAVPL : {projectionStatut.trimestresCNAVPLProjetes} trimestres,{' '}
+                {Math.round(projectionStatut.pointsCNAVPLProjetes).toLocaleString('fr-FR')} points de base.
+              </p>
+            )}
+            {projectionStatut.avertissement && (
+              <p className="text-xs text-spark">{projectionStatut.avertissement}</p>
+            )}
           </div>
 
           <ToggleHypotheseRevenuFutur personne={personne} hypothese={hypotheseRevenuFutur} />

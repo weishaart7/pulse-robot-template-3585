@@ -18,6 +18,7 @@ import {
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { donneesAutresRegimesDepuisRetraiteData, trimestresEnfantsDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
 import { liensFamiliauxDeLaPersonne } from '@/lib/retraite/trimestresEnfants';
+import { statutActuelDepuisTexte } from '@/lib/retraite/projectionStatut';
 import {
   nombreEnfantsEligiblesMajorationTroisEnfants,
   enfantsAgircArrco,
@@ -269,6 +270,9 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     cnavpl,
     nombreEnfantsEligibles,
     enfantsAgircArrco: enfantsAgircArrco(familyLinks),
+    statutActuel: statutActuelDepuisTexte(retraiteData.statut_actuel),
+    revenuFutur: revenuHypothese,
+    primesAnnuellesFP: retraiteData.primes_annuelles_fp ?? null,
     // Trimestres enfants recalculés à chaque date (éducation acquise année par
     // année) ; condition des 8 trimestres appréciée sur les droits actuels.
     trimestresEnfantsA: (date) =>

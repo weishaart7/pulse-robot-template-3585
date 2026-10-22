@@ -22,6 +22,11 @@ export interface RetraiteData {
   au_moins_un_trimestre_majoration_enfant?: boolean;
   /** RIS affichant déjà les trimestres enfants : ne pas les ajouter. */
   mda_deja_au_ris?: boolean;
+  /** Statut actuel : oriente la projection de carrière (projectionStatut.ts). */
+  statut_actuel?: string;
+  caisse_liberale?: string | null;
+  /** Primes annuelles d’un fonctionnaire (assiette RAFP). */
+  primes_annuelles_fp?: number | null;
   // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /
   // CarriereCNAVPL.tsx) — cf. docs/audit/audit-fonction-publique-cnavpl.md :
   // ces deux blocs n'avaient jusqu'ici aucune colonne pour persister leur
