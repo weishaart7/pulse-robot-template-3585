@@ -67,6 +67,11 @@
  *   `classe`) ; section C = 4,10 % des produits moyens de l'office déclarés
  *   (`assietteCaisse`) ÷ coût du point ; taux plein à 67 ans, minoration de
  *   1,25 % par trimestre avant, surcote de 1 % par trimestre après, sans plafond.
+ * - CAVAMAC (agents généraux d'assurance) : 6,30 % des commissions brutes
+ *   déclarées (`assietteCaisse`, plafond) ÷ coefficient de référence ; taux
+ *   plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote de 5 % par
+ *   année pleine après (`parAnneePleine`), 25 % au plus ; sous 1 500 points
+ *   détenus (`surPointsBruts`), capital de 18 annuités.
  */
 
 import { RegimeDetecte } from './parseRIS';
@@ -96,6 +101,13 @@ export function caisseDuRegime(nom: string, caisseLiberale: string | null = null
       !(caisse.exclureMotifNom && new RegExp(caisse.exclureMotifNom, 'i').test(nom))
   );
   return (candidates.find(([, caisse]) => ouvertePar(caisse, caisseLiberale)) ?? candidates[0])?.[0] ?? null;
+}
+
+/** La caisse libérale déclarée a-t-elle une assiette propre (produits CPRN, commissions CAVAMAC) ? */
+export function caisseADassietteDediee(caisseLiberale: string | null): boolean {
+  return Object.values(PARAMETRES_CAISSES_POINTS).some(
+    (caisse: ParametresCaissePoints) => caisse.assietteDediee && ouvertePar(caisse, caisseLiberale)
+  );
 }
 
 /** Caisses ouvertes à un libéral déclarant cette caisse (ASV, PCV si conventionné). */
@@ -164,7 +176,9 @@ export function coefficientAgeCaisse(
   let coefficient = 1;
   for (const tranche of caisse.surcote) {
     const debut = tranche.depuis === 'ageLegal' ? ageLegal : tranche.depuis;
-    const trimestresAge = Math.max(0, Math.floor((Math.min(ageDepart, tranche.jusquA) - debut) * 4 + 1e-6));
+    const trimestresAge = tranche.parAnneePleine
+      ? Math.max(0, Math.floor(Math.min(ageDepart, tranche.jusquA) - debut + 1e-6)) * 4
+      : Math.max(0, Math.floor((Math.min(ageDepart, tranche.jusquA) - debut) * 4 + 1e-6));
     const trimestres = Math.min(
       tranche.conditionDuree ? Math.min(trimestresAge, Math.max(0, Math.floor(trimestresExcedentaires))) : trimestresAge,
       tranche.trimestresMax ?? Infinity
@@ -324,7 +338,8 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
     const pointsRetenus = (pointsAcquis + pointsProjetes) * coefficientAge;
     const pensionAvantMajoration = pointsRetenus * caisse.valeurServicePoint;
     const majorationEnfants = (pensionAvantMajoration * majorationEnfantsPct(caisse, entree.nombreEnfantsEligibles)) / 100;
-    const enCapital = caisse.capital !== undefined && pointsRetenus < caisse.capital.seuilPoints;
+    const pointsSeuil = caisse.capital?.surPointsBruts ? pointsAcquis + pointsProjetes : pointsRetenus;
+    const enCapital = caisse.capital !== undefined && pointsSeuil < caisse.capital.seuilPoints;
     const capital = !enCapital
       ? 0
       : caisse.capital!.prixParPoint !== undefined

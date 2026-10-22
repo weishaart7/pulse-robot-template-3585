@@ -2489,7 +2489,7 @@ export type Database = {
           cnbf_classe: string
           cavp_capital_capitalisation: number | null
           cprn_classe: number
-          cprn_produits_moyens: number | null
+          assiette_caisse_liberale: number | null
           liberal_conventionne: boolean
           primes_annuelles_fp: number | null
           updated_at: string
@@ -2536,7 +2536,7 @@ export type Database = {
           cnbf_classe?: string
           cavp_capital_capitalisation?: number | null
           cprn_classe?: number
-          cprn_produits_moyens?: number | null
+          assiette_caisse_liberale?: number | null
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string
@@ -2583,7 +2583,7 @@ export type Database = {
           cnbf_classe?: string
           cavp_capital_capitalisation?: number | null
           cprn_classe?: number
-          cprn_produits_moyens?: number | null
+          assiette_caisse_liberale?: number | null
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string

@@ -1540,6 +1540,44 @@
       ],
       "majorationTroisEnfantsPct": 10,
       "tauxReversion": 0.6
+    },
+    "cavamac": {
+      "nom": "CAVAMAC (agents généraux d'assurance)",
+      "motifNom": "CAVAMAC|agents g[ée]n[ée]raux",
+      "caisseLiberale": "CAVAMAC",
+      "source": "Règles : Fidroit CAVAMAC 2025 (§2.2.2 taux productif de droits 6,30 % des commissions brutes N-1 plafonnées, appelé à 121,6 % ; §3.4.1 points = cotisation ÷ coefficient de référence ; §3.4.3 taux plein à 67 ans, minoration 1,25 % par trimestre depuis 2024 ; §3.4.4 majoration 5 % par année pleine cotisée après 67 ans, 25 % au plus, +10 % pour 3 enfants ; §3.3 sous 1 500 points détenus, capital de 18 fois la pension annuelle). Valeurs 2026 annoncées par la CAVAMAC (cavamac.fr, PLFSS et conseil d'administration du 4 décembre, sous réserve de la tutelle, à confirmer) : valeur du point 0,4123 €, coefficient de référence 8,106 €, plafond 625 777 € (13,02 PASS 2026). Réversion 60 % (capretraite.fr, règle générale des complémentaires, à confirmer)",
+      "valeurServicePoint": 0.4123,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 8.106,
+        "tranches": [
+          {
+            "jusquAPass": 13.0207,
+            "taux": 0.063
+          }
+        ]
+      },
+      "assietteDediee": true,
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125
+      },
+      "surcote": [
+        {
+          "depuis": 67,
+          "jusquA": 72,
+          "tauxParTrimestre": 0.0125,
+          "parAnneePleine": true,
+          "trimestresMax": 20
+        }
+      ],
+      "capital": {
+        "seuilPoints": 1500,
+        "multipleAnnuites": 18,
+        "surPointsBruts": true
+      },
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
     }
   },
   "cnbf": {

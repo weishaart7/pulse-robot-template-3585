@@ -95,6 +95,8 @@ export interface TrancheSurcoteCaisse {
   tauxParTrimestre: number;
   /** Majoration appliquée sur le coefficient atteint à la tranche précédente. */
   multiplicatif?: boolean;
+  /** Surcote par année pleine seulement (CAVAMAC : 5 % par année pleine cotisée après 67 ans). */
+  parAnneePleine?: boolean;
   /** Trimestres de surcote plafonnés aux trimestres en excédent sur la durée requise (Ircantec). */
   conditionDuree?: boolean;
   /** Nombre maximal de trimestres de surcote dans la tranche (CARPIMKO : 20). */
@@ -175,7 +177,13 @@ export interface ParametresCaissePoints {
    * Versement unique sous un nombre de points, après minoration ou surcote : multiple de l'annuité
    * (CAVEC) ou points × prix du point (Ircantec : salaire de référence).
    */
-  capital?: { seuilPoints: number; multipleAnnuites?: number; prixParPoint?: number };
+  capital?: {
+    seuilPoints: number;
+    multipleAnnuites?: number;
+    prixParPoint?: number;
+    /** Seuil apprécié sur les points détenus, avant minoration ou surcote (CAVAMAC). */
+    surPointsBruts?: boolean;
+  };
   surcote: TrancheSurcoteCaisse[];
   majorationTroisEnfantsPct: number;
   /** Majoration selon le nombre d'enfants (clé = nombre minimal), remplace `majorationTroisEnfantsPct`. */
@@ -265,7 +273,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; cprnB: ParametresCaissePoints; cprnC: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; cprnB: ParametresCaissePoints; cprnC: ParametresCaissePoints; cavamac: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   cavpCapitalisation: ParametresCAVPCapitalisation;
   rafp: ParametresRAFP;

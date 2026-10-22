@@ -10,6 +10,7 @@ import {
   EntreeCaissesPoints,
   majorationEnfantsPct,
   tauxDecoteAge,
+  caisseADassietteDediee,
 } from './calculCaissesPoints';
 import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS } from './parametres';
 
@@ -614,5 +615,59 @@ describe('CPRN (notaires), sections B et C', () => {
       r.details.reduce((t, d) => t + (d.pensionAnnuelle - d.majorationEnfants) * 0.6, 0),
       6
     );
+  });
+});
+
+describe('CAVAMAC (agents généraux d’assurance)', () => {
+  const { cavamac } = PARAMETRES_CAISSES_POINTS;
+  const pass = MILLESIME_COURANT.pass;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'CAVAMAC', type: 'points', points: 20000 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2037, 3, 1)), // 67 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: 'CAVAMAC',
+    conventionne: false,
+    revenuAnnuel: 80000,
+    trimestresProjetes: 40,
+    trimestresManquants: 0,
+    assietteCaisse: 200000,
+  };
+
+  it('reconnaissance au RIS ; assiette propre déclarée', () => {
+    expect(caisseDuRegime('CAVAMAC')).toBe('cavamac');
+    expect(caisseADassietteDediee('CAVAMAC')).toBe(true);
+    expect(caisseADassietteDediee('CPRN')).toBe(true);
+    expect(caisseADassietteDediee('CARMF')).toBe(false);
+  });
+  it('points : 6,30 % des commissions plafonnées ÷ 8,106 €, sur les commissions et non le revenu', () => {
+    expect(pointsAnnuelsCaisse(cavamac, 200000)).toBeCloseTo((200000 * 0.063) / 8.106, 6);
+    expect(pointsAnnuelsCaisse(cavamac, 2000000)).toBeCloseTo((13.0207 * pass * 0.063) / 8.106, 6);
+    const r = calculerCaissesPoints(base);
+    expect(r.details[0].pointsProjetes).toBeCloseTo((10 * 200000 * 0.063) / 8.106, 6);
+  });
+  it('minoration 1,25 % par trimestre avant 67 ans', () => {
+    expect(1 - tauxDecoteAge(cavamac.decoteAge!, 64)).toBeCloseTo(0.85, 6);
+  });
+  it('surcote 5 % par année pleine après 67 ans, 25 % au plus', () => {
+    expect(coefficientAgeCaisse(cavamac, 68.5, 64)).toBeCloseTo(1.05, 6);
+    expect(coefficientAgeCaisse(cavamac, 69, 64)).toBeCloseTo(1.1, 6);
+    expect(coefficientAgeCaisse(cavamac, 75, 64)).toBeCloseTo(1.25, 6);
+  });
+  it('sous 1 500 points détenus : capital de 18 annuités, même si la surcote ferait passer au-dessus', () => {
+    const r = calculerCaissesPoints({
+      ...base,
+      regimesPoints: [{ nom: 'CAVAMAC', type: 'points', points: 1400 }],
+      revenuAnnuel: null,
+      assietteCaisse: null,
+      dateEffet: new Date(Date.UTC(2040, 3, 1)), // 70 ans : surcote 15 %, 1 610 points retenus
+    });
+    expect(r.details[0].pensionAnnuelle).toBe(0);
+    expect(r.details[0].capital).toBeCloseTo(1400 * 1.15 * 0.4123 * 18, 6);
+  });
+  it('+10 % pour 3 enfants ; réversion 60 %', () => {
+    const r = calculerCaissesPoints({ ...base, assietteCaisse: null, nombreEnfantsEligibles: 3 });
+    expect(r.total).toBeCloseTo(20000 * 0.4123 * 1.1, 6);
+    expect(reversionCaissesPoints(r.details)).toBeCloseTo(20000 * 0.4123 * 0.6, 6);
   });
 });

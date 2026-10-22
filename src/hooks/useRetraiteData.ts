@@ -32,9 +32,10 @@ export interface RetraiteData {
   /** Libéral conventionné : régime supplémentaire (ASV…). */
   liberal_conventionne?: boolean;
   cavp_capital_capitalisation?: number | null;
-  /** Notaires (CPRN) : classe de la section B et produits moyens de l'office (section C). */
+  /** Notaires (CPRN) : classe de la section B. */
   cprn_classe?: number;
-  cprn_produits_moyens?: number | null;
+  /** Assiette propre à la caisse libérale : produits de l'office (CPRN C), commissions brutes (CAVAMAC). */
+  assiette_caisse_liberale?: number | null;
   /** Primes annuelles d’un fonctionnaire (assiette RAFP). */
   primes_annuelles_fp?: number | null;
   // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /

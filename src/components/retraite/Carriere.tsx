@@ -1,4 +1,4 @@
-import { caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
+import { caisseADassietteDediee, caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
@@ -67,6 +67,12 @@ const REGIME_CONVENTIONNE: Record<string, string> = {
   CARCDSF_CD: 'PCV',
   CARCDSF_SF: 'PCV',
   CAVP: 'PCV',
+};
+
+/** Caisses dont l'assiette n'est pas le bénéfice (`retraite_data.assiette_caisse_liberale`). */
+const LIBELLE_ASSIETTE_CAISSE: Record<string, string> = {
+  CPRN: "Produits moyens de l'office",
+  CAVAMAC: 'Commissions brutes annuelles',
 };
 
 const formatDateFr = (dateIso: string) => {
@@ -227,9 +233,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const [liberalConventionne, setLiberalConventionne] = useState(false);
   // Capital du volet par capitalisation CAVP (extrait de compte), calculCAVPCapitalisation.ts.
   const [capitalCAVP, setCapitalCAVP] = useState<string>('');
-  // Notaires (CPRN) : classe de la section B et produits moyens de l'office (section C).
+  // Notaires (CPRN) : classe de la section B ; assiette propre à la caisse (produits, commissions).
   const [cprnClasse, setCprnClasse] = useState<string>('1');
-  const [cprnProduitsMoyens, setCprnProduitsMoyens] = useState<string>('');
+  const [assietteCaisseLiberale, setAssietteCaisseLiberale] = useState<string>('');
   // Avocats : retraite de base CNBF et classe de la complémentaire (calculCNBF.ts).
   const [hasCNBF, setHasCNBF] = useState(false);
   const [trimestresCNBF, setTrimestresCNBF] = useState<string>('');
@@ -425,8 +431,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.cprn_classe !== undefined) {
         setCprnClasse(data.cprn_classe.toString());
       }
-      if (data.cprn_produits_moyens !== undefined && data.cprn_produits_moyens !== null) {
-        setCprnProduitsMoyens(data.cprn_produits_moyens.toString());
+      if (data.assiette_caisse_liberale !== undefined && data.assiette_caisse_liberale !== null) {
+        setAssietteCaisseLiberale(data.assiette_caisse_liberale.toString());
       }
       if (data.has_cnbf !== undefined) {
         setHasCNBF(data.has_cnbf);
@@ -498,7 +504,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             liberal_conventionne: liberalConventionne,
             cavp_capital_capitalisation: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || null : null,
             cprn_classe: parseInt(cprnClasse) || 1,
-            cprn_produits_moyens: caisseLiberale === 'CPRN' ? parseFloat(cprnProduitsMoyens) || null : null,
+            assiette_caisse_liberale: caisseADassietteDediee(caisseLiberale) ? parseFloat(assietteCaisseLiberale) || null : null,
             has_cnbf: hasCNBF,
             trimestres_cnbf: parseInt(trimestresCNBF) || 0,
             cnbf_classe: cnbfClasse,
@@ -525,7 +531,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       liberalConventionne,
       capitalCAVP,
       cprnClasse,
-      cprnProduitsMoyens,
+      assietteCaisseLiberale,
       hasCNBF,
       trimestresCNBF,
       cnbfClasse,
@@ -854,7 +860,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
         capitalCAVP: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || 0 : 0,
         classeCPRN: parseInt(cprnClasse) || 1,
-        produitsCPRN: caisseLiberale === 'CPRN' ? parseFloat(cprnProduitsMoyens) || null : null,
+        assietteCaisseLiberale: caisseADassietteDediee(caisseLiberale) ? parseFloat(assietteCaisseLiberale) || null : null,
       },
     }),
     [
@@ -862,7 +868,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       liberalConventionne,
       capitalCAVP,
       cprnClasse,
-      cprnProduitsMoyens,
+      assietteCaisseLiberale,
       statutActuel,
       trimestresEnfantsPersonne,
       projectionStatut,
@@ -1050,6 +1056,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         <SelectItem value="CARPV" className="text-xs">CARPV (vétérinaires)</SelectItem>
                         <SelectItem value="CAVOM" className="text-xs">CAVOM (officiers ministériels)</SelectItem>
                         <SelectItem value="CPRN" className="text-xs">CPRN (notaires)</SelectItem>
+                        <SelectItem value="CAVAMAC" className="text-xs">CAVAMAC (agents généraux d'assurance)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1094,19 +1101,21 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1.5 max-w-[12rem]">
-                        <Label htmlFor={`produits-cprn-${personne}`} className="text-xs">
-                          Produits moyens de l'office (€)
-                        </Label>
-                        <Input
-                          id={`produits-cprn-${personne}`}
-                          type="number"
-                          className="h-8 text-xs"
-                          value={cprnProduitsMoyens}
-                          onChange={(e) => setCprnProduitsMoyens(e.target.value)}
-                        />
-                      </div>
                     </>
+                  )}
+                  {LIBELLE_ASSIETTE_CAISSE[caisseLiberale] && (
+                    <div className="space-y-1.5 max-w-[12rem]">
+                      <Label htmlFor={`assiette-caisse-${personne}`} className="text-xs">
+                        {LIBELLE_ASSIETTE_CAISSE[caisseLiberale]} (€)
+                      </Label>
+                      <Input
+                        id={`assiette-caisse-${personne}`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={assietteCaisseLiberale}
+                        onChange={(e) => setAssietteCaisseLiberale(e.target.value)}
+                      />
+                    </div>
                   )}
                 </>
               )}

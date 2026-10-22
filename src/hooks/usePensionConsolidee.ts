@@ -18,6 +18,7 @@ import {
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import { evaluerCarriereLongue } from '@/lib/retraite/calculCarriereLongue';
 import { DonneesCNBF } from '@/lib/retraite/calculCNBF';
+import { caisseADassietteDediee } from '@/lib/retraite/calculCaissesPoints';
 import {
   appliquerProjectionStatut,
   caisseProjetee,
@@ -258,7 +259,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
       trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
       capitalCAVP: data.caisse_liberale === 'CAVP' ? data.cavp_capital_capitalisation ?? 0 : 0,
       classeCPRN: data.cprn_classe ?? 1,
-      produitsCPRN: data.caisse_liberale === 'CPRN' ? data.cprn_produits_moyens ?? null : null,
+      assietteCaisseLiberale: caisseADassietteDediee(data.caisse_liberale ?? null) ? data.assiette_caisse_liberale ?? null : null,
     },
   });
 

@@ -205,15 +205,26 @@ uniquement applicatif via `familyService`.
     d'achat 55,1390 €, valeur 3,3745 € (paramètres officiels 2026) ; taux plein à 67 ans, minoration de
     5 % par année manquante entamée (`decoteAge.parAnneeEntiere`) ; pas de surcote ; pas de majoration
     pour enfants retenue ; réversion 60 %.
-  - *CPRN* (notaires), colonnes `retraite_data.cprn_classe` (1 à 8, défaut 1) et `cprn_produits_moyens`
-    (migration `20261022180000`, saisies dans Carrière quand la CPRN est choisie) : section B =
+  - *CPRN* (notaires), colonnes `retraite_data.cprn_classe` (1 à 8, défaut 1, migration
+    `20261022180000`) et `assiette_caisse_liberale` (produits moyens de l'office), saisies dans Carrière
+    quand la CPRN est choisie : section B =
     10 points × n° de classe (`parNumeroDeClasse`), valeur 17,7710 € ; section C = 4,10 % des produits
     moyens de l'office (assiette propre `assietteDediee`, pas le bénéfice) ÷ 17,69 €, valeur 0,9422 €
     (guide officiel CPRN 2026) ; taux plein à 67 ans, minoration de 1,25 % par trimestre avant, surcote
     de 1 % par trimestre après, sans plafond ; +10 % pour 3 enfants ; réversion 60 % (hypothèse). Points
     du RIS : section B si le libellé la nomme, sinon section C.
+  - *CAVAMAC* (agents généraux d'assurance) : 6,30 % (taux productif de droits) des commissions brutes
+    déclarées (`assiette_caisse_liberale`), plafonnées à 625 777 €, ÷ coefficient de référence 8,106 €,
+    valeur 0,4123 € (2026) ; taux plein à 67 ans, minoration de 1,25 % par trimestre avant ; surcote de
+    5 % par année pleine après (`surcote[].parAnneePleine`), 25 % au plus ; +10 % pour 3 enfants ; sous
+    1 500 points détenus, avant coefficient (`capital.surPointsBruts`), capital de 18 annuités ;
+    réversion 60 %.
+  - *Assiette propre à la caisse* : colonne générique `retraite_data.assiette_caisse_liberale`
+    (migration `20261022190000`, qui remplace `cprn_produits_moyens`), utilisée par les caisses
+    `assietteDediee` (CPRN section C, CAVAMAC) au lieu du revenu futur ; champ de Carrière libellé selon
+    la caisse (`caisseADassietteDediee`).
   - Sélecteur « Caisse complémentaire » de Carrière : CARMF, CIPAV, CAVEC, CARPIMKO, CARCDSF
-    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens), CARPV (vétérinaires), CAVOM (officiers ministériels), CPRN (notaires) ; case « Conventionné » pour les caisses à régime
+    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens), CARPV (vétérinaires), CAVOM (officiers ministériels), CPRN (notaires), CAVAMAC (agents généraux d'assurance) ; case « Conventionné » pour les caisses à régime
     supplémentaire (ASV ou PCV).
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
@@ -224,8 +235,8 @@ uniquement applicatif via `familyService`.
   régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
   complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
   majoration, ligne « CNBF » de la Synthèse).
-  - Non couverts : caisses à points non paramétrées (CAVAMAC,
-    RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
+  - Non couverts : caisses à points non paramétrées (RAAP des
+    artistes-auteurs…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
     (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
   carte « Revenu net à la retraite » de `Synthese.tsx` :
@@ -680,6 +691,12 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
+- **CAVAMAC — valeurs à confirmer et limites.** Valeur du point (0,4123 €), coefficient de référence
+  (8,106 €) et plafond (625 777 €) 2026 annoncés par la CAVAMAC sous réserve de la tutelle ; réversion
+  60 % (source secondaire). Commissions saisies à la main, constantes jusqu'au départ. Non modélisés :
+  points gratuits (invalidité, années avant 1967), majoration de 5 % pour enfant handicapé à charge,
+  minoration fixe de 15 % des carrières longues (62 ou 63 ans), assiette des agents dirigeants de
+  société, mandataires non-salariés (hors régime complémentaire CAVAMAC).
 - **CPRN — valeurs à confirmer et limites.** Réversion 60 % sans source (hypothèse validée). Classe B et
   produits de l'office saisis à la main (appel de cotisations), constants jusqu'au départ ; moyenne
   nationale des produits non publiée (classe non déduite). Libellés RIS des sections non vérifiés sur un
