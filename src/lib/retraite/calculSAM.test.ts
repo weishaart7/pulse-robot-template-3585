@@ -140,3 +140,20 @@ describe('calculerSAM — plafonnement au PASS AVANT revalorisation', () => {
     expect(a2028.revenuPlafonne).toBeCloseTo(48060 * (COEFFICIENT_REVALORISATION_CNAV[2028] ?? 1), 6);
   });
 });
+
+describe('calculerSAM — années sans barème de validation (projections futures)', () => {
+  it('une année future à 0 trimestre faute de barème reste éligible', () => {
+    const periode = (annee: number, revenu: number) => ({
+      employeur: 'E',
+      typeActivite: 'employeur',
+      dateDebut: `${annee}-01-01`,
+      dateFin: `${annee}-12-31`,
+      revenu,
+      estChiffreAffaires: false,
+      regimes: ["L'Assurance retraite"],
+    });
+    const passees = Array.from({ length: 30 }, (_, i) => periode(1990 + i, 10000));
+    const r = calculerSAM([...passees, periode(2030, 40000)], 1968, undefined, 2032);
+    expect(r.anneesRetenues.some((a) => a.annee === 2030)).toBe(true);
+  });
+});

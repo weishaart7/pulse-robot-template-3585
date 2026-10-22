@@ -74,6 +74,15 @@ uniquement applicatif via `familyService`.
   l'Optimisation suit sa propre trajectoire. Sans effet sur la vérification de carrière (passé).
   Fonctions : `trajectoireRevenu()`, `sommeSurAnneesProjetees()`, `revenuFinDeProjection()` dans
   `hypotheseRevenuFutur.ts` ; à évolution nulle, résultat identique au revenu constant.
+- **SAM projeté par date de départ** : `projectionRevenuFuturA()` (cœur de
+  `calculerProjectionRevenuFutur()`) recalcule le SAM avec les années projetées jusqu'à une date d'effet
+  quelconque ; le simulateur de départ (`salaireAnnuelMoyenA` du contexte, mis en cache par date) s'en
+  sert pour chaque scénario de l'Optimisation (décision de départ, carrière longue, retraite
+  progressive) et le rachat reprend le SAM de la date choisie (`ResultatSimulationDepart.salaireAnnuelMoyen`).
+  Au départ à l'âge légal, SAM et pension de base identiques à la Synthèse (test de cohérence).
+  `calculerSAM` n'exclut plus une année à 0 trimestre faute de barème de validation
+  (`anneesSansBaremeConnu`, années projetées au-delà de 2026) : avant ce correctif, les années
+  projetées à partir de 2027 n'entraient jamais dans le SAM, y compris dans la Synthèse.
 - **Points clés** (bande en tête de la Synthèse, modèle Sapiendo p. 3) — `pointsCles.ts`,
   exposé par `usePensionConsolidee` sous `pointsCles` : âge et date légale ; date et âge du taux plein
   (première date, de trimestre civil en trimestre civil à partir de l'âge légal, où trimestres acquis
@@ -855,10 +864,6 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   « tous régimes »** utilisé par la bascule de dénominateur du MICO palier 1 — un polypensionné dans
   un tel régime reste à tort au Cas 1 (dénominateur = durée requise) même si son total réel dépasse
   cette durée.
-- **Évolution des revenus dans l'Optimisation** : `simulationDepart.ts` reçoit le SAM du RIS
-  (`salaireAnnuelMoyenProjete = salaireAnnuelMoyen`), sans les années projetées : l'évolution y
-  joue sur les points (Agirc-Arrco, caisses, CNAVPL, RAFP) et le TIB, pas sur le SAM du régime
-  général. Limite antérieure à A4, non corrigée.
 - **Deux taux voisins dans l'Optimisation** : l'actualisation (0-3 %) de la décision de départ et
   l'évolution des revenus (0 / 1,5 / 3 %) sont distinctes ; l'évolution se règle dans Carrière.
 - **Points clés et fonction publique** : la date du taux plein suit la règle du régime général (durée
@@ -871,9 +876,8 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   `ageTauxPlein`. Plan retenu : pages Points clés, Synthèse, Scénarios (carrière longue, âge légal, taux
   plein, 67 ans), Détail du calcul par régime à l'âge légal, Vérification de carrière (gains bruts et
   nets), Hypothèses et sources. Prérequis : construire le contexte du simulateur de départ hors de
-  `Trimestres.tsx` (partagé via `usePensionConsolidee`), y exposer la vérification de carrière, et
-  projeter le SAM à chaque date d'effet du simulateur — sinon le scénario « âge légal » du PDF et de
-  l'Optimisation diffère de la pension de la Synthèse.
+  `Trimestres.tsx` (partagé via `usePensionConsolidee`) et y exposer la vérification de carrière (le SAM
+  par date d'effet est désormais projeté).
 - **Cumul emploi-retraite après 2027** : une source secondaire (bourseinside.fr) indique que la LFSS 2026
   supprimerait le plafond de 5 % du PASS de la seconde pension pour les premières pensions prenant effet
   à compter du 01/01/2027 ; non confirmé sur texte officiel, le plafond n'est affiché que pour les

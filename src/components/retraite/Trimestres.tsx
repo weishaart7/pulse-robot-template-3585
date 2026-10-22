@@ -14,6 +14,7 @@ import {
   revenuAnnuelHypotheseDerniereAnneeConnue,
   salaireProjectionComplementaire,
   trajectoireRevenu,
+  projectionRevenuFuturA,
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import {
   separerRegimesPoints,
@@ -270,11 +271,24 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // Simulation par date de départ : moteur pur partagé avec la décision de
   // départ (simulationDepart.ts) — base, décote/surcote, départs anticipés,
   // Agirc-Arrco, fonction publique, CNAVPL.
+  const aujourdHui = new Date();
   const simulateur = creerSimulateurDepart({
     dateNaissance: dateNaissanceConfirmee,
-    aujourdHui: new Date(),
+    aujourdHui,
     trimestresValidesActuels,
     salaireAnnuelMoyen,
+    // SAM projeté à chaque date de départ, même calcul que la Synthèse.
+    salaireAnnuelMoyenA: (dateEffet) =>
+      projectionRevenuFuturA(
+        dateNaissanceConfirmee,
+        detailCarriere,
+        salaireAnnuelMoyen,
+        retraiteData.mode_hypothese_revenu_futur ?? 'derniere_annee_connue',
+        retraiteData.revenu_hypothese_manuel ?? null,
+        aujourdHui,
+        retraiteData.evolution_revenus ?? 0,
+        dateEffet
+      ).salaireAnnuelMoyenProjete,
     regimesPoints,
     auMoinsUnTrimestreMajorationEnfant,
     trimestresCarriere: resultatTrimestresDetailCarriere,
@@ -284,7 +298,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     enfantsAgircArrco: enfantsAgircArrco(familyLinks),
     statutActuel: statutActuelDepuisTexte(retraiteData.statut_actuel),
     revenuFutur: revenuHypothese,
-    trajectoire: trajectoireRevenu(retraiteData.evolution_revenus, new Date()),
+    trajectoire: trajectoireRevenu(retraiteData.evolution_revenus, aujourdHui),
     primesAnnuellesFP: retraiteData.primes_annuelles_fp ?? null,
     caisseLiberale: retraiteData.caisse_liberale ?? null,
     cnbf,
@@ -394,7 +408,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     ),
     0
   );
-  const pensionBaseBruteAvecRachat = pensionBase(salaireAnnuelMoyen, tauxAvecRachat, 0);
+  const pensionBaseBruteAvecRachat = pensionBase(resultatSelection.salaireAnnuelMoyen, tauxAvecRachat, 0);
   const pensionBaseAvecRachat =
     pensionBaseBruteAvecRachat * (1 + decoteAvecRachat / 100) +
     pensionBaseBruteAvecRachat * (resultatSelection.surcoteTotalePct / 100);

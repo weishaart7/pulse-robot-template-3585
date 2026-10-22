@@ -26,6 +26,7 @@ const simulateurFictif: SimulateurDepart = {
     const pensionTotale = 12000 + 100 * m;
     return {
       dateEffet,
+      salaireAnnuelMoyen: 30000,
       trimestresEnfants: 0,
       ageDepartAnnees: 64 + m / 12,
       avantAgeLegal: false,

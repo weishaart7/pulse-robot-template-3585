@@ -255,7 +255,33 @@ export function calculerProjectionRevenuFutur(
   aujourdHui: Date,
   evolution = 0
 ): ProjectionRevenuFutur {
-  const dateEffet = dateNaissance ? dateEffetDepartAgeLegal(dateNaissance, aujourdHui) : null;
+  return projectionRevenuFuturA(
+    dateNaissance,
+    detailCarriere,
+    salaireAnnuelMoyen,
+    modeHypothese,
+    revenuHypotheseManuel,
+    aujourdHui,
+    evolution,
+    dateNaissance ? dateEffetDepartAgeLegal(dateNaissance, aujourdHui) : null
+  );
+}
+
+/**
+ * Même projection pour une date d'effet quelconque (scénarios de départ de
+ * l'Optimisation) : SAM recalculé avec les années projetées jusqu'au
+ * trimestre précédant `dateEffet`, année de liquidation = année de `dateEffet`.
+ */
+export function projectionRevenuFuturA(
+  dateNaissance: DateNaissance | null,
+  detailCarriere: PeriodeCarriere[],
+  salaireAnnuelMoyen: number,
+  modeHypothese: ModeHypotheseRevenuFutur,
+  revenuHypotheseManuel: number | null,
+  aujourdHui: Date,
+  evolution: number,
+  dateEffet: Date | null
+): ProjectionRevenuFutur {
   const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
   const sansProjection = {
     salaireAnnuelMoyenProjete: salaireAnnuelMoyen,

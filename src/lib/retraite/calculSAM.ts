@@ -245,9 +245,14 @@ function anneesAvecPeriodeMaternite(periodes: PeriodeCarriere[]): Set<number> {
 function anneesExclues(periodes: PeriodeCarriere[], dateEffet?: Date): Set<number> {
   const exclues = new Set<number>();
 
-  const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(periodes);
+  const { parAnnee, anneesSansBaremeConnu } = trimestresCotisesEtAssimilesDepuisCarriere(periodes);
+  const sansBareme = new Set(anneesSansBaremeConnu);
   const anneesMaternite = anneesAvecPeriodeMaternite(periodes);
   for (const { annee, cotises, assimiles } of parAnnee) {
+    // Année sans barème de validation (années projetées au-delà du dernier
+    // seuil connu) : 0 trimestre faute de barème, pas faute d'activité —
+    // jamais exclue à ce titre.
+    if (sansBareme.has(annee)) continue;
     if (cotises + assimiles === 0) {
       exclues.add(annee);
       continue;

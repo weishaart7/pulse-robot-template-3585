@@ -61,6 +61,11 @@ export interface ContexteSimulationDepart {
   aujourdHui: Date;
   trimestresValidesActuels: number;
   salaireAnnuelMoyen: number;
+  /**
+   * SAM projeté à une date d'effet (années projetées jusqu'à cette date, cf.
+   * `projectionRevenuFuturA()`), absent = `salaireAnnuelMoyen` à toute date.
+   */
+  salaireAnnuelMoyenA?: (dateEffet: Date) => number;
   regimesPoints: RegimeDetecte[];
   auMoinsUnTrimestreMajorationEnfant: boolean;
   trimestresCarriere: ResultatTrimestresCotisesEtAssimiles;
@@ -98,6 +103,8 @@ export type MotifDepartAnticipe = 'carriere_longue' | 'confirme';
 
 export interface ResultatSimulationDepart {
   dateEffet: Date;
+  /** SAM retenu pour la pension de base à cette date. */
+  salaireAnnuelMoyen: number;
   /** Trimestres enfants retenus à cette date, tous régimes. */
   trimestresEnfants: number;
   ageDepartAnnees: number;
@@ -244,6 +251,15 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     return agirc.pensionAnnuelle + pensionAutresRegimesPoints;
   };
 
+  // SAM projeté par date d'effet, mis en cache (décision de départ : ~30 dates).
+  const samParDate = new Map<number, number>();
+  const salaireAnnuelMoyenA = (dateEffet: Date): number => {
+    if (!ctx.salaireAnnuelMoyenA) return ctx.salaireAnnuelMoyen;
+    const cle = dateEffet.getTime();
+    if (!samParDate.has(cle)) samParDate.set(cle, ctx.salaireAnnuelMoyenA(dateEffet));
+    return samParDate.get(cle)!;
+  };
+
   const simuler = (dateEffet: Date): ResultatSimulationDepart => {
     const ageDepartAnnees = ageEnMois(dateNaissance, dateEffet) / 12;
     const trimestresProjetes = trimestresProjetesJusqua(dateEffet);
@@ -258,7 +274,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       primesAnnuellesFP: ctx.primesAnnuellesFP ?? null,
       trimestresValidesRG: ctx.trimestresValidesActuels,
       salaireAnnuelMoyenRIS: ctx.salaireAnnuelMoyen,
-      salaireAnnuelMoyenProjete: ctx.salaireAnnuelMoyen,
+      salaireAnnuelMoyenProjete: salaireAnnuelMoyenA(dateEffet),
       fonctionPublique,
       cnavpl,
       cnbf: ctx.cnbf ?? null,
@@ -329,7 +345,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       true
     );
 
-    const pensionBaseBrute = pensionBase(ctx.salaireAnnuelMoyen, taux, 0);
+    const pensionBaseBrute = pensionBase(projection.salaireAnnuelMoyen, taux, 0);
     const pensionBaseValue = pensionBaseBrute * (1 + decote / 100) + pensionBaseBrute * (surcoteTotalePct / 100);
 
     const resultatFP = fonctionPubliqueDepart
@@ -376,6 +392,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
 
     return {
       dateEffet,
+      salaireAnnuelMoyen: projection.salaireAnnuelMoyen,
       trimestresEnfants: enfants?.total ?? 0,
       ageDepartAnnees,
       avantAgeLegal,
