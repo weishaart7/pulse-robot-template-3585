@@ -59,6 +59,8 @@ import {
   supplementNBI,
 } from './calculFonctionPublique';
 import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
+import { PARAMETRES_MDA } from './parametres';
+import { TrimestresEnfantsParRegime, AUCUN_TRIMESTRE_ENFANT } from './trimestresEnfants';
 import {
   separerRegimesPoints,
   pointsAgircArrcoAnnuels,
@@ -84,6 +86,34 @@ export interface DonneesFonctionPublique {
   regimeAffiliation?: 'SRE' | 'CNRACL';
   moyenneAnnuelleNBI: number;
   trimestresLiquidablesNBI: number;
+  /** Bonification pour enfants nés avant 2004 : trimestres liquidables, taux jusqu'à 80 %. */
+  bonificationEnfants?: number;
+  /** Majoration de durée pour enfants nés depuis 2004 : durée tous régimes seulement. */
+  majorationDureeEnfants?: number;
+}
+
+/** Durée d'assurance FP (tous régimes) : liquidables + bonification + majoration enfants. */
+type DureesFonctionPublique = Pick<
+  DonneesFonctionPublique,
+  'trimestresLiquidables' | 'bonificationEnfants' | 'majorationDureeEnfants'
+>;
+
+export function dureeAssuranceFonctionPublique(donnees: DureesFonctionPublique): number {
+  return donnees.trimestresLiquidables + (donnees.bonificationEnfants ?? 0) + (donnees.majorationDureeEnfants ?? 0);
+}
+
+/**
+ * Taux de liquidation FP (proportion de 75 %) : services plafonnés à la
+ * durée requise, bonifications au-delà dans la limite de 80 %.
+ */
+export function tauxProratisationFonctionPublique(donnees: DureesFonctionPublique, trimestresRequis: number): number {
+  const services = tauxProratisation(donnees.trimestresLiquidables, trimestresRequis);
+  const bonification = donnees.bonificationEnfants ?? 0;
+  if (bonification <= 0) return services;
+  return Math.min(
+    (donnees.trimestresLiquidables + bonification) / trimestresRequis,
+    PARAMETRES_MDA.fpTauxMaximalAvecBonificationsPct / 75
+  );
 }
 
 export interface DonneesCNAVPL {
@@ -118,6 +148,36 @@ export interface EntreePensionConsolidee {
    * point futur (droits acquis au RIS seulement).
    */
   projectionComplementaire?: { salaireAnnuel: number; trimestresProjetes: number };
+  /**
+   * Trimestres de majoration pour enfant de la personne (cf.
+   * trimestresEnfants.ts). Absent = aucun. Les MDA du régime général entrent
+   * dans les trimestres validés (taux, proratisation, décote), jamais dans le
+   * seuil MICO, la surcote ni la carrière longue.
+   */
+  trimestresEnfants?: TrimestresEnfantsParRegime;
+}
+
+/**
+ * Applique les MDA aux données des régimes : bonification et majoration de
+ * durée FP, durée CNAVPL. Le régime général est traité par l'appelant
+ * (trimestres validés).
+ */
+export function appliquerTrimestresEnfantsAutresRegimes(
+  fonctionPublique: DonneesFonctionPublique | null,
+  cnavpl: DonneesCNAVPL | null,
+  trimestres: TrimestresEnfantsParRegime | undefined
+): { fonctionPublique: DonneesFonctionPublique | null; cnavpl: DonneesCNAVPL | null } {
+  if (!trimestres) return { fonctionPublique, cnavpl };
+  return {
+    fonctionPublique: fonctionPublique
+      ? {
+          ...fonctionPublique,
+          bonificationEnfants: trimestres.fpBonification,
+          majorationDureeEnfants: trimestres.fpMajorationDuree,
+        }
+      : null,
+    cnavpl: cnavpl ? { ...cnavpl, trimestresCNAVPL: cnavpl.trimestresCNAVPL + trimestres.cnavpl } : null,
+  };
 }
 
 // Sous-totaux annuels par régime — exposés pour l'annexe de l'export PDF
@@ -160,6 +220,8 @@ export interface DetailRegimeGeneral {
 export interface ResultatPensionConsolidee {
   pensionTotaleConsolidee: number;
   ageTauxPlein: string;
+  /** MDA retenues (détail par enfant compris). */
+  trimestresEnfants: TrimestresEnfantsParRegime;
   repartitionParRegime: RepartitionParRegime;
   historiqueTrimestres: ResultatTrimestresCotisesEtAssimiles;
   ageLegal: AgeLegalResultat | null;
@@ -196,9 +258,9 @@ export function calculerResultatFonctionPublique(
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
 ): { pensionFinale: number; rafpAnnuelle: number; rafpCapital: number } {
-  const taux = tauxProratisation(donnees.trimestresLiquidables, trimestresRequis);
+  const taux = tauxProratisationFonctionPublique(donnees, trimestresRequis);
   const decote = decoteFonctionPublique({
-    trimestresTousRegimes: donnees.trimestresLiquidables + trimestresAutresRegimes,
+    trimestresTousRegimes: dureeAssuranceFonctionPublique(donnees) + trimestresAutresRegimes,
     trimestresRequis,
     anneeOuvertureDroits: donnees.anneeOuvertureDroits,
     departAnticipeCategorieActive: donnees.departAnticipeCategorieActive,
@@ -221,7 +283,7 @@ export function calculerResultatFonctionPublique(
   const ageLegalParentaleEligibleFlag = dateNaissance
     ? ageLegalParentaleEligible(dateNaissance, dateEffet)
     : undefined;
-  const dureeRequiseAtteinte = donnees.trimestresLiquidables + trimestresAutresRegimes >= trimestresRequis;
+  const dureeRequiseAtteinte = dureeAssuranceFonctionPublique(donnees) + trimestresAutresRegimes >= trimestresRequis;
   // Surcote non calculée pour ce régime (décision du 2026-09-24, option B de
   // l'audit des calculs) : aucune donnée datée ne permet de compter les
   // trimestres cotisés après l'âge légal — branché à 0 et signalé à l'écran.
@@ -330,33 +392,37 @@ export function ageTauxPleinAffiche(trimestresTousRegimes: number, trimestresReq
 export function calculerPensionConsolidee(entree: EntreePensionConsolidee): ResultatPensionConsolidee {
   const {
     salaireAnnuelMoyen,
-    trimestresValides,
     trimestresRequis,
     dateNaissance,
     dateEffet,
     regimesPoints,
     detailCarriere,
     familyLinks,
-    auMoinsUnTrimestreMajorationEnfant,
     autresPensionsMensuelles,
-    fonctionPublique,
-    cnavpl,
     projectionComplementaire,
+    trimestresEnfants,
   } = entree;
+  const trimestresValides = entree.trimestresValides + (trimestresEnfants?.rg ?? 0);
+  const auMoinsUnTrimestreMajorationEnfant = trimestresEnfants?.auMoinsUn || entree.auMoinsUnTrimestreMajorationEnfant;
+  const { fonctionPublique, cnavpl } = appliquerTrimestresEnfantsAutresRegimes(
+    entree.fonctionPublique,
+    entree.cnavpl,
+    trimestresEnfants
+  );
 
   const hasFonctionPublique = fonctionPublique !== null;
   const hasCNAVPL = cnavpl !== null;
 
   const trimestresTousRegimes =
     trimestresValides +
-    (hasFonctionPublique ? fonctionPublique!.trimestresLiquidables : 0) +
+    (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0) +
     (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0);
 
   const taux = salaireAnnuelMoyen > 0 && trimestresValides > 0 ? tauxProratisation(trimestresValides, trimestresRequis) : 0;
   const pensionBaseBrute = salaireAnnuelMoyen > 0 && trimestresValides > 0 ? pensionBase(salaireAnnuelMoyen, taux, 0) : 0;
 
   const trimAutresRegimes =
-    (hasFonctionPublique ? fonctionPublique!.trimestresLiquidables : 0) +
+    (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0) +
     (hasCNAVPL ? cnavpl!.trimestresCNAVPL : 0);
   const decoteTrimestresSeule = Math.min(
     decoteSurTrimestres(trimestresValides + trimAutresRegimes, trimestresRequis),
@@ -472,7 +538,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     ? calculerResultatCNAVPL(
         cnavpl!,
         trimestresRequis,
-        trimestresValides + (hasFonctionPublique ? fonctionPublique!.trimestresLiquidables : 0),
+        trimestresValides + (hasFonctionPublique ? dureeAssuranceFonctionPublique(fonctionPublique!) : 0),
         dateNaissance,
         dateEffet,
         auMoinsUnTrimestreMajorationEnfant,
@@ -517,6 +583,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     ) + autresPensionsDeclarees;
 
   return {
+    trimestresEnfants: trimestresEnfants ?? AUCUN_TRIMESTRE_ENFANT,
     pensionTotaleConsolidee,
     ageTauxPlein: ageTauxPleinAffiche(trimestresTousRegimes, trimestresRequis),
     repartitionParRegime: {

@@ -16,7 +16,8 @@ import {
   estRegimeAgircArrco,
 } from '@/lib/retraite/calculAgircArrco';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
-import { donneesAutresRegimesDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
+import { donneesAutresRegimesDepuisRetraiteData, trimestresEnfantsDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
+import { liensFamiliauxDeLaPersonne } from '@/lib/retraite/trimestresEnfants';
 import {
   nombreEnfantsEligiblesMajorationTroisEnfants,
   enfantsAgircArrco,
@@ -117,10 +118,15 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   // même source que Carrière et Synthèse.
   const {
     dateNaissanceISO: dateNaissance,
-    familyLinks,
+    familyLinks: tousLiens,
     civilite,
+    civiliteUtilisateur,
+    civiliteConjoint,
+    attributionsMDA,
     loading: loadingProfile,
   } = useProfilFamilialRetraite(personne);
+  // Enfants rattachés à cette personne seulement (parent_de).
+  const familyLinks = useMemo(() => liensFamiliauxDeLaPersonne(tousLiens, personne), [tousLiens, personne]);
   // Date de liquidation envisagée : source de vérité du scénario simulé
   // (Option 2, docs/audit/conception-date-effet.md) — l'âge de départ n'est
   // plus qu'une valeur dérivée affichée, cf. `resultatSelection.ageAffiche`
@@ -263,6 +269,19 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     cnavpl,
     nombreEnfantsEligibles,
     enfantsAgircArrco: enfantsAgircArrco(familyLinks),
+    // Trimestres enfants recalculés à chaque date (éducation acquise année par
+    // année) ; condition des 8 trimestres appréciée sur les droits actuels.
+    trimestresEnfantsA: (date) =>
+      trimestresEnfantsDepuisRetraiteData({
+        data: retraiteData,
+        personne,
+        familyLinks,
+        attributions: attributionsMDA,
+        civiliteUtilisateur,
+        civiliteConjoint,
+        dateEffet: date,
+        trimestresValidesHorsMDA: trimestresValidesActuels,
+      }),
     salaireComplementaire: salaireComplementaire?.salaireAnnuel ?? null,
     ageDepartAnticipeConfirme: retraiteData.depart_anticipe_confirme_motif
       ? retraiteData.depart_anticipe_confirme_age ?? null
@@ -485,6 +504,11 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
                 {resultatSelection.trimestresValidesProjetes}
               </div>
               <div className="text-xs text-muted-foreground">Trimestres validés projetés</div>
+              {resultatSelection.trimestresEnfants > 0 && (
+                <div className="text-xs text-muted-foreground">
+                  dont {resultatSelection.trimestresEnfants} trimestres enfants (tous régimes)
+                </div>
+              )}
               {trimestresAutresRegimes > 0 && (
                 <div className="text-xs text-muted-foreground">
                   {resultatSelection.trimestresTousRegimes} tous régimes

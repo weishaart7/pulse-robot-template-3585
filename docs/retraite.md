@@ -286,11 +286,36 @@ uniquement applicatif via `familyService`.
   comptent les enfants via `family_links` (`nombreEnfantsEligiblesMajorationTroisEnfants()`), filtrés
   sur `lien_familial === 'Enfant' && enfant_adopte !== 'Adoption simple'` — la branche « enfant
   recueilli sans filiation » (adoption simple, enfant du conjoint, condition des 9 ans avant 16 ans)
-  n'est pas représentable avec le schéma `family_links` actuel (cf. §3). La surcote parentale
-  (`surcoteParentale()`) est une saisie déclarative simple (case à cocher), pas un sous-système de
-  répartition MDA par enfant — décision produit actée après diagnostic (`conception-majorations-enfants.md`
-  §5-§6), car le sous-système réel (options, garde, autorité parentale) dépasserait largement le
-  périmètre d'un champ déclaratif.
+  n'est pas représentable avec le schéma `family_links` actuel (cf. §3). Tous les comptages
+  d'enfants (majorations, enfants à charge Agirc-Arrco, trimestres enfants) ne retiennent que les
+  enfants rattachés à la personne (`parent_de` : `user`, `spouse`, `both_parents` ; vide = les deux),
+  via `liensFamiliauxDeLaPersonne()`.
+- **Trimestres de majoration pour enfant (MDA)** — [trimestresEnfants.ts](src/lib/retraite/trimestresEnfants.ts),
+  paramètres `mda` de `params-retraite.json`, attributions dans la table `retraite_mda_enfants`
+  (une ligne par enfant, commune au client et au conjoint, NULL = défaut ; FK `auth.users` et
+  `family_links` en ON DELETE CASCADE, migration `20261022130000`) :
+  - *Régime général, alignés, CNAVPL* : 4 trimestres maternité/adoption + 4 éducation (1 par année
+    écoulée depuis la naissance, au plus 4, si 8 trimestres tous régimes). Défaut : tout à la mère
+    (civilité `Mme`/`Mlle` de `family_profiles` ou de `marital_status`) ; enfant d'un seul parent : tout
+    à ce parent ; sans mère identifiable, moitié-moitié pour un adopté, rien pour une naissance (signalé).
+    Parts « client » saisissables par enfant, le conjoint reçoit le complément à 4. Avant le
+    1er avril 2010, une éducation partagée ou donnée au père est signalée (tout ou rien, preuve requise).
+  - *Fonction publique* : enfant né depuis 2004, 2 trimestres de durée à la mère (durée tous régimes
+    seulement) ; avant 2004, bonification de 4 trimestres sur case à cocher (interruption d'activité
+    non vérifiable), comptée dans les liquidables : le taux FP peut alors dépasser 75 % dans la limite
+    de 80 % (`tauxProratisationFonctionPublique`).
+  - *Régime d'attribution* : un seul par enfant, FP si la personne n'a que des droits FP, CNAVPL si
+    elle n'a que des droits CNAVPL, régime général sinon ; corrigeable.
+  - *Effets* : les MDA RG entrent dans les trimestres validés (taux, proratisation, décote, MICO
+    proratisé), les MDA CNAVPL dans la durée CNAVPL, les MDA FP dans la durée d'assurance FP ; jamais
+    dans le seuil de 120 trimestres du MICO majoré, la surcote ni la carrière longue (ces calculs
+    lisent le détail de carrière et les données brutes). Calculées à la date d'effet (Carrière,
+    Synthèse) et à chaque date simulée (Optimisation).
+  - *Surcote parentale* : ouverte automatiquement dès qu'un trimestre de MDA existe. La case
+    déclarative `au_moins_un_trimestre_majoration_enfant` ne sert plus qu'en l'absence d'enfant dans
+    Famille. `retraite_data.mda_deja_au_ris` : RIS affichant déjà les MDA, rien n'est ajouté.
+  - *Écrans* : panneau « Trimestres enfants » dans Carrière (régime, parts, bonification FP, retour au
+    défaut), « dont trimestres enfants » dans la Synthèse et l'Optimisation.
 - **Import RIS — trois défauts corrigés sur un relevé réel dense (1989-2025), commit `469fe7b`.**
   Conversion franc→euro pour les revenus antérieurs à 2002 (`deviseOrigine`, taux légal 6,55957,
   cf. [parseRIS.ts:310-335](src/lib/retraite/parseRIS.ts)) ; liste blanche de noms de régime
@@ -432,9 +457,15 @@ Soldés en phase 0 (2026-09-29) :
   intégrée). Liquidation de l'Agirc-Arrco avant la base (cas 1 du doc) non modélisée. Majoration pour
   enfant à charge figée à la date d'effet (ni sa disparition quand l'enfant cesse d'être à charge, ni
   la bascule vers la majoration pour 3 enfants). Antériorité de l'invalidité à 21 ans non vérifiée.
-- **Enfants non rattachés au bon parent.** Les comptages d'enfants (majoration 3 enfants, enfants à
-  charge) ignorent `enfant_de` : dans un couple recomposé, l'enfant d'un seul conjoint majore les deux.
-  À traiter avec l'attribution des trimestres enfants (phase MDA).
+- **MDA — limites.** Non modélisés : MDA pour enfant handicapé (1 trimestre par 30 mois, au plus 8),
+  MDA pour congé parental (non cumulable), CRPCEN, conditions de résidence/garde/autorité parentale,
+  condition « né après le recrutement » pour la majoration FP. Le régime saisi pour un enfant vaut pour
+  les deux parents (une seule ligne par enfant). La condition des 8 trimestres est appréciée sur les
+  droits actuels dans l'Optimisation.
+- **Cartes FP et CNAVPL de Carrière : calcul dupliqué.** `CarriereFonctionPublique.tsx` et
+  `CarriereCNAVPL.tsx` recalculent leur pension à côté du moteur, sur les trimestres RIS non projetés,
+  alors que le total consolidé utilise les trimestres projetés : écart possible entre la carte et le
+  total. MDA répercutées dans les deux cartes, la duplication reste à résorber.
 - R3 : en option « taux seul », les trimestres rachetés ne réduisent que la décote ; seule l'option
   « taux et durée » améliore la proratisation ;
 - R5 : dans l'onglet Optimisation, la date de liquidation est bornée au départ à l'âge légal et
@@ -575,7 +606,8 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   projection des années manquantes, trimestres cotisés/assimilés dérivés de la carrière (avec plafond
   4/an combiné, priorité aux cotisés, chômage indemnisé/non indemnisé, micro-entrepreneur avec
   abattement forfaitaire par sous-type), décote/surcote (trimestres + âge, le plus favorable des deux),
-  surcote parentale déclarative, majoration pour 3 enfants (cas filiation directe/adoption plénière),
+  trimestres enfants (MDA) avec surcote parentale déduite, majoration pour 3 enfants (cas filiation
+  directe/adoption plénière),
   MICO à deux paliers + écrêtement, MIGA par palier, supplément NBI (SRE/CNRACL), décote fonction publique par millésime d'ouverture
   des droits, pension consolidée unifiée Carrière/Synthèse, export PDF, simulation de départ avec
   rachat de trimestres, support conjoint/partenaire.
@@ -583,9 +615,7 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   - **Majoration enfants, branche « recueilli sans filiation »** (adoption simple, enfant du conjoint,
     condition des 9 ans) : nécessite un nouveau modèle de données sur `family_links` — décision produit
     non prise, classée « à surveiller » en §3 (à reclasser bloquante dès qu'un client réel est dans ce cas).
-  - **Système MDA complet** (répartition de trimestres par enfant entre parents, options, garde,
-    autorité parentale) : explicitement écarté au profit d'une saisie déclarative simple (§2) — écart
-    volontaire, pas un chantier commencé puis abandonné.
+  - **MDA, cas particuliers** (garde, autorité parentale, enfant handicapé, congé parental) : cf. §3.
   - **Chronologie infra-annuelle du SAM** (année de rachat) : non implémentée,
     faute de données structurées (pas de valeur « rachat » dans `retraite_carriere_detail.type_activite`).
     L'exclusion d'une année uniquement assimilée est en place, avec la catégorie `'maternite'` (§3).

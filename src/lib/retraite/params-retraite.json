@@ -916,5 +916,16 @@
       "favorable": 0.03
     },
     "ecartEsperanceVieScenarios": 5
+  },
+  "mda": {
+    "source": "Art. L. 351-4 CSS (régime général, alignés, CNAVPL art. L. 643-1-1) ; C. pens. retr. art. L. 12 et L. 12 bis (fonction publique) ; Fidroit CNAV, CNAVPL et fonctionnaires titulaires ; référentiel §2.5-2.6",
+    "trimestresMaterniteAdoption": 4,
+    "trimestresEducation": 4,
+    "dureeMinimaleEducation": 8,
+    "dateChargeRepartitionEducation": "2010-04-01",
+    "fpDateChargeMajoration": "2004-01-01",
+    "fpTrimestresMajorationDuree": 2,
+    "fpTrimestresBonification": 4,
+    "fpTauxMaximalAvecBonificationsPct": 80
   }
 }

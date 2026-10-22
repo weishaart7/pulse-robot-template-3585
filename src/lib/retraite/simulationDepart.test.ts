@@ -45,6 +45,25 @@ describe('creerSimulateurDepart — non-régression de l\'extraction (scénarios
     expect(r.pensionComplementaires).toBeCloseTo(10000 * 1.4386 * 0.88, 2);
   });
 
+  it('trimestres enfants : ajoutés aux validés, décote réduite d\'autant (−15 % → −5 %)', () => {
+    const r = creerSimulateurDepart(
+      contexte({
+        trimestresEnfantsA: () => ({
+          rg: 8,
+          cnavpl: 0,
+          fpMajorationDuree: 0,
+          fpBonification: 0,
+          total: 8,
+          auMoinsUn: true,
+          detail: [],
+        }),
+      })
+    ).simuler(dateEffet);
+    expect(r.trimestresValidesProjetes).toBe(168);
+    expect(r.trimestresEnfants).toBe(8);
+    expect(r.decote).toBe(-5);
+  });
+
   it('avant l\'âge légal sans départ anticipé : impossible', () => {
     const r = creerSimulateurDepart(contexte({})).simuler(new Date(Date.UTC(2033, 3, 1)));
     expect(r.avantAgeLegal).toBe(true);

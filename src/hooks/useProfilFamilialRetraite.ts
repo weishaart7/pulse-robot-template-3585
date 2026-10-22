@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Personne } from '@/hooks/useRetraiteData';
 import { familyService, FamilyLink } from '@/services/familyService';
 import { DateNaissance, dateNaissanceDepuisISO } from '@/lib/retraite/calcul';
+import { AttributionMDA } from '@/lib/retraite/trimestresEnfants';
+import { retraiteMdaService } from '@/services/retraiteMdaService';
 
 export interface ProfilFamilialRetraite {
   dateNaissanceDetail: DateNaissance | null;
@@ -9,6 +11,12 @@ export interface ProfilFamilialRetraite {
   familyLinks: FamilyLink[];
   /** Civilité (fiche famille ou conjoint), sert à l'espérance de vie par sexe. */
   civilite: string | null;
+  /** Civilités des deux parents : identification de la mère pour les trimestres enfants. */
+  civiliteUtilisateur: string | null;
+  civiliteConjoint: string | null;
+  /** Écarts saisis à l'attribution par défaut des trimestres enfants. */
+  attributionsMDA: AttributionMDA[];
+  rechargerAttributionsMDA: () => Promise<void>;
   loading: boolean;
 }
 
@@ -25,32 +33,42 @@ export interface ProfilFamilialRetraite {
  * Conjoint : pas de fiche famille séparée (pas de compte Supabase propre) —
  * sa date de naissance vit dans marital_status.date_naissance_conjoint,
  * même source que Famille (buildFamilyGraph.ts) et Transmission.
- * family_links n'est pas réparti par personne (pas de champ de filiation
- * par parent en base) : même liste d'enfants pour l'utilisateur et le
- * conjoint — approximation assumée, cf. docs/retraite-base-referentiel.md,
- * dette technique "conjoint".
+ * family_links est commun aux deux personnes : le rattachement d'un enfant
+ * (`parent_de` : user, spouse, both_parents) est filtré par les calculs
+ * (cf. `estEnfantDeLaPersonne`).
  */
 export const useProfilFamilialRetraite = (personne: Personne = 'utilisateur'): ProfilFamilialRetraite => {
   const [dateNaissanceDetail, setDateNaissanceDetail] = useState<DateNaissance | null>(null);
   const [dateNaissanceISO, setDateNaissanceISO] = useState<string | null>(null);
   const [familyLinks, setFamilyLinks] = useState<FamilyLink[]>([]);
-  const [civilite, setCivilite] = useState<string | null>(null);
+  const [civiliteUtilisateur, setCiviliteUtilisateur] = useState<string | null>(null);
+  const [civiliteConjoint, setCiviliteConjoint] = useState<string | null>(null);
+  const [attributionsMDA, setAttributionsMDA] = useState<AttributionMDA[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const chargerIdentite = personne === 'conjoint'
-      ? familyService.getMaritalStatus().then((statut) => ({
-          dateNaissance: statut?.date_naissance_conjoint ?? null,
-          civilite: statut?.civilite_conjoint ?? null,
-        }))
-      : familyService.getFamilyProfile().then((profil) => ({
-          dateNaissance: profil?.date_naissance ?? null,
-          civilite: profil?.civility ?? null,
-        }));
+  const rechargerAttributionsMDA = useCallback(async () => {
+    try {
+      setAttributionsMDA(await retraiteMdaService.lister());
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.error('Erreur lors du chargement des trimestres enfants:', error);
+      }
+    }
+  }, []);
 
-    Promise.all([chargerIdentite, familyService.getFamilyLinks()])
-      .then(([{ dateNaissance, civilite: civiliteChargee }, liens]) => {
-        setCivilite(civiliteChargee);
+  useEffect(() => {
+    Promise.all([
+      familyService.getFamilyProfile(),
+      familyService.getMaritalStatus(),
+      familyService.getFamilyLinks(),
+      retraiteMdaService.lister(),
+    ])
+      .then(([profil, statut, liens, attributions]) => {
+        setCiviliteUtilisateur(profil?.civility ?? null);
+        setCiviliteConjoint(statut?.civilite_conjoint ?? null);
+        setAttributionsMDA(attributions);
+        const dateNaissance =
+          personne === 'conjoint' ? statut?.date_naissance_conjoint ?? null : profil?.date_naissance ?? null;
         if (dateNaissance) {
           setDateNaissanceDetail(dateNaissanceDepuisISO(dateNaissance));
           setDateNaissanceISO(dateNaissance);
@@ -65,5 +83,16 @@ export const useProfilFamilialRetraite = (personne: Personne = 'utilisateur'): P
       .finally(() => setLoading(false));
   }, [personne]);
 
-  return { dateNaissanceDetail, dateNaissanceISO, familyLinks, civilite, loading };
+  const civilite = personne === 'conjoint' ? civiliteConjoint : civiliteUtilisateur;
+  return {
+    dateNaissanceDetail,
+    dateNaissanceISO,
+    familyLinks,
+    civilite,
+    civiliteUtilisateur,
+    civiliteConjoint,
+    attributionsMDA,
+    rechargerAttributionsMDA,
+    loading,
+  };
 };

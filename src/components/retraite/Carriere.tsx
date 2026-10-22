@@ -30,6 +30,8 @@ import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
 import { CarriereCNAVPL, VALEUR_POINT_CNAVPL_2026 } from '@/components/retraite/CarriereCNAVPL';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
+import { TrimestresEnfantsPanel } from '@/components/retraite/TrimestresEnfantsPanel';
+import { trimestresEnfants as calculerTrimestresEnfants, liensFamiliauxDeLaPersonne } from '@/lib/retraite/trimestresEnfants';
 
 // Seuil de tolérance pour l'indicateur de cohérence RIS ↔ carrière saisie
 // (cf. ci-dessous, section "Détail de carrière") : un écart de 4 trimestres
@@ -179,6 +181,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // affichée via surcoteParentale()/surcoteTotale(), cf.
   // docs/audit/branchement-majorations-pension-finale.md.
   const [auMoinsUnTrimestreMajorationEnfant, setAuMoinsUnTrimestreMajorationEnfant] = useState(false);
+  const [mdaDejaAuRis, setMdaDejaAuRis] = useState(false);
   // Champ déclaratif pour l'écrêtement du MICO (référentiel §3.5.5, écart
   // #10) — pensions personnelles brutes d'autres régimes non modélisés par
   // cet outil (étranger, complémentaires non saisies...), mensuel, optionnel.
@@ -259,7 +262,17 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // useProfilFamilialRetraite() (cf. docs/audit/audit-pension-consolidation.md,
   // étape 3 de la fusion), partagé avec usePensionConsolidee.ts plutôt que
   // rechargés séparément ici.
-  const { dateNaissanceDetail, dateNaissanceISO, familyLinks } = useProfilFamilialRetraite(personne);
+  const {
+    dateNaissanceDetail,
+    dateNaissanceISO,
+    familyLinks: tousLiens,
+    civiliteUtilisateur,
+    civiliteConjoint,
+    attributionsMDA,
+    rechargerAttributionsMDA,
+  } = useProfilFamilialRetraite(personne);
+  // Enfants rattachés à cette personne seulement (parent_de).
+  const familyLinks = useMemo(() => liensFamiliauxDeLaPersonne(tousLiens, personne), [tousLiens, personne]);
   // Année de naissance seule — nécessaire pour le dialogue d'import RIS
   // (calcul du SAM proposé, nombre d'années requis selon la génération).
   // Dérivée de dateNaissanceISO plutôt que rechargée séparément.
@@ -300,6 +313,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       }
       if (data.au_moins_un_trimestre_majoration_enfant !== undefined) {
         setAuMoinsUnTrimestreMajorationEnfant(data.au_moins_un_trimestre_majoration_enfant);
+      }
+      if (data.mda_deja_au_ris !== undefined) {
+        setMdaDejaAuRis(data.mda_deja_au_ris);
       }
       if (data.has_fonction_publique !== undefined) {
         setHasFonctionPublique(data.has_fonction_publique);
@@ -389,6 +405,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             trimestres_valides: parseInt(trimestresValides) || 0,
             regimes_points: regimesPoints,
             au_moins_un_trimestre_majoration_enfant: auMoinsUnTrimestreMajorationEnfant,
+            mda_deja_au_ris: mdaDejaAuRis,
             has_fonction_publique: hasFonctionPublique,
             trimestres_liquidables_fp: parseInt(trimestresLiquidablesFP) || 0,
             has_cnavpl: hasCNAVPL,
@@ -423,6 +440,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       JSON.stringify(regimesPoints),
       JSON.stringify(detailCarriere),
       auMoinsUnTrimestreMajorationEnfant,
+      mdaDejaAuRis,
       hasFonctionPublique,
       trimestresLiquidablesFP,
       hasCNAVPL,
@@ -613,6 +631,43 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // pas seulement la dernière version sauvegardée. Salaire/trimestres déjà
   // augmentés de la projection de revenu futur ci-dessus (étape 2 de la
   // fusion).
+  // Trimestres enfants (MDA) sur la saisie en cours, même fonction que la
+  // Synthèse et l'Optimisation.
+  const trimestresValidesHorsMDA = (parseInt(trimestresValides) || 0) + projectionRevenuFutur.trimestresValidesProjetes;
+  const trimestresEnfantsPersonne = useMemo(
+    () =>
+      calculerTrimestresEnfants({
+        familyLinks,
+        attributions: attributionsMDA,
+        personne,
+        civiliteUtilisateur,
+        civiliteConjoint,
+        droits: { rg: (parseInt(trimestresValides) || 0) > 0, fp: hasFonctionPublique, cnavpl: hasCNAVPL },
+        dateEffet: dateEffetScenario,
+        dureeTousRegimesHorsMDA:
+          trimestresValidesHorsMDA +
+          (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0) +
+          (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0),
+        mdaDejaAuRis,
+      }),
+    [
+      familyLinks,
+      attributionsMDA,
+      personne,
+      civiliteUtilisateur,
+      civiliteConjoint,
+      trimestresValides,
+      hasFonctionPublique,
+      hasCNAVPL,
+      dateEffetScenario,
+      trimestresValidesHorsMDA,
+      trimestresLiquidablesFP,
+      trimestresCNAVPL,
+      mdaDejaAuRis,
+    ]
+  );
+  const aDesEnfants = trimestresEnfantsPersonne.detail.length > 0;
+
   const entreePensionConsolidee = useMemo<EntreePensionConsolidee>(
     () => ({
       salaireAnnuelMoyen: projectionRevenuFutur.salaireAnnuelMoyenProjete,
@@ -654,8 +709,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             trimestresProjetes: projectionRevenuFutur.trimestresProjetesJusquADateEffet,
           }
         : undefined,
+      trimestresEnfants: trimestresEnfantsPersonne,
     }),
     [
+      trimestresEnfantsPersonne,
       projectionRevenuFutur,
       trimestresValides,
       trimestresRequis,
@@ -818,24 +875,34 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
 
           <ToggleHypotheseRevenuFutur personne={personne} hypothese={hypotheseRevenuFutur} />
 
-          <div className="flex items-start space-x-2">
-            <Checkbox
-              id="majoration-enfant"
-              checked={auMoinsUnTrimestreMajorationEnfant}
-              onCheckedChange={(checked) => setAuMoinsUnTrimestreMajorationEnfant(checked === true)}
+          {aDesEnfants ? (
+            <TrimestresEnfantsPanel
+              personne={personne}
+              trimestresEnfants={trimestresEnfantsPersonne}
+              mdaDejaAuRis={mdaDejaAuRis}
+              onMdaDejaAuRisChange={setMdaDejaAuRis}
+              onAttributionsChange={rechargerAttributionsMDA}
             />
-            <div className="space-y-1">
-              <label htmlFor="majoration-enfant" className="text-xs font-medium leading-none">
-                Au moins 1 trimestre de majoration pour enfant
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Maternité, adoption, éducation, enfant handicapé ou congé parental — quel que soit
-                le régime de base qui l'a accordé. Condition d'éligibilité à la surcote parentale
-                (référentiel §2.3.2), déclarative : ne cochez que si ce trimestre figure déjà sur le
-                relevé de carrière du client.
-              </p>
+          ) : (
+            <div className="flex items-start space-x-2">
+              <Checkbox
+                id="majoration-enfant"
+                checked={auMoinsUnTrimestreMajorationEnfant}
+                onCheckedChange={(checked) => setAuMoinsUnTrimestreMajorationEnfant(checked === true)}
+              />
+              <div className="space-y-1">
+                <label htmlFor="majoration-enfant" className="text-xs font-medium leading-none">
+                  Au moins 1 trimestre de majoration pour enfant
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Maternité, adoption, éducation, enfant handicapé ou congé parental — quel que soit
+                  le régime de base qui l'a accordé. Condition d'éligibilité à la surcote parentale
+                  (référentiel §2.3.2). Saisie manuelle utilisée seulement en l'absence d'enfant dans
+                  Famille : sinon les trimestres enfants sont calculés.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-3">
             <div className={`${panelInsetClass}`}>
@@ -1303,7 +1370,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
 
       <CarriereFonctionPublique
         trimestresRequis={trimestresRequis}
-        trimestresAutresRegimes={(parseInt(trimestresValides) || 0) + (hasCNAVPL ? parseInt(trimestresCNAVPL) || 0 : 0)}
+        trimestresAutresRegimes={
+          (parseInt(trimestresValides) || 0) +
+          trimestresEnfantsPersonne.rg +
+          (hasCNAVPL ? (parseInt(trimestresCNAVPL) || 0) + trimestresEnfantsPersonne.cnavpl : 0)
+        }
+        bonificationEnfants={trimestresEnfantsPersonne.fpBonification}
+        majorationDureeEnfants={trimestresEnfantsPersonne.fpMajorationDuree}
         hasFonctionPublique={hasFonctionPublique}
         onHasFonctionPubliqueChange={setHasFonctionPublique}
         trimestresLiquidables={trimestresLiquidablesFP}
@@ -1330,13 +1403,22 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onTrimestresLiquidablesNBIChange={setTrimestresLiquidablesNBI}
         dateNaissance={dateNaissanceDetail}
         dateEffet={dateEffetScenario}
-        auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
+        auMoinsUnTrimestreMajorationEnfant={aDesEnfants ? trimestresEnfantsPersonne.auMoinsUn : auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />
 
       <CarriereCNAVPL
         trimestresRequis={trimestresRequis}
-        trimestresAutresRegimes={(parseInt(trimestresValides) || 0) + (hasFonctionPublique ? parseInt(trimestresLiquidablesFP) || 0 : 0)}
+        trimestresAutresRegimes={
+          (parseInt(trimestresValides) || 0) +
+          trimestresEnfantsPersonne.rg +
+          (hasFonctionPublique
+            ? (parseInt(trimestresLiquidablesFP) || 0) +
+              trimestresEnfantsPersonne.fpBonification +
+              trimestresEnfantsPersonne.fpMajorationDuree
+            : 0)
+        }
+        trimestresEnfantsCNAVPL={trimestresEnfantsPersonne.cnavpl}
         hasCNAVPL={hasCNAVPL}
         onHasCNAVPLChange={setHasCNAVPL}
         trimestresCNAVPL={trimestresCNAVPL}
@@ -1347,7 +1429,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onValeurPointCNAVPLChange={setValeurPointCNAVPL}
         dateNaissance={dateNaissanceDetail}
         dateEffet={dateEffetScenario}
-        auMoinsUnTrimestreMajorationEnfant={auMoinsUnTrimestreMajorationEnfant}
+        auMoinsUnTrimestreMajorationEnfant={aDesEnfants ? trimestresEnfantsPersonne.auMoinsUn : auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />
 

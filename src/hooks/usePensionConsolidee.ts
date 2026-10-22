@@ -3,6 +3,7 @@ import { useRetraiteData, Personne } from '@/hooks/useRetraiteData';
 import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { RetraiteData } from '@/hooks/useRetraiteData';
+import { FamilyLink } from '@/services/familyService';
 import {
   calculerPensionConsolidee,
   ResultatPensionConsolidee,
@@ -16,6 +17,12 @@ import {
   trimestresProjetesParAnnee,
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import { evaluerCarriereLongue } from '@/lib/retraite/calculCarriereLongue';
+import {
+  trimestresEnfants as calculerTrimestresEnfants,
+  liensFamiliauxDeLaPersonne,
+  AttributionMDA,
+  TrimestresEnfantsParRegime,
+} from '@/lib/retraite/trimestresEnfants';
 
 export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   loading: boolean;
@@ -82,6 +89,41 @@ export function donneesAutresRegimesDepuisRetraiteData(
 }
 
 /**
+ * Trimestres enfants d'une personne à une date d'effet, à partir des données
+ * persistées. `trimestresValidesHorsMDA` : régime général (RIS + projetés).
+ * Partagé par la Synthèse, Carrière et l'onglet Optimisation.
+ */
+export function trimestresEnfantsDepuisRetraiteData(params: {
+  data: RetraiteData;
+  personne: Personne;
+  familyLinks: FamilyLink[];
+  attributions: AttributionMDA[];
+  civiliteUtilisateur: string | null;
+  civiliteConjoint: string | null;
+  dateEffet: Date;
+  trimestresValidesHorsMDA: number;
+}): TrimestresEnfantsParRegime {
+  const { data } = params;
+  const trimestresFP = data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0;
+  const trimestresCNAVPL = data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0;
+  return calculerTrimestresEnfants({
+    familyLinks: params.familyLinks,
+    attributions: params.attributions,
+    personne: params.personne,
+    civiliteUtilisateur: params.civiliteUtilisateur,
+    civiliteConjoint: params.civiliteConjoint,
+    droits: {
+      rg: (data.trimestres_valides ?? 0) > 0,
+      fp: data.has_fonction_publique,
+      cnavpl: data.has_cnavpl,
+    },
+    dateEffet: params.dateEffet,
+    dureeTousRegimesHorsMDA: params.trimestresValidesHorsMDA + trimestresFP + trimestresCNAVPL,
+    mdaDejaAuRis: data.mda_deja_au_ris ?? false,
+  });
+}
+
+/**
  * Pension consolidée tous régimes pour une personne (utilisateur ou
  * conjoint) — charge les mêmes sources que Carriere.tsx (retraite_data,
  * détail de carrière, date de naissance, liens familiaux) et applique le
@@ -93,8 +135,15 @@ export function donneesAutresRegimesDepuisRetraiteData(
 export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePensionConsolideeResult => {
   const { data, loading: loadingRetraiteData } = useRetraiteData(personne);
   const { periodes: detailCarriere, loading: loadingCarriereDetail } = useCarriereDetail(personne);
-  const { dateNaissanceDetail, familyLinks, loading: loadingProfil } =
-    useProfilFamilialRetraite(personne);
+  const {
+    dateNaissanceDetail,
+    familyLinks: tousLiens,
+    civiliteUtilisateur,
+    civiliteConjoint,
+    attributionsMDA,
+    loading: loadingProfil,
+  } = useProfilFamilialRetraite(personne);
+  const familyLinks = useMemo(() => liensFamiliauxDeLaPersonne(tousLiens, personne), [tousLiens, personne]);
 
   const loading = loadingRetraiteData || loadingCarriereDetail || loadingProfil;
 
@@ -148,6 +197,17 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
 
   const salaireComplementaire = salaireProjectionComplementaire(data.salaire_brut_annuel, revenuHypothese);
 
+  const trimestresEnfants = trimestresEnfantsDepuisRetraiteData({
+    data,
+    personne,
+    familyLinks,
+    attributions: attributionsMDA,
+    civiliteUtilisateur,
+    civiliteConjoint,
+    dateEffet,
+    trimestresValidesHorsMDA: trimestresValides + trimestresProjetes,
+  });
+
   const resultat = calculerPensionConsolidee({
     salaireAnnuelMoyen: salaireAnnuelMoyenProjete,
     trimestresValides: trimestresValides + trimestresProjetes,
@@ -163,6 +223,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     projectionComplementaire: salaireComplementaire
       ? { salaireAnnuel: salaireComplementaire.salaireAnnuel, trimestresProjetes: trimestresProjetesJusquADateEffet }
       : undefined,
+    trimestresEnfants,
   });
 
   const aDesDonnees = salaireAnnuelMoyen > 0 || trimestresValides > 0;
@@ -170,6 +231,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
   const trimestresValidesTousRegimes =
     trimestresValides +
     trimestresProjetes +
+    trimestresEnfants.total +
     (data.has_fonction_publique ? data.trimestres_liquidables_fp ?? 0 : 0) +
     (data.has_cnavpl ? data.trimestres_cnavpl ?? 0 : 0);
 

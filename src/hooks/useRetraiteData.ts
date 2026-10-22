@@ -20,6 +20,8 @@ export interface RetraiteData {
   // Condition n°1 (déclarative) de la surcote parentale, référentiel §2.3.2 —
   // cf. surcoteParentale() dans src/lib/retraite/calcul.ts.
   au_moins_un_trimestre_majoration_enfant?: boolean;
+  /** RIS affichant déjà les trimestres enfants : ne pas les ajouter. */
+  mda_deja_au_ris?: boolean;
   // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /
   // CarriereCNAVPL.tsx) — cf. docs/audit/audit-fonction-publique-cnavpl.md :
   // ces deux blocs n'avaient jusqu'ici aucune colonne pour persister leur

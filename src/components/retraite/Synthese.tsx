@@ -240,6 +240,11 @@ const BlocPersonne = ({
           <span className="tabular-nums">{trimestresValidesTousRegimes}</span>
           <span className="font-normal text-muted-foreground"> / {trimestresRequis} requis</span>
         </SummaryRow>
+        {resultat.trimestresEnfants.total > 0 && (
+          <SummaryRow label="dont trimestres enfants">
+            <span className="tabular-nums">{resultat.trimestresEnfants.total}</span>
+          </SummaryRow>
+        )}
       </dl>
       <div className="mt-2">
         <BarreTrimestres ratio={trimestresRequis > 0 ? trimestresValidesTousRegimes / trimestresRequis : 0} couleur={couleur} />

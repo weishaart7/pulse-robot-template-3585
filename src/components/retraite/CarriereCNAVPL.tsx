@@ -36,6 +36,8 @@ interface CarriereCNAVPLProps {
   // publique le cas échéant) : la décote CNAVPL se base sur le total tous
   // régimes, pas seulement les trimestres CNAVPL isolés.
   trimestresAutresRegimes: number;
+  /** Trimestres enfants accordés par la CNAVPL (cf. trimestresEnfants.ts). */
+  trimestresEnfantsCNAVPL?: number;
   // Remontés au parent (Carriere.tsx), même pattern que CarriereFonctionPublique.
   hasCNAVPL: boolean;
   onHasCNAVPLChange: (value: boolean) => void;
@@ -69,6 +71,7 @@ interface CarriereCNAVPLProps {
 export const CarriereCNAVPL = ({
   trimestresRequis,
   trimestresAutresRegimes,
+  trimestresEnfantsCNAVPL = 0,
   hasCNAVPL,
   onHasCNAVPLChange,
   trimestresCNAVPL,
@@ -85,7 +88,7 @@ export const CarriereCNAVPL = ({
 }: CarriereCNAVPLProps) => {
   const pointsNum = parseFloat(pointsCNAVPL) || 0;
   const valeurPointNum = parseFloat(valeurPointCNAVPL) || 0;
-  const trimestresCNAVPLNum = parseInt(trimestresCNAVPL) || 0;
+  const trimestresCNAVPLNum = (parseInt(trimestresCNAVPL) || 0) + trimestresEnfantsCNAVPL;
 
   // Décote (référentiel §5.3) : plus favorable des décotes sur la durée tous
   // régimes et sur l'âge à la date d'effet (taux plein à 67 ans) — même

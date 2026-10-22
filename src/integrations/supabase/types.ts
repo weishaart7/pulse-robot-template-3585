@@ -2454,6 +2454,7 @@ export type Database = {
           age_depart_anticipe: number | null
           annee_ouverture_droits: number | null
           au_moins_un_trimestre_majoration_enfant: boolean
+          mda_deja_au_ris: boolean
           autres_epargnes: number | null
           autres_pensions_mensuelles: number | null
           created_at: string
@@ -2490,6 +2491,7 @@ export type Database = {
           age_depart_anticipe?: number | null
           annee_ouverture_droits?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
+          mda_deja_au_ris?: boolean
           autres_epargnes?: number | null
           autres_pensions_mensuelles?: number | null
           created_at?: string
@@ -2526,6 +2528,7 @@ export type Database = {
           age_depart_anticipe?: number | null
           annee_ouverture_droits?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
+          mda_deja_au_ris?: boolean
           autres_epargnes?: number | null
           autres_pensions_mensuelles?: number | null
           created_at?: string
@@ -2558,6 +2561,50 @@ export type Database = {
           valeur_point_cnavpl?: number | null
         }
         Relationships: []
+      }
+      retraite_mda_enfants: {
+        Row: {
+          bonification_fp: boolean
+          created_at: string
+          education_client: number | null
+          family_link_id: string
+          id: string
+          maternite_adoption_client: number | null
+          regime_attribution: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bonification_fp?: boolean
+          created_at?: string
+          education_client?: number | null
+          family_link_id: string
+          id?: string
+          maternite_adoption_client?: number | null
+          regime_attribution?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bonification_fp?: boolean
+          created_at?: string
+          education_client?: number | null
+          family_link_id?: string
+          id?: string
+          maternite_adoption_client?: number | null
+          regime_attribution?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "retraite_mda_enfants_family_link_id_fkey"
+            columns: ["family_link_id"]
+            isOneToOne: true
+            referencedRelation: "family_links"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       revenus: {
         Row: {

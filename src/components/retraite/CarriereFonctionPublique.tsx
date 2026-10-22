@@ -1,3 +1,4 @@
+import { dureeAssuranceFonctionPublique, tauxProratisationFonctionPublique } from '@/lib/retraite/pensionConsolidee';
 import React, { useEffect } from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
@@ -54,6 +55,9 @@ interface CarriereFonctionPubliqueProps {
   // génériquement (pas "RegimeGeneral") car ce total peut désormais
   // regrouper plusieurs sources.
   trimestresAutresRegimes: number;
+  /** Trimestres enfants FP (cf. trimestresEnfants.ts). */
+  bonificationEnfants?: number;
+  majorationDureeEnfants?: number;
   // Remontés au parent (Carriere.tsx) car le total de trimestres tous
   // régimes doit aussi alimenter la décote du régime général — un state
   // purement local ici ne serait pas visible du composant frère.
@@ -116,6 +120,8 @@ interface CarriereFonctionPubliqueProps {
 export const CarriereFonctionPublique = ({
   trimestresRequis,
   trimestresAutresRegimes,
+  bonificationEnfants = 0,
+  majorationDureeEnfants = 0,
   hasFonctionPublique,
   onHasFonctionPubliqueChange,
   trimestresLiquidables,
@@ -157,12 +163,18 @@ export const CarriereFonctionPublique = ({
   // undefined si non renseigné, pour retomber sur le défaut 1,25 % (comportement
   // historique inchangé en l'absence de saisie).
   const anneeOuvertureDroitsNum = anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10);
-  const taux = tauxProratisation(trimestresLiquidablesNum, trimestresRequis);
+  const donneesTaux = {
+    trimestresLiquidables: trimestresLiquidablesNum,
+    bonificationEnfants,
+    majorationDureeEnfants,
+  };
+  const taux = tauxProratisationFonctionPublique(donneesTaux, trimestresRequis);
+  const dureeAssuranceFP = dureeAssuranceFonctionPublique(donneesTaux);
   // Décote (référentiel §7.3) : plus favorable des décotes sur la durée tous
   // régimes et sur l'âge, au taux du millésime d'ouverture des droits —
   // même fonction que le total consolidé (pensionConsolidee.ts).
   const decote = decoteFonctionPublique({
-    trimestresTousRegimes: trimestresLiquidablesNum + trimestresAutresRegimes,
+    trimestresTousRegimes: dureeAssuranceFP + trimestresAutresRegimes,
     trimestresRequis,
     anneeOuvertureDroits: anneeOuvertureDroitsNum,
     departAnticipeCategorieActive,
@@ -189,7 +201,7 @@ export const CarriereFonctionPublique = ({
   const ageLegalParentaleEligibleFlag = dateNaissance
     ? ageLegalParentaleEligible(dateNaissance, dateEffet)
     : undefined;
-  const dureeRequiseAtteinte = trimestresLiquidablesNum + trimestresAutresRegimes >= trimestresRequis;
+  const dureeRequiseAtteinte = dureeAssuranceFP + trimestresAutresRegimes >= trimestresRequis;
   // ⚠️ Aucun détail de carrière par année pour ce régime (trimestresLiquidables
   // est un simple total saisi à la main, contrairement au détail carrière
   // daté du régime général) : le nombre de trimestres cotisés sur l'année de

@@ -40,6 +40,8 @@ import {
   calculerResultatCNAVPL,
   DonneesFonctionPublique,
   DonneesCNAVPL,
+  appliquerTrimestresEnfantsAutresRegimes,
+  dureeAssuranceFonctionPublique,
 } from './pensionConsolidee';
 import {
   separerRegimesPoints,
@@ -48,6 +50,7 @@ import {
   coefficientAnticipationAgircArrco,
 } from './calculAgircArrco';
 import { EnfantAgircArrco, nombreEnfantsAChargeAgircArrco } from './enfantsEligiblesMajoration';
+import { TrimestresEnfantsParRegime } from './trimestresEnfants';
 import { evaluerCarriereLongue, carriereLongueOuverteA, ResultatCarriereLongue } from './calculCarriereLongue';
 
 export interface ContexteSimulationDepart {
@@ -63,6 +66,8 @@ export interface ContexteSimulationDepart {
   nombreEnfantsEligibles: number;
   /** Enfants pour la majoration Agirc-Arrco pour enfant à charge (évaluée à chaque date d'effet). */
   enfantsAgircArrco: EnfantAgircArrco[];
+  /** MDA à une date d'effet (éducation acquise année après année), absent = aucune. */
+  trimestresEnfantsA?: (dateEffet: Date) => TrimestresEnfantsParRegime;
   /** Salaire de projection des points Agirc-Arrco, `null` si inconnu. */
   salaireComplementaire: number | null;
   /** Âge d'ouverture d'un départ anticipé confirmé par la caisse, `null` sinon. */
@@ -73,6 +78,8 @@ export type MotifDepartAnticipe = 'carriere_longue' | 'confirme';
 
 export interface ResultatSimulationDepart {
   dateEffet: Date;
+  /** Trimestres enfants retenus à cette date, tous régimes. */
+  trimestresEnfants: number;
   ageDepartAnnees: number;
   avantAgeLegal: boolean;
   departAnticipe: MotifDepartAnticipe | null;
@@ -186,8 +193,20 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
   const simuler = (dateEffet: Date): ResultatSimulationDepart => {
     const ageDepartAnnees = ageEnMois(dateNaissance, dateEffet) / 12;
     const trimestresProjetes = trimestresProjetesJusqua(dateEffet);
-    const trimestresValidesProjetes = ctx.trimestresValidesActuels + trimestresProjetes;
-    const trimestresTousRegimes = trimestresValidesProjetes + trimestresAutresRegimes;
+    // MDA : régime général dans les trimestres validés, FP/CNAVPL dans leurs
+    // données ; jamais dans la carrière longue ni la surcote.
+    const enfants = ctx.trimestresEnfantsA?.(dateEffet);
+    const trimestresValidesProjetes = ctx.trimestresValidesActuels + trimestresProjetes + (enfants?.rg ?? 0);
+    const { fonctionPublique: fonctionPubliqueDepart, cnavpl: cnavplDepart } = appliquerTrimestresEnfantsAutresRegimes(
+      fonctionPublique,
+      cnavpl,
+      enfants
+    );
+    const auMoinsUnTrimestreMajorationEnfant = enfants?.auMoinsUn || ctx.auMoinsUnTrimestreMajorationEnfant;
+    const trimestresTousRegimes =
+      trimestresValidesProjetes +
+      (fonctionPubliqueDepart ? dureeAssuranceFonctionPublique(fonctionPubliqueDepart) : 0) +
+      (cnavplDepart?.trimestresCNAVPL ?? 0);
     const trimestresRequis = trimestresRequisPourGeneration(dateNaissance, dateEffet);
     const ageLegal = ageLegalPourGeneration(dateNaissance, dateEffet);
 
@@ -231,7 +250,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     const surcoteTotalePct = surcoteTotale(
       surcotePourTrimestresCotises(trimestresSurcote, ageLegalAtteint(dateNaissance, dateEffet), dureeRequiseAtteinte),
       surcoteParentale(
-        ctx.auMoinsUnTrimestreMajorationEnfant,
+        auMoinsUnTrimestreMajorationEnfant,
         ageLegalParentaleEligible(dateNaissance, dateEffet),
         dureeRequiseAtteinte,
         trimestresCotisesAnneeReferenceParentale
@@ -242,25 +261,25 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     const pensionBaseBrute = pensionBase(ctx.salaireAnnuelMoyen, taux, 0);
     const pensionBaseValue = pensionBaseBrute * (1 + decote / 100) + pensionBaseBrute * (surcoteTotalePct / 100);
 
-    const resultatFP = fonctionPublique
+    const resultatFP = fonctionPubliqueDepart
       ? calculerResultatFonctionPublique(
-          fonctionPublique,
+          fonctionPubliqueDepart,
           trimestresRequis,
-          trimestresValidesProjetes + (cnavpl?.trimestresCNAVPL ?? 0),
+          trimestresValidesProjetes + (cnavplDepart?.trimestresCNAVPL ?? 0),
           dateNaissance,
           dateEffet,
-          ctx.auMoinsUnTrimestreMajorationEnfant,
+          auMoinsUnTrimestreMajorationEnfant,
           ctx.nombreEnfantsEligibles
         )
       : { pensionFinale: 0, rafpAnnuelle: 0, rafpCapital: 0 };
-    const resultatCNAVPL = cnavpl
+    const resultatCNAVPL = cnavplDepart
       ? calculerResultatCNAVPL(
-          cnavpl,
+          cnavplDepart,
           trimestresRequis,
-          trimestresValidesProjetes + (fonctionPublique?.trimestresLiquidables ?? 0),
+          trimestresValidesProjetes + (fonctionPubliqueDepart ? dureeAssuranceFonctionPublique(fonctionPubliqueDepart) : 0),
           dateNaissance,
           dateEffet,
-          ctx.auMoinsUnTrimestreMajorationEnfant,
+          auMoinsUnTrimestreMajorationEnfant,
           ctx.nombreEnfantsEligibles
         )
       : { pensionFinale: 0 };
@@ -276,6 +295,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
 
     return {
       dateEffet,
+      trimestresEnfants: enfants?.total ?? 0,
       ageDepartAnnees,
       avantAgeLegal,
       departAnticipe: avantAgeLegalBrut ? departAnticipe : null,

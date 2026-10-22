@@ -63,6 +63,21 @@ export interface ParametresAgircArrco {
   coefficientsAnticipationParTrimestresManquants: Record<string, number>;
 }
 
+export interface ParametresMDA {
+  source: string;
+  trimestresMaterniteAdoption: number;
+  trimestresEducation: number;
+  /** Durée d'assurance minimale tous régimes pour les trimestres éducation. */
+  dureeMinimaleEducation: number;
+  /** Avant cette date : trimestres éducation à la mère, sans répartition. */
+  dateChargeRepartitionEducation: string;
+  /** Fonction publique : bonification avant cette date, majoration de durée à partir. */
+  fpDateChargeMajoration: string;
+  fpTrimestresMajorationDuree: number;
+  fpTrimestresBonification: number;
+  fpTauxMaximalAvecBonificationsPct: number;
+}
+
 export interface ParametresRAFP {
   source: string;
   seuilRentePoints: number;
@@ -128,6 +143,7 @@ export interface ParametresEpargneRetraite {
 interface ParamsRetraite {
   millesimes: MillesimeRetraite[];
   agircArrco: ParametresAgircArrco;
+  mda: ParametresMDA;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
@@ -175,6 +191,7 @@ export function baremePerime(aujourdHui: Date): boolean {
 export const BAREME_RACHAT = PARAMS.rachat;
 export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
 export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
+export const PARAMETRES_MDA: ParametresMDA = PARAMS.mda;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;
 export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;
