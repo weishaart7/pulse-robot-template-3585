@@ -5,7 +5,7 @@ import {
   surcotePourTrimestresCotises,
   surcoteParentale,
   surcoteTotale,
-  decoteSurTrimestresPlafond25,
+  decoteSurTrimestres,
 } from './calcul';
 
 describe('CNAVPL — majoration pour 3 enfants (référentiel §5.4 : « mêmes règles qu\'au régime général »)', () => {
@@ -44,7 +44,7 @@ describe('Profil complet — CNAVPL (mission : branchement des majorations sur l
 
   it('profil avec décote (durée requise non atteinte) : ni surcote ni majoration', () => {
     const trimestresCNAVPL = 150;
-    const decoteSeule = Math.min(decoteSurTrimestresPlafond25(trimestresCNAVPL, trimestresRequis), 0);
+    const decoteSeule = Math.min(decoteSurTrimestres(trimestresCNAVPL, trimestresRequis), 0);
     expect(decoteSeule).toBe(-25); // plafond -25 %, propre à ce régime (identique fonction publique)
 
     const pensionFinale = pensionBaseCNAVPL(points, valeurPoint, decoteSeule);

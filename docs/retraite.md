@@ -452,7 +452,7 @@ uniquement applicatif via `familyService`.
   antérieure au 01/09/2023. `Carriere.tsx` (proxy « aujourd'hui ») et `Trimestres.tsx` (sélecteur de
   date de liquidation, remplaçant un slider d'âge depuis le 2026-08-13) consomment ce même mécanisme.
 - **Décote et surcote : deux mécanismes séparés, pas une seule fonction à deux signes.**
-  `decoteSurTrimestres()`/`decoteSurTrimestresPlafond25()` (calcul.ts) ne portent plus que la décote
+  `decoteSurTrimestres()` (calcul.ts) ne porte plus que la décote
   (écrêtée à `Math.min(..., 0)` chez tous les appelants depuis le 2026-08-16, commit `c91d7d9`) ;
   `surcotePourTrimestresCotises()` (classique) et `surcoteParentale()` (option déclarative, case à
   cocher `au_moins_un_trimestre_majoration_enfant`) sont calculées séparément puis combinées par
@@ -625,7 +625,7 @@ uniquement applicatif via `familyService`.
 - **Plafond de décote : -25 % (20 trimestres) dans tous les régimes modélisés.** Régime général
   compris (`decoteSurTrimestres()`, `decoteSurAge()`) : minoration de 0,625 point de taux par
   trimestre manquant, taux minimal 37,5 %. Le régime général était plafonné à tort à -20 % jusqu'au
-  2026-09-24. `decoteSurTrimestresPlafond25()` est depuis un doublon exact de `decoteSurTrimestres()`.
+  2026-09-24 ; le doublon `decoteSurTrimestresPlafond25()` qui en résultait a été supprimé le 2026-10-22.
 - **Double comptage fonction publique/CNAVPL — deux mécanismes distincts, tous deux soldés :**
   1) *[soldé, commit `d8c8e31`]* trimestres SRE/CNRACL comptés à tort dans le panier « régime général »
      à l'import RIS (`estRegimeSaisieManuelle()`, [regimesSaisieManuelle.ts](src/lib/retraite/regimesSaisieManuelle.ts)),
@@ -704,17 +704,12 @@ bloquantes, toutes soldées (cf. §2) : plafonnement SAM avant revalorisation + 
 décote -25 %, période de la surcote classique, date d'effet unique et projection des trimestres,
 écrêtement du MICO tous régimes.
 
-- **Calcul FP/CNAVPL dupliqué entre les cartes et `pensionConsolidee.ts`** : chaque correction de
-  règle doit être reportée aux deux endroits (décotes désormais partagées, mais pas MIGA, surcote,
-  majorations, NBI). `decoteSurTrimestresPlafond25()` (calcul.ts) n'est plus appelée que par des
-  tests : code mort, doublon de `decoteSurTrimestres()`.
 - Projection par statut : pas de changement de statut avant le départ ; trimestres CNAVPL et FP
-  projetés à 4 par an quel que soit le revenu ; les cartes FP et CNAVPL de Carrière affichent les
-  valeurs saisies, sans la projection (seul le total et la ligne « Projeté en… » l'intègrent).
+  projetés à 4 par an quel que soit le revenu.
 - Limites connues de la projection (phase 3) : un client ayant dépassé l'âge légal se voit projeter le
   trimestre en cours comme travaillé (hypothèse de poursuite d'activité, même pour un RIS ancien) ;
-  `Trimestres.tsx` ne projette pas le SAM (salaire annuel moyen saisi) ; l'export PDF garde le libellé
-  « Âge du taux plein retenu » sans la date d'effet simulée.
+  l'export PDF garde le libellé « Âge du taux plein retenu » sans la date d'effet simulée (cf. refonte
+  du PDF, dette « À surveiller »).
 
 Écarts antérieurs soldés :
 

@@ -627,26 +627,6 @@ export function decoteSurTrimestres(trimestresValides: number, trimestresRequis:
 }
 
 /**
- * Décote/surcote basée sur l'écart de trimestres validés par rapport aux
- * trimestres requis, plafond -25 % (20 trimestres) — utilisée par la
- * fonction publique et la CNAVPL.
- *
- * ⚠️ Désormais strictement identique à decoteSurTrimestres() ci-dessus
- * depuis la correction du plafond du régime général (-20 % → -25 %) :
- * doublon à fusionner, conservé tel quel pour ne pas élargir le périmètre.
- */
-export function decoteSurTrimestresPlafond25(trimestresValides: number, trimestresRequis: number): number {
-  const difference = trimestresValides - trimestresRequis;
-  if (difference < 0) {
-    return Math.max(difference * 1.25, -25);
-  }
-  if (difference > 0) {
-    return difference * 1.25;
-  }
-  return 0;
-}
-
-/**
  * Décote basée sur l'écart d'âge par rapport à l'âge du taux plein
  * automatique (67 ans par défaut) : 1,25 % par trimestre manquant, plafonné
  * à -25 % (20 trimestres). `ageDepart` peut être fractionnaire (âge au mois
@@ -894,9 +874,7 @@ export function pensionBase(
  * qu'au régime général » par le référentiel : régime général lui-même,
  * SSI (§4.3.1), agents contractuels (§8.1), artistes-auteurs (§9.5), CNAVPL
  * et CNBF (§5.4, §6.3) — réutiliser directement cette fonction pour ces six
- * régimes, pas de fonction dupliquée par régime (même principe que
- * `decoteSurTrimestresPlafond25()`, réutilisée telle quelle par CNAVPL et la
- * fonction publique). Seule la fonction publique a une formule dégressive
+ * régimes, pas de fonction dupliquée par régime. Seule la fonction publique a une formule dégressive
  * différente (+5 %/enfant au-delà de 3, plafonnée au dernier traitement) —
  * voir `majorationEnfantsFonctionPublique()` dans `calculFonctionPublique.ts`.
  *

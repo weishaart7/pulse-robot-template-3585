@@ -16,7 +16,7 @@ import {
 } from './calculFonctionPublique';
 import {
   tauxProratisation,
-  decoteSurTrimestresPlafond25,
+  decoteSurTrimestres,
   surcotePourTrimestresCotises,
   surcoteParentale,
   surcoteTotale,
@@ -348,7 +348,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
   it('profil avec décote (durée de services insuffisante) : la pension calculée est sous le MIGA, qui l’emporte', () => {
     const trimestresLiquidables = 100;
     const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
-    const decote = Math.min(decoteSurTrimestresPlafond25(trimestresLiquidables, trimestresRequis), 0);
+    const decote = Math.min(decoteSurTrimestres(trimestresLiquidables, trimestresRequis), 0);
     expect(decote).toBe(-25); // plafond -25 %
 
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
@@ -368,7 +368,7 @@ describe('Profil complet — fonction publique (mission : branchement des majora
     // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
     const trimestresLiquidables = 180; // carrière complète, surcote éligible
     const taux = tauxProratisation(trimestresLiquidables, trimestresRequis);
-    const decote = Math.min(decoteSurTrimestresPlafond25(trimestresLiquidables, trimestresRequis), 0);
+    const decote = Math.min(decoteSurTrimestres(trimestresLiquidables, trimestresRequis), 0);
     expect(decote).toBe(0);
 
     const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
