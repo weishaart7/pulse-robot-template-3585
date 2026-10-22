@@ -640,11 +640,11 @@ describe('CAVAMAC (agents généraux d’assurance)', () => {
     expect(caisseADassietteDediee('CPRN')).toBe(true);
     expect(caisseADassietteDediee('CARMF')).toBe(false);
   });
-  it('points : 6,30 % des commissions plafonnées ÷ 8,106 €, sur les commissions et non le revenu', () => {
-    expect(pointsAnnuelsCaisse(cavamac, 200000)).toBeCloseTo((200000 * 0.063) / 8.106, 6);
-    expect(pointsAnnuelsCaisse(cavamac, 2000000)).toBeCloseTo((13.0207 * pass * 0.063) / 8.106, 6);
+  it('points : 6,30 % des commissions plafonnées ÷ 8,1806 €, sur les commissions et non le revenu', () => {
+    expect(pointsAnnuelsCaisse(cavamac, 200000)).toBeCloseTo((200000 * 0.063) / 8.1806, 6);
+    expect(pointsAnnuelsCaisse(cavamac, 2000000)).toBeCloseTo((13.0207 * pass * 0.063) / 8.1806, 6);
     const r = calculerCaissesPoints(base);
-    expect(r.details[0].pointsProjetes).toBeCloseTo((10 * 200000 * 0.063) / 8.106, 6);
+    expect(r.details[0].pointsProjetes).toBeCloseTo((10 * 200000 * 0.063) / 8.1806, 6);
   });
   it('minoration 1,25 % par trimestre avant 67 ans', () => {
     expect(1 - tauxDecoteAge(cavamac.decoteAge!, 64)).toBeCloseTo(0.85, 6);
@@ -669,5 +669,13 @@ describe('CAVAMAC (agents généraux d’assurance)', () => {
     const r = calculerCaissesPoints({ ...base, assietteCaisse: null, nombreEnfantsEligibles: 3 });
     expect(r.total).toBeCloseTo(20000 * 0.4123 * 1.1, 6);
     expect(reversionCaissesPoints(r.details)).toBeCloseTo(20000 * 0.4123 * 0.6, 6);
+  });
+  it('réversion sans la minoration d\'anticipation, prorogation conservée (statuts art. 12)', () => {
+    const sansProjection = { ...base, assietteCaisse: null, trimestresProjetes: 0 };
+    const anticipe = calculerCaissesPoints({ ...sansProjection, dateEffet: new Date(Date.UTC(2034, 3, 1)) }); // 64 ans
+    expect(anticipe.details[0].coefficientAge).toBeCloseTo(0.85, 6);
+    expect(reversionCaissesPoints(anticipe.details)).toBeCloseTo(20000 * 0.4123 * 0.6, 6);
+    const proroge = calculerCaissesPoints({ ...sansProjection, dateEffet: new Date(Date.UTC(2039, 3, 1)) }); // 69 ans
+    expect(reversionCaissesPoints(proroge.details)).toBeCloseTo(20000 * 1.1 * 0.4123 * 0.6, 6);
   });
 });

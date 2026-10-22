@@ -255,14 +255,15 @@ uniquement applicatif via `familyService`.
     10 points × n° de classe (`parNumeroDeClasse`), valeur 17,7710 € ; section C = 4,10 % des produits
     moyens de l'office (assiette propre `assietteDediee`, pas le bénéfice) ÷ 17,69 €, valeur 0,9422 €
     (guide officiel CPRN 2026) ; taux plein à 67 ans, minoration de 1,25 % par trimestre avant, surcote
-    de 1 % par trimestre après, sans plafond ; +10 % pour 3 enfants ; réversion 60 % (hypothèse). Points
+    de 1 % par trimestre après, sans plafond ; +10 % pour 3 enfants ; réversion 60 % (cprn.fr). Points
     du RIS : section B si le libellé la nomme, sinon section C.
   - *CAVAMAC* (agents généraux d'assurance) : 6,30 % (taux productif de droits) des commissions brutes
-    déclarées (`assiette_caisse_liberale`), plafonnées à 625 777 €, ÷ coefficient de référence 8,106 €,
+    déclarées (`assiette_caisse_liberale`), plafonnées à 625 777 €, ÷ coefficient de référence 8,1806 €,
     valeur 0,4123 € (2026) ; taux plein à 67 ans, minoration de 1,25 % par trimestre avant ; surcote de
     5 % par année pleine après (`surcote[].parAnneePleine`), 25 % au plus ; +10 % pour 3 enfants ; sous
     1 500 points détenus, avant coefficient (`capital.surPointsBruts`), capital de 18 annuités ;
-    réversion 60 %.
+    réversion 60 % des points sans la minoration d'anticipation, prorogation conservée
+    (`reversionSansMinoration`, assiette `baseReversion` du détail de chaque caisse).
   - *Assiette propre à la caisse* : colonne générique `retraite_data.assiette_caisse_liberale`
     (migration `20261022190000`, qui remplace `cprn_produits_moyens`), utilisée par les caisses
     `assietteDediee` (CPRN section C, CAVAMAC) au lieu du revenu futur ; champ de Carrière libellé selon
@@ -776,13 +777,17 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
-- **CAVAMAC — valeurs à confirmer et limites.** Valeur du point (0,4123 €), coefficient de référence
-  (8,106 €) et plafond (625 777 €) 2026 annoncés par la CAVAMAC sous réserve de la tutelle ; réversion
-  60 % (source secondaire). Commissions saisies à la main, constantes jusqu'au départ. Non modélisés :
+- **CAVAMAC — limites.** Valeur du point (0,4123 €), coefficient de référence (8,1806 €, et non
+  8,106 € : coquille de l'article PLFSS de cavamac.fr, corrigée le 2026-10-22) et plafond (625 777 €)
+  2026 votés par le conseil d'administration du 04/12/2025 ; approbation de la tutelle non publiée.
+  Réversion 60 % sans la minoration d'anticipation (statuts art. 12, `reversionSansMinoration`) ;
+  conditions d'âge (65 ans), de durée de mariage, rente de conjoint et partage entre ex-conjoints non
+  modélisés. Commissions saisies à la main, constantes jusqu'au départ. Non modélisés :
   points gratuits (invalidité, années avant 1967), majoration de 5 % pour enfant handicapé à charge,
   minoration fixe de 15 % des carrières longues (62 ou 63 ans), assiette des agents dirigeants de
   société, mandataires non-salariés (hors régime complémentaire CAVAMAC).
-- **CPRN — valeurs à confirmer et limites.** Réversion 60 % sans source (hypothèse validée). Classe B et
+- **CPRN — limites.** Réversion 60 % des sections B et C dès 52 ans (cprn.fr) ; option à 100 % avec
+  abattement de la pension du notaire non modélisée. Classe B et
   produits de l'office saisis à la main (appel de cotisations), constants jusqu'au départ ; moyenne
   nationale des produits non publiée (classe non déduite). Libellés RIS des sections non vérifiés sur un
   RIS réel. Non modélisés : majoration de 30 % par enfant à charge de moins de 21 ans, minimum de points
@@ -807,14 +812,17 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   Fidroit) et anciennes périodes de la PCV non distinguées ; taux de réversion de la répartition (60 %,
   recherche web) et de la PCV (hypothèse). Libellés RIS « CAVP » et « PCV » non vérifiés sur un RIS réel.
   Rachats et réversion de la capitalisation non modélisés.
-- **CARPIMKO — valeurs à confirmer et limites.** Coût d'acquisition 2026 (391 €) et valeur de service
-  (21,48 €) de la complémentaire, coût (27,43 €) et valeur (1,50 €) du point ASV : sources secondaires
-  (Perspectives Retraite, 06/2026), cohérentes entre elles mais non publiées par la caisse ; taux et
-  bornes de la réforme 2026 (8,70 %, 0,5 à 3 PASS) donnés par la FNO, l'arrêté ne les chiffrant pas.
+- **CARPIMKO — valeurs à confirmer et limites.** Confirmés sur carpimko.com : valeurs de service 2026
+  (complémentaire 21,48 €, ASV 1,50 €), taux et assiette de la complémentaire (8,70 %, de 0,5 à 3 PASS).
+  Restent à confirmer : coût d'acquisition 2026 de la complémentaire (391 €) et du point ASV (27,43 €),
+  sources secondaires seulement (ni carpimko.com ni l'arrêté du 14/11/2025 ne les chiffrent, recherche
+  du 2026-10-22).
   Âge du taux plein de l'ASV (65 ans, Fidroit 2025) peut-être relevé. Surcote non calculée pour un
   départ après 67 ans sans la durée requise. Valeurs de service ASV par période (R1-R3) non distinguées.
-- **CARCDSF — valeurs à confirmer et limites.** Taux de réversion (60 %, Altis Conseil ; hypothèse pour
-  la PCV des sages-femmes). Points PCV des anciennes périodes (R1-R3 : 23,25 à 27,50 €) valorisés comme
+- **CARCDSF — valeurs à confirmer et limites.** Réversion 60 % de la complémentaire et de la PCV des
+  chirurgiens-dentistes (guide du conjoint CARCDSF 2022) ; 60 % supposé pour la PCV des sages-femmes
+  (non couverte par le guide). Majoration familiale de 10 % de la réversion (conjoint ayant eu 3 enfants
+  avec le praticien) non modélisée. Points PCV des anciennes périodes (R1-R3 : 23,25 à 27,50 €) valorisés comme
   R4 (28,8321 €). Point éventuel au titre de la part CPAM de la PCV (FSDL) non retenu. Libellés RIS
   « PCV » non vérifiés sur un RIS réel. Non modélisés : départ anticipé à taux plein des mères (1 an par
   enfant, 3 au plus), préretraite à 60 %, points gratuits et rachats des sages-femmes avant 2009,

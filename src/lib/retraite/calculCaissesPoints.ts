@@ -251,6 +251,8 @@ export interface DetailCaissePoints {
   /** Versement unique sous le seuil de points de la caisse, exclu de la pension annuelle. */
   capital: number;
   tauxReversion: number;
+  /** Pension servant d'assiette à la réversion (hors majoration pour enfants), 0 si versée en capital. */
+  baseReversion: number;
 }
 
 export interface EntreeCaissesPoints {
@@ -361,6 +363,12 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
       pensionAnnuelle: enCapital ? 0 : pensionAvantMajoration + majorationEnfants,
       capital,
       tauxReversion: caisse.tauxReversion,
+      // CAVAMAC : réversion sur les points sans la minoration d'anticipation, prorogation conservée.
+      baseReversion: enCapital
+        ? 0
+        : caisse.reversionSansMinoration
+          ? (pointsAcquis + pointsProjetes) * Math.max(1, coefficientSurcote) * caisse.valeurServicePoint
+          : pensionAvantMajoration,
     });
   }
   // Volet par capitalisation de la CAVP : capital déclaré ou pharmacien en activité.
@@ -385,6 +393,7 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
         pensionAnnuelle: renteAnnuelle,
         capital: 0,
         tauxReversion: 0,
+        baseReversion: 0,
       });
     }
   }
@@ -399,7 +408,7 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
 export function reversionCaissesPoints(details: DetailCaissePoints[]): number {
   // Hors majoration pour enfants (non transmise, comme au régime général).
   return details.reduce(
-    (total, d) => total + (d.pensionAnnuelle > 0 ? (d.pensionAnnuelle - d.majorationEnfants) * d.tauxReversion : 0),
+    (total, d) => total + (d.pensionAnnuelle > 0 ? d.baseReversion * d.tauxReversion : 0),
     0
   );
 }

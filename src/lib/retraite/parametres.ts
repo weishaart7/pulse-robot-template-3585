@@ -189,6 +189,8 @@ export interface ParametresCaissePoints {
   /** Majoration selon le nombre d'enfants (clé = nombre minimal), remplace `majorationTroisEnfantsPct`. */
   majorationEnfantsBaremePct?: Record<string, number>;
   tauxReversion: number;
+  /** Réversion calculée sans la minoration d'anticipation, prorogation conservée (CAVAMAC, statuts art. 12). */
+  reversionSansMinoration?: boolean;
 }
 
 export interface ParametresCAVPCapitalisation {

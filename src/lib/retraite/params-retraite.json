@@ -1244,7 +1244,7 @@
       "motifNom": "CARPIMKO|auxiliaires m[ée]dicaux",
       "exclureMotifNom": "ASV|allocations? suppl[ée]mentaires?|suppl[ée]mentaire",
       "caisseLiberale": "CARPIMKO",
-      "source": "Règles : Fidroit CARPIMKO 2025 §3.1.1 (taux plein à l'âge légal avec la durée, sinon 67 ans ; abattement 1,25 % par trimestre manquant pour la base dans la limite des trimestres jusqu'à 67 ans ; majoration 1,25 % par trimestre au-delà du taux plein, 20 trimestres au plus) ; réversion 60 % (§5). Réforme au 01/01/2026 : arrêté du 14/11/2025 (JORFTEXT000052604983, cotisation proportionnelle seule ÷ coût d'acquisition, points 1996-2025 conservés) ; taux 8,70 % sur un revenu ramené entre 0,5 et 3 PASS (FNO). À confirmer (sources secondaires) : coût d'acquisition 391 € et valeur de service 21,48 € en 2026 (Perspectives Retraite, 06/2026)",
+      "source": "Règles : Fidroit CARPIMKO 2025 §3.1.1 (taux plein à l'âge légal avec la durée, sinon 67 ans ; abattement 1,25 % par trimestre manquant pour la base dans la limite des trimestres jusqu'à 67 ans ; majoration 1,25 % par trimestre au-delà du taux plein, 20 trimestres au plus) ; réversion 60 % (§5). Réforme au 01/01/2026 : arrêté du 14/11/2025 (JORFTEXT000052604983, cotisation proportionnelle seule ÷ coût d'acquisition, points 1996-2025 conservés) ; taux 8,70 % sur un revenu ramené entre 0,5 et 3 PASS et valeur de service 21,48 € au 01/01/2026 (carpimko.com, pages cotisations et calcul de la retraite). À confirmer : coût d'acquisition 391 € (Perspectives Retraite, 06/2026 ; ni carpimko.com ni l'arrêté du 14/11/2025 ne le chiffrent, recherche du 2026-10-22)",
       "valeurServicePoint": 21.48,
       "acquisition": {
         "mode": "tranchesPrixAchat",
@@ -1275,7 +1275,7 @@
       "motifNom": "(CARPIMKO|auxiliaires m[ée]dicaux).*(ASV|suppl[ée]mentaire)|(ASV|suppl[ée]mentaire).*(CARPIMKO|auxiliaires m[ée]dicaux)",
       "caisseLiberale": "CARPIMKO",
       "conventionneSeulement": true,
-      "source": "Règles : Fidroit CARPIMKO 2025 §2.2-2.3 (24,5 points pour la cotisation forfaitaire ; cotisation d'ajustement 0,40 % du revenu dans la limite de 5 PASS, points = ajustement × points forfaitaires ÷ cotisation forfaitaire) et §4 (taux plein à 65 ans, minoration 1,25 % par trimestre avant) ; réversion 50 % (§5). À confirmer (sources secondaires) : coût du point 27,43 € (plafond 35,04 points d'ajustement) et valeur de service 1,50 € en 2026 (Perspectives Retraite, orthofin.fr) ; âge du taux plein de 65 ans peut-être relevé",
+      "source": "Règles : Fidroit CARPIMKO 2025 §2.2-2.3 (24,5 points pour la cotisation forfaitaire ; cotisation d'ajustement 0,40 % du revenu dans la limite de 5 PASS, points = ajustement × points forfaitaires ÷ cotisation forfaitaire) et §4 (taux plein à 65 ans, minoration 1,25 % par trimestre avant) ; réversion 50 % (§5). Valeur de service 1,50 € au 01/01/2026 (carpimko.com, calcul de la retraite). À confirmer : coût du point 27,43 € (plafond 35,04 points d'ajustement ; Perspectives Retraite, orthofin.fr, non publié par la caisse) ; âge du taux plein de 65 ans peut-être relevé",
       "valeurServicePoint": 1.5,
       "acquisition": {
         "mode": "tranchesPrixAchat",
@@ -1304,7 +1304,7 @@
         "CARCDSF_CD",
         "CARCDSF_SF"
       ],
-      "source": "Règles : Fidroit CARCDSF 2025 §2.3 (taux plein à 67 ans, minoration 1,25 % par trimestre avant ; majoration 1,25 % par trimestre après, 25 % au plus ; +10 % pour 3 enfants). Valeurs 2026 : carcdsf.fr (forfait 3 210,60 € pour 6 points, 11,35 % du revenu entre 0,65 et 5 PASS ; valeur du point 31,82 €) ; coût d'acquisition 535,10 € = forfait ÷ 6 points (FSDL : « 5535,10 € », coquille). Réversion 60 % (Altis Conseil, à confirmer). Départ anticipé des mères (1 an par enfant) non modélisé",
+      "source": "Règles : Fidroit CARCDSF 2025 §2.3 (taux plein à 67 ans, minoration 1,25 % par trimestre avant ; majoration 1,25 % par trimestre après, 25 % au plus ; +10 % pour 3 enfants). Valeurs 2026 : carcdsf.fr (forfait 3 210,60 € pour 6 points, 11,35 % du revenu entre 0,65 et 5 PASS ; valeur du point 31,82 €) ; coût d'acquisition 535,10 € = forfait ÷ 6 points (FSDL : « 5535,10 € », coquille). Réversion 60 % (guide du conjoint CARCDSF 2022, carcdsf.fr), majoration familiale de 10 % des points du conjoint ayant eu 3 enfants avec le praticien non modélisée. Départ anticipé des mères (1 an par enfant) non modélisé",
       "valeurServicePoint": 31.82,
       "acquisition": {
         "mode": "tranchesPrixAchat",
@@ -1340,7 +1340,7 @@
       "motifNom": "\\bPCV\\b|prestations? compl[ée]mentaires? de vieillesse|CARCDSF.*suppl[ée]mentaire",
       "caisseLiberale": "CARCDSF_CD",
       "conventionneSeulement": true,
-      "source": "Règles : Fidroit CARCDSF 2025 §2.4 (10 points forfaitaires ; 1,93 point pour un revenu de 5 PASS, au prorata en dessous, soit 1 point par 124 507 € = 5 × PASS 2026 ÷ 1,93 ; taux plein à 67 ans, minoration 1,25 % par trimestre, 15 % au plus ; +10 % pour 3 enfants). Valeur 2026 des points R4 : 28,8321 € (tableau officiel CARCDSF au 01/01/2026), points R1-R3 valorisés comme R4 faute de ventilation au RIS. Cotisations 2026 : FSDL. Réversion 60 % (Altis Conseil, à confirmer) ; point éventuel au titre de la part CPAM (FSDL) non retenu",
+      "source": "Règles : Fidroit CARCDSF 2025 §2.4 (10 points forfaitaires ; 1,93 point pour un revenu de 5 PASS, au prorata en dessous, soit 1 point par 124 507 € = 5 × PASS 2026 ÷ 1,93 ; taux plein à 67 ans, minoration 1,25 % par trimestre, 15 % au plus ; +10 % pour 3 enfants). Valeur 2026 des points R4 : 28,8321 € (tableau officiel CARCDSF au 01/01/2026), points R1-R3 valorisés comme R4 faute de ventilation au RIS. Cotisations 2026 : FSDL. Réversion 60 % (guide du conjoint CARCDSF 2022, carcdsf.fr) ; point éventuel au titre de la part CPAM (FSDL) non retenu",
       "valeurServicePoint": 28.8321,
       "acquisition": {
         "mode": "forfaitPlusRevenuParPoint",
@@ -1363,7 +1363,7 @@
       "motifNom": "\\bPCV\\b|prestations? compl[ée]mentaires? de vieillesse|CARCDSF.*suppl[ée]mentaire",
       "caisseLiberale": "CARCDSF_SF",
       "conventionneSeulement": true,
-      "source": "Règles : Fidroit CARCDSF 2025 §3.1.2 et §3.3 (18 points par an, cotisation forfaitaire 780 € ; minoration 1,25 % par trimestre, plus favorable entre âge de 67 ans et durée tous régimes, 12 trimestres au plus ; pas de majoration familiale). Valeur 2026 : 6,10 € (tableau officiel CARCDSF au 01/01/2026). Réversion 60 % (hypothèse, aucune source)",
+      "source": "Règles : Fidroit CARCDSF 2025 §3.1.2 et §3.3 (18 points par an, cotisation forfaitaire 780 € ; minoration 1,25 % par trimestre, plus favorable entre âge de 67 ans et durée tous régimes, 12 trimestres au plus ; pas de majoration familiale). Valeur 2026 : 6,10 € (tableau officiel CARCDSF au 01/01/2026). Réversion 60 % (hypothèse : le guide du conjoint CARCDSF ne couvre que les chirurgiens-dentistes)",
       "valeurServicePoint": 6.1,
       "acquisition": {
         "mode": "classes",
@@ -1512,7 +1512,7 @@
       "nom": "CPRN section B (notaires)",
       "motifNom": "(CPRN|notaires).*(section|sect\\.?) ?B\\b",
       "caisseLiberale": "CPRN",
-      "source": "Valeurs 2026 : guide officiel CPRN « Nouveau notaire libéral » 2026 (section B : coût d'acquisition 279,12 €, valeur 17,7710 € ; section C : 4,10 % de la moyenne des produits de l'office, coût 17,69 €, valeur 0,9422 €). Règles : Fidroit CPRN 2025 §4.1.2 et §5.1 (classes 1 à 8 = 10 à 80 points ; taux plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote 1 % par trimestre après, jusqu'à la fin d'activité ; +10 % pour 3 enfants). Réversion 60 % : hypothèse validée le 2026-10-22, aucune source. Non modélisés : majoration de 30 % par enfant à charge, minimum de points C après 10 ans, capital sous 15 €/mois, réversion à 100 %, régime de Colmar et Metz",
+      "source": "Valeurs 2026 : guide officiel CPRN « Nouveau notaire libéral » 2026 (section B : coût d'acquisition 279,12 €, valeur 17,7710 € ; section C : 4,10 % de la moyenne des produits de l'office, coût 17,69 €, valeur 0,9422 €). Règles : Fidroit CPRN 2025 §4.1.2 et §5.1 (classes 1 à 8 = 10 à 80 points ; taux plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote 1 % par trimestre après, jusqu'à la fin d'activité ; +10 % pour 3 enfants). Réversion 60 % des sections B et C dès 52 ans (cprn.fr, « Tout savoir sur la réversion ») ; option à 100 % avec abattement de la pension du notaire non modélisée. Non modélisés : majoration de 30 % par enfant à charge, minimum de points C après 10 ans, capital sous 15 €/mois, réversion à 100 %, régime de Colmar et Metz",
       "valeurServicePoint": 17.771,
       "acquisition": {
         "mode": "parNumeroDeClasse",
@@ -1539,7 +1539,7 @@
       "motifNom": "CPRN|notaires",
       "exclureMotifNom": "(section|sect\\.?) ?B\\b",
       "caisseLiberale": "CPRN",
-      "source": "Valeurs 2026 : guide officiel CPRN « Nouveau notaire libéral » 2026 (section B : coût d'acquisition 279,12 €, valeur 17,7710 € ; section C : 4,10 % de la moyenne des produits de l'office, coût 17,69 €, valeur 0,9422 €). Règles : Fidroit CPRN 2025 §4.1.2 et §5.1 (classes 1 à 8 = 10 à 80 points ; taux plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote 1 % par trimestre après, jusqu'à la fin d'activité ; +10 % pour 3 enfants). Réversion 60 % : hypothèse validée le 2026-10-22, aucune source. Non modélisés : majoration de 30 % par enfant à charge, minimum de points C après 10 ans, capital sous 15 €/mois, réversion à 100 %, régime de Colmar et Metz",
+      "source": "Valeurs 2026 : guide officiel CPRN « Nouveau notaire libéral » 2026 (section B : coût d'acquisition 279,12 €, valeur 17,7710 € ; section C : 4,10 % de la moyenne des produits de l'office, coût 17,69 €, valeur 0,9422 €). Règles : Fidroit CPRN 2025 §4.1.2 et §5.1 (classes 1 à 8 = 10 à 80 points ; taux plein à 67 ans, minoration 1,25 % par trimestre avant ; surcote 1 % par trimestre après, jusqu'à la fin d'activité ; +10 % pour 3 enfants). Réversion 60 % des sections B et C dès 52 ans (cprn.fr, « Tout savoir sur la réversion ») ; option à 100 % avec abattement de la pension du notaire non modélisée. Non modélisés : majoration de 30 % par enfant à charge, minimum de points C après 10 ans, capital sous 15 €/mois, réversion à 100 %, régime de Colmar et Metz",
       "valeurServicePoint": 0.9422,
       "acquisition": {
         "mode": "tranchesPrixAchat",
@@ -1570,11 +1570,11 @@
       "nom": "CAVAMAC (agents généraux d'assurance)",
       "motifNom": "CAVAMAC|agents g[ée]n[ée]raux",
       "caisseLiberale": "CAVAMAC",
-      "source": "Règles : Fidroit CAVAMAC 2025 (§2.2.2 taux productif de droits 6,30 % des commissions brutes N-1 plafonnées, appelé à 121,6 % ; §3.4.1 points = cotisation ÷ coefficient de référence ; §3.4.3 taux plein à 67 ans, minoration 1,25 % par trimestre depuis 2024 ; §3.4.4 majoration 5 % par année pleine cotisée après 67 ans, 25 % au plus, +10 % pour 3 enfants ; §3.3 sous 1 500 points détenus, capital de 18 fois la pension annuelle). Valeurs 2026 annoncées par la CAVAMAC (cavamac.fr, PLFSS et conseil d'administration du 4 décembre, sous réserve de la tutelle, à confirmer) : valeur du point 0,4123 €, coefficient de référence 8,106 €, plafond 625 777 € (13,02 PASS 2026). Réversion 60 % (capretraite.fr, règle générale des complémentaires, à confirmer)",
+      "source": "Règles : Fidroit CAVAMAC 2025 (§2.2.2 taux productif de droits 6,30 % des commissions brutes N-1 plafonnées, appelé à 121,6 % ; §3.4.1 points = cotisation ÷ coefficient de référence ; §3.4.3 taux plein à 67 ans, minoration 1,25 % par trimestre depuis 2024 ; §3.4.4 majoration 5 % par année pleine cotisée après 67 ans, 25 % au plus, +10 % pour 3 enfants ; §3.3 sous 1 500 points détenus, capital de 18 fois la pension annuelle). Valeurs 2026 votées par le conseil d'administration du 04/12/2025 (cavamac.fr) : valeur du point 0,4123 €, coefficient de référence 8,1806 € (taux de rendement 5,04 % = 0,4123 ÷ 8,1806 ; l'article cavamac.fr sur le PLFSS écrit 8,106 €, coquille), plafond 625 777 € (13,02 PASS 2026) ; approbation de la tutelle non publiée. Réversion 60 % des points, sans la minoration d'anticipation mais avec le coefficient de prorogation (statuts du régime complémentaire, art. 12, textes réglementaires CAVAMAC 07/2026)",
       "valeurServicePoint": 0.4123,
       "acquisition": {
         "mode": "tranchesPrixAchat",
-        "prixAchatPoint": 8.106,
+        "prixAchatPoint": 8.1806,
         "tranches": [
           {
             "jusquAPass": 13.0207,
@@ -1602,7 +1602,8 @@
         "surPointsBruts": true
       },
       "majorationTroisEnfantsPct": 10,
-      "tauxReversion": 0.6
+      "tauxReversion": 0.6,
+      "reversionSansMinoration": true
     }
   },
   "cnbf": {
