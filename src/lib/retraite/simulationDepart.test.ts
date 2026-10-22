@@ -24,6 +24,7 @@ const contexte = (surcharge: Partial<ContexteSimulationDepart>): ContexteSimulat
   fonctionPublique: null,
   cnavpl: null,
   nombreEnfantsEligibles: 0,
+  enfantsAgircArrco: [],
   salaireComplementaire: null,
   ageDepartAnticipeConfirme: null,
   ...surcharge,

@@ -42,7 +42,11 @@ import {
   trimestresCotisesEtAssimilesDepuisCarriere,
   ResultatTrimestresCotisesEtAssimiles,
 } from './calculTrimestres';
-import { nombreEnfantsEligiblesMajorationTroisEnfants } from './enfantsEligiblesMajoration';
+import {
+  nombreEnfantsEligiblesMajorationTroisEnfants,
+  enfantsAgircArrco,
+  nombreEnfantsAChargeAgircArrco,
+} from './enfantsEligiblesMajoration';
 import {
   pensionBaseFonctionPublique,
   decoteFonctionPublique,
@@ -442,6 +446,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
           trimestresRequis - trimestresTousRegimes
         ),
         nombreEnfantsEligibles,
+        nombreEnfantsACharge: nombreEnfantsAChargeAgircArrco(enfantsAgircArrco(familyLinks), dateEffet),
       })
     : null;
   const totalPensionComplementaireAnnuelle =

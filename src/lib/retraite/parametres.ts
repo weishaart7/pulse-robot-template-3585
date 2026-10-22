@@ -56,7 +56,10 @@ export interface ParametresAgircArrco {
   tauxContractuelT2: number;
   plafondT2EnPass: number;
   tauxMajorationEnfants: number;
-  coefficientsAnticipationParAge: Record<string, number>;
+  /** Majoration par enfant à charge à la date d'effet (sans plafond). */
+  tauxMajorationEnfantACharge: number;
+  /** Clé = âge en années au trimestre près (« 62.25 » = 62 ans 3 mois), générations 1965 et suivantes. */
+  coefficientsAnticipationParAgeTrimestriel: Record<string, number>;
   coefficientsAnticipationParTrimestresManquants: Record<string, number>;
 }
 

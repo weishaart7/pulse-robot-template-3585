@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { nombreEnfantsEligiblesMajorationTroisEnfants } from './enfantsEligiblesMajoration';
+import {
+  nombreEnfantsEligiblesMajorationTroisEnfants,
+  nombreEnfantsAChargeAgircArrco,
+  enfantsAgircArrco,
+} from './enfantsEligiblesMajoration';
 import { FamilyLink } from '@/services/familyService';
 
 const enfant = (overrides: Partial<FamilyLink> = {}): FamilyLink => ({
@@ -39,5 +43,35 @@ describe('nombreEnfantsEligiblesMajorationTroisEnfants — cas courant uniquemen
 
   it('liste vide → 0', () => {
     expect(nombreEnfantsEligiblesMajorationTroisEnfants([])).toBe(0);
+  });
+});
+
+describe('nombreEnfantsAChargeAgircArrco — Fidroit Agirc-Arrco §5.5.1.2', () => {
+  const dateEffet = new Date(2030, 0, 1);
+  const enfant = (dateNaissance: string | null, invalide = false, aChargeApres18Ans = false) => ({
+    dateNaissance,
+    invalide,
+    aChargeApres18Ans,
+  });
+  it('moins de 18 ans : à charge ; 18 ans révolus : seulement si encore à charge', () => {
+    expect(nombreEnfantsAChargeAgircArrco([enfant('2012-01-02')], dateEffet)).toBe(1);
+    expect(nombreEnfantsAChargeAgircArrco([enfant('2012-01-01')], dateEffet)).toBe(0);
+    expect(nombreEnfantsAChargeAgircArrco([enfant('2012-01-01', false, true)], dateEffet)).toBe(1);
+  });
+  it('au-delà de 25 ans : plus à charge, sauf invalidité', () => {
+    expect(nombreEnfantsAChargeAgircArrco([enfant('2004-01-02', false, true)], dateEffet)).toBe(1);
+    expect(nombreEnfantsAChargeAgircArrco([enfant('2004-01-01', false, true)], dateEffet)).toBe(0);
+    expect(nombreEnfantsAChargeAgircArrco([enfant('1990-05-01', true)], dateEffet)).toBe(1);
+  });
+  it('né après la date d\'effet ou sans date de naissance : non compté', () => {
+    expect(nombreEnfantsAChargeAgircArrco([enfant('2031-01-01'), enfant(null)], dateEffet)).toBe(0);
+  });
+  it('enfantsAgircArrco : enfants vivants seulement, champs handicap et enfant_a_charge', () => {
+    const r = enfantsAgircArrco([
+      { lien_familial: 'Enfant', nom: 'A', date_naissance: '2015-03-01', handicap: true, enfant_a_charge: false },
+      { lien_familial: 'Enfant', nom: 'B', est_decede: true },
+      { lien_familial: 'Conjoint', nom: 'C' },
+    ]);
+    expect(r).toEqual([{ dateNaissance: '2015-03-01', invalide: true, aChargeApres18Ans: false }]);
   });
 });

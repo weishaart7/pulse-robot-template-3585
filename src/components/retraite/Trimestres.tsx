@@ -17,7 +17,10 @@ import {
 } from '@/lib/retraite/calculAgircArrco';
 import { useProfilFamilialRetraite } from '@/hooks/useProfilFamilialRetraite';
 import { donneesAutresRegimesDepuisRetraiteData } from '@/hooks/usePensionConsolidee';
-import { nombreEnfantsEligiblesMajorationTroisEnfants } from '@/lib/retraite/enfantsEligiblesMajoration';
+import {
+  nombreEnfantsEligiblesMajorationTroisEnfants,
+  enfantsAgircArrco,
+} from '@/lib/retraite/enfantsEligiblesMajoration';
 import { computeAge } from '@/lib/patrimoine/bareme669CGI';
 import {
   trimestresRequisPourGeneration,
@@ -259,6 +262,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     fonctionPublique,
     cnavpl,
     nombreEnfantsEligibles,
+    enfantsAgircArrco: enfantsAgircArrco(familyLinks),
     salaireComplementaire: salaireComplementaire?.salaireAnnuel ?? null,
     ageDepartAnticipeConfirme: retraiteData.depart_anticipe_confirme_motif
       ? retraiteData.depart_anticipe_confirme_age ?? null
@@ -358,7 +362,8 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     decoteAvecRachat,
     resultatSelection.ageDepartAnnees,
     resultatSelection.trimestresRequis - resultatSelection.trimestresTousRegimes - nombreTrimestresRachatNum,
-    resultatSelection.trimestresProjetes
+    resultatSelection.trimestresProjetes,
+    resultatSelection.dateEffet
   );
   const gainComplementairesRachat = complementairesAvecRachat - resultatSelection.pensionComplementaires;
   const gainPensionAnnuelRachat =

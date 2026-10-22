@@ -10,9 +10,16 @@
  *   127 % n'en crée pas). Euros constants : prix d'achat, valeur de service
  *   et PASS du millésime courant.
  * - Coefficient d'anticipation, uniquement si la retraite de base est
- *   décotée : le plus favorable entre la grille par âge (âge en années
- *   révolues — choix prudent, la règle infra-annuelle n'ayant pas été
- *   trouvée) et la grille par trimestres manquants (≤ 20 trimestres).
+ *   décotée (Fidroit Agirc-Arrco §5.4.1) : jusqu'à 20 trimestres manquants,
+ *   le plus favorable entre la grille par âge (au trimestre d'âge révolu,
+ *   grille des générations 1965 et suivantes appliquée à toutes) et la grille
+ *   par trimestres manquants ; au-delà de 20, la grille par âge seule.
+ *   S'applique au montant hors majoration.
+ * - Majoration pour enfant à charge à la date d'effet (§5.5.1.2) : 5 % par
+ *   enfant des droits avant minoration, sans plafond. Non cumulable avec la
+ *   majoration pour 3 enfants : la plus élevée est retenue. Figée à la date
+ *   d'effet (sa disparition quand l'enfant cesse d'être à charge n'est pas
+ *   modélisée).
  * - Majoration pour 3 enfants ou plus : 10 % des droits avant coefficient
  *   d'anticipation, plafonnée, appliquée à tous les points — approximation
  *   légèrement favorable pour les points acquis avant 2012 (taux alors de 5
@@ -54,19 +61,24 @@ export function coefficientAnticipationAgircArrco(
   trimestresManquants: number
 ): number {
   if (!retraiteDeBaseDecotee) return 1;
-  const { coefficientsAnticipationParAge, coefficientsAnticipationParTrimestresManquants } = PARAMETRES_AGIRC_ARRCO;
+  const { coefficientsAnticipationParAgeTrimestriel, coefficientsAnticipationParTrimestresManquants } =
+    PARAMETRES_AGIRC_ARRCO;
 
-  const agesConnus = Object.keys(coefficientsAnticipationParAge).map(Number);
+  const agesConnus = Object.keys(coefficientsAnticipationParAgeTrimestriel).map(Number);
   const ageMin = Math.min(...agesConnus);
   const ageMax = Math.max(...agesConnus);
+  // Trimestre d'âge révolu (epsilon : 62,25 calculé en flottant peut valoir 62,2499…).
+  const ageAuTrimestre =
+    ageDepartAnnees === null ? null : Math.floor(ageDepartAnnees * 4 + 1e-6) / 4;
   const coefficientAge =
-    ageDepartAnnees === null
+    ageAuTrimestre === null
       ? 0
-      : coefficientsAnticipationParAge[String(Math.min(ageMax, Math.max(ageMin, Math.floor(ageDepartAnnees))))];
+      : coefficientsAnticipationParAgeTrimestriel[Math.min(ageMax, Math.max(ageMin, ageAuTrimestre)).toFixed(2)];
 
   const manquants = Math.max(0, Math.ceil(trimestresManquants));
-  const coefficientTrimestres =
-    manquants === 0 ? 1 : coefficientsAnticipationParTrimestresManquants[String(manquants)] ?? 0;
+  if (manquants === 0) return 1;
+  // Plus de 20 trimestres manquants : seule la grille par âge s'applique.
+  const coefficientTrimestres = coefficientsAnticipationParTrimestresManquants[String(manquants)] ?? 0;
 
   return Math.max(coefficientAge, coefficientTrimestres);
 }
@@ -78,29 +90,41 @@ export interface DetailAgircArrco {
   pensionAvantCoefficient: number;
   coefficientAnticipation: number;
   majorationEnfants: number;
+  /** Majoration retenue (non cumulables : la plus élevée), `null` si aucune. */
+  typeMajorationEnfants: 'troisEnfants' | 'enfantsACharge' | null;
+  nombreEnfantsACharge: number;
   pensionAnnuelle: number;
 }
 
 /**
  * Pension Agirc-Arrco annuelle : points (acquis + projetés) × valeur de
- * service × coefficient d'anticipation, plus la majoration enfants.
+ * service × coefficient d'anticipation, plus la majoration enfants (la plus
+ * élevée entre 3 enfants et enfants à charge).
  */
 export function pensionAgircArrco(params: {
   pointsAcquis: number;
   pointsProjetes: number;
   coefficientAnticipation: number;
   nombreEnfantsEligibles: number;
+  /** Enfants à charge à la date d'effet (cf. `nombreEnfantsAChargeAgircArrco`). */
+  nombreEnfantsACharge?: number;
 }): DetailAgircArrco {
   const { pointsAcquis, pointsProjetes, coefficientAnticipation, nombreEnfantsEligibles } = params;
+  const nombreEnfantsACharge = Math.max(0, params.nombreEnfantsACharge ?? 0);
   const valeurServicePoint = MILLESIME_COURANT.agircArrcoValeurServicePoint;
   const pensionAvantCoefficient = (pointsAcquis + pointsProjetes) * valeurServicePoint;
-  const majorationEnfants =
+  const majorationTroisEnfants =
     nombreEnfantsEligibles >= 3
       ? Math.min(
           pensionAvantCoefficient * PARAMETRES_AGIRC_ARRCO.tauxMajorationEnfants,
           MILLESIME_COURANT.agircArrcoPlafondMajorationEnfantsAnnuel
         )
       : 0;
+  const majorationEnfantsACharge =
+    pensionAvantCoefficient * PARAMETRES_AGIRC_ARRCO.tauxMajorationEnfantACharge * nombreEnfantsACharge;
+  const majorationEnfants = Math.max(majorationTroisEnfants, majorationEnfantsACharge);
+  const typeMajorationEnfants =
+    majorationEnfants <= 0 ? null : majorationEnfantsACharge > majorationTroisEnfants ? 'enfantsACharge' : 'troisEnfants';
   return {
     pointsAcquis,
     pointsProjetes,
@@ -108,6 +132,8 @@ export function pensionAgircArrco(params: {
     pensionAvantCoefficient,
     coefficientAnticipation,
     majorationEnfants,
+    typeMajorationEnfants,
+    nombreEnfantsACharge,
     pensionAnnuelle: pensionAvantCoefficient * coefficientAnticipation + majorationEnfants,
   };
 }

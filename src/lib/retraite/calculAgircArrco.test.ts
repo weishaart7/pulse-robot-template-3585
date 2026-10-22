@@ -29,8 +29,19 @@ describe('coefficientAnticipationAgircArrco', () => {
   it('retraite de base non décotée : aucun abattement', () => {
     expect(coefficientAnticipationAgircArrco(false, 62, 20)).toBe(1);
   });
-  it('âge en années révolues : 64 ans 8 mois → 0,88', () => {
-    expect(coefficientAnticipationAgircArrco(true, 64 + 8 / 12, 30)).toBe(0.88);
+  it('âge au trimestre révolu : 64 ans 8 mois → 64 ans 6 mois → 0,90', () => {
+    expect(coefficientAnticipationAgircArrco(true, 64 + 8 / 12, 30)).toBe(0.9);
+  });
+  it('exemple Fidroit §5.4.2 cas 1 : 58 ans 3 mois → 0,5175', () => {
+    expect(coefficientAnticipationAgircArrco(true, 58 + 3 / 12, 40)).toBe(0.5175);
+  });
+  it('exemple Fidroit §5.4.2 cas 2 : 14 trimestres manquants à 62 ans 9 mois → 0,855', () => {
+    expect(coefficientAnticipationAgircArrco(true, 62 + 9 / 12, 14)).toBe(0.855);
+  });
+  it('grille par âge au trimestre : 62 ans 3 mois 0,7925, 61 ans 9 mois 0,7625, 66 ans 9 mois 0,99', () => {
+    expect(coefficientAnticipationAgircArrco(true, 62.25, 40)).toBe(0.7925);
+    expect(coefficientAnticipationAgircArrco(true, 61.75, 40)).toBe(0.7625);
+    expect(coefficientAnticipationAgircArrco(true, 66.75, 40)).toBe(0.99);
   });
   it('plus favorable des deux grilles : 4 trimestres manquants (0,96) contre 62 ans (0,78)', () => {
     expect(coefficientAnticipationAgircArrco(true, 62, 4)).toBe(0.96);
@@ -53,6 +64,21 @@ describe('pensionAgircArrco', () => {
   it('majoration enfants plafonnée à 2 367,48 €/an', () => {
     const r = pensionAgircArrco({ pointsAcquis: 30000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 4 });
     expect(r.majorationEnfants).toBe(2367.48);
+  });
+  it('enfants à charge : 5 % par enfant des droits avant minoration, sans plafond', () => {
+    const r = pensionAgircArrco({ pointsAcquis: 30000, pointsProjetes: 0, coefficientAnticipation: 0.9, nombreEnfantsEligibles: 2, nombreEnfantsACharge: 2 });
+    const brut = 30000 * 1.4386;
+    expect(r.majorationEnfants).toBeCloseTo(brut * 0.1, 6);
+    expect(r.typeMajorationEnfants).toBe('enfantsACharge');
+    expect(r.pensionAnnuelle).toBeCloseTo(brut * 0.9 + brut * 0.1, 6);
+  });
+  it('non cumulable avec la majoration 3 enfants : la plus élevée est retenue', () => {
+    const plafonnee = pensionAgircArrco({ pointsAcquis: 50000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 3, nombreEnfantsACharge: 1 });
+    expect(plafonnee.majorationEnfants).toBeCloseTo(50000 * 1.4386 * 0.05, 6);
+    expect(plafonnee.typeMajorationEnfants).toBe('enfantsACharge');
+    const petite = pensionAgircArrco({ pointsAcquis: 5000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 3, nombreEnfantsACharge: 1 });
+    expect(petite.majorationEnfants).toBeCloseTo(5000 * 1.4386 * 0.1, 6);
+    expect(petite.typeMajorationEnfants).toBe('troisEnfants');
   });
   it('moins de 3 enfants : pas de majoration', () => {
     expect(pensionAgircArrco({ pointsAcquis: 5000, pointsProjetes: 0, coefficientAnticipation: 1, nombreEnfantsEligibles: 2 }).majorationEnfants).toBe(0);

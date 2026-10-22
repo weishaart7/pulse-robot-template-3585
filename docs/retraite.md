@@ -96,14 +96,23 @@ uniquement applicatif via `familyService`.
     (migration `20260929210000`, saisie dans la carte des régimes à points de Carrière), sinon repli
     sur le revenu de l'hypothèse de revenu futur, plafonné au PASS en mode RIS — sous-estimation
     signalée à l'écran (Carrière, Synthèse, Optimisation).
-  - *Coefficient d'anticipation* : seulement si la base du régime général est décotée ; le plus
-    favorable de la grille par âge (années révolues — choix prudent validé, la règle infra-annuelle
-    n'ayant pas été trouvée) et de la grille par trimestres manquants (≤ 20). Lignes 2-4, 6-9, 11, 13-14
-    et 16-19 de cette seconde grille déduites de la règle (−1 %/trimestre jusqu'à 12, puis −1,25 %),
-    non vérifiées ligne à ligne.
-  - *Majoration enfants* : 10 % des droits avant coefficient, plafonnée à 2 367,48 €/an, sur tous les
-    points (approximation validée, légèrement favorable pour les points d'avant 2012) ; la majoration
-    n'est pas elle-même minorée (lecture littérale de la source, à confirmer).
+  - *Coefficient d'anticipation* (Fidroit Agirc-Arrco §5.4.1) : seulement si la base du régime
+    général est décotée. Jusqu'à 20 trimestres manquants, le plus favorable de la grille par âge et de
+    la grille par trimestres manquants (1 → 0,99 … 12 → 0,88, puis −1,25 % jusqu'à 20 → 0,78, vérifiée
+    ligne à ligne) ; au-delà de 20, grille par âge seule. Grille par âge au trimestre d'âge révolu
+    (`coefficientsAnticipationParAgeTrimestriel`, de 57 ans 0,43 à 67 ans 1 ; ex. 58 ans 3 mois 0,5175,
+    62 ans 3 mois 0,7925, 64 ans 0,88). S'applique au montant hors majoration.
+  - *Majorations enfants* (§5.5.1), non cumulables, la plus élevée retenue (`typeMajorationEnfants`,
+    affichée dans Carrière) :
+    - 3 enfants ou plus : 10 % des droits avant coefficient, plafonnée à 2 367,48 €/an, sur tous les
+      points (approximation validée, légèrement favorable pour les points d'avant 2012) ;
+    - enfants à charge à la date d'effet : 5 % par enfant des droits avant minoration, sans plafond
+      ([enfantsEligiblesMajoration.ts](src/lib/retraite/enfantsEligiblesMajoration.ts),
+      `nombreEnfantsAChargeAgircArrco`). Enfant vivant de `family_links` né avant la date d'effet et :
+      de moins de 18 ans ; de 18 à 25 ans avec `enfant_a_charge` (substitut faute de champ « étudiant,
+      apprenti, demandeur d'emploi non indemnisé ») ; ou `handicap` quel que soit l'âge. Sans date de
+      naissance, l'enfant n'est pas compté. Recalculé à chaque date de départ dans l'Optimisation.
+    - Aucune n'est elle-même minorée.
   - *RAFP* : rente à partir de 5 125 points, avec coefficient de majoration par âge révolu ; capital
     en dessous (× coefficient de conversion interpolé au mois), exposé à part
     (`repartitionParRegime.rafpCapital`) et exclu de la pension annuelle. Barèmes ERAFP officiels ;
@@ -418,6 +427,14 @@ Classement par risque, revérifié contre le code au 2026-09-24 (`git log`, lect
 et feuille de route validés). Nouveaux points bloquants :
 
 Soldés en phase 0 (2026-09-29) :
+- **Agirc-Arrco — limites de la phase M3/M4.** Grille d'anticipation par âge des générations 1965 et
+  suivantes appliquée à toutes (le régime publie une table propre aux générations antérieures, non
+  intégrée). Liquidation de l'Agirc-Arrco avant la base (cas 1 du doc) non modélisée. Majoration pour
+  enfant à charge figée à la date d'effet (ni sa disparition quand l'enfant cesse d'être à charge, ni
+  la bascule vers la majoration pour 3 enfants). Antériorité de l'invalidité à 21 ans non vérifiée.
+- **Enfants non rattachés au bon parent.** Les comptages d'enfants (majoration 3 enfants, enfants à
+  charge) ignorent `enfant_de` : dans un couple recomposé, l'enfant d'un seul conjoint majore les deux.
+  À traiter avec l'attribution des trimestres enfants (phase MDA).
 - R3 : en option « taux seul », les trimestres rachetés ne réduisent que la décote ; seule l'option
   « taux et durée » améliore la proratisation ;
 - R5 : dans l'onglet Optimisation, la date de liquidation est bornée au départ à l'âge légal et

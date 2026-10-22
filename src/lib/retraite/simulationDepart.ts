@@ -47,6 +47,7 @@ import {
   pointsAgircArrcoAnnuels,
   coefficientAnticipationAgircArrco,
 } from './calculAgircArrco';
+import { EnfantAgircArrco, nombreEnfantsAChargeAgircArrco } from './enfantsEligiblesMajoration';
 import { evaluerCarriereLongue, carriereLongueOuverteA, ResultatCarriereLongue } from './calculCarriereLongue';
 
 export interface ContexteSimulationDepart {
@@ -60,6 +61,8 @@ export interface ContexteSimulationDepart {
   fonctionPublique: DonneesFonctionPublique | null;
   cnavpl: DonneesCNAVPL | null;
   nombreEnfantsEligibles: number;
+  /** Enfants pour la majoration Agirc-Arrco pour enfant à charge (évaluée à chaque date d'effet). */
+  enfantsAgircArrco: EnfantAgircArrco[];
   /** Salaire de projection des points Agirc-Arrco, `null` si inconnu. */
   salaireComplementaire: number | null;
   /** Âge d'ouverture d'un départ anticipé confirmé par la caisse, `null` sinon. */
@@ -99,7 +102,8 @@ export interface SimulateurDepart {
     decoteBase: number,
     ageDepartAnnees: number,
     trimestresManquants: number,
-    trimestresProjetes: number
+    trimestresProjetes: number,
+    dateEffet: Date
   ) => number;
   simuler: (dateEffet: Date) => ResultatSimulationDepart;
 }
@@ -162,7 +166,8 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     decoteBase: number,
     ageDepartAnnees: number,
     trimestresManquants: number,
-    trimestresProjetes: number
+    trimestresProjetes: number,
+    dateEffet: Date
   ): number => {
     if (!aUnRegimeAgircArrco) return pensionAutresRegimesPoints;
     const agirc = pensionAgircArrco({
@@ -173,6 +178,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
           : 0,
       coefficientAnticipation: coefficientAnticipationAgircArrco(decoteBase < 0, ageDepartAnnees, trimestresManquants),
       nombreEnfantsEligibles: ctx.nombreEnfantsEligibles,
+      nombreEnfantsACharge: nombreEnfantsAChargeAgircArrco(ctx.enfantsAgircArrco, dateEffet),
     });
     return agirc.pensionAnnuelle + pensionAutresRegimesPoints;
   };
@@ -264,7 +270,8 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       decote,
       ageDepartAnnees,
       trimestresRequis - trimestresTousRegimes,
-      trimestresProjetes
+      trimestresProjetes,
+      dateEffet
     );
 
     return {

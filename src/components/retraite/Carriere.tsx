@@ -1168,9 +1168,20 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               )}
               {detailAgircArrco.majorationEnfants > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Majoration pour 3 enfants ou plus : +{formatEuro2(detailAgircArrco.majorationEnfants)} / an (10 %
-                  plafonnés, appliqués à tous les points — approximation légèrement favorable pour les points
-                  acquis avant 2012)
+                  {detailAgircArrco.typeMajorationEnfants === 'enfantsACharge' ? (
+                    <>
+                      Majoration pour {detailAgircArrco.nombreEnfantsACharge} enfant
+                      {detailAgircArrco.nombreEnfantsACharge > 1 ? 's' : ''} à charge à la date d'effet : +
+                      {formatEuro2(detailAgircArrco.majorationEnfants)} / an (5 % par enfant, sans plafond, plus
+                      favorable que la majoration pour 3 enfants ; non cumulables)
+                    </>
+                  ) : (
+                    <>
+                      Majoration pour 3 enfants ou plus : +{formatEuro2(detailAgircArrco.majorationEnfants)} / an (10 %
+                      plafonnés, appliqués à tous les points — approximation légèrement favorable pour les points
+                      acquis avant 2012)
+                    </>
+                  )}
                 </p>
               )}
             </div>
