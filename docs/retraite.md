@@ -20,9 +20,13 @@
 
 Le module Retraite calcule et simule la pension de retraite du client (et, depuis peu, de son
 conjoint/partenaire) tous régimes confondus : régime général/aligné, fonction publique (SRE/CNRACL),
-CNAVPL (professions libérales non réglementées), et régimes complémentaires par points
-(Agirc-Arrco, RCI, RAFP). Il alimente une simulation de départ (âge/date de liquidation, décote/
-surcote, rachat de trimestres) et une synthèse consolidée exportable en PDF.
+CNAVPL (professions libérales), CNBF (avocats), et régimes complémentaires par points : Agirc-Arrco,
+RAFP, et le moteur commun des caisses à points (`calculCaissesPoints.ts` : RCI, Ircantec, CARMF/ASV,
+CIPAV, CAVEC, CNBF, CARPIMKO/ASV, CARCDSF/PCV, CAVP répartition/PCV/capitalisation, CARPV, CAVOM, CPRN
+B/C, CAVAMAC). La carrière future est projetée selon le statut actuel (`projectionStatut.ts`), avec les
+trimestres enfants (MDA). Il alimente une simulation de départ (âge/date de liquidation, décote/
+surcote, rachat de trimestres), une vérification de carrière (anomalies du relevé et gain de
+régularisation) et une synthèse consolidée exportable en PDF.
 
 **Écrans principaux** (onglets de `RetraiteSection.tsx`, route `/dashboard/retraite`) :
 
@@ -31,7 +35,8 @@ surcote, rachat de trimestres) et une synthèse consolidée exportable en PDF.
 | Synthèse | [Synthese.tsx](src/components/retraite/Synthese.tsx) → `usePensionConsolidee` | Pension consolidée tous régimes, trimestres manquants, export PDF ([exportSyntheseRetraitePDF.tsx](src/lib/retraite/exportSyntheseRetraitePDF.tsx)) — plus un stub à l'origine (§2) |
 
 **Habillage** : « panneau de travail » comme Famille, Patrimoine et Immobilier (cf. [design-system.md](design-system.md)) — barre d'en-tête à fil d'Ariane (« Retraite / onglet », export PDF en Synthèse), titre 24 px et rappel, contenu bord à bord sous un filet. Synthèse en bandes filetées : pension du foyer (montant 34 px, part de chaque conjoint en barre lagon / citron) et, à droite, bloc par personne (taux plein, départ simulé, trimestres validés / requis en `SummaryRow` + barre) ; Revenu net (colonnes séparées par un filet, décomposition libellé / montant) ; Conjoint survivant. Carrière, Épargne et Optimisation : sections filetées à repère lagon (`PanelCard*` de [panel-section.tsx](src/components/layout/panel-section.tsx)), indicateurs en bande divisée, listes de régimes / périodes en lignes `divide-y` ; colonnes Client / Conjoint séparées par un filet, chacune sous un bandeau nom à repère lagon / citron (`ColonnesPersonnes`). Fenêtres RIS et période au format des dialogues de panneau.
-| Carrière | [Carriere.tsx](src/components/retraite/Carriere.tsx) | Écran principal : SAM, trimestres, import RIS, sous-cartes fonction publique/CNAVPL, détail MICO/surcote/majoration par régime |
+| Carrière | [Carriere.tsx](src/components/retraite/Carriere.tsx) | Écran principal : statut actuel et caisse complémentaire, SAM, trimestres, import RIS, sous-cartes fonction publique/CNAVPL/CNBF, détail MICO/surcote/majoration par régime, caisses à points, détail de carrière |
+| — section | [VerificationCarriere.tsx](src/components/retraite/VerificationCarriere.tsx) | Anomalies du relevé et gain estimé de chaque régularisation (phase 4) |
 | — sous-carte | [CarriereFonctionPublique.tsx](src/components/retraite/CarriereFonctionPublique.tsx) | TIB, trimestres liquidables, RAFP, décote catégorie active, MIGA |
 | — sous-carte | [CarriereCNAVPL.tsx](src/components/retraite/CarriereCNAVPL.tsx) | Points CNAVPL, valeur du point, décote/surcote |
 | Épargne retraite | [EpargneRetraite.tsx](src/components/retraite/EpargneRetraite.tsx) | Agrégation PER/assurance-vie depuis le module Patrimoine ; colonnes Utilisateur/Conjoint via `getRepartitionFoyer` (part des tiers indivisaires et actifs non qualifiés exclus) |
@@ -40,7 +45,8 @@ surcote, rachat de trimestres) et une synthèse consolidée exportable en PDF.
 
 **Tables Supabase** : `retraite_data` (une ligne par personne du foyer — colonne `personne`, ajoutée
 le 2026-08-15 pour supporter le conjoint/partenaire, cf. commit `60b5fdd`), `retraite_carriere_detail`
-(détail de carrière importé du RIS ou saisi à la main). Rattachées à l'utilisateur uniquement via
+(détail de carrière importé du RIS ou saisi à la main), `retraite_mda_enfants` (attribution des
+trimestres enfants entre parents). Rattachées à l'utilisateur uniquement via
 `user_id → auth.users(id) ON DELETE CASCADE` — pas de FK vers `family_profiles` ni `assets`, lien
 uniquement applicatif via `familyService`.
 
