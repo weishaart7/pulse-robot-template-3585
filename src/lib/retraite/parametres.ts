@@ -273,6 +273,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
+  ratioNetBrutActivite: { source: string } & Record<string, number | string>;
   caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; cprnB: ParametresCaissePoints; cprnC: ParametresCaissePoints; cavamac: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   cavpCapitalisation: ParametresCAVPCapitalisation;
@@ -328,6 +329,8 @@ export const PARAMETRES_CAISSES_POINTS = PARAMS.caissesPoints;
 export const PARAMETRES_CNBF: ParametresCNBF = PARAMS.cnbf;
 export const PARAMETRES_CAVP_CAPITALISATION: ParametresCAVPCapitalisation = PARAMS.cavpCapitalisation;
 export const PARAMETRES_PROJECTION_STATUT: ParametresProjectionStatut = PARAMS.projectionStatut;
+/** Ratio revenu d'activité net / brut par statut actuel (taux de remplacement net). */
+export const RATIO_NET_BRUT_ACTIVITE = PARAMS.ratioNetBrutActivite;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;
 export const PARAMETRES_REVERSION: ParametresReversion = PARAMS.reversion;

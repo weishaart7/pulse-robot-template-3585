@@ -5,6 +5,9 @@ import {
   prelevementsSociauxPension,
   calculerNetRetraiteFoyer,
   tauxRemplacementBrut,
+  revenuActiviteNet,
+  tauxRemplacementNet,
+  revenuActiviteBrutFinDeCarriere,
 } from './calculNetRetraite';
 
 const foyer = (situationFamille: FoyerFiscalInput['situationFamille']): FoyerFiscalInput => ({
@@ -88,5 +91,30 @@ describe('tauxRemplacementBrut', () => {
   it('pension ÷ dernier revenu brut, null sans revenu', () => {
     expect(tauxRemplacementBrut(30000, 60000)).toBe(0.5);
     expect(tauxRemplacementBrut(30000, null)).toBeNull();
+  });
+});
+
+describe('taux de remplacement net sur net (A5)', () => {
+  it('revenu d\'activité net : ratio du statut (convention Sapiendo)', () => {
+    expect(revenuActiviteNet(50000, 'salarie_prive')).toBeCloseTo(38500, 6);
+    expect(revenuActiviteNet(50000, 'contractuel_public')).toBeCloseTo(39500, 6);
+    expect(revenuActiviteNet(50000, 'fonctionnaire')).toBeCloseTo(40000, 6);
+    expect(revenuActiviteNet(50000, 'liberal')).toBeCloseTo(48500, 6);
+  });
+  it('pension nette de prélèvements ÷ revenu net', () => {
+    expect(tauxRemplacementNet(30000, 2700, 50000, 'salarie_prive')).toBeCloseTo(27300 / 38500, 6);
+    expect(tauxRemplacementNet(30000, 2700, null, 'salarie_prive')).toBeNull();
+  });
+  it('référence : dernière année projetée, fonctionnaire TIB + primes', () => {
+    const trajectoire = { evolution: 0.03, trimestreDebut: 0 };
+    expect(
+      revenuActiviteBrutFinDeCarriere({ statut: 'salarie_prive', revenuBrut: 50000, tibFinDeCarriere: null, primesAnnuelles: null, trimestresProjetes: 8, trajectoire })
+    ).toBeCloseTo(50000 * 1.03, 6);
+    expect(
+      revenuActiviteBrutFinDeCarriere({ statut: 'fonctionnaire', revenuBrut: 30000, tibFinDeCarriere: 45000, primesAnnuelles: 6000, trimestresProjetes: 8, trajectoire })
+    ).toBeCloseTo(45000 + 6000 * 1.03, 6);
+    expect(
+      revenuActiviteBrutFinDeCarriere({ statut: 'salarie_prive', revenuBrut: 50000, tibFinDeCarriere: null, primesAnnuelles: null, trimestresProjetes: 8 })
+    ).toBe(50000);
   });
 });

@@ -24,7 +24,9 @@ import {
   caisseProjetee,
   statutActuelDepuisTexte,
   ResultatProjectionStatut,
+  StatutActuel,
 } from '@/lib/retraite/projectionStatut';
+import { revenuActiviteBrutFinDeCarriere } from '@/lib/retraite/calculNetRetraite';
 import {
   trimestresEnfants as calculerTrimestresEnfants,
   liensFamiliauxDeLaPersonne,
@@ -54,9 +56,11 @@ export interface UsePensionConsolideeResult extends ResultatPensionConsolidee {
   // Points Agirc-Arrco futurs projetés sur un revenu plafonné au PASS (aucun
   // salaire brut total saisi) : sous-estimation pour un cadre.
   salaireComplementaireEstPlafonne: boolean;
-  // Dernier revenu d'activité brut de référence (taux de remplacement) :
-  // salaire brut total saisi, sinon revenu de l'hypothèse de revenu futur.
+  // Dernier revenu d'activité brut avant le départ (taux de remplacement) :
+  // salaire brut total saisi, sinon revenu de l'hypothèse de revenu futur,
+  // porté à la dernière année projetée ; fonctionnaire : TIB + primes.
   revenuActiviteBrutReference: number | null;
+  statutActuel: StatutActuel;
   // Première date de départ anticipé pour carrière longue (circulaire Cnav
   // 2026-29), `null` si non ouverte ou date de naissance inconnue.
   dateCarriereLongue: Date | null;
@@ -311,7 +315,15 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     dateEffet: dateEffetProjection,
     anneesPasseesSansDonnees,
     salaireComplementaireEstPlafonne: salaireComplementaire?.estPlafonne ?? false,
-    revenuActiviteBrutReference: salaireComplementaire?.salaireAnnuel ?? null,
+    revenuActiviteBrutReference: revenuActiviteBrutFinDeCarriere({
+      statut: statutActuelDepuisTexte(data.statut_actuel),
+      revenuBrut: salaireComplementaire?.salaireAnnuel ?? null,
+      tibFinDeCarriere: projectionStatut.fonctionPublique?.traitementIndiciaireBrut ?? null,
+      primesAnnuelles: data.primes_annuelles_fp ?? null,
+      trimestresProjetes: trimestresProjetesJusquADateEffet,
+      trajectoire,
+    }),
+    statutActuel: statutActuelDepuisTexte(data.statut_actuel),
     dateCarriereLongue,
   };
 };

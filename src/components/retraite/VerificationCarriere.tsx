@@ -34,6 +34,8 @@ interface VerificationCarriereProps {
   trimestresEnfants: TrimestresEnfantsParRegime;
   mdaDejaAuRis: boolean;
   dateEffet: Date;
+  /** Part des prélèvements sociaux dans la pension brute (gains nets). */
+  tauxPrelevementsSociaux: number;
 }
 
 /**
@@ -49,7 +51,9 @@ export const VerificationCarriere = ({
   trimestresEnfants,
   mdaDejaAuRis,
   dateEffet,
+  tauxPrelevementsSociaux,
 }: VerificationCarriereProps) => {
+  const enNet = (gainBrut: number) => gainBrut * (1 - tauxPrelevementsSociaux);
   const resultat = useMemo(() => {
     const anomalies = detecterAnomalies({
       periodes,
@@ -88,7 +92,12 @@ export const VerificationCarriere = ({
                 {regularisables} régularisation{regularisables > 1 ? 's' : ''} possible
                 {regularisables > 1 ? 's' : ''}, toutes ensemble
               </span>
-              <span className={panelFigureClass}>{formatEuroMois(resultat.gainMensuelTotal)}</span>
+              <span className="text-right">
+                <span className={panelFigureClass}>{formatEuroMois(resultat.gainMensuelTotal)}</span>
+                <span className="block text-xs text-muted-foreground tabular-nums">
+                  brut, soit {formatEuroMois(enNet(resultat.gainMensuelTotal))} net
+                </span>
+              </span>
             </div>
             <div className="divide-y divide-border border-y border-border">
               {resultat.anomalies.map((anomalie, index) => (
@@ -108,14 +117,18 @@ export const VerificationCarriere = ({
                       </div>
                     </div>
                   </div>
-                  <div className="text-[13px] font-medium tabular-nums whitespace-nowrap">
-                    {formatEuroMois(anomalie.gainMensuel)}
+                  <div className="text-right whitespace-nowrap">
+                    <div className="text-[13px] font-medium tabular-nums">{formatEuroMois(anomalie.gainMensuel)}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {formatEuroMois(enNet(anomalie.gainMensuel))} net
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              Gains bruts, chacun mesuré seul ; le total mesure toutes les régularisations ensemble (effets de seuil
+              Gains bruts, et nets des prélèvements sociaux au taux moyen de la pension estimée (personne seule,
+              1 part), chacun mesuré seul ; le total mesure toutes les régularisations ensemble (effets de seuil
               sur le taux plein compris) et exclut les trimestres enfants, déjà comptés dans la pension estimée. Points
               estimés au barème actuel.
             </p>

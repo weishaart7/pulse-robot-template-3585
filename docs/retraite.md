@@ -294,10 +294,17 @@ uniquement applicatif via `familyService`.
     Les deux conjoints sont supposés retraités.
   - *Revenus* : pensions seules (revenus du patrimoine en phase 6, sous-estimation possible de la
     tranche signalée).
-  - *Taux de remplacement brut* : pension brute ÷ dernier revenu d'activité brut
-    (`salaire_brut_annuel`, sinon revenu de l'hypothèse de revenu futur, exposé par
-    `usePensionConsolidee` sous `revenuActiviteBrutReference`). Pas de ratio net/net (aucun taux de
-    charges salariales sourcé).
+  - *Dernier revenu d'activité brut* (`revenuActiviteBrutReference`, `revenuActiviteBrutFinDeCarriere()`) :
+    `salaire_brut_annuel`, sinon revenu de l'hypothèse de revenu futur, porté à la dernière année
+    projetée selon l'évolution des revenus ; fonctionnaire : TIB de fin de carrière + primes.
+  - *Taux de remplacement brut* : pension brute ÷ dernier revenu d'activité brut.
+  - *Taux de remplacement net sur net* (`tauxRemplacementNet()`), avant impôt des deux côtés : pension
+    − prélèvements sociaux de la personne (dans son foyer) ÷ dernier revenu d'activité × ratio net/brut
+    du statut (`ratioNetBrutActivite`) : 77 % salarié du privé, 79 % contractuel public, 80 %
+    fonctionnaire (convention Sapiendo, non officielle) ; 97 % pour les non-salariés (bénéfice déjà net
+    de cotisations, reste CSG non déductible et CRDS : hypothèse interne). Le net imposable du module
+    Fiscalité n'est pas utilisé (année en cours, CSG non déductible incluse, absent pour les
+    non-salariés). Synthèse : deux taux par personne, foyer commun compris.
   - Non couverts : capital RAFP (hors revenu annuel), DOM.
 - **Réversion et conjoint survivant (phase 4 de l'audit, 2026-09-29)** — [calculReversion.ts](src/lib/retraite/calculReversion.ts),
   carte « Protection du conjoint survivant » de `Synthese.tsx` (statut du couple transmis par
@@ -715,7 +722,8 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   confirmés seulement pour « L'Assurance retraite », « Agirc-Arrco », « RCI » et « Ircantec ». Points
   estimés au barème 2026 (approximation pour les années anciennes) ; chômage estimé sur le dernier salaire
   annuel connu, pas sur le salaire journalier de référence. Années manquantes après la dernière période
-  non signalées (déjà listées comme années passées sans donnée). Gains bruts, non nets (A5). Confirmation
+  non signalées (déjà listées comme années passées sans donnée). Gains affichés bruts et nets : net = brut × (1 − taux moyen de prélèvements sociaux de la pension
+  estimée, personne seule, 1 part) — approximation, le foyer réel peut changer de tranche de CSG. Confirmation
   des anomalies par le conseiller et scénario « après vérification » non faits (option B écartée le
   2026-10-22), courriers de régularisation et export PDF reportés.
 

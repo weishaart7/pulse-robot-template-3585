@@ -26,7 +26,9 @@ import {
   PartsFiscalesResult,
   FoyerFiscalInput,
 } from '@/lib/fiscalite';
-import { MILLESIME_COURANT, TAUX_PRELEVEMENTS_PENSIONS, TrancheCSGPension } from './parametres';
+import { MILLESIME_COURANT, RATIO_NET_BRUT_ACTIVITE, TAUX_PRELEVEMENTS_PENSIONS, TrancheCSGPension } from './parametres';
+import type { StatutActuel } from './projectionStatut';
+import { TrajectoireRevenu, revenuFinDeProjection } from './hypotheseRevenuFutur';
 
 /** Pensions annuelles brutes d'un pensionné, séparées base / complémentaires (1 % maladie). */
 export interface PensionsBrutesPersonne {
@@ -158,6 +160,49 @@ export function calculerNetRetraiteFoyer(
     netMensuel: netAnnuel / 12,
     parPensionne: bruts.map((brut, i) => ({ brut, prelevementsSociaux: resultat.ps[i] })),
   };
+}
+
+/**
+ * Dernier revenu d'activité brut avant le départ (référence des taux de
+ * remplacement) : revenu de la dernière année projetée selon l'évolution des
+ * revenus. Fonctionnaire : TIB de fin de carrière (déjà projeté) + primes.
+ */
+export function revenuActiviteBrutFinDeCarriere(params: {
+  statut: StatutActuel;
+  revenuBrut: number | null;
+  tibFinDeCarriere: number | null;
+  primesAnnuelles: number | null;
+  trimestresProjetes: number;
+  trajectoire?: TrajectoireRevenu;
+}): number | null {
+  const { statut, revenuBrut, tibFinDeCarriere, primesAnnuelles, trimestresProjetes, trajectoire } = params;
+  if (statut === 'fonctionnaire' && tibFinDeCarriere && tibFinDeCarriere > 0) {
+    return tibFinDeCarriere + revenuFinDeProjection(primesAnnuelles ?? 0, trimestresProjetes, trajectoire);
+  }
+  return revenuBrut && revenuBrut > 0 ? revenuFinDeProjection(revenuBrut, trimestresProjetes, trajectoire) : null;
+}
+
+/**
+ * Revenu d'activité net (avant impôt) = brut × ratio du statut (convention
+ * Sapiendo, params-retraite.json `ratioNetBrutActivite`).
+ */
+export function revenuActiviteNet(revenuBrut: number, statut: StatutActuel): number {
+  const ratio = RATIO_NET_BRUT_ACTIVITE[statut];
+  return revenuBrut * (typeof ratio === 'number' ? ratio : 1);
+}
+
+/**
+ * Taux de remplacement net sur net, avant impôt : pension nette de
+ * prélèvements sociaux ÷ dernier revenu d'activité net.
+ */
+export function tauxRemplacementNet(
+  pensionBrute: number,
+  prelevementsSociaux: number,
+  dernierRevenuBrut: number | null,
+  statut: StatutActuel
+): number | null {
+  if (!dernierRevenuBrut || dernierRevenuBrut <= 0) return null;
+  return (pensionBrute - prelevementsSociaux) / revenuActiviteNet(dernierRevenuBrut, statut);
 }
 
 /** Taux de remplacement brut : pension brute ÷ dernier revenu d'activité brut. */

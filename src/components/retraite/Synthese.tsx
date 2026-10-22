@@ -21,8 +21,8 @@ import {
   pensionsBrutes,
   foyerSansEnfantsACharge,
   FOYER_PAR_DEFAUT,
-  remplacement,
   lignesRevenuNet,
+  LigneRevenuNet,
 } from '@/lib/retraite/revenuNetFoyer';
 import { reversionPourSurvivant, statutCoupleDepuisLibelle, StatutCouple, DetailReversion } from '@/lib/retraite/calculReversion';
 
@@ -262,7 +262,7 @@ const BlocPersonne = ({
 
 // ── Bande 2 : revenu net à la retraite ───────────────────────────────────────────────
 
-const ColonneNet = ({ titre, resultat, tauxRemplacement }: { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null }) => (
+const ColonneNet = ({ titre, resultat, tauxRemplacement, tauxRemplacementNet }: LigneRevenuNet) => (
   <div className="min-w-0">
     <p className="text-[12px] text-muted-foreground">{titre}</p>
     <p className="mt-1.5 flex items-baseline gap-2">
@@ -280,6 +280,9 @@ const ColonneNet = ({ titre, resultat, tauxRemplacement }: { titre: string; resu
       <LigneMontant label={`Impôt sur le revenu (TMI ${formatPct(resultat.tmi)})`} value={`− ${formatEuro0(resultat.impot)}`} />
       <LigneMontant label="Net annuel" value={`${formatEuro0(resultat.netAnnuel)} / an`} strong />
       {tauxRemplacement !== null && <LigneMontant label="Taux de remplacement brut" value={formatPct(tauxRemplacement)} />}
+      {tauxRemplacementNet !== null && (
+        <LigneMontant label="Taux de remplacement net (avant impôt)" value={formatPct(tauxRemplacementNet)} />
+      )}
     </dl>
   </div>
 );
@@ -307,11 +310,16 @@ const BandeRevenuNet = ({ hasConjoint, nomUtilisateur, nomConjoint }: PersonnesP
           <ColonneNet key={l.titre} {...l} />
         ))}
       </div>
-      {impositionCommune && (
+      {impositionCommune && lignes[0].parPersonne && (
         <p className="mt-3 text-[12.5px] text-muted-foreground">
-          Taux de remplacement brut : {nomUtilisateur}{' '}
-          {remplacement(utilisateur) !== null ? formatPct(remplacement(utilisateur)!) : 'non calculable'} · {nomConjoint}{' '}
-          {remplacement(conjoint) !== null ? formatPct(remplacement(conjoint)!) : 'non calculable'}
+          Taux de remplacement brut / net :{' '}
+          {[nomUtilisateur, nomConjoint]
+            .map((nom, i) => {
+              const { brut, net } = lignes[0].parPersonne![i];
+              const pct = (v: number | null) => (v !== null ? formatPct(v) : 'non calculable');
+              return `${nom} ${pct(brut)} / ${pct(net)}`;
+            })
+            .join(' · ')}
         </p>
       )}
       <Notes>

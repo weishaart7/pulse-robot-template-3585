@@ -1,4 +1,7 @@
 import { caisseADassietteDediee, caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
+import { calculerPartsFiscales } from '@/lib/fiscalite';
+import { calculerNetRetraiteFoyer } from '@/lib/retraite/calculNetRetraite';
+import { FOYER_PAR_DEFAUT, pensionsBrutes, tauxPrelevementsSociauxEffectif } from '@/lib/retraite/revenuNetFoyer';
 import { VerificationCarriere } from './VerificationCarriere';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
@@ -936,6 +939,16 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres, detailAgircArrco, detailCaissesPoints } =
     resultatPension;
 
+  // Taux moyen de prélèvements sociaux de la pension estimée (personne seule,
+  // 1 part) : conversion des gains de la vérification de carrière en net.
+  const tauxPrelevementsSociauxPension = useMemo(
+    () =>
+      tauxPrelevementsSociauxEffectif(
+        calculerNetRetraiteFoyer([pensionsBrutes({ ...resultatPension, revenuActiviteBrutReference: null })], calculerPartsFiscales(FOYER_PAR_DEFAUT), 'celibataire')
+      ),
+    [resultatPension]
+  );
+
   // Minimum contributif (MiCo, régime général, version non majorée) : le
   // state brut (non projeté à cette étape) sert aussi à l'indicateur de
   // cohérence RIS ↔ carrière saisie ci-dessous.
@@ -1780,6 +1793,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         trimestresEnfants={trimestresEnfantsPersonne}
         mdaDejaAuRis={mdaDejaAuRis}
         dateEffet={dateEffetScenario}
+        tauxPrelevementsSociaux={tauxPrelevementsSociauxPension}
       />
 
       <CarriereFonctionPublique

@@ -930,6 +930,16 @@
     "fpTrimestresBonification": 4,
     "fpTauxMaximalAvecBonificationsPct": 80
   },
+  "ratioNetBrutActivite": {
+    "source": "Convention du bilan retraite Sapiendo (taux de remplacement net sur net) : net = 77 % du brut dans le privé, 79 % dans le public (contractuels), 80 % pour les fonctionnaires — convention de place, non officielle. Non-salariés (revenu = bénéfice, déjà net de cotisations) : 97 %, hypothèse interne (CSG non déductible 2,4 % et CRDS 0,5 %)",
+    "salarie_prive": 0.77,
+    "contractuel_public": 0.79,
+    "fonctionnaire": 0.8,
+    "independant_ssi": 0.97,
+    "liberal": 0.97,
+    "avocat_cnbf": 0.97,
+    "artiste_auteur": 0.97
+  },
   "projectionStatut": {
     "source": "RAFP : cotisation 5 % agent + 5 % employeur sur les primes, plafonnées à 20 % du traitement indiciaire brut (référentiel §7) ; CNAVPL : 557 points max en T1 (0 à 1 PASS) et 25 en T2 (0 à 5 PASS), au prorata de la cotisation (référentiel §5.2)",
     "rafpTauxCotisationTotal": 0.1,

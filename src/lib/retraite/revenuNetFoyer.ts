@@ -6,9 +6,11 @@
  */
 
 import { calculerPartsFiscales, FoyerFiscalInput } from '@/lib/fiscalite';
+import type { StatutActuel } from './projectionStatut';
 import {
   calculerNetRetraiteFoyer,
   tauxRemplacementBrut,
+  tauxRemplacementNet,
   PensionsBrutesPersonne,
   ResultatNetRetraiteFoyer,
 } from './calculNetRetraite';
@@ -18,6 +20,8 @@ export interface PensionPersonneNet {
   pensionTotaleConsolidee: number;
   repartitionParRegime: { complementaireRegimeGeneral: number };
   revenuActiviteBrutReference: number | null;
+  /** Statut actuel (ratio net / brut du revenu d'activité), salarié du privé par défaut. */
+  statutActuel?: StatutActuel;
 }
 
 type ResultatPersonne = PensionPersonneNet;
@@ -57,9 +61,29 @@ export const FOYER_PAR_DEFAUT: FoyerFiscalInput = {
   veuveDeGuerre: false,
 };
 
-export type LigneRevenuNet = { titre: string; resultat: ResultatNetRetraiteFoyer; tauxRemplacement: number | null };
+export type LigneRevenuNet = {
+  titre: string;
+  resultat: ResultatNetRetraiteFoyer;
+  tauxRemplacement: number | null;
+  tauxRemplacementNet: number | null;
+  /** Foyer commun : taux brut et net de chaque conjoint (utilisateur puis conjoint). */
+  parPersonne?: { brut: number | null; net: number | null }[];
+};
 
 export const remplacement = (r: ResultatPersonne) => tauxRemplacementBrut(r.pensionTotaleConsolidee, r.revenuActiviteBrutReference);
+
+/** Taux net sur net d'une personne, avec ses prélèvements sociaux calculés dans son foyer. */
+export const remplacementNet = (r: ResultatPersonne, resultat: ResultatNetRetraiteFoyer, rang: number) =>
+  tauxRemplacementNet(
+    r.pensionTotaleConsolidee,
+    resultat.parPensionne[rang]?.prelevementsSociaux.total ?? 0,
+    r.revenuActiviteBrutReference,
+    r.statutActuel ?? 'salarie_prive'
+  );
+
+/** Part des prélèvements sociaux dans les pensions brutes (gains bruts → nets). */
+export const tauxPrelevementsSociauxEffectif = (resultat: ResultatNetRetraiteFoyer) =>
+  resultat.pensionsBrutes > 0 ? resultat.prelevementsSociaux / resultat.pensionsBrutes : 0;
 
 // Revenu net du foyer actuel (phase 3) : foyer commun si marié ou pacsé dans
 // le module Fiscalité, sinon foyers séparés. Partagé par la carte « Revenu
@@ -76,15 +100,21 @@ export const lignesRevenuNet = (
   let lignes: LigneRevenuNet[];
   if (impositionCommune && foyerSaisi && conjoint) {
     const foyer = foyerSansEnfantsACharge(foyerSaisi, foyerSaisi.situationFamille);
+    const resultat = calculerNetRetraiteFoyer(
+      [pensionsBrutes(utilisateur), pensionsBrutes(conjoint)],
+      calculerPartsFiscales(foyer),
+      foyer.situationFamille
+    );
     lignes = [
       {
         titre: `Foyer fiscal commun (${nomUtilisateur} et ${nomConjoint})`,
-        resultat: calculerNetRetraiteFoyer(
-          [pensionsBrutes(utilisateur), pensionsBrutes(conjoint)],
-          calculerPartsFiscales(foyer),
-          foyer.situationFamille
-        ),
+        resultat,
         tauxRemplacement: null,
+        tauxRemplacementNet: null,
+        parPersonne: [
+          { brut: remplacement(utilisateur), net: remplacementNet(utilisateur, resultat, 0) },
+          { brut: remplacement(conjoint), net: remplacementNet(conjoint, resultat, 1) },
+        ],
       },
     ];
   } else {
@@ -93,22 +123,32 @@ export const lignesRevenuNet = (
       foyerSaisi && !['marie', 'pacse'].includes(foyerSaisi.situationFamille) ? foyerSaisi.situationFamille : 'celibataire';
     const foyerUtilisateur = foyerSansEnfantsACharge(foyerSaisi ?? FOYER_PAR_DEFAUT, situationUtilisateur);
     const foyerConjoint = foyerSansEnfantsACharge(FOYER_PAR_DEFAUT, 'celibataire');
+    const resultatUtilisateur = calculerNetRetraiteFoyer(
+      [pensionsBrutes(utilisateur)],
+      calculerPartsFiscales(foyerUtilisateur),
+      situationUtilisateur
+    );
     lignes = [
       {
         titre: nomUtilisateur,
-        resultat: calculerNetRetraiteFoyer([pensionsBrutes(utilisateur)], calculerPartsFiscales(foyerUtilisateur), situationUtilisateur),
+        resultat: resultatUtilisateur,
         tauxRemplacement: remplacement(utilisateur),
+        tauxRemplacementNet: remplacementNet(utilisateur, resultatUtilisateur, 0),
       },
-      ...(conjoint !== null
-        ? [
-            {
-              titre: nomConjoint,
-              resultat: calculerNetRetraiteFoyer([pensionsBrutes(conjoint)], calculerPartsFiscales(foyerConjoint), 'celibataire' as const),
-              tauxRemplacement: remplacement(conjoint),
-            },
-          ]
-        : []),
     ];
+    if (conjoint !== null) {
+      const resultatConjoint = calculerNetRetraiteFoyer(
+        [pensionsBrutes(conjoint)],
+        calculerPartsFiscales(foyerConjoint),
+        'celibataire'
+      );
+      lignes.push({
+        titre: nomConjoint,
+        resultat: resultatConjoint,
+        tauxRemplacement: remplacement(conjoint),
+        tauxRemplacementNet: remplacementNet(conjoint, resultatConjoint, 0),
+      });
+    }
   }
 
   return lignes;
