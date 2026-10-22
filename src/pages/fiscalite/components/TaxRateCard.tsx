@@ -1,149 +1,75 @@
-import { INK } from '@/lib/palette';
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PanelTitle } from '@/components/layout/workspace-panel';
 import { BAREME_2026 } from '@/lib/fiscalite';
 import { FiscalOverview } from '@/hooks/useFiscalOverview';
+import { cn } from '@/lib/utils';
+import { formatEuros, LigneDetail } from './FiscalOverviewCard';
 
-interface TaxRateCardProps {
-  overview: FiscalOverview;
-}
+// Taux marginal d'imposition : chiffre principal, barème 2026 avec la tranche du foyer et le repère du
+// quotient familial, puis les données du calcul (quotient, marge, revenus, parts).
 
-function formatEuros(valeur: number): string {
-  return `${Math.round(valeur).toLocaleString('fr-FR')} €`;
-}
+const TaxRateCard = ({ overview }: { overview: FiscalOverview }) => {
+  const { parts, impot } = overview;
 
-function formatTaux(taux: number): string {
-  return `${Math.round(taux * 100)} %`;
-}
-
-const StatTile = ({ title, value }: { title: string; value: string }) => (
-  <div className="rounded-md bg-muted/30 p-3.5">
-    <div className="text-xs text-muted-foreground mb-1">{title}</div>
-    <div className="text-lg font-bold">{value}</div>
-  </div>
-);
-
-const TaxRateCard = ({ overview }: TaxRateCardProps) => {
-  const { loading, foyerRenseigne, revenusRenseignes, parts, impot } = overview;
-
-  const brackets = BAREME_2026.map((tranche, index) => ({
-    ...tranche,
-    seuilBas: index === 0 ? 0 : BAREME_2026[index - 1].seuil,
-    active: tranche.taux === impot.tmi,
-  }));
-
-  const activeBracket = brackets.find(b => b.active);
-  const margeAvantTranche = activeBracket && activeBracket.seuil !== Infinity
-    ? Math.max(0, activeBracket.seuil - impot.quotientFamilial)
-    : null;
-
-  const getUserPositionInBracket = () => {
-    if (!activeBracket || activeBracket.seuil === Infinity) return 0;
-    const bracketRange = activeBracket.seuil - activeBracket.seuilBas;
-    const userPositionInRange = impot.quotientFamilial - activeBracket.seuilBas;
-    if (bracketRange <= 0) return 0;
-    return Math.min(100, Math.max(0, (userPositionInRange / bracketRange) * 100));
-  };
-
-  const statsCards = [
-    { title: 'Revenu net imposable en France (salaires, actionnariat, pensions, revenus fonciers)', value: formatEuros(impot.revenuImposable) },
-    { title: 'Revenu fiscal de référence (RFR)', value: formatEuros(impot.revenuFiscalReference) },
-    ...(impot.revenuExonereTauxEffectif > 0
-      ? [{ title: 'Revenu exonéré retenu (taux effectif)', value: formatEuros(impot.revenuExonereTauxEffectif) }]
-      : []),
-    { title: 'Nombre de parts', value: parts.nombreParts.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) },
-    { title: 'Plafonnement du quotient familial', value: impot.plafonnementApplique ? 'Oui' : 'Non' },
-    { title: 'Impôt net (IR)', value: formatEuros(impot.impotNet) },
-  ];
-
-  if (loading) {
-    return (
-      <Card className="border border-border">
-        <CardHeader>
-          <CardTitle>Taux marginal d'imposition</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-muted-foreground">Chargement…</div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const tranches = BAREME_2026.map((t, i) => ({ ...t, seuilBas: i === 0 ? 0 : BAREME_2026[i - 1].seuil }));
+  const active = tranches.find((t) => t.taux === impot.tmi);
+  const position = active && active.seuil !== Infinity && active.seuil > active.seuilBas
+    ? Math.min(100, Math.max(0, ((impot.quotientFamilial - active.seuilBas) / (active.seuil - active.seuilBas)) * 100))
+    : 0;
+  const marge = active && active.seuil !== Infinity ? Math.max(0, active.seuil - impot.quotientFamilial) : null;
 
   return (
-    <Card className="border border-border">
-      <CardHeader className="pb-4">
-        <CardTitle>Taux marginal d'imposition</CardTitle>
-        <div className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          {formatTaux(impot.tmi)}
-        </div>
-        {(!foyerRenseigne || !revenusRenseignes) && (
-          <p className="text-sm text-muted-foreground">
-            Calcul basé sur des valeurs par défaut — complétez votre foyer fiscal et vos revenus pour un résultat personnalisé.
-          </p>
-        )}
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Barème et détails */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="space-y-3">
-              <div className="relative flex h-6 overflow-hidden rounded-full">
-                {brackets.map((bracket, index) => (
-                  <div
-                    key={index}
-                    className="flex-1 relative"
-                    style={{ backgroundColor: bracket.active ? INK : '#0c0a091a' }}
-                  >
-                    {bracket.active && (
-                      <div
-                        className="absolute top-0 bottom-0 w-0.5 bg-destructive"
-                        style={{ left: `${getUserPositionInBracket()}%` }}
-                      />
+    <div className="border-b border-border px-8 py-6">
+      <PanelTitle>Taux marginal d'imposition</PanelTitle>
+      <p className="mt-2 text-[22px] font-medium leading-none tracking-[-0.02em] tabular-nums">{Math.round(impot.tmi * 100)} %</p>
+
+      <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div>
+          <div className="grid grid-cols-5 gap-[2px]">
+            {tranches.map((t) => {
+              const estActive = t === active;
+              return (
+                <div key={t.taux}>
+                  <div className={cn('relative h-3 rounded-[1px]', estActive ? 'bg-lagon' : 'bg-secondary')}>
+                    {estActive && (
+                      <span aria-hidden className="absolute -top-1 h-5 w-[2px] -translate-x-1/2 bg-foreground" style={{ left: `${position}%` }} />
                     )}
                   </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between text-sm">
-                {brackets.map((bracket, index) => (
-                  <div key={index} className="text-center flex-1">
-                    <div className={bracket.active ? 'font-bold text-primary' : 'font-medium text-muted-foreground'}>
-                      {formatTaux(bracket.taux)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                <span></span>
-                {BAREME_2026.slice(0, -1).map(tranche => (
-                  <span key={tranche.seuil}>{formatEuros(tranche.seuil)}</span>
-                ))}
-                <span></span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <StatTile
-                title={`Quotient familial (${impot.revenuExonereTauxEffectif > 0 ? 'revenu mondial' : 'revenu'} / part)`}
-                value={formatEuros(impot.quotientFamilial)}
-              />
-              <StatTile
-                title="Marge avant tranche supérieure"
-                value={margeAvantTranche !== null ? formatEuros(margeAvantTranche) : '—'}
-              />
-            </div>
+                  <p className={cn('mt-2 text-[13px] tabular-nums', estActive ? 'font-medium text-foreground' : 'text-muted-foreground')}>
+                    {Math.round(t.taux * 100)} %
+                  </p>
+                  <p className="text-[11.5px] tabular-nums text-muted-foreground">
+                    {t.seuil === Infinity ? `> ${formatEuros(t.seuilBas)}` : `≤ ${formatEuros(t.seuil)}`}
+                  </p>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Statistiques */}
-          <div className="space-y-3">
-            {statsCards.map((stat, index) => (
-              <StatTile key={index} title={stat.title} value={stat.value} />
-            ))}
+          <div className="mt-5 grid grid-cols-2 gap-[2px]">
+            <div className="rounded-[2px] bg-secondary/50 p-3">
+              <p className="text-[11.5px] text-muted-foreground">
+                Quotient familial ({impot.revenuExonereTauxEffectif > 0 ? 'revenu mondial' : 'revenu'} / part)
+              </p>
+              <p className="mt-1 text-[16px] font-medium tabular-nums">{formatEuros(impot.quotientFamilial)}</p>
+            </div>
+            <div className="rounded-[2px] bg-secondary/50 p-3">
+              <p className="text-[11.5px] text-muted-foreground">Marge avant tranche supérieure</p>
+              <p className="mt-1 text-[16px] font-medium tabular-nums">{marge !== null ? formatEuros(marge) : '—'}</p>
+            </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <div>
+          <LigneDetail label="Revenu net imposable" valeur={formatEuros(impot.revenuImposable)} />
+          <LigneDetail label="Revenu fiscal de référence (RFR)" valeur={formatEuros(impot.revenuFiscalReference)} />
+          {impot.revenuExonereTauxEffectif > 0 && (
+            <LigneDetail label="Revenu exonéré retenu (taux effectif)" valeur={formatEuros(impot.revenuExonereTauxEffectif)} />
+          )}
+          <LigneDetail label="Nombre de parts" valeur={parts.nombreParts.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} />
+          <LigneDetail label="Plafonnement du quotient familial" valeur={impot.plafonnementApplique ? 'Oui' : 'Non'} />
+          <LigneDetail label="Impôt net (IR)" valeur={formatEuros(impot.impotNet)} />
+        </div>
+      </div>
+    </div>
   );
 };
 

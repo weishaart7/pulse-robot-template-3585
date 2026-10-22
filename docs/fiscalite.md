@@ -87,8 +87,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    valeurs et capitaux mobiliers, et les gains d'actionnariat salarié (part barème et part à taux
    forfaitaire).**
    (`FiscaliteSection.tsx` → `FiscalDeclarationsCard`, `FiscalOverviewCard`, `TaxRateCard`) : liste de
-   déclarations fiscales (2042, 2044, 2047, 2074, 2086, 2042-IFI), graphique de répartition, taux
-   marginal d'imposition, tranches. Le hook [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts)
+   déclarations fiscales (2042, 2044, 2047, 2074, 2086, 2042-IFI), imposition totale détaillée et
+   répartition du revenu imposable, taux marginal d'imposition et tranches. Le hook [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts)
    agrège `foyer_fiscal` + `revenus_salaires` + `gains_actionnariat_salarie` +
    `revenus_exoneres_taux_effectif` + `pensions_retraites_rentes` + `revenus_capitaux_mobiliers`,
    calcule le revenu net imposable, le nombre de parts et l'impôt sur le revenu réel (voir §2), et
@@ -113,8 +113,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 | Écran | Composant | Rôle |
 |---|---|---|
-| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Grille 3 colonnes : déclarations (gauche), imposition totale + TMI (droite) — plus aucun formulaire monté à plat |
-| Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste de formulaires CERFA ; « 2042 » ouvre `Declaration2042Interface`, « 2042-IFI » ouvre `IFIInterface` — les deux seuls liens cliquables |
+| Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Panneau de travail (comme Immobilier, Retraite) : en-tête à fil d'Ariane « Fiscalité / Vue d'ensemble », titre 24 px et rappel (revenus 2025, barème 2026, mention des valeurs par défaut tant que le foyer ou les revenus ne sont pas saisis), puis deux colonnes séparées par un filet : déclarations à gauche sur toute la hauteur, imposition totale puis taux marginal à droite — disposition historique conservée, cartes remplacées par des bandes bord à bord |
+| Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste par impôt (code CERFA en pastille, libellé, statut sous le libellé, chevron) ; « 2042 » ouvre `Declaration2042Interface` (statut : IR net ou « Foyer à compléter »), « 2044 » `Declaration2044Interface` (revenu foncier imposable, déficit 4BC ou « Non ouverte »), « 2042-IFI » `IFIInterface` ; 2047, 2074 et 2086 « À venir » |
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 19 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
@@ -122,8 +122,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — saisie brute, revenu net imposable calculé en aval par `calculerPensionsRetraitesRentes.ts` |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 16 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012, système du quotient), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ`, `3VD`/`3VI`/`3VF`/`3VN` et `0XX`, conformément au CERFA |
 | Revenus des valeurs et capitaux mobiliers (section 2042) | [RevenusCapitauxMobiliersForm.tsx](src/components/fiscalite/RevenusCapitauxMobiliersForm.tsx) | Cadre 2 de la 2042 (2042-K + 2042-C), 45 cases numériques + `2OP` (case à cocher, hors catégorie en pied de cadre) ; aucune colonne déclarant 1/déclarant 2 sur le CERFA — chaque case est un montant unique par foyer, contrairement au cadre 1 ; regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr : contrats d'assurance-vie ≥ 8 ans, < 8 ans, revenus ouvrant/n'ouvrant pas droit à abattement, autres revenus, gains de cession de bons et contrats — saisie brute, revenu net imposable calculé en aval par `calculerRevenuCapitauxMobiliers.ts` |
-| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Donut `SectorsDonut` (même composant que la répartition Patrimoine) montrant la vraie composition du revenu imposable (salaires/gains d'actionnariat/pensions, légende colorée) — PS et IFI affichés « non calculé » |
-| Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | Barème IR réel, tranche active (TMI), quotient familial, marge avant tranche suivante, impôt net |
+| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Chiffre principal (IR + prélèvements sociaux calculés) avec pastille TMI ; détail des impôts : IR toujours affiché (décote en note), autres lignes affichées si non nulles, celles à 0 € ou non calculées (PS sur salaires, IFI, PS fonciers sans 2044) repliées sous « n autres lignes » (`LignesRepliees`) ; anneau `SectorsDonut` de la composition du revenu imposable, **taux moyen global (IR + PS) / revenu imposable** au centre ; liste « Revenu imposable et ce qu'il coûte » : par catégorie, montant et sous-ligne « IR ≈ … · PS … » — IR au barème (`impotApresDecote`) réparti au prorata des revenus soumis au barème (indicatif, barème progressif) plus l'impôt forfaitaire propre à la catégorie, PS calculés de la catégorie (salaires : prélevés en paie), crédits d'impôt non répartis, mention sous la liste ; catégories nulles et revenus non calculés repliés ; encadrés RFR, décote, impôt net |
+| Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | TMI en chiffre secondaire (22 px, l'imposition totale reste le chiffre principal de la page), barème 2026 en 5 tranches (tranche du foyer en lagon, repère du quotient familial), encadrés quotient familial et marge avant la tranche supérieure ; à côté, revenu net imposable, RFR, revenu exonéré retenu, parts, plafonnement, impôt net |
 | Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
 
 **Tables Supabase du simulateur IFI** (toutes `user_id → auth.users(id) ON DELETE CASCADE`, RLS
@@ -1265,7 +1265,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 `foncierFoyer.ts`, module Immobilier). Moteur pur.
 - **Entrées** : la 2044 porte le **réalisé** de l'année de revenus, prérempli depuis Immobilier et
   Actifs/Passifs puis surchargeable (préremplissage hors du moteur, voir plus bas) ; par immeuble les lignes 211 à 230, 250 et 262 (nombre de locaux pour le forfait de 20 €
-  de la ligne 222, taux en % pour la déduction spécifique 228 appliquée à la ligne 215) ; par part de
+  de la ligne 222 — au moins un local par immeuble, forfait toujours déduit même sans saisie, taux en % pour la déduction spécifique 228 appliquée à la ligne 215) ; par part de
   société ou FPI les lignes 111 à 113 de l'attestation ; les déficits antérieurs non imputés (colonne A
   de la rubrique 450).
 - **Calcul** : chaque ligne est arrondie à l'euro (pas de centimes sur le formulaire) ; 240 = 221 à
@@ -1336,7 +1336,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   ou 440 expliquée avec le plafond), déficits antérieurs (450, lecture seule du stock Immobilier). Rail
   droit « Report sur la 2042 » : 4BA à 4BD, plus le net imposable informatif quand 4BA et 4BD coexistent.
   Hook [useDeclaration2044.ts](src/hooks/useDeclaration2044.ts) : chaque champ s'enregistre à la sortie
-  (champ vidé = NULL), mise à jour optimiste, recalcul immédiat. Ligne 222 saisie en nombre de locaux,
+  (champ vidé = NULL), mise à jour optimiste, recalcul immédiat. Ligne 222 saisie en nombre de locaux (1 affiché par défaut, minimum 1),
   ligne 228 en taux (%), le montant calculé est affiché sous le champ. Ouvrir la 2044 d'une année crée
   sa ligne `declarations_2044` et les colonnes des actifs éligibles. Suppression d'un immeuble ou d'une
   société sans confirmation. Colonne reliée à un actif : pastille lagon dans l'en-tête ; valeur

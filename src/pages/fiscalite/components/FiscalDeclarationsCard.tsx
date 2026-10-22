@@ -1,100 +1,107 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Home, Globe, TrendingUp, Coins, LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { PanelTitle } from '@/components/layout/workspace-panel';
+import { cn } from '@/lib/utils';
+import type { FiscalOverview } from '@/hooks/useFiscalOverview';
 import IFIInterface from './IFIInterface';
 import Declaration2042Interface from './Declaration2042Interface';
 import Declaration2044Interface from './Declaration2044Interface';
+import { formatEuros } from './FiscalOverviewCard';
 
 interface FiscalDeclarationsCardProps {
+  overview: FiscalOverview;
   /** Appelé à la fermeture de la 2042 ou de la 2044 pour rafraîchir la Vision générale (voir useFiscalOverview.ts). */
   onDeclarationClosed?: () => void;
 }
 
-interface DeclarationItem {
+type CodeOuvrable = '2042' | '2044' | '2042-IFI';
+
+interface Declaration {
   code: string;
-  title: string;
-  icon: LucideIcon;
+  titre: string;
+  ouvrable?: CodeOuvrable;
 }
 
-const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardProps) => {
-  const [showIFI, setShowIFI] = useState(false);
-  const [show2042, setShow2042] = useState(false);
-  const [show2044, setShow2044] = useState(false);
-  const declarations: { category: string; items: DeclarationItem[] }[] = [
-    {
-      category: "Impôt sur le revenu",
-      items: [
-        { code: "2042", title: "Déclaration générale", icon: FileText },
-        { code: "2044", title: "Revenus fonciers", icon: Home },
-        { code: "2047", title: "Revenus perçus à l'étranger", icon: Globe },
-        { code: "2074", title: "Plus ou moins values de cession", icon: TrendingUp },
-        { code: "2086", title: "Plus ou moins values de cession d'actifs numériques", icon: Coins }
-      ]
-    },
-    {
-      category: "Impôt sur la fortune immobilière",
-      items: [
-        { code: "2042-IFI", title: "Impôt sur la fortune immobilière", icon: Home }
-      ]
-    }
-  ];
+const GROUPES: { titre: string; declarations: Declaration[] }[] = [
+  {
+    titre: 'Impôt sur le revenu',
+    declarations: [
+      { code: '2042', titre: 'Déclaration générale', ouvrable: '2042' },
+      { code: '2044', titre: 'Revenus fonciers', ouvrable: '2044' },
+      { code: '2047', titre: "Revenus perçus à l'étranger" },
+      { code: '2074', titre: 'Plus ou moins-values de cession' },
+      { code: '2086', titre: "Plus ou moins-values d'actifs numériques" },
+    ],
+  },
+  {
+    titre: 'Impôt sur la fortune immobilière',
+    declarations: [{ code: '2042-IFI', titre: 'Impôt sur la fortune immobilière', ouvrable: '2042-IFI' }],
+  },
+];
 
-  const openDeclaration = (code: string) => {
-    if (code === "2042-IFI") setShowIFI(true);
-    else if (code === "2042") setShow2042(true);
-    else if (code === "2044") setShow2044(true);
+const FiscalDeclarationsCard = ({ overview, onDeclarationClosed }: FiscalDeclarationsCardProps) => {
+  const [ouverte, setOuverte] = useState<CodeOuvrable | null>(null);
+  const fermer = () => { setOuverte(null); onDeclarationClosed?.(); };
+
+  const statut = (d: Declaration): string | null => {
+    if (!d.ouvrable) return 'À venir';
+    if (d.ouvrable === '2042') return overview.foyerRenseigne ? `${formatEuros(overview.impot.impotNet)} d'IR` : 'Foyer à compléter';
+    if (d.ouvrable === '2044') {
+      const rf = overview.revenusFonciers;
+      if (!rf) return 'Non ouverte';
+      return rf.deficitImputableRevenuGlobal > 0
+        ? `Déficit ${formatEuros(rf.deficitImputableRevenuGlobal)}`
+        : `${formatEuros(rf.revenuFoncierNetImposable)} imposables`;
+    }
+    return null;
   };
 
   return (
     <>
-      <Card className="border border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Déclarations fiscales
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {declarations.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="space-y-2">
-              <h3 className="font-semibold text-sm text-muted-foreground px-1">
-                {section.category}
-              </h3>
-              <div className="space-y-1.5">
-                {section.items.map((item, itemIndex) => {
-                  const clickable = item.code === "2042" || item.code === "2044" || item.code === "2042-IFI";
-                  return (
+      <div className="px-8 py-6">
+        <PanelTitle>Déclarations fiscales</PanelTitle>
+        {GROUPES.map((g) => (
+          <div key={g.titre} className="mt-4">
+            <p className="text-[11.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">{g.titre}</p>
+            <ul className="mt-1">
+              {g.declarations.map((d) => {
+                const s = statut(d);
+                return (
+                  <li key={d.code}>
                     <button
-                      key={itemIndex}
                       type="button"
-                      disabled={!clickable}
-                      onClick={() => openDeclaration(item.code)}
-                      className="flex w-full items-center gap-3 rounded-md p-2.5 text-left transition-colors enabled:hover:bg-muted/50 disabled:cursor-default"
+                      disabled={!d.ouvrable}
+                      onClick={() => d.ouvrable && setOuverte(d.ouvrable)}
+                      className={cn(
+                        'group grid w-full grid-cols-[4.5rem_1fr_1rem] items-center gap-3 border-b border-border/60 py-2.5 text-left text-[13px]',
+                        'enabled:hover:bg-secondary/40 disabled:cursor-default',
+                      )}
                     >
-                      <div className="h-8 w-8 shrink-0 rounded-full bg-secondary flex items-center justify-center">
-                        <item.icon className="h-4 w-4 text-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium leading-snug text-wrap break-words">
-                          {item.title}
-                        </div>
-                      </div>
-                      <Badge variant="secondary" className="shrink-0 text-xs">
-                        {item.code}
-                      </Badge>
+                      <span className={cn(
+                        'inline-flex h-6 w-fit items-center rounded-[2px] px-2 text-[12px] font-medium tabular-nums',
+                        d.ouvrable ? 'bg-lagon-soft text-lagon-ink' : 'bg-secondary text-muted-foreground',
+                      )}>
+                        {d.code}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={cn('block leading-snug', d.ouvrable ? 'text-foreground' : 'text-muted-foreground')}>{d.titre}</span>
+                        {s && <span className="block text-[12px] tabular-nums text-muted-foreground">{s}</span>}
+                      </span>
+                      {d.ouvrable
+                        ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                        : <span />}
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
 
-      {show2044 && <Declaration2044Interface onClose={() => { setShow2044(false); onDeclarationClosed?.(); }} />}
-      {showIFI && <IFIInterface onClose={() => setShowIFI(false)} />}
-      {show2042 && <Declaration2042Interface onClose={() => { setShow2042(false); onDeclarationClosed?.(); }} />}
+      {ouverte === '2042-IFI' && <IFIInterface onClose={() => setOuverte(null)} />}
+      {ouverte === '2042' && <Declaration2042Interface onClose={fermer} />}
+      {ouverte === '2044' && <Declaration2044Interface onClose={fermer} />}
     </>
   );
 };
