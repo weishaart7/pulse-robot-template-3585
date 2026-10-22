@@ -4,6 +4,7 @@ import { useAutoSave, AutoSaveStatus } from '@/hooks/useAutoSave';
 import { PeriodeCarriere } from '@/lib/retraite/parseRIS';
 import { trimestresCotisesEtAssimilesDepuisCarriere } from '@/lib/retraite/calculTrimestres';
 import {
+  EVOLUTIONS_REVENUS,
   ModeHypotheseRevenuFutur,
   revenuAnnuelHypotheseDerniereAnneeConnue,
 } from '@/lib/retraite/hypotheseRevenuFutur';
@@ -17,6 +18,9 @@ export interface UseHypotheseRevenuFuturResult {
   valeurCalculee: number | null;
   valeurManuelle: string;
   setValeurManuelle: (valeur: string) => void;
+  /** Évolution réelle annuelle des revenus futurs (0, 0,015 ou 0,03). */
+  evolution: number;
+  setEvolution: (evolution: number) => void;
   saveStatus: AutoSaveStatus;
   // Force un flush immédiat du débounce — à appeler sur les interactions qui
   // peuvent être immédiatement suivies d'une navigation (changement de mode,
@@ -41,7 +45,7 @@ export interface UseHypotheseRevenuFuturResult {
  * sauvegarde de l'une sans rechargement de l'autre.
  */
 export const useHypotheseRevenuFutur = (
-  data: Pick<RetraiteData, 'mode_hypothese_revenu_futur' | 'revenu_hypothese_manuel'>,
+  data: Pick<RetraiteData, 'mode_hypothese_revenu_futur' | 'revenu_hypothese_manuel' | 'evolution_revenus'>,
   detailCarriere: PeriodeCarriere[],
   loadingDonnees: boolean,
   saveRetraiteData: (
@@ -51,6 +55,7 @@ export const useHypotheseRevenuFutur = (
 ): UseHypotheseRevenuFuturResult => {
   const [mode, setMode] = useState<ModeHypotheseRevenuFutur>('derniere_annee_connue');
   const [valeurManuelle, setValeurManuelle] = useState('');
+  const [evolution, setEvolution] = useState(0);
   const [initialise, setInitialise] = useState(false);
 
   const valeurCalculee = useMemo(() => {
@@ -71,6 +76,8 @@ export const useHypotheseRevenuFutur = (
     if (data.revenu_hypothese_manuel !== undefined && data.revenu_hypothese_manuel !== null) {
       setValeurManuelle(data.revenu_hypothese_manuel.toString());
     }
+    const evolutionChargee = data.evolution_revenus ?? 0;
+    setEvolution((EVOLUTIONS_REVENUS as readonly number[]).includes(evolutionChargee) ? evolutionChargee : 0);
     setInitialise(true);
   }, [loadingDonnees, initialise, data, valeurCalculee]);
 
@@ -89,11 +96,23 @@ export const useHypotheseRevenuFutur = (
         {
           mode_hypothese_revenu_futur: mode,
           revenu_hypothese_manuel: parseFloat(valeurManuelle) || 0,
+          evolution_revenus: evolution,
         },
         { silent: true }
       ),
-    [mode, valeurManuelle]
+    [mode, valeurManuelle, evolution]
   );
 
-  return { loading: loadingDonnees, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow };
+  return {
+    loading: loadingDonnees,
+    mode,
+    setMode,
+    valeurCalculee,
+    valeurManuelle,
+    setValeurManuelle,
+    evolution,
+    setEvolution,
+    saveStatus,
+    saveNow,
+  };
 };

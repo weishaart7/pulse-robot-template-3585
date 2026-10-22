@@ -188,6 +188,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     anneesPasseesSansDonnees,
     trimestresProjetesJusquADateEffet,
     revenuHypothese,
+    trajectoire,
   } = useMemo(
     () =>
       calculerProjectionRevenuFutur(
@@ -196,9 +197,17 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
         salaireAnnuelMoyen,
         modeHypothese,
         data.revenu_hypothese_manuel ?? null,
-        new Date()
+        new Date(),
+        data.evolution_revenus ?? 0
       ),
-    [dateNaissanceDetail, detailCarriereSansId, salaireAnnuelMoyen, modeHypothese, data.revenu_hypothese_manuel]
+    [
+      dateNaissanceDetail,
+      detailCarriereSansId,
+      salaireAnnuelMoyen,
+      modeHypothese,
+      data.revenu_hypothese_manuel,
+      data.evolution_revenus,
+    ]
   );
 
   // Date d'effet unique du scénario « départ à l'âge légal » (cf.
@@ -221,6 +230,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     salaireAnnuelMoyenRIS: salaireAnnuelMoyen,
     salaireAnnuelMoyenProjete,
     ...donneesAutresRegimesDepuisRetraiteData(data),
+    trajectoire,
   });
 
   const trimestresEnfants = trimestresEnfantsDepuisRetraiteData({
@@ -249,7 +259,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
     cnavpl: projectionStatut.cnavpl,
     cnbf: projectionStatut.cnbf,
     projectionComplementaire: salaireComplementaire && projectionStatut.projeterAgircArrco
-      ? { salaireAnnuel: salaireComplementaire.salaireAnnuel, trimestresProjetes: trimestresProjetesJusquADateEffet }
+      ? { salaireAnnuel: salaireComplementaire.salaireAnnuel, trimestresProjetes: trimestresProjetesJusquADateEffet, trajectoire }
       : undefined,
     trimestresEnfants,
     caissesPoints: {
@@ -260,6 +270,7 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
       capitalCAVP: data.caisse_liberale === 'CAVP' ? data.cavp_capital_capitalisation ?? 0 : 0,
       classeCPRN: data.cprn_classe ?? 1,
       assietteCaisseLiberale: caisseADassietteDediee(data.caisse_liberale ?? null) ? data.assiette_caisse_liberale ?? null : null,
+      trajectoire,
     },
   });
 

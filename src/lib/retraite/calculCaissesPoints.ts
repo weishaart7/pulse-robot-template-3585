@@ -74,6 +74,7 @@
  *   détenus (`surPointsBruts`), capital de 18 annuités.
  */
 
+import { TrajectoireRevenu, sommeSurAnneesProjetees } from './hypotheseRevenuFutur';
 import { RegimeDetecte } from './parseRIS';
 import { DateNaissance, ageEnMois, ageLegalPourGeneration } from './calcul';
 import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS, ParametresCaissePoints } from './parametres';
@@ -272,6 +273,8 @@ export interface EntreeCaissesPoints {
   capitalCAVP?: number | null;
   /** Assiette propre aux caisses `assietteDediee` (CPRN C : produits moyens de l'office), `null` si inconnue. */
   assietteCaisse?: number | null;
+  /** Évolution des revenus futurs (absente = revenu constant), appliquée aussi à l'assiette propre. */
+  trajectoire?: TrajectoireRevenu;
 }
 
 export interface ResultatCaissesPoints {
@@ -303,7 +306,9 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
     const assiette = caisse.assietteDediee ? entree.assietteCaisse ?? null : entree.revenuAnnuel;
     const pointsProjetesBruts =
       caissesProjetees.includes(id) && assiette !== null
-        ? (pointsAnnuelsCaisse(caisse, assiette, entree.classe) * Math.max(0, entree.trimestresProjetes)) / 4
+        ? sommeSurAnneesProjetees(entree.trimestresProjetes, assiette, entree.trajectoire, (revenu) =>
+            pointsAnnuelsCaisse(caisse, revenu, entree.classe)
+          )
         : 0;
     // Retraite entière (CAVP) : annuités plafonnées à la durée requise ÷ 4.
     const pointsProjetes =
@@ -361,7 +366,13 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
   // Volet par capitalisation de la CAVP : capital déclaré ou pharmacien en activité.
   if (ageDepart !== null && ((entree.capitalCAVP ?? 0) > 0 || caissesProjetees.includes('cavp'))) {
     const anneesProjetees = caissesProjetees.includes('cavp') ? Math.max(0, entree.trimestresProjetes) / 4 : 0;
-    const { renteAnnuelle } = renteCAVPCapitalisation(entree.capitalCAVP ?? 0, entree.revenuAnnuel, anneesProjetees, ageDepart);
+    const { renteAnnuelle } = renteCAVPCapitalisation(
+      entree.capitalCAVP ?? 0,
+      entree.revenuAnnuel,
+      anneesProjetees,
+      ageDepart,
+      entree.trajectoire
+    );
     if (renteAnnuelle > 0) {
       details.push({
         id: 'cavpCapitalisation',

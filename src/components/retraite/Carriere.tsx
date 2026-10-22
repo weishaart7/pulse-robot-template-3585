@@ -31,7 +31,12 @@ import {
   DonneesFonctionPublique,
   DonneesCNAVPL,
 } from '@/lib/retraite/pensionConsolidee';
-import { calculerProjectionRevenuFutur, salaireProjectionComplementaire } from '@/lib/retraite/hypotheseRevenuFutur';
+import {
+  EVOLUTIONS_REVENUS,
+  calculerProjectionRevenuFutur,
+  libelleEvolutionRevenus,
+  salaireProjectionComplementaire,
+} from '@/lib/retraite/hypotheseRevenuFutur';
 import { estRegimeAgircArrco } from '@/lib/retraite/calculAgircArrco';
 import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 import { CarriereFonctionPublique } from '@/components/retraite/CarriereFonctionPublique';
@@ -104,8 +109,18 @@ interface ToggleHypotheseRevenuFuturProps {
 // second jeu de requêtes retraite_data/retraite_carriere_detail redondant
 // avec celui de Carriere (étape 3 de la fusion).
 const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseRevenuFuturProps) => {
-  const { loading, mode, setMode, valeurCalculee, valeurManuelle, setValeurManuelle, saveStatus, saveNow } =
-    hypothese;
+  const {
+    loading,
+    mode,
+    setMode,
+    valeurCalculee,
+    valeurManuelle,
+    setValeurManuelle,
+    evolution,
+    setEvolution,
+    saveStatus,
+    saveNow,
+  } = hypothese;
 
   // Flush explicite quand le mode change plutôt qu'un saveNow() synchrone
   // dans le onClick : setMode() ne fait que planifier le re-render, saveNow()
@@ -116,7 +131,7 @@ const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseReve
   useEffect(() => {
     if (!loading) saveNow();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, evolution]);
 
   if (loading) return null;
 
@@ -174,6 +189,28 @@ const ToggleHypotheseRevenuFutur = ({ personne, hypothese }: ToggleHypotheseReve
           />
         </div>
       )}
+
+      <div className="space-y-1.5">
+        <Label className="text-xs">Évolution des revenus futurs</Label>
+        <div className="inline-flex h-8 items-center rounded-[2px] border border-border bg-background p-0.5">
+          {EVOLUTIONS_REVENUS.map((taux) => (
+            <button
+              key={taux}
+              type="button"
+              aria-pressed={evolution === taux}
+              onClick={() => setEvolution(taux)}
+              className={`h-full rounded-[1px] px-3 text-[12.5px] font-medium transition-colors ${
+                evolution === taux ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {libelleEvolutionRevenus(taux)}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Progression annuelle hors inflation, à partir de l'année prochaine (montants en euros constants).
+        </p>
+      </div>
 
       {saveStatus === 'saving' && <p className="text-xs text-muted-foreground">Enregistrement…</p>}
     </div>
@@ -706,7 +743,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         parseFloat(salaireAnnuelMoyen) || 0,
         hypotheseRevenuFutur.mode,
         parseFloat(hypotheseRevenuFutur.valeurManuelle) || null,
-        new Date()
+        new Date(),
+        hypotheseRevenuFutur.evolution
       ),
     [
       dateNaissanceDetail,
@@ -714,6 +752,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       salaireAnnuelMoyen,
       hypotheseRevenuFutur.mode,
       hypotheseRevenuFutur.valeurManuelle,
+      hypotheseRevenuFutur.evolution,
     ]
   );
 
@@ -767,6 +806,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       fonctionPublique: fonctionPubliqueSaisie,
       cnavpl: cnavplSaisie,
       cnbf: hasCNBF ? { trimestresCNBF: parseInt(trimestresCNBF) || 0, classe: cnbfClasse } : null,
+      trajectoire: projectionRevenuFutur.trajectoire,
     });
   }, [
     hasFonctionPublique,
@@ -851,6 +891,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         ? {
             salaireAnnuel: salaireComplementaire.salaireAnnuel,
             trimestresProjetes: projectionRevenuFutur.trimestresProjetesJusquADateEffet,
+            trajectoire: projectionRevenuFutur.trajectoire,
           }
         : undefined,
       trimestresEnfants: trimestresEnfantsPersonne,
@@ -862,6 +903,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         capitalCAVP: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || 0 : 0,
         classeCPRN: parseInt(cprnClasse) || 1,
         assietteCaisseLiberale: caisseADassietteDediee(caisseLiberale) ? parseFloat(assietteCaisseLiberale) || null : null,
+        trajectoire: projectionRevenuFutur.trajectoire,
       },
     }),
     [
@@ -1446,8 +1488,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 )}
               </p>
               <p className="text-xs text-muted-foreground">
-                Montants bruts annuels en euros constants {MILLESIME_COURANT.annee} (barèmes et revenus projetés au niveau
-                de {MILLESIME_COURANT.annee}).
+                Montants bruts annuels en euros constants {MILLESIME_COURANT.annee} (barèmes au niveau de{' '}
+                {MILLESIME_COURANT.annee}, revenus futurs : {libelleEvolutionRevenus(hypotheseRevenuFutur.evolution).toLowerCase()}).
               </p>
               {regimesPointsExclusCount > 0 && (
                 <p className="text-xs text-spark mt-1">

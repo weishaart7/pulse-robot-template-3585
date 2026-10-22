@@ -101,6 +101,28 @@ describe('appliquerProjectionStatut', () => {
   });
 });
 
+describe('appliquerProjectionStatut — évolution des revenus (A4)', () => {
+  const trajectoire = { evolution: 0.03, trimestreDebut: 0 };
+  it('fonctionnaire : TIB de la dernière année projetée, RAFP année par année', () => {
+    const r = appliquerProjectionStatut({ ...base, statut: 'fonctionnaire', fonctionPublique: fp, primesAnnuellesFP: 5000, trajectoire });
+    expect(r.fonctionPublique?.traitementIndiciaireBrut).toBeCloseTo(40000 * 1.03 ** 9, 6);
+    let rafp = 0;
+    for (let k = 0; k < 10; k++) rafp += pointsRAFPAnnuels(5000 * 1.03 ** k, 40000 * 1.03 ** k);
+    expect(r.fonctionPublique?.pointsRAFP).toBeCloseTo(1000 + rafp, 6);
+  });
+  it('libéral : points CNAVPL sur le revenu de chaque année', () => {
+    const r = appliquerProjectionStatut({ ...base, statut: 'liberal', cnavpl, trajectoire });
+    let points = 0;
+    for (let k = 0; k < 10; k++) points += pointsCNAVPLAnnuels(60000 * 1.03 ** k);
+    expect(r.cnavpl?.pointsCNAVPL).toBeCloseTo(8000 + points, 6);
+  });
+  it('évolution nulle : résultat inchangé', () => {
+    const r = appliquerProjectionStatut({ ...base, statut: 'fonctionnaire', fonctionPublique: fp, primesAnnuellesFP: 5000, trajectoire: { evolution: 0, trimestreDebut: 2 } });
+    expect(r.fonctionPublique?.traitementIndiciaireBrut).toBe(40000);
+    expect(r.fonctionPublique?.pointsRAFP).toBeCloseTo(1000 + 10 * pointsRAFPAnnuels(5000, 40000), 6);
+  });
+});
+
 describe('creerSimulateurDepart — statut actuel', () => {
   const contexte: ContexteSimulationDepart = {
     dateNaissance: { annee: 1970, mois: 3 },

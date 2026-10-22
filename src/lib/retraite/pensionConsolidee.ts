@@ -12,6 +12,7 @@
  * composants React).
  */
 
+import { TrajectoireRevenu, sommeSurAnneesProjetees } from './hypotheseRevenuFutur';
 import { RegimeDetecte, PeriodeCarriere } from './parseRIS';
 import { FamilyLink } from '@/services/familyService';
 import {
@@ -150,7 +151,7 @@ export interface EntreePensionConsolidee {
    * date d'effet (mêmes trimestres que la retraite de base). Absent = aucun
    * point futur (droits acquis au RIS seulement).
    */
-  projectionComplementaire?: { salaireAnnuel: number; trimestresProjetes: number };
+  projectionComplementaire?: { salaireAnnuel: number; trimestresProjetes: number; trajectoire?: TrajectoireRevenu };
   /**
    * Trimestres de majoration pour enfant de la personne (cf.
    * trimestresEnfants.ts). Absent = aucun. Les MDA du régime général entrent
@@ -175,6 +176,7 @@ export interface EntreePensionConsolidee {
     /** Notaires (CPRN) : classe de la section B ; assiette propre à la caisse (produits de l'office, commissions brutes). */
     classeCPRN?: number;
     assietteCaisseLiberale?: number | null;
+    trajectoire?: TrajectoireRevenu;
   };
 }
 
@@ -534,9 +536,12 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     ? pensionAgircArrco({
         pointsAcquis: pointsAgircArrco,
         pointsProjetes: projectionComplementaire
-          ? (pointsAgircArrcoAnnuels(projectionComplementaire.salaireAnnuel) *
-              projectionComplementaire.trimestresProjetes) /
-            4
+          ? sommeSurAnneesProjetees(
+              projectionComplementaire.trimestresProjetes,
+              projectionComplementaire.salaireAnnuel,
+              projectionComplementaire.trajectoire,
+              pointsAgircArrcoAnnuels
+            )
           : 0,
         coefficientAnticipation: coefficientAnticipationAgircArrco(
           decoteSurcote < 0,
@@ -564,6 +569,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     trimestresRequis,
     capitalCAVP: entree.caissesPoints?.capitalCAVP ?? 0,
     assietteCaisse: entree.caissesPoints?.assietteCaisseLiberale ?? null,
+    trajectoire: entree.caissesPoints?.trajectoire,
   });
   const totalPensionComplementaireAnnuelle =
     (detailAgircArrco?.pensionAnnuelle ?? 0) +

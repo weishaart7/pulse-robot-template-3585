@@ -11,6 +11,7 @@ import { useCarriereDetail } from '@/hooks/useCarriereDetail';
 import {
   revenuAnnuelHypotheseDerniereAnneeConnue,
   salaireProjectionComplementaire,
+  trajectoireRevenu,
 } from '@/lib/retraite/hypotheseRevenuFutur';
 import {
   separerRegimesPoints,
@@ -276,6 +277,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     enfantsAgircArrco: enfantsAgircArrco(familyLinks),
     statutActuel: statutActuelDepuisTexte(retraiteData.statut_actuel),
     revenuFutur: revenuHypothese,
+    trajectoire: trajectoireRevenu(retraiteData.evolution_revenus, new Date()),
     primesAnnuellesFP: retraiteData.primes_annuelles_fp ?? null,
     caisseLiberale: retraiteData.caisse_liberale ?? null,
     cnbf,

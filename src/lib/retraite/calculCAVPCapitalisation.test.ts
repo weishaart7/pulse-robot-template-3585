@@ -22,3 +22,17 @@ describe('CAVP — volet par capitalisation', () => {
     expect(renteCAVPCapitalisation(0, null, 0, 67).renteAnnuelle).toBe(0);
   });
 });
+
+describe('renteCAVPCapitalisation — évolution des revenus (A4)', () => {
+  it('évolution nulle : identique au revenu constant', () => {
+    const constant = renteCAVPCapitalisation(100000, 90000, 10, 67);
+    const nulle = renteCAVPCapitalisation(100000, 90000, 10, 67, { evolution: 0, trimestreDebut: 0 });
+    expect(nulle.capitalAuDepart).toBeCloseTo(constant.capitalAuDepart, 6);
+  });
+  it('+3 % : cotisation au moins égale chaque année, capital supérieur ou égal', () => {
+    const constant = renteCAVPCapitalisation(0, 30000, 10, 67);
+    const croissant = renteCAVPCapitalisation(0, 30000, 10, 67, { evolution: 0.03, trimestreDebut: 0 });
+    expect(croissant.capitalAuDepart).toBeGreaterThanOrEqual(constant.capitalAuDepart - 1e-6);
+  });
+});
+

@@ -15,7 +15,8 @@
  *   (même moteur) ; artiste (RAAP) non projeté.
  * - Fonctionnaire : trimestres liquidables FP ; points RAFP = 10 % des
  *   primes plafonnées à 20 % du TIB ÷ valeur d'acquisition, au prorata des
- *   trimestres projetés. TIB inchangé (euros constants).
+ *   trimestres projetés. TIB et primes suivent l'évolution des revenus
+ *   (pension sur le TIB de la dernière année projetée).
  * - Libéral : trimestres CNAVPL ; points de base = 557 × min(revenu, PASS) ÷
  *   PASS + 25 × min(revenu, 5 PASS) ÷ 5 PASS par année (cotisation
  *   proportionnelle au revenu), au prorata des trimestres projetés.
@@ -25,6 +26,7 @@
  *   sinon la projection est perdue et `avertissement` le signale.
  */
 
+import { TrajectoireRevenu, sommeSurAnneesProjetees, revenuFinDeProjection } from './hypotheseRevenuFutur';
 import type { DonneesFonctionPublique, DonneesCNAVPL } from './pensionConsolidee';
 import type { DonneesCNBF } from './calculCNBF';
 import { MILLESIME_COURANT, PARAMETRES_PROJECTION_STATUT } from './parametres';
@@ -114,6 +116,8 @@ export interface EntreeProjectionStatut {
   fonctionPublique: DonneesFonctionPublique | null;
   cnavpl: DonneesCNAVPL | null;
   cnbf?: DonneesCNBF | null;
+  /** Évolution des revenus futurs (absente = revenu constant). */
+  trajectoire?: TrajectoireRevenu;
 }
 
 export interface ResultatProjectionStatut {
@@ -166,17 +170,21 @@ export function appliquerProjectionStatut(entree: EntreeProjectionStatut): Resul
   }
   if (trimestresProjetes <= 0) return sansProjection;
 
-  const annees = trimestresProjetes / 4;
   if (statut === 'fonctionnaire') {
     if (!fonctionPublique) {
       return { ...sansProjection, avertissement: 'Statut fonctionnaire : renseignez la fonction publique pour projeter la carrière.' };
     }
-    const pointsRAFPProjetes =
-      annees * pointsRAFPAnnuels(entree.primesAnnuellesFP ?? 0, fonctionPublique.traitementIndiciaireBrut);
+    // Primes et TIB suivent l'évolution ; pension sur le TIB de la dernière année projetée.
+    const tib = fonctionPublique.traitementIndiciaireBrut;
+    const primes = entree.primesAnnuellesFP ?? 0;
+    const pointsRAFPProjetes = sommeSurAnneesProjetees(trimestresProjetes, 1, entree.trajectoire, (facteur) =>
+      pointsRAFPAnnuels(primes * facteur, tib * facteur)
+    );
     return {
       ...sansProjection,
       fonctionPublique: {
         ...fonctionPublique,
+        traitementIndiciaireBrut: revenuFinDeProjection(tib, trimestresProjetes, entree.trajectoire),
         trimestresLiquidables: fonctionPublique.trimestresLiquidables + trimestresProjetes,
         pointsRAFP: fonctionPublique.pointsRAFP + pointsRAFPProjetes,
       },
@@ -188,7 +196,12 @@ export function appliquerProjectionStatut(entree: EntreeProjectionStatut): Resul
     if (!cnavpl) {
       return { ...sansProjection, avertissement: 'Statut libéral : renseignez la CNAVPL pour projeter la carrière.' };
     }
-    const pointsCNAVPLProjetes = annees * pointsCNAVPLAnnuels(revenuAnnuel ?? 0);
+    const pointsCNAVPLProjetes = sommeSurAnneesProjetees(
+      trimestresProjetes,
+      revenuAnnuel ?? 0,
+      entree.trajectoire,
+      pointsCNAVPLAnnuels
+    );
     return {
       ...sansProjection,
       cnavpl: {

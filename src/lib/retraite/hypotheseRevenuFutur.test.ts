@@ -6,6 +6,12 @@ import {
   anneesPasseesSansDonnees,
   periodesSynthetiquesProjetees,
   calculerProjectionRevenuFutur,
+  trajectoireRevenu,
+  revenuAnneeProjetee,
+  sommeSurAnneesProjetees,
+  revenuFinDeProjection,
+  libelleEvolutionRevenus,
+  TrajectoireRevenu,
 } from './hypotheseRevenuFutur';
 import { ResultatTrimestresCotisesEtAssimiles } from './calculTrimestres';
 import { PeriodeCarriere } from './parseRIS';
@@ -235,5 +241,52 @@ describe('calculerProjectionRevenuFutur', () => {
     );
     expect(resultatAvecRevenuManuelIgnore).toEqual(resultatSansRevenuManuel);
     expect(resultatAvecRevenuManuelIgnore.trimestresValidesProjetes).toBeGreaterThan(0);
+  });
+});
+
+describe('évolution des revenus futurs (A4)', () => {
+  const traj = (evolution: number, trimestreDebut = 0): TrajectoireRevenu => ({ evolution, trimestreDebut });
+
+  it('trajectoire : trimestre civil en cours comme premier trimestre projeté', () => {
+    expect(trajectoireRevenu(0.03, new Date(Date.UTC(2026, 9, 22)))).toEqual({ evolution: 0.03, trimestreDebut: 3 });
+    expect(trajectoireRevenu(null, new Date(Date.UTC(2026, 0, 1))).evolution).toBe(0);
+  });
+  it('revenu de l\'année de rang k : base × (1 + g)^k', () => {
+    expect(revenuAnneeProjetee(50000, 0.03, 0)).toBe(50000);
+    expect(revenuAnneeProjetee(50000, 0.03, 2)).toBeCloseTo(50000 * 1.03 ** 2, 6);
+  });
+  it('évolution nulle : années × f(revenu constant)', () => {
+    expect(sommeSurAnneesProjetees(40, 50000, traj(0), (r) => r)).toBeCloseTo(10 * 50000, 6);
+    expect(sommeSurAnneesProjetees(40, 50000, undefined, (r) => r)).toBeCloseTo(10 * 50000, 6);
+  });
+  it('+3 % : année en cours partielle (2 trimestres), puis années pleines', () => {
+    // Début au 3e trimestre : 2 trimestres au rang 0, 4 au rang 1, 1 au rang 2.
+    const somme = sommeSurAnneesProjetees(7, 50000, traj(0.03, 2), (r) => r);
+    expect(somme).toBeCloseTo(0.5 * 50000 + 1 * 50000 * 1.03 + 0.25 * 50000 * 1.03 ** 2, 6);
+  });
+  it('f non linéaire évaluée année par année (plafond)', () => {
+    const plafond = (r: number) => Math.min(r, 51000);
+    expect(sommeSurAnneesProjetees(12, 50000, traj(0.03), plafond)).toBeCloseTo(50000 + 51000 + 51000, 6);
+  });
+  it('revenu de fin de projection : rang de la dernière année projetée', () => {
+    expect(revenuFinDeProjection(40000, 7, traj(0.015, 2))).toBeCloseTo(40000 * 1.015 ** 2, 6);
+    expect(revenuFinDeProjection(40000, 7, traj(0))).toBe(40000);
+  });
+  it('périodes synthétiques : revenu de chaque année selon son rang', () => {
+    const periodes = periodesSynthetiquesProjetees(
+      [
+        { annee: 2026, trimestres: 1, premierTrimestre: 3, dernierTrimestre: 3 },
+        { annee: 2027, trimestres: 4, premierTrimestre: 0, dernierTrimestre: 3 },
+      ],
+      40000,
+      0.03,
+      2026
+    );
+    expect(periodes[0].revenu).toBeCloseTo(10000, 6);
+    expect(periodes[1].revenu).toBeCloseTo(40000 * 1.03, 6);
+  });
+  it('libellés', () => {
+    expect(libelleEvolutionRevenus(0)).toBe('Stable');
+    expect(libelleEvolutionRevenus(0.015)).toBe('+1,5 % / an');
   });
 });

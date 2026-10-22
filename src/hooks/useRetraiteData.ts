@@ -36,6 +36,7 @@ export interface RetraiteData {
   cprn_classe?: number;
   /** Assiette propre à la caisse libérale : produits de l'office (CPRN C), commissions brutes (CAVAMAC). */
   assiette_caisse_liberale?: number | null;
+  evolution_revenus?: number;
   /** Primes annuelles d’un fonctionnaire (assiette RAFP). */
   primes_annuelles_fp?: number | null;
   // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /

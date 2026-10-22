@@ -2490,6 +2490,7 @@ export type Database = {
           cavp_capital_capitalisation: number | null
           cprn_classe: number
           assiette_caisse_liberale: number | null
+          evolution_revenus: number
           liberal_conventionne: boolean
           primes_annuelles_fp: number | null
           updated_at: string
@@ -2537,6 +2538,7 @@ export type Database = {
           cavp_capital_capitalisation?: number | null
           cprn_classe?: number
           assiette_caisse_liberale?: number | null
+          evolution_revenus?: number
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string
@@ -2584,6 +2586,7 @@ export type Database = {
           cavp_capital_capitalisation?: number | null
           cprn_classe?: number
           assiette_caisse_liberale?: number | null
+          evolution_revenus?: number
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string

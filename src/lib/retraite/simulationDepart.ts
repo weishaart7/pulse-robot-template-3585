@@ -34,7 +34,7 @@ import {
 } from './calcul';
 import { RegimeDetecte } from './parseRIS';
 import { ResultatTrimestresCotisesEtAssimiles } from './calculTrimestres';
-import { trimestresProjetesParAnnee } from './hypotheseRevenuFutur';
+import { TrajectoireRevenu, sommeSurAnneesProjetees, trimestresProjetesParAnnee } from './hypotheseRevenuFutur';
 import {
   calculerResultatFonctionPublique,
   calculerResultatCNAVPL,
@@ -73,6 +73,8 @@ export interface ContexteSimulationDepart {
   statutActuel?: StatutActuel;
   /** Revenu futur (libéral : points CNAVPL) et primes (fonctionnaire : RAFP). */
   revenuFutur?: number | null;
+  /** Évolution des revenus futurs (absente = revenu constant). */
+  trajectoire?: TrajectoireRevenu;
   primesAnnuellesFP?: number | null;
   /** Retraite de base des avocats (CNBF), absente = non affilié. */
   cnbf?: DonneesCNBF | null;
@@ -209,6 +211,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       trimestresRequis: dateNaissance ? trimestresRequisPourGeneration(dateNaissance, dateEffet) : undefined,
       capitalCAVP: ctx.capitalCAVP ?? 0,
       assietteCaisse: ctx.assietteCaisseLiberale ?? null,
+      trajectoire: ctx.trajectoire,
     });
     return (
       caisses.total +
@@ -232,7 +235,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       pointsAcquis: pointsAgircArrco,
       pointsProjetes:
         ctx.salaireComplementaire !== null && projeterAgircArrco
-          ? (pointsAgircArrcoAnnuels(ctx.salaireComplementaire) * trimestresProjetes) / 4
+          ? sommeSurAnneesProjetees(trimestresProjetes, ctx.salaireComplementaire, ctx.trajectoire, pointsAgircArrcoAnnuels)
           : 0,
       coefficientAnticipation: coefficientAnticipationAgircArrco(decoteBase < 0, ageDepartAnnees, trimestresManquants),
       nombreEnfantsEligibles: ctx.nombreEnfantsEligibles,
@@ -259,6 +262,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       fonctionPublique,
       cnavpl,
       cnbf: ctx.cnbf ?? null,
+      trajectoire: ctx.trajectoire,
     });
     const trimestresCNBF = projection.cnbf?.trimestresCNBF ?? 0;
     const trimestresValidesProjetes = projection.trimestresValidesRG + (enfants?.rg ?? 0);

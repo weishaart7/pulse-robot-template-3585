@@ -26,6 +26,79 @@ import { calculerSAM } from './calculSAM';
 
 export type ModeHypotheseRevenuFutur = 'derniere_annee_connue' | 'revenu_moyen_projete';
 
+/** Évolutions réelles (hors inflation) proposées pour les revenus futurs. */
+export const EVOLUTIONS_REVENUS = [0, 0.015, 0.03] as const;
+
+/**
+ * Trajectoire des revenus futurs (moteur en euros constants : PASS, valeurs
+ * de point et classes gelés, donc croissance réelle). Revenu de l'année de
+ * rang k (0 = année en cours) = revenu de base × (1 + evolution)^k.
+ * `trimestreDebut` : trimestre civil en cours (0-3), premier trimestre projeté.
+ */
+export interface TrajectoireRevenu {
+  evolution: number;
+  trimestreDebut: number;
+}
+
+/** « Stable », « +1,5 % / an », « +3 % / an ». */
+export function libelleEvolutionRevenus(evolution: number): string {
+  return evolution === 0 ? 'Stable' : `+${(evolution * 100).toLocaleString('fr-FR')} % / an`;
+}
+
+export function trajectoireRevenu(evolution: number | null | undefined, aujourdHui: Date): TrajectoireRevenu {
+  return { evolution: evolution ?? 0, trimestreDebut: Math.floor(aujourdHui.getUTCMonth() / 3) };
+}
+
+/** Revenu de l'année de rang `rang` (0 = année en cours). */
+export function revenuAnneeProjetee(revenuBase: number, evolution: number, rang: number): number {
+  return revenuBase * Math.pow(1 + evolution, Math.max(0, rang));
+}
+
+/**
+ * Répartit `trimestres` projetés en années civiles consécutives à partir du
+ * trimestre en cours : [{ rang, fraction d'année }]. Sans trajectoire, une
+ * seule tranche de rang 0 (revenu constant).
+ */
+function tranchesAnnuelles(trimestres: number, trajectoire?: TrajectoireRevenu): { rang: number; fraction: number }[] {
+  const total = Math.max(0, trimestres);
+  if (!trajectoire || trajectoire.evolution === 0) return total > 0 ? [{ rang: 0, fraction: total / 4 }] : [];
+  const tranches: { rang: number; fraction: number }[] = [];
+  let reste = total;
+  let capacite = 4 - trajectoire.trimestreDebut;
+  for (let rang = 0; reste > 0; rang++) {
+    const pris = Math.min(reste, capacite);
+    tranches.push({ rang, fraction: pris / 4 });
+    reste -= pris;
+    capacite = 4;
+  }
+  return tranches;
+}
+
+/**
+ * Σ fraction × f(revenu de l'année) sur les années projetées : remplace
+ * « années × f(revenu constant) » pour les droits proportionnels au revenu
+ * (points, cotisations). Identique à `trimestres / 4 × f(revenuBase)` à
+ * évolution nulle.
+ */
+export function sommeSurAnneesProjetees(
+  trimestres: number,
+  revenuBase: number,
+  trajectoire: TrajectoireRevenu | undefined,
+  f: (revenu: number) => number
+): number {
+  return tranchesAnnuelles(trimestres, trajectoire).reduce(
+    (total, { rang, fraction }) => total + fraction * f(revenuAnneeProjetee(revenuBase, trajectoire?.evolution ?? 0, rang)),
+    0
+  );
+}
+
+/** Revenu de la dernière année projetée (TIB des 6 derniers mois en fonction publique). */
+export function revenuFinDeProjection(revenuBase: number, trimestres: number, trajectoire?: TrajectoireRevenu): number {
+  const tranches = tranchesAnnuelles(trimestres, trajectoire);
+  const rang = tranches.length > 0 ? tranches[tranches.length - 1].rang : 0;
+  return revenuAnneeProjetee(revenuBase, trajectoire?.evolution ?? 0, rang);
+}
+
 /**
  * Dernière année du `parAnnee` (triée croissante par l'appelant, cf.
  * `trimestresCotisesEtAssimilesDepuisCarriere()`) ayant validé au moins un
@@ -120,14 +193,17 @@ export function anneesPasseesSansDonnees(
 /**
  * Construit des `PeriodeCarriere` synthétiques (une par année projetée,
  * couvrant les trimestres civils projetés de l'année, revenu au prorata
- * `revenuAnnuel × trimestres / 4`, régime de base) pour injection dans
+ * `revenu de l'année × trimestres / 4`, régime de base ; revenu de l'année
+ * selon l'évolution, rang 0 = `anneeReference`) pour injection dans
  * `calculerSAM()` aux côtés des périodes réelles du RIS — seul usage prévu
  * de ces périodes synthétiques : ne jamais les persister ni les mélanger au
  * `detailCarriere` affiché/enregistré sur l'écran Carrière.
  */
 export function periodesSynthetiquesProjetees(
   projection: TrimestresProjetesAnnee[],
-  revenuAnnuel: number
+  revenuAnnuel: number,
+  evolution = 0,
+  anneeReference = projection[0]?.annee ?? 0
 ): PeriodeCarriere[] {
   const deuxChiffres = (n: number) => String(n).padStart(2, '0');
   return projection.map(({ annee, trimestres, premierTrimestre, dernierTrimestre }) => {
@@ -138,7 +214,7 @@ export function periodesSynthetiquesProjetees(
       typeActivite: 'employeur',
       dateDebut: `${annee}-${deuxChiffres(premierTrimestre * 3 + 1)}-01`,
       dateFin: `${annee}-${deuxChiffres(moisFin)}-${deuxChiffres(jourFin)}`,
-      revenu: (revenuAnnuel * trimestres) / 4,
+      revenu: (revenuAnneeProjetee(revenuAnnuel, evolution, annee - anneeReference) * trimestres) / 4,
       estChiffreAffaires: false,
       regimes: ["L'Assurance retraite"],
     };
@@ -156,6 +232,8 @@ export interface ProjectionRevenuFutur {
   trimestresProjetesJusquADateEffet: number;
   /** Revenu annuel hypothèse retenu (plafonné au PASS en mode RIS), `null` si indéterminé. */
   revenuHypothese: number | null;
+  /** Évolution des revenus retenue, à transmettre aux régimes projetés. */
+  trajectoire: TrajectoireRevenu;
 }
 
 /**
@@ -174,7 +252,8 @@ export function calculerProjectionRevenuFutur(
   salaireAnnuelMoyen: number,
   modeHypothese: ModeHypotheseRevenuFutur,
   revenuHypotheseManuel: number | null,
-  aujourdHui: Date
+  aujourdHui: Date,
+  evolution = 0
 ): ProjectionRevenuFutur {
   const dateEffet = dateNaissance ? dateEffetDepartAgeLegal(dateNaissance, aujourdHui) : null;
   const { parAnnee } = trimestresCotisesEtAssimilesDepuisCarriere(detailCarriere);
@@ -185,6 +264,7 @@ export function calculerProjectionRevenuFutur(
     anneesPasseesSansDonnees: anneesPasseesSansDonnees(parAnnee, aujourdHui),
     trimestresProjetesJusquADateEffet: 0,
     revenuHypothese: null as number | null,
+    trajectoire: trajectoireRevenu(evolution, aujourdHui),
   };
   if (!dateNaissance || !dateEffet) return sansProjection;
 
@@ -199,7 +279,7 @@ export function calculerProjectionRevenuFutur(
   }
 
   const salaireAnnuelMoyenProjete = calculerSAM(
-    [...detailCarriere, ...periodesSynthetiquesProjetees(projection, revenuHypothese)],
+    [...detailCarriere, ...periodesSynthetiquesProjetees(projection, revenuHypothese, evolution, aujourdHui.getUTCFullYear())],
     dateNaissance.annee,
     undefined,
     dateEffet.getUTCFullYear()

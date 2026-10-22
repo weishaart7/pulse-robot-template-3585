@@ -63,6 +63,17 @@ uniquement applicatif via `familyService`.
   d'effet unique (cf. §2) et affichée à l'écran. Même pipeline (`calculerPensionConsolidee()`,
   unifié depuis le 2026-08-18) avec la projection d'une hypothèse de revenu futur du trimestre en
   cours jusqu'à cette date d'effet.
+- **Évolution des revenus futurs** (Carrière, sous l'hypothèse de revenu) : stable, +1,5 % ou +3 % par
+  an, persistée dans `retraite_data.evolution_revenus` (0 par défaut). Croissance réelle, hors
+  inflation : le moteur reste en euros constants (PASS, valeurs de point, classes gelés). Revenu de
+  l'année de rang k = revenu hypothèse × (1 + g)^k, rang 0 = année en cours. Appliquée à toutes les
+  projections : SAM (périodes synthétiques année par année, plafond PASS de chaque année), points
+  Agirc-Arrco (salaire brut saisi compris), RCI, Ircantec, CNAVPL, caisses à points (classes réévaluées
+  chaque année, assiette propre CPRN/CAVAMAC comprise), cotisation CAVP capitalisation, RAFP. Fonction
+  publique : TIB de la dernière année projetée (avancement approché). Chaque date de départ de
+  l'Optimisation suit sa propre trajectoire. Sans effet sur la vérification de carrière (passé).
+  Fonctions : `trajectoireRevenu()`, `sommeSurAnneesProjetees()`, `revenuFinDeProjection()` dans
+  `hypotheseRevenuFutur.ts` ; à évolution nulle, résultat identique au revenu constant.
 - **Optimisation** simule un scénario de date de liquidation (sélecteur de date, pas un slider d'âge
   depuis le 2026-08-13) avec le même moteur de décote/surcote, plus un simulateur de rachat de
   trimestres (coût, gain de pension, point mort) — sandbox non persistée.
@@ -486,7 +497,8 @@ uniquement applicatif via `familyService`.
   (coefficient CNAV) — règle CNAV. L'ordre inverse, en place jusqu'au 2026-09-24, comparait un
   montant revalorisé à un PASS nominal ancien et sous-estimait le SAM des années au plafond ou proches
   du plafond. PASS 2026 (48 060 €) ajouté ; au-delà de la dernière année connue (années projetées),
-  `passPourAnnee()` retient le dernier PASS connu (revenus projetés en euros constants).
+  `passPourAnnee()` retient le dernier PASS connu (revenus projetés en euros constants, évolution
+  éventuelle réelle, cf. §1).
   ⚠️ Le SAM est calculé à l'import RIS puis persisté (`retraite_data.salaire_annuel_moyen`) : les
   dossiers importés avant cette correction gardent un SAM erroné tant que le RIS n'est pas réimporté
   (ou le SAM ressaisi).
@@ -532,7 +544,8 @@ uniquement applicatif via `familyService`.
     et SAM projetés). Points Agirc-Arrco futurs pour le salarié du privé, Ircantec pour le contractuel
     public, RCI pour l'indépendant (moteur des caisses à points) ; RAAP de l'artiste-auteur non projeté ;
   - fonctionnaire : trimestres liquidables FP, points RAFP = 10 % des primes plafonnées à 20 % du TIB
-    ÷ 1,4596 € (valeur d'acquisition 2026), TIB inchangé ;
+    ÷ 1,4596 € (valeur d'acquisition 2026), TIB et primes suivant l'évolution des revenus (pension
+    sur le TIB de la dernière année projetée) ;
   - libéral : trimestres CNAVPL, points de base = 557 × min(revenu, PASS) ÷ PASS + 25 × min(revenu,
     5 PASS) ÷ 5 PASS par an ; revenu = revenu de l'hypothèse de revenu futur ;
   - avocat : rien n'est projeté avant la phase CNBF (signalé).
@@ -816,6 +829,12 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   « tous régimes »** utilisé par la bascule de dénominateur du MICO palier 1 — un polypensionné dans
   un tel régime reste à tort au Cas 1 (dénominateur = durée requise) même si son total réel dépasse
   cette durée.
+- **Évolution des revenus dans l'Optimisation** : `simulationDepart.ts` reçoit le SAM du RIS
+  (`salaireAnnuelMoyenProjete = salaireAnnuelMoyen`), sans les années projetées : l'évolution y
+  joue sur les points (Agirc-Arrco, caisses, CNAVPL, RAFP) et le TIB, pas sur le SAM du régime
+  général. Limite antérieure à A4, non corrigée.
+- **Deux taux voisins dans l'Optimisation** : l'actualisation (0-3 %) de la décision de départ et
+  l'évolution des revenus (0 / 1,5 / 3 %) sont distinctes ; l'évolution se règle dans Carrière.
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
