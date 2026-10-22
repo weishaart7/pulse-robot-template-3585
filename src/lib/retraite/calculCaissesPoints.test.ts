@@ -8,8 +8,9 @@ import {
   reversionCaissesPoints,
   abattementParTrimestres,
   EntreeCaissesPoints,
+  majorationEnfantsPct,
 } from './calculCaissesPoints';
-import { PARAMETRES_CAISSES_POINTS } from './parametres';
+import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS } from './parametres';
 
 const { carmf, carmfAsv, cipav } = PARAMETRES_CAISSES_POINTS;
 
@@ -59,7 +60,7 @@ describe('calculerCaissesPoints', () => {
   const base: EntreeCaissesPoints = {
     regimesPoints: [
       { nom: 'CARMF', type: 'points', points: 200 },
-      { nom: 'IRCANTEC', type: 'points', points: 100, valeurPoint: 0.5 },
+      { nom: 'RAAP', type: 'points', points: 100, valeurPoint: 0.5 },
     ],
     dateNaissance: { annee: 1970, mois: 3 },
     dateEffet: new Date(Date.UTC(2034, 3, 1)), // 64 ans, âge légal
@@ -75,7 +76,7 @@ describe('calculerCaissesPoints', () => {
     const r = calculerCaissesPoints(base);
     expect(r.details).toHaveLength(1);
     expect(r.total).toBeCloseTo(200 * 77.14, 6);
-    expect(r.regimesNonReconnus.map((x) => x.nom)).toEqual(['IRCANTEC']);
+    expect(r.regimesNonReconnus.map((x) => x.nom)).toEqual(['RAAP']);
   });
   it('libéral CARMF conventionné : points projetés et ASV ajoutée', () => {
     const r = calculerCaissesPoints({
@@ -250,5 +251,64 @@ describe('RCI 2026', () => {
   it('indépendant : points RCI projetés sur le revenu futur', () => {
     const r = calculerCaissesPoints({ ...base, caisseLiberale: 'RCI', revenuAnnuel: 50000, trimestresProjetes: 40 });
     expect(r.details[0].pointsProjetes).toBeCloseTo(10 * pointsAnnuelsCaisse(rci, 50000), 6);
+  });
+});
+
+describe('Ircantec (contractuels publics)', () => {
+  const { ircantec } = PARAMETRES_CAISSES_POINTS;
+  const pass = MILLESIME_COURANT.pass;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'IRCANTEC', type: 'points', points: 2000, valeurPoint: 0.5 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2034, 3, 1)), // 64 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: null,
+    conventionne: false,
+    revenuAnnuel: null,
+    trimestresProjetes: 0,
+    trimestresManquants: 0,
+  };
+
+  it('reconnue au RIS, valeur du point 2026', () => {
+    expect(caisseDuRegime('Ircantec')).toBe('ircantec');
+    const r = calculerCaissesPoints(base);
+    expect(r.regimesNonReconnus).toHaveLength(0);
+    expect(r.total).toBeCloseTo(2000 * 0.56053, 6);
+  });
+  it('points : 5,60 % jusqu’au PASS, 15,60 % de 1 à 8 PASS ÷ salaire de référence', () => {
+    expect(pointsAnnuelsCaisse(ircantec, 50000)).toBeCloseTo((pass * 0.056 + (50000 - pass) * 0.156) / 5.787, 6);
+    expect(pointsAnnuelsCaisse(ircantec, 20 * pass)).toBeCloseTo((pass * 0.056 + 7 * pass * 0.156) / 5.787, 6);
+    // Exemple Fidroit 2025 (PASS 47 100 €, salaire de référence 5,735 €) : 539 points.
+    expect(Math.round((47100 * 0.056 + 2900 * 0.156) / 5.735)).toBe(539);
+  });
+  it('minoration Agirc-Arrco seulement si la base est minorée, la plus favorable', () => {
+    expect(calculerCaissesPoints(base).details[0].coefficientAge).toBe(1);
+    // 64 ans, 4 trimestres manquants : âge 0,88, trimestres 0,96 → 0,96.
+    expect(calculerCaissesPoints({ ...base, trimestresManquants: 4 }).details[0].coefficientAge).toBeCloseTo(0.96, 6);
+    // Plus de 20 trimestres manquants : grille par âge seule.
+    expect(calculerCaissesPoints({ ...base, trimestresManquants: 30 }).details[0].coefficientAge).toBeCloseTo(0.88, 6);
+  });
+  it('surcote plafonnée aux trimestres en excédent, puis 0,75 % après 67 ans', () => {
+    expect(coefficientAgeCaisse(ircantec, 66, 64, 3)).toBeCloseTo(1 + 3 * 0.00625, 6);
+    expect(coefficientAgeCaisse(ircantec, 66, 64, 40)).toBeCloseTo(1 + 8 * 0.00625, 6);
+    expect(coefficientAgeCaisse(ircantec, 68, 64, 40)).toBeCloseTo(1 + 12 * 0.00625 + 4 * 0.0075, 6);
+    expect(coefficientAgeCaisse(ircantec, 68, 64, 0)).toBeCloseTo(1 + 4 * 0.0075, 6);
+  });
+  it('majoration enfants : 10 % à 3, +5 % par enfant, 30 % au plus', () => {
+    expect(majorationEnfantsPct(ircantec, 2)).toBe(0);
+    expect(majorationEnfantsPct(ircantec, 4)).toBe(15);
+    expect(majorationEnfantsPct(ircantec, 9)).toBe(30);
+    const r = calculerCaissesPoints({ ...base, nombreEnfantsEligibles: 4 });
+    expect(r.details[0].majorationEnfants).toBeCloseTo(2000 * 0.56053 * 0.15, 6);
+  });
+  it('sous 300 points : capital = points × salaire de référence, hors rente', () => {
+    const r = calculerCaissesPoints({ ...base, regimesPoints: [{ nom: 'IRCANTEC', type: 'points', points: 250 }] });
+    expect(r.details[0].pensionAnnuelle).toBe(0);
+    expect(r.details[0].capital).toBeCloseTo(250 * 5.787, 6);
+  });
+  it('contractuel : points projetés sur le revenu futur, réversion 50 %', () => {
+    const r = calculerCaissesPoints({ ...base, caisseLiberale: 'IRCANTEC', revenuAnnuel: 40000, trimestresProjetes: 40 });
+    expect(r.details[0].pointsProjetes).toBeCloseTo(10 * pointsAnnuelsCaisse(ircantec, 40000), 6);
+    expect(reversionCaissesPoints(r.details)).toBeCloseTo(r.total * 0.5, 6);
   });
 });

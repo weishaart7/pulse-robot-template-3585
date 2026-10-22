@@ -1162,6 +1162,56 @@
       "surcote": [],
       "majorationTroisEnfantsPct": 0,
       "tauxReversion": 0.6
+    },
+    "ircantec": {
+      "nom": "Ircantec (contractuels publics)",
+      "motifNom": "IRCANTEC",
+      "caisseLiberale": "IRCANTEC",
+      "source": "Règles : Fidroit « Retraite des agents contractuels de la fonction publique » 2025 (§3.2.1 taux théoriques 5,60 % jusqu'au PASS et 15,60 % de 1 à 8 PASS ; §5.3.1 points = cotisation ÷ salaire de référence ; §5.3.5 surcote 0,625 %/trimestre au-delà de la durée requise puis 0,75 %/trimestre ; §5.3.6 majoration enfants 10 % à 30 % ; §5.4 capital sous 300 points = points × salaire de référence). Valeurs 2026 : ircantec.retraites.fr (point 0,56053 € au 01/01/2026, salaire de référence 5,787 €). Âge sans minoration et seconde surcote à 67 ans (arrêté du 21/06/2011, CFDT Retraités) ; grille de minoration par âge identique à l'Agirc-Arrco (CFDT Retraités), grille par trimestres manquants supposée identique (à confirmer, tableau fourni sur demande) ; seconde surcote additive (à confirmer) ; réversion 50 % (à confirmer, condition d'âge du conjoint non modélisée)",
+      "valeurServicePoint": 0.56053,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 5.787,
+        "tranches": [
+          {
+            "jusquAPass": 1,
+            "taux": 0.056
+          },
+          {
+            "jusquAPass": 8,
+            "taux": 0.156
+          }
+        ]
+      },
+      "anticipationAgircArrco": {
+        "ageTauxPlein": 67
+      },
+      "capital": {
+        "seuilPoints": 300,
+        "prixParPoint": 5.787
+      },
+      "surcote": [
+        {
+          "depuis": "ageLegal",
+          "jusquA": 67,
+          "tauxParTrimestre": 0.00625,
+          "conditionDuree": true
+        },
+        {
+          "depuis": 67,
+          "jusquA": 120,
+          "tauxParTrimestre": 0.0075
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "majorationEnfantsBaremePct": {
+        "3": 10,
+        "4": 15,
+        "5": 20,
+        "6": 25,
+        "7": 30
+      },
+      "tauxReversion": 0.5
     }
   },
   "cnbf": {

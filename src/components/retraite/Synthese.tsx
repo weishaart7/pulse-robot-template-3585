@@ -486,7 +486,7 @@ const BandeConjointSurvivant = ({ hasConjoint, nomUtilisateur, nomConjoint, stat
         </p>
         <p>
           Non modélisés : majoration de 11,1 % des petites pensions après 65 ans, partage entre ex-conjoints,
-          réversion des autres régimes à points (RCI, Ircantec…). Réversion CNAVPL alignée sur le régime général, à
+          réversion des régimes à points non paramétrés. Réversion CNAVPL alignée sur le régime général, à
           confirmer.
         </p>
       </Notes>

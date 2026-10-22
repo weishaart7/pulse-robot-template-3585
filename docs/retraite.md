@@ -151,6 +151,16 @@ uniquement applicatif via `familyService`.
     manquant jusqu'à 12 puis 1,25 %, 20 trimestres et 22 % au plus, trimestres retenus = plus
     favorable entre durée tous régimes et âge de 67 ans (`abattementTrimestres`) ; pas de majoration
     pour enfants ; réversion 60 %. Statut indépendant : points projetés sur le revenu futur.
+  - *Ircantec* (contractuels publics) : 5,60 % jusqu'au PASS et 15,60 % de 1 à 8 PASS (taux
+    théoriques) ÷ salaire de référence 5,787 €, valeur 0,56053 € (ircantec.retraites.fr, 2026) ;
+    minoration seulement si la base est minorée, par les grilles d'anticipation Agirc-Arrco (âge de
+    référence 67 ans et trimestres manquants, la plus favorable, `anticipationAgircArrco`) ; surcote de
+    0,625 % par trimestre au-delà de la durée requise entre l'âge légal et 67 ans (`conditionDuree`),
+    puis 0,75 % par trimestre, additive ; majoration de 10 % pour 3 enfants à 30 % pour 7 et plus
+    (`majorationEnfantsBaremePct`) ; sous 300 points (après minoration ou surcote), capital = points ×
+    salaire de référence (`capital.prixParPoint`), exclu de la rente ; réversion 50 %. Statut
+    contractuel public : points projetés sur le revenu futur ; pas d'entrée au sélecteur « Caisse
+    complémentaire » (caisse déduite du statut).
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
   (migration `20261022160000`), saisie dans le panneau « Statut actuel » de Carrière. Forfait 2026 de
@@ -160,8 +170,9 @@ uniquement applicatif via `familyService`.
   régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
   complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
   majoration, ligne « CNBF » de la Synthèse).
-  - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
-    évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
+  - Non couverts : caisses à points non paramétrées (CARPIMKO, CARCDSF, CAVP, CARPV, CAVOM, CPRN,
+    CAVAMAC, RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
+    (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
   carte « Revenu net à la retraite » de `Synthese.tsx` :
   - *Prélèvements sociaux* : tranche de CSG (0 / 3,8 / 6,6 / 8,3 %) selon le RFR et le nombre de parts
@@ -425,8 +436,8 @@ uniquement applicatif via `familyService`.
   Statut unique conservé jusqu'au départ ; les trimestres projetés (carrière continue) vont au régime
   du statut :
   - salarié du privé, contractuel public, indépendant SSI, artiste-auteur : régime général (trimestres
-    et SAM projetés). Points Agirc-Arrco futurs pour le seul salarié du privé ; les complémentaires des
-    autres (Ircantec, RCI, RAAP) restent au RIS jusqu'à la phase 3.2 ;
+    et SAM projetés). Points Agirc-Arrco futurs pour le salarié du privé, Ircantec pour le contractuel
+    public, RCI pour l'indépendant (moteur des caisses à points) ; RAAP de l'artiste-auteur non projeté ;
   - fonctionnaire : trimestres liquidables FP, points RAFP = 10 % des primes plafonnées à 20 % du TIB
     ÷ 1,4596 € (valeur d'acquisition 2026), TIB inchangé ;
   - libéral : trimestres CNAVPL, points de base = 557 × min(revenu, PASS) ÷ PASS + 25 × min(revenu,
@@ -615,6 +626,12 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
+- **Ircantec — valeurs à confirmer et limites.** Grille de minoration par trimestres manquants supposée
+  identique à l'Agirc-Arrco (tableau officiel fourni sur demande par l'Ircantec ; grille par âge
+  vérifiée) ; surcote après 67 ans additive à la première ; réversion 50 % (condition d'âge du conjoint
+  non modélisée). Non modélisés : points gratuits (maladie, chômage, congé parental, service
+  militaire), rachats, élus locaux et CAREL/FONPEL, assiette aux 2/3 de certains médecins
+  hospitaliers, titulaires sous 28 h affiliés à l'Ircantec, hausse des taux à partir de 2028.
 - **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
   partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
   éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation
@@ -703,8 +720,7 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
     faute de données structurées (pas de valeur « rachat » dans `retraite_carriere_detail.type_activite`).
     L'exclusion d'une année uniquement assimilée est en place, avec la catégorie `'maternite'` (§3).
   - **Régimes hors périmètre de l'outil** : SSI hors alignement CNAVPL implicite, CNBF (hors majoration
-    enfants/surcote, testées mais sans moteur de pension de base dédié), artistes-auteurs, agents
-    contractuels/IRCANTEC en tant que régime distinct, MSA agricole non-salarié, régimes étrangers —
+    enfants/surcote, testées mais sans moteur de pension de base dédié), artistes-auteurs, MSA agricole non-salarié, régimes étrangers —
     périmètre produit non défini, pas une non-conformité à une règle que l'outil prétendrait couvrir.
   - **Formules MIGA antérieures à 2014** et **articulation MICO/MIGA polypensionné fonction
     publique** : non pertinentes pour une simulation prospective / bloquées par des décrets

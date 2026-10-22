@@ -32,12 +32,20 @@
  *   trimestre après, dans la limite de 20 trimestres ; sous 500 points
  *   (après minoration ou surcote), versement unique de 15 annuités, exclu de
  *   la pension annuelle.
+ * - Ircantec (contractuels publics, statut `contractuel_public`) : 5,60 %
+ *   jusqu'au PASS et 15,60 % de 1 à 8 PASS ÷ salaire de référence ;
+ *   minoration selon les grilles d'anticipation Agirc-Arrco si la base est
+ *   minorée (âge de référence 67 ans) ; surcote de 0,625 % par trimestre au-delà
+ *   de la durée requise entre l'âge légal et 67 ans, puis 0,75 % par trimestre ;
+ *   majoration de 10 % (3 enfants) à 30 % (7 et plus) ; sous 300 points,
+ *   capital = points × salaire de référence.
  */
 
 import { RegimeDetecte } from './parseRIS';
 import { DateNaissance, ageEnMois, ageLegalPourGeneration } from './calcul';
 import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS, ParametresCaissePoints } from './parametres';
 import { decoteCNAVPL } from './calculCNAVPL';
+import { coefficientAnticipationAgircArrco } from './calculAgircArrco';
 
 export type IdentifiantCaisse = keyof typeof PARAMETRES_CAISSES_POINTS;
 
@@ -100,12 +108,21 @@ export function pointsAnnuelsCaisse(
  * Coefficient d'âge à la liquidation : 1 jusqu'au début de la première
  * tranche de surcote, puis surcote par trimestre entier, additive dans une
  * tranche, multiplicative sur la tranche précédente si `multiplicatif`.
+ * `conditionDuree` : trimestres plafonnés à l'excédent sur la durée requise.
  */
-export function coefficientAgeCaisse(caisse: ParametresCaissePoints, ageDepart: number, ageLegal: number): number {
+export function coefficientAgeCaisse(
+  caisse: ParametresCaissePoints,
+  ageDepart: number,
+  ageLegal: number,
+  trimestresExcedentaires = Infinity
+): number {
   let coefficient = 1;
   for (const tranche of caisse.surcote) {
     const debut = tranche.depuis === 'ageLegal' ? ageLegal : tranche.depuis;
-    const trimestres = Math.max(0, Math.floor((Math.min(ageDepart, tranche.jusquA) - debut) * 4 + 1e-6));
+    const trimestresAge = Math.max(0, Math.floor((Math.min(ageDepart, tranche.jusquA) - debut) * 4 + 1e-6));
+    const trimestres = tranche.conditionDuree
+      ? Math.min(trimestresAge, Math.max(0, Math.floor(trimestresExcedentaires)))
+      : trimestresAge;
     const majoration = trimestres * tranche.tauxParTrimestre;
     coefficient = tranche.multiplicatif ? coefficient * (1 + majoration) : coefficient + majoration;
   }
@@ -131,6 +148,18 @@ export function abattementParTrimestres(
     Math.min(retenus, bareme.palier) * bareme.tauxJusquAuPalier +
     Math.max(0, retenus - bareme.palier) * bareme.tauxAuDela
   );
+}
+
+/** Majoration pour enfants en % : barème par nombre d'enfants, sinon taux unique dès 3 enfants. */
+export function majorationEnfantsPct(caisse: ParametresCaissePoints, nombreEnfants: number): number {
+  if (caisse.majorationEnfantsBaremePct) {
+    let pct = 0;
+    for (const [seuil, taux] of Object.entries(caisse.majorationEnfantsBaremePct)) {
+      if (nombreEnfants >= Number(seuil)) pct = Math.max(pct, taux);
+    }
+    return pct;
+  }
+  return nombreEnfants >= 3 ? caisse.majorationTroisEnfantsPct : 0;
 }
 
 export interface DetailCaissePoints {
@@ -194,7 +223,9 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
         ? (pointsAnnuelsCaisse(caisse, entree.revenuAnnuel, entree.classe) * Math.max(0, entree.trimestresProjetes)) / 4
         : 0;
     const coefficientSurcote =
-      ageDepart !== null && ageLegal !== null ? coefficientAgeCaisse(caisse, ageDepart, ageLegal) : 1;
+      ageDepart !== null && ageLegal !== null
+        ? coefficientAgeCaisse(caisse, ageDepart, ageLegal, -entree.trimestresManquants)
+        : 1;
     // Minoration de la base (CNAVPL) : écart de trimestres, plus favorable avec l'âge.
     const minoration = caisse.decoteCommeBase
       ? decoteCNAVPL(-Math.max(0, entree.trimestresManquants), 0, ageDepart)
@@ -208,13 +239,25 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
     const abattement = caisse.abattementTrimestres
       ? -abattementParTrimestres(caisse.abattementTrimestres, entree.trimestresManquants, ageDepart)
       : 0;
-    const coefficientAge = coefficientSurcote * (1 + minoration / 100) * (1 + minorationAge) * (1 + abattement);
-    const pensionAvantMajoration = (pointsAcquis + pointsProjetes) * caisse.valeurServicePoint * coefficientAge;
-    const majorationEnfants =
-      entree.nombreEnfantsEligibles >= 3 ? (pensionAvantMajoration * caisse.majorationTroisEnfantsPct) / 100 : 0;
-    const enCapital =
-      caisse.capital !== undefined && (pointsAcquis + pointsProjetes) * coefficientAge < caisse.capital.seuilPoints;
-    const capital = enCapital ? (pensionAvantMajoration + majorationEnfants) * caisse.capital!.multipleAnnuites : 0;
+    // Grilles Agirc-Arrco, seulement si la base est minorée (trimestres manquants avant l'âge de référence).
+    const coefficientAnticipation = caisse.anticipationAgircArrco
+      ? coefficientAnticipationAgircArrco(
+          entree.trimestresManquants > 0 && (ageDepart === null || ageDepart < caisse.anticipationAgircArrco.ageTauxPlein),
+          ageDepart,
+          entree.trimestresManquants
+        )
+      : 1;
+    const coefficientAge =
+      coefficientSurcote * (1 + minoration / 100) * (1 + minorationAge) * (1 + abattement) * coefficientAnticipation;
+    const pointsRetenus = (pointsAcquis + pointsProjetes) * coefficientAge;
+    const pensionAvantMajoration = pointsRetenus * caisse.valeurServicePoint;
+    const majorationEnfants = (pensionAvantMajoration * majorationEnfantsPct(caisse, entree.nombreEnfantsEligibles)) / 100;
+    const enCapital = caisse.capital !== undefined && pointsRetenus < caisse.capital.seuilPoints;
+    const capital = !enCapital
+      ? 0
+      : caisse.capital!.prixParPoint !== undefined
+        ? pointsRetenus * caisse.capital!.prixParPoint
+        : (pensionAvantMajoration + majorationEnfants) * (caisse.capital!.multipleAnnuites ?? 0);
     details.push({
       id,
       nom: caisse.nom,

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   appliquerProjectionStatut,
+  caisseProjetee,
   pointsCNAVPLAnnuels,
   pointsRAFPAnnuels,
   statutActuelDepuisTexte,
@@ -65,6 +66,13 @@ describe('appliquerProjectionStatut', () => {
     expect(r.trimestresValidesRG).toBe(140);
     expect(r.projeterAgircArrco).toBe(false);
     expect(r.trimestresCaisseProjetes).toBe(40);
+  });
+  it('contractuel public : régime général et points Ircantec projetés', () => {
+    const r = appliquerProjectionStatut({ ...base, statut: 'contractuel_public' });
+    expect(r.trimestresValidesRG).toBe(140);
+    expect(r.projeterAgircArrco).toBe(false);
+    expect(r.trimestresCaisseProjetes).toBe(40);
+    expect(caisseProjetee('contractuel_public', null)).toBe('IRCANTEC');
   });
   it('fonctionnaire : trimestres liquidables et points RAFP, RG figé', () => {
     const r = appliquerProjectionStatut({ ...base, statut: 'fonctionnaire', fonctionPublique: fp, primesAnnuellesFP: 5000 });

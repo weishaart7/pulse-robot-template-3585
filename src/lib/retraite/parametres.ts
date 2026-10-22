@@ -95,6 +95,8 @@ export interface TrancheSurcoteCaisse {
   tauxParTrimestre: number;
   /** Majoration appliquée sur le coefficient atteint à la tranche précédente. */
   multiplicatif?: boolean;
+  /** Trimestres de surcote plafonnés aux trimestres en excédent sur la durée requise (Ircantec). */
+  conditionDuree?: boolean;
 }
 
 export type AcquisitionCaissePoints =
@@ -138,10 +140,20 @@ export interface ParametresCaissePoints {
   };
   /** Minoration propre à la caisse par trimestre manquant avant un âge de taux plein fixe. */
   decoteAge?: { ageTauxPlein: number; tauxParTrimestre: number };
-  /** Versement unique (multiple de l'annuité) sous un nombre de points, après minoration ou surcote. */
-  capital?: { seuilPoints: number; multipleAnnuites: number };
+  /**
+   * Minoration selon les grilles d'anticipation Agirc-Arrco (âge et trimestres manquants, la plus
+   * favorable), seulement si la retraite de base est minorée (Ircantec).
+   */
+  anticipationAgircArrco?: { ageTauxPlein: number };
+  /**
+   * Versement unique sous un nombre de points, après minoration ou surcote : multiple de l'annuité
+   * (CAVEC) ou points × prix du point (Ircantec : salaire de référence).
+   */
+  capital?: { seuilPoints: number; multipleAnnuites?: number; prixParPoint?: number };
   surcote: TrancheSurcoteCaisse[];
   majorationTroisEnfantsPct: number;
+  /** Majoration selon le nombre d'enfants (clé = nombre minimal), remplace `majorationTroisEnfantsPct`. */
+  majorationEnfantsBaremePct?: Record<string, number>;
   tauxReversion: number;
 }
 
@@ -221,7 +233,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
