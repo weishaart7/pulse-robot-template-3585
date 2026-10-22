@@ -20,7 +20,7 @@
 // Nationale de Retraite des Agents des Collectivités Locales) sont ajoutés en
 // repli, sans borne, puisqu'ils sont déjà suffisamment longs/distinctifs pour
 // ne pas avoir besoin de \b. Noms officiels sourcés depuis
-// docs/retraite-base-referentiel.md (§8, table des régimes de base), pas
+// docs/retraite.md (Partie B) (§8, table des régimes de base), pas
 // inventés — aucun spécimen RIS réel fonction publique n'est disponible dans
 // ce dépôt (RGPD). RAFP a sa propre carte de saisie manuelle (champ « Points
 // RAFP déjà accumulés » dans CarriereFonctionPublique.tsx), au même titre que

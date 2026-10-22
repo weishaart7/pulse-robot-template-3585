@@ -84,7 +84,7 @@ export interface DonneesFonctionPublique {
   departPourInvalidite: boolean;
   anneeOuvertureDroits?: number;
   // Supplément NBI (écart #13-NBI, docs/retraite.md) : formule sourcée
-  // uniquement pour SRE/CNRACL (docs/retraite-base-referentiel.md §7.7.1) —
+  // uniquement pour SRE/CNRACL (docs/retraite.md (Partie B) §7.7.1) —
   // regimeAffiliation non renseigné (undefined) => supplément non calculé,
   // jamais accordé par défaut.
   regimeAffiliation?: 'SRE' | 'CNRACL';

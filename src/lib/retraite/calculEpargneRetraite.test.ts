@@ -52,7 +52,7 @@ describe('PER', () => {
   });
 });
 
-describe('scenarioCouverture — scénario E1 (docs/Golden_Scenarios_Retraite.md)', () => {
+describe('scenarioCouverture — scénario E1 (docs/retraite.md, Partie C)', () => {
   it('déficit de 6 000 €/an sur 20 ans couvert à 119 % au rendement central', () => {
     const s = scenarioCouverture({
       epargneActuelle: 50000,

@@ -51,7 +51,7 @@ describe('prelevementsSociauxPension', () => {
   });
 });
 
-describe('calculerNetRetraiteFoyer — scénario de référence couple marié (docs/Golden_Scenarios_Retraite.md, N1)', () => {
+describe('calculerNetRetraiteFoyer — scénario de référence couple marié (docs/retraite.md, Partie C, N1)', () => {
   it('45 000 € de pensions : taux médian après point fixe, impôt après décote 1 009 €', () => {
     const r = calculerNetRetraiteFoyer(
       [

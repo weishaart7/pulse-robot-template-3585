@@ -336,7 +336,7 @@ export function majorationEnfantsFonctionPublique(nombreEnfantsEligibles: number
  * Supplément de pension au titre de la NBI (Nouvelle Bonification Indiciaire)
  * — référentiel §7.7.1, écart #13-NBI.
  *
- * Source primaire, citée verbatim dans `docs/retraite-base-referentiel.md`
+ * Source primaire, citée verbatim dans `docs/retraite.md (Partie B)`
  * §7.7.1 : Décret n° 2003-1306 du 26 décembre 2003 (régime CNRACL), art. 28 —
  * « Ce supplément de pension est égal à la moyenne annuelle de la somme
  * perçue au titre de la nouvelle bonification indiciaire, multipliée [...]

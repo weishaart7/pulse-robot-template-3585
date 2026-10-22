@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculerPensionConsolidee, EntreePensionConsolidee } from './pensionConsolidee';
 
-// Scénarios de référence calculés à la main : docs/Golden_Scenarios_Retraite.md.
+// Scénarios de référence calculés à la main : docs/retraite.md, Partie C.
 // Personne née en mars 1970, départ à l'âge légal (64 ans) le 01/04/2034.
 const base: EntreePensionConsolidee = {
   salaireAnnuelMoyen: 0,

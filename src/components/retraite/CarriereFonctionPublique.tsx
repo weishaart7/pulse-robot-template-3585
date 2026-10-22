@@ -57,7 +57,7 @@ interface CarriereFonctionPubliqueProps {
   anneeOuvertureDroits: string;
   onAnneeOuvertureDroitsChange: (value: string) => void;
   // Supplément NBI (écart #13-NBI) : formule sourcée uniquement pour
-  // SRE/CNRACL (docs/retraite-base-referentiel.md §7.7.1) — regimeAffiliation
+  // SRE/CNRACL (docs/retraite.md (Partie B) §7.7.1) — regimeAffiliation
   // vide = supplément non calculé, jamais accordé par défaut.
   regimeAffiliation: string;
   onRegimeAffiliationChange: (value: string) => void;

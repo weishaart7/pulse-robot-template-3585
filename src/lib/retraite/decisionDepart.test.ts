@@ -69,7 +69,7 @@ describe('datesDepartCandidates', () => {
   });
 });
 
-describe('deciderDateDepart — scénario D1 (docs/Golden_Scenarios_Retraite.md)', () => {
+describe('deciderDateDepart — scénario D1 (docs/retraite.md, Partie C)', () => {
   const r = deciderDateDepart({ simulateur: simulateurFictif, dateNaissance, sexe: null, tauxActualisation: 0 });
 
   it('cumul au premier départ : 1 000 €/mois × 273 mois jusqu\'à 86 ans 10 mois', () => {

@@ -57,7 +57,7 @@ export interface RetraiteData {
   points_cnavpl?: number;
   valeur_point_cnavpl?: number;
   // Supplément NBI (écart #13-NBI) : formule sourcée uniquement pour
-  // SRE/CNRACL (docs/retraite-base-referentiel.md §7.7.1) — regime_affiliation_fp
+  // SRE/CNRACL (docs/retraite.md (Partie B) §7.7.1) — regime_affiliation_fp
   // non renseigné = supplément non calculé, jamais accordé par défaut.
   regime_affiliation_fp?: 'SRE' | 'CNRACL';
   moyenne_annuelle_nbi?: number;

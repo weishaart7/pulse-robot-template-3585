@@ -60,7 +60,7 @@ describe('debutActiviteRempli', () => {
   });
 });
 
-describe('evaluerCarriereLongue — scénario CL1 (docs/Golden_Scenarios_Retraite.md)', () => {
+describe('evaluerCarriereLongue — scénario CL1 (docs/retraite.md, Partie C)', () => {
   it('début à 17 ans : 171 trimestres cotisés à 60 ans (< 172), départ anticipé ouvert à 61 ans 9 mois', () => {
     const r = evaluerCarriereLongue({
       dateNaissance: { annee: 1970, mois: 3 },
