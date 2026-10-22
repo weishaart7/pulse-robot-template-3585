@@ -157,6 +157,8 @@ export interface ParametresCaissePoints {
     trimestresMax?: number;
     /** Taux plus fort pour les trimestres d'anticipation avant cet âge (CAVP : 1,25 % avant 65 ans). */
     tauxRenforce?: { avantAge: number; tauxParTrimestre: number };
+    /** Anticipation comptée par année entière entamée (CAVOM : 5 % par année manquante, sans fractionnement). */
+    parAnneeEntiere?: boolean;
   };
   /** Points (annuités) plafonnés à la durée requise de la génération ÷ 4 (CAVP : retraite entière). */
   plafondPointsDureeRequise?: boolean;
@@ -259,7 +261,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpv: ParametresCaissePoints; cavom: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
   cavpCapitalisation: ParametresCAVPCapitalisation;
   rafp: ParametresRAFP;

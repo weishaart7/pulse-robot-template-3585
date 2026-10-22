@@ -1456,6 +1456,32 @@
       "surcote": [],
       "majorationTroisEnfantsPct": 10,
       "tauxReversion": 0.6
+    },
+    "cavom": {
+      "nom": "CAVOM (officiers ministériels)",
+      "motifNom": "CAVOM|officiers (ministériels|publics)|huissiers|commissaires[- ](priseurs|de justice)",
+      "caisseLiberale": "CAVOM",
+      "source": "Valeurs 2026 : tableau officiel « Paramètres RB, RC, RID au 1er janvier 2026 » (cavom.net) : taux libéral 12,50 %, assiette minimale 19 % PASS (9 131 €), plafond 8 PASS (384 480 €), valeur d'achat 55,1390 €, valeur de service 3,3745 €. Règles : cavom.net « La retraite » (taux plein à 67 ans dès la génération 1959, décote de 5 % par année manquante non fractionnable, aucune surcote) et « La réversion » (60 %, 100 % avec la cotisation de conjoint majorée de 20 %, non modélisée) ; coefficients 0,85 à 64 ans, 0,90 à 65 ans, 0,95 à 66 ans : Fidroit CAVOM 2025 §2.1.1. Majoration pour enfants de la complémentaire : aucune source, non appliquée. Taux salarié (7,50 %) non modélisé",
+      "valeurServicePoint": 3.3745,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 55.139,
+        "assietteMinEnPass": 0.19,
+        "tranches": [
+          {
+            "jusquAPass": 8,
+            "taux": 0.125
+          }
+        ]
+      },
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125,
+        "parAnneeEntiere": true
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6
     }
   },
   "cnbf": {

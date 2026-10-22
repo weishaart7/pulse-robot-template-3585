@@ -520,3 +520,44 @@ describe('CARPV (vétérinaires)', () => {
     expect(enfants.total).toBeCloseTo((300 + 10 * 21) * 39.54 * 1.1, 6);
   });
 });
+
+describe('CAVOM (officiers ministériels)', () => {
+  const { cavom, carpv } = PARAMETRES_CAISSES_POINTS;
+  const pass = MILLESIME_COURANT.pass;
+
+  it('reconnaissance au RIS', () => {
+    expect(caisseDuRegime('CAVOM')).toBe('cavom');
+    expect(caisseDuRegime('Caisse des officiers ministériels')).toBe('cavom');
+    expect(caisseDuRegime('Commissaires aux comptes')).toBeNull();
+  });
+  it('points : 12,50 % du revenu ramené entre 0,19 et 8 PASS ÷ 55,1390 €', () => {
+    expect(pointsAnnuelsCaisse(cavom, 0)).toBeCloseTo((0.19 * pass * 0.125) / 55.139, 6);
+    expect(pointsAnnuelsCaisse(cavom, 100000)).toBeCloseTo((100000 * 0.125) / 55.139, 6);
+    expect(pointsAnnuelsCaisse(cavom, 20 * pass)).toBeCloseTo((8 * pass * 0.125) / 55.139, 6);
+  });
+  it('minoration de 5 % par année manquante entamée avant 67 ans', () => {
+    expect(1 - tauxDecoteAge(cavom.decoteAge!, 64)).toBeCloseTo(0.85, 6);
+    expect(1 - tauxDecoteAge(cavom.decoteAge!, 64.5)).toBeCloseTo(0.85, 6);
+    expect(1 - tauxDecoteAge(cavom.decoteAge!, 65)).toBeCloseTo(0.9, 6);
+    expect(1 - tauxDecoteAge(cavom.decoteAge!, 66)).toBeCloseTo(0.95, 6);
+    expect(tauxDecoteAge(cavom.decoteAge!, 67)).toBe(0);
+    // Non-régression : trimestres pour les autres caisses.
+    expect(1 - tauxDecoteAge(carpv.decoteAge!, 64.5)).toBeCloseTo(0.975, 6);
+  });
+  it('pas de surcote ; réversion 60 %', () => {
+    expect(coefficientAgeCaisse(cavom, 69, 64)).toBe(1);
+    const r = calculerCaissesPoints({
+      regimesPoints: [{ nom: 'CAVOM', type: 'points', points: 5000 }],
+      dateNaissance: { annee: 1970, mois: 3 },
+      dateEffet: new Date(Date.UTC(2037, 3, 1)),
+      nombreEnfantsEligibles: 3,
+      caisseLiberale: null,
+      conventionne: false,
+      revenuAnnuel: null,
+      trimestresProjetes: 0,
+      trimestresManquants: 0,
+    });
+    expect(r.total).toBeCloseTo(5000 * 3.3745, 6);
+    expect(reversionCaissesPoints(r.details)).toBeCloseTo(r.total * 0.6, 6);
+  });
+});

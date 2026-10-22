@@ -201,8 +201,12 @@ uniquement applicatif via `familyService`.
     valeur 39,54 € ; taux plein à 65 ans selon l'âge seul, minoration de 1,25 % par trimestre avant
     (dès 60 ans) ; pas de surcote ; +10 % pour 3 enfants ; sous 6 points, versement unique au prix
     d'achat ; réversion 60 %.
+  - *CAVOM* (officiers ministériels) : 12,50 % du revenu libéral ramené entre 0,19 et 8 PASS ÷ valeur
+    d'achat 55,1390 €, valeur 3,3745 € (paramètres officiels 2026) ; taux plein à 67 ans, minoration de
+    5 % par année manquante entamée (`decoteAge.parAnneeEntiere`) ; pas de surcote ; pas de majoration
+    pour enfants retenue ; réversion 60 %.
   - Sélecteur « Caisse complémentaire » de Carrière : CARMF, CIPAV, CAVEC, CARPIMKO, CARCDSF
-    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens), CARPV (vétérinaires) ; case « Conventionné » pour les caisses à régime
+    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens), CARPV (vétérinaires), CAVOM (officiers ministériels) ; case « Conventionné » pour les caisses à régime
     supplémentaire (ASV ou PCV).
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
@@ -213,7 +217,7 @@ uniquement applicatif via `familyService`.
   régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
   complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
   majoration, ligne « CNBF » de la Synthèse).
-  - Non couverts : caisses à points non paramétrées (CAVOM, CPRN,
+  - Non couverts : caisses à points non paramétrées (CPRN,
     CAVAMAC, RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
     (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -669,6 +673,11 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
+- **CAVOM — limites.** Taux des officiers ministériels salariés (7,50 %) non modélisé (sélecteur réservé
+  au statut libéral) ; majoration pour enfants de la complémentaire sans source (non appliquée) ; points
+  d'avant 2013 (multipliés par 10 au changement d'échelle) supposés déjà convertis au RIS. Non
+  modélisés : cotisation de conjoint majorée de 20 % (réversion à 100 %), forfait des deux premières
+  années, rachats, cotisation volontaire de 67 à 70 ans, exonérations.
 - **CARPV — limites.** Classes d'allègement non modélisées : sous 51 330 € de revenu, le vétérinaire
   peut demander une classe réduite (Super Spéciale I à A, 2 à 12 points au lieu de 17) ; la projection
   retient la classe de revenu (B au minimum) et peut surestimer les droits d'un petit revenu. Non

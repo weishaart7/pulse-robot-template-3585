@@ -60,6 +60,9 @@
  * - CARPV (vétérinaires) : points selon la classe de revenu (B 17 à E 28) ;
  *   taux plein à 65 ans selon l'âge seul, minoration 1,25 % par trimestre
  *   avant ; pas de surcote ; sous 6 points, versement unique au prix d'achat.
+ * - CAVOM (officiers ministériels) : 12,50 % du revenu ramené entre 0,19 et
+ *   8 PASS ÷ prix d'achat ; taux plein à 67 ans, minoration de 5 % par année
+ *   manquante entamée (`parAnneeEntiere`) ; pas de surcote.
  */
 
 import { RegimeDetecte } from './parseRIS';
@@ -201,7 +204,10 @@ export function majorationEnfantsPct(caisse: ParametresCaissePoints, nombreEnfan
  * arrondis au supérieur, bornés ; ceux avant `tauxRenforce.avantAge` au taux renforcé.
  */
 export function tauxDecoteAge(decote: NonNullable<ParametresCaissePoints['decoteAge']>, ageDepart: number): number {
-  const trimestres = (age: number) => Math.max(0, Math.ceil((age - ageDepart) * 4 - 1e-6));
+  const trimestres = (age: number) =>
+    decote.parAnneeEntiere
+      ? Math.max(0, Math.ceil(age - ageDepart - 1e-6)) * 4
+      : Math.max(0, Math.ceil((age - ageDepart) * 4 - 1e-6));
   const total = Math.min(trimestres(decote.ageTauxPlein), decote.trimestresMax ?? Infinity);
   const renforces = decote.tauxRenforce ? Math.min(total, trimestres(decote.tauxRenforce.avantAge)) : 0;
   return (total - renforces) * decote.tauxParTrimestre + renforces * (decote.tauxRenforce?.tauxParTrimestre ?? 0);
