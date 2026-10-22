@@ -542,6 +542,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     conventionne: entree.caissesPoints?.conventionne ?? false,
     revenuAnnuel: entree.caissesPoints?.revenuAnnuel ?? null,
     trimestresProjetes: entree.caissesPoints?.trimestresProjetes ?? 0,
+    trimestresManquants: trimestresRequis - trimestresTousRegimes,
   });
   const totalPensionComplementaireAnnuelle =
     (detailAgircArrco?.pensionAnnuelle ?? 0) +

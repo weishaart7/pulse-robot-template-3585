@@ -10,7 +10,7 @@ import {
 } from './calculCaissesPoints';
 import { PARAMETRES_CAISSES_POINTS } from './parametres';
 
-const { carmf, carmfAsv } = PARAMETRES_CAISSES_POINTS;
+const { carmf, carmfAsv, cipav } = PARAMETRES_CAISSES_POINTS;
 
 describe('caisseDuRegime — reconnaissance au libellé du RIS', () => {
   it('CARMF complémentaire et ASV distinguées', () => {
@@ -67,6 +67,7 @@ describe('calculerCaissesPoints', () => {
     conventionne: false,
     revenuAnnuel: null,
     trimestresProjetes: 0,
+    trimestresManquants: 0,
   };
 
   it('points du RIS × valeur 2026, régimes non reconnus renvoyés à l’appelant', () => {
@@ -93,5 +94,41 @@ describe('calculerCaissesPoints', () => {
     const r = calculerCaissesPoints({ ...base, nombreEnfantsEligibles: 3 });
     expect(r.total).toBeCloseTo(200 * 77.14 * 1.1, 6);
     expect(reversionCaissesPoints(r.details)).toBeCloseTo(200 * 77.14 * 0.6, 6);
+  });
+});
+
+describe('CIPAV 2026', () => {
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'CIPAV', type: 'points', points: 6000 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2034, 3, 1)), // 64 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: null,
+    conventionne: false,
+    revenuAnnuel: null,
+    trimestresProjetes: 0,
+    trimestresManquants: 0,
+  };
+
+  it('reconnue au libellé du RIS', () => {
+    expect(caisseDuRegime('CIPAV')).toBe('cipav');
+  });
+  it('exemple de la fiche CIPAV : 40 000 € → 3 600 € ÷ 47,40 € = 75,9 points', () => {
+    expect(pointsAnnuelsCaisse(cipav, 40000)).toBeCloseTo(3600 / 47.4, 6);
+  });
+  it('tranche 2 à 22 % de 1 à 3 PASS, rien au-delà', () => {
+    const pass = 48060;
+    expect(pointsAnnuelsCaisse(cipav, 5 * pass)).toBeCloseTo((pass * 0.09 + 2 * pass * 0.22) / 47.4, 6);
+  });
+  it('exemple de la fiche CIPAV : 6 000 points × 2,89 € = 17 340 € à taux plein', () => {
+    expect(calculerCaissesPoints(base).total).toBeCloseTo(17340, 6);
+  });
+  it('minoration de la base : 4 trimestres manquants à 64 ans → −5 %', () => {
+    const r = calculerCaissesPoints({ ...base, trimestresManquants: 4 });
+    expect(r.details[0].coefficientAge).toBeCloseTo(0.95, 10);
+  });
+  it('minoration plafonnée par l’âge : 20 trimestres manquants à 66 ans → −5 % (1 an avant 67 ans)', () => {
+    const r = calculerCaissesPoints({ ...base, dateEffet: new Date(Date.UTC(2036, 3, 1)), trimestresManquants: 20 });
+    expect(r.details[0].coefficientAge).toBeCloseTo(0.95, 10);
   });
 });

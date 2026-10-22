@@ -178,7 +178,11 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
   const { pointsAgircArrco, aUnRegimeAgircArrco, autresRegimes } = separerRegimesPoints(ctx.regimesPoints);
   // Caisses à points paramétrées (CARMF…) recalculées à chaque date (âge,
   // points projetés d'un libéral) ; régimes non reconnus : points × valeur RIS.
-  const pensionAutresRegimesPointsA = (dateEffet: Date, trimestresProjetes: number): number => {
+  const pensionAutresRegimesPointsA = (
+    dateEffet: Date,
+    trimestresProjetes: number,
+    trimestresManquants: number
+  ): number => {
     const caisses = calculerCaissesPoints({
       regimesPoints: autresRegimes,
       dateNaissance,
@@ -188,6 +192,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
       conventionne: ctx.liberalConventionne ?? false,
       revenuAnnuel: ctx.revenuFutur ?? null,
       trimestresProjetes: statut === 'liberal' && cnavpl ? trimestresProjetes : 0,
+      trimestresManquants,
     });
     return (
       caisses.total +
@@ -204,7 +209,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     trimestresProjetes: number,
     dateEffet: Date
   ): number => {
-    const pensionAutresRegimesPoints = pensionAutresRegimesPointsA(dateEffet, trimestresProjetes);
+    const pensionAutresRegimesPoints = pensionAutresRegimesPointsA(dateEffet, trimestresProjetes, trimestresManquants);
     if (!aUnRegimeAgircArrco) return pensionAutresRegimesPoints;
     const projeterAgircArrco = statut === 'salarie_prive';
     const agirc = pensionAgircArrco({

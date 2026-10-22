@@ -979,6 +979,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                       <SelectContent>
                         <SelectItem value="aucune" className="text-xs">Non modélisée</SelectItem>
                         <SelectItem value="CARMF" className="text-xs">CARMF (médecins)</SelectItem>
+                        <SelectItem value="CIPAV" className="text-xs">CIPAV</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

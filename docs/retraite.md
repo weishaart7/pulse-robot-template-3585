@@ -134,6 +134,10 @@ uniquement applicatif via `familyService`.
     pension à 65 ans majorée de 0,75 %/trimestre jusqu'à 70 ans ; +10 % pour 3 enfants ; réversion 60 %.
   - *CARMF ASV* (conventionnés) : 27 points + 1 par tranche de 8 810 €, 9 au maximum ; valeur 11,82 € ;
     mêmes règles d'âge ; +10 % pour 3 enfants ; réversion 50 %.
+  - *CIPAV* : cotisation 9 % jusqu'à 1 PASS et 22 % de 1 à 3 PASS ÷ valeur d'achat 47,40 €, valeur de
+    service 2,89 € (fiches CIPAV 2026) ; minoration identique à la base (1,25 % par trimestre
+    manquant, plus favorable entre âge et durée, `decoteCommeBase`), taux plein à 67 ans ; +10 % pour
+    3 enfants ; réversion 60 %.
   - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
     évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -571,6 +575,10 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   âge légal de la génération (lecture Fidroit) ; la lettre CARMF de janvier 2026 calcule la valeur
   « à 65 ans » avec 15 % de majoration, soit depuis 62 ans. Capital optionnel (20 points ou moins) et
   conditions de la réversion (âge, remariage) non modélisés. Départ anticipé : coefficient 1.
+- **CIPAV — non modélisés.** Majoration de report après 67 ans (5 % par année, 30 ans d'affiliation,
+  sur les points des 30 premières années), abattement de 5 %/an si la base n'est pas liquidée, réversion
+  à 100 % des années de cotisation « conjoint » (avant 2023). En départ anticipé, la minoration
+  CIPAV reste calculée sur les trimestres manquants et l'âge.
 - **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
   partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
   éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation

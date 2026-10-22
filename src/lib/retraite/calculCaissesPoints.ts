@@ -11,18 +11,23 @@
  * service du millésime → coefficient d'âge (surcote) → majoration pour 3
  * enfants → réversion au taux de la caisse.
  *
- * Caisses paramétrées : CARMF complémentaire et ASV (médecins).
+ * Caisses paramétrées : CARMF complémentaire et ASV (médecins), CIPAV.
  * - Taux plein à l'âge légal ; un départ plus tôt n'est possible que par un
  *   dispositif de départ anticipé, retenu ici à taux plein (coefficient 1).
  * - Surcote : +1,25 % par trimestre de l'âge légal à 65 ans, puis la
  *   pension à 65 ans majorée de 0,75 % par trimestre jusqu'à 70 ans.
  * - ASV : médecins conventionnés seulement (case dans Carrière).
  * - Capital optionnel de la CARMF (20 points ou moins) : non retenu.
+ * - CIPAV : cotisation 9 % jusqu'à 1 PASS et 22 % de 1 à 3 PASS ÷ valeur
+ *   d'achat ; minoration identique à la base (1,25 % par trimestre
+ *   manquant, le plus favorable entre âge et durée, base liquidée en même
+ *   temps) ; majoration de report (30 ans d'affiliation) non modélisée.
  */
 
 import { RegimeDetecte } from './parseRIS';
 import { DateNaissance, ageEnMois, ageLegalPourGeneration } from './calcul';
-import { PARAMETRES_CAISSES_POINTS, ParametresCaissePoints } from './parametres';
+import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS, ParametresCaissePoints } from './parametres';
+import { decoteCNAVPL } from './calculCNAVPL';
 
 export type IdentifiantCaisse = keyof typeof PARAMETRES_CAISSES_POINTS;
 
@@ -47,6 +52,16 @@ export function caissesDuLiberal(caisseLiberale: string | null, conventionne: bo
 export function pointsAnnuelsCaisse(caisse: ParametresCaissePoints, revenuAnnuel: number): number {
   const revenu = Math.max(0, revenuAnnuel);
   const { acquisition } = caisse;
+  if (acquisition.mode === 'tranchesPrixAchat') {
+    let cotisation = 0;
+    let plancher = 0;
+    for (const tranche of acquisition.tranches) {
+      const plafond = tranche.jusquAPass * MILLESIME_COURANT.pass;
+      cotisation += Math.max(0, Math.min(revenu, plafond) - plancher) * tranche.taux;
+      plancher = plafond;
+    }
+    return cotisation / acquisition.prixAchatPoint;
+  }
   if (acquisition.mode === 'revenuParPoint') {
     return Math.min(acquisition.pointsMaxAnnuels, revenu / acquisition.revenuParPoint);
   }
@@ -91,6 +106,8 @@ export interface EntreeCaissesPoints {
   conventionne: boolean;
   revenuAnnuel: number | null;
   trimestresProjetes: number;
+  /** Trimestres manquants tous régimes à la date d'effet (minoration liée à la base). */
+  trimestresManquants: number;
 }
 
 export interface ResultatCaissesPoints {
@@ -122,7 +139,13 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
       caissesProjetees.includes(id) && entree.revenuAnnuel !== null
         ? (pointsAnnuelsCaisse(caisse, entree.revenuAnnuel) * Math.max(0, entree.trimestresProjetes)) / 4
         : 0;
-    const coefficientAge = ageDepart !== null && ageLegal !== null ? coefficientAgeCaisse(caisse, ageDepart, ageLegal) : 1;
+    const coefficientSurcote =
+      ageDepart !== null && ageLegal !== null ? coefficientAgeCaisse(caisse, ageDepart, ageLegal) : 1;
+    // Minoration de la base (CNAVPL) : écart de trimestres, plus favorable avec l'âge.
+    const minoration = caisse.decoteCommeBase
+      ? decoteCNAVPL(-Math.max(0, entree.trimestresManquants), 0, ageDepart)
+      : 0;
+    const coefficientAge = coefficientSurcote * (1 + minoration / 100);
     const pensionAvantMajoration = (pointsAcquis + pointsProjetes) * caisse.valeurServicePoint * coefficientAge;
     const majorationEnfants =
       entree.nombreEnfantsEligibles >= 3 ? (pensionAvantMajoration * caisse.majorationTroisEnfantsPct) / 100 : 0;

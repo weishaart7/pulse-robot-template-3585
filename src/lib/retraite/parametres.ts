@@ -99,7 +99,8 @@ export interface TrancheSurcoteCaisse {
 
 export type AcquisitionCaissePoints =
   | { mode: 'revenuParPoint'; revenuParPoint: number; pointsMaxAnnuels: number }
-  | { mode: 'forfaitPlusRevenuParPoint'; pointsForfait: number; revenuParPoint: number; pointsMaxProportionnels: number };
+  | { mode: 'forfaitPlusRevenuParPoint'; pointsForfait: number; revenuParPoint: number; pointsMaxProportionnels: number }
+  | { mode: 'tranchesPrixAchat'; prixAchatPoint: number; tranches: { jusquAPass: number; taux: number }[] };
 
 export interface ParametresCaissePoints {
   nom: string;
@@ -112,6 +113,8 @@ export interface ParametresCaissePoints {
   source: string;
   valeurServicePoint: number;
   acquisition: AcquisitionCaissePoints;
+  /** Minoration identique à celle de la retraite de base (1,25 %/trimestre manquant, âge ou durée). */
+  decoteCommeBase?: boolean;
   surcote: TrancheSurcoteCaisse[];
   majorationTroisEnfantsPct: number;
   tauxReversion: number;
@@ -184,7 +187,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints };
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;

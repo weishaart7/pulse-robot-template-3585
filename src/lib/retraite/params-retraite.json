@@ -995,6 +995,31 @@
       ],
       "majorationTroisEnfantsPct": 10,
       "tauxReversion": 0.5
+    },
+    "cipav": {
+      "nom": "CIPAV (complémentaire)",
+      "motifNom": "CIPAV",
+      "caisseLiberale": "CIPAV",
+      "source": "Fiches pratiques CIPAV 2026 « Cotiser pour acquérir des droits à retraite » (9 % jusqu'à 1 PASS, 22 % de 1 à 3 PASS, valeur d'achat 47,40 €) et « Comment est calculée la retraite ? » (valeur de service 2,89 € ; minoration identique à la base entre 62 et 67 ans ; taux plein à 67 ans ; majoration familiale 10 %) ; réversion 60 % : Fidroit CIPAV 2025 §3",
+      "valeurServicePoint": 2.89,
+      "acquisition": {
+        "mode": "tranchesPrixAchat",
+        "prixAchatPoint": 47.4,
+        "tranches": [
+          {
+            "jusquAPass": 1,
+            "taux": 0.09
+          },
+          {
+            "jusquAPass": 3,
+            "taux": 0.22
+          }
+        ]
+      },
+      "decoteCommeBase": true,
+      "surcote": [],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
     }
   }
 }
