@@ -1,19 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  ageEnMois,
-  ageLegalAtteint,
-  ageLegalParentaleEligible,
-  surcotePourTrimestresCotises,
-  surcoteParentale,
-  surcoteTotale,
-  majorationTroisEnfants,
-  DateNaissance,
-} from '@/lib/retraite/calcul';
-import { pensionBaseCNAVPL, decoteCNAVPL } from '@/lib/retraite/calculCNAVPL';
+import { DetailCNAVPL } from '@/lib/retraite/pensionConsolidee';
 import { MILLESIME_COURANT } from '@/lib/retraite/parametres';
 
 // Valeur du point CNAVPL 2026 (source : CNAVPL, cnavpl.fr) — pré-remplie
@@ -29,120 +19,41 @@ const formatEuro2 = (valeur: number) =>
   });
 
 interface CarriereCNAVPLProps {
-  // Durée d'assurance requise tous régimes confondus (même valeur que le
-  // régime général et la fonction publique dans Carriere.tsx).
-  trimestresRequis: number;
-  // Trimestres des AUTRES régimes déjà saisis (régime général + fonction
-  // publique le cas échéant) : la décote CNAVPL se base sur le total tous
-  // régimes, pas seulement les trimestres CNAVPL isolés.
-  trimestresAutresRegimes: number;
-  /** Trimestres enfants accordés par la CNAVPL (cf. trimestresEnfants.ts). */
-  trimestresEnfantsCNAVPL?: number;
+  /**
+   * Détail calculé par le moteur (calculerPensionConsolidee, données
+   * projetées selon le statut actuel) — source unique, la carte ne calcule
+   * rien. `null` si le régime n'est pas coché.
+   */
+  detail: DetailCNAVPL | null;
   // Remontés au parent (Carriere.tsx), même pattern que CarriereFonctionPublique.
   hasCNAVPL: boolean;
   onHasCNAVPLChange: (value: boolean) => void;
   trimestresCNAVPL: string;
   onTrimestresCNAVPLChange: (value: string) => void;
-  // Date de naissance du client — nécessaire à ageLegalAtteint()/
-  // ageLegalParentaleEligible() pour la surcote (écarts #5/#6), même
-  // principe que CarriereFonctionPublique.
-  dateNaissance: DateNaissance | null;
-  // Date d'effet du scénario (départ à l'âge légal, cf. Carriere.tsx) —
-  // même date que le total consolidé de pensionConsolidee.ts.
-  dateEffet: Date;
-  // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2).
-  auMoinsUnTrimestreMajorationEnfant: boolean;
-  // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
-  // (écart #7, cas courant) — calculé une fois dans Carriere.tsx.
+  /** Nombre d'enfants retenus pour la majoration (libellé). */
   nombreEnfantsEligibles: number;
-  // Remontés au parent pour la même raison que hasCNAVPL/trimestresCNAVPL
-  // ci-dessus (persistance automatique via useAutoSave dans Carriere.tsx,
-  // cf. docs/audit/audit-fonction-publique-cnavpl.md) — purement locaux à
-  // ce composant auparavant. valeurPointCNAVPL est initialisée par le
-  // parent avec VALEUR_POINT_CNAVPL_2026 (exportée ci-dessus), même valeur
-  // par défaut qu'avant le lift.
+  // Persistés par le parent (useAutoSave dans Carriere.tsx) ; valeurPointCNAVPL
+  // est initialisée avec VALEUR_POINT_CNAVPL_2026 (exportée ci-dessus).
   pointsCNAVPL: string;
   onPointsCNAVPLChange: (value: string) => void;
   valeurPointCNAVPL: string;
   onValeurPointCNAVPLChange: (value: string) => void;
-  onResultChange?: (result: { pensionFinale: number }) => void;
 }
 
 export const CarriereCNAVPL = ({
-  trimestresRequis,
-  trimestresAutresRegimes,
-  trimestresEnfantsCNAVPL = 0,
+  detail,
   hasCNAVPL,
   onHasCNAVPLChange,
   trimestresCNAVPL,
   onTrimestresCNAVPLChange,
-  dateNaissance,
-  dateEffet,
-  auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
   pointsCNAVPL,
   onPointsCNAVPLChange,
   valeurPointCNAVPL,
   onValeurPointCNAVPLChange,
-  onResultChange,
 }: CarriereCNAVPLProps) => {
-  const pointsNum = parseFloat(pointsCNAVPL) || 0;
-  const valeurPointNum = parseFloat(valeurPointCNAVPL) || 0;
-  const trimestresCNAVPLNum = (parseInt(trimestresCNAVPL) || 0) + trimestresEnfantsCNAVPL;
-
-  // Décote (référentiel §5.3) : plus favorable des décotes sur la durée tous
-  // régimes et sur l'âge à la date d'effet (taux plein à 67 ans) — même
-  // fonction que le total consolidé (pensionConsolidee.ts). Pas de taux de
-  // proratisation : les points reflètent déjà la carrière réelle.
-  const decoteSeule = decoteCNAVPL(
-    trimestresCNAVPLNum + trimestresAutresRegimes,
-    trimestresRequis,
-    dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null
-  );
-
-  // Surcote (classique écart #5 + parentale écart #6) : assise sur la
-  // pension avant décote (points × valeur, decote=0), ajoutée après la
-  // décote — pas d'étage MICO à intercaler pour ce régime (référentiel
-  // §5.5), donc pas de Math.max ici, contrairement au régime général.
-  const pensionAvantDecoteSurcote = pensionBaseCNAVPL(pointsNum, valeurPointNum, 0);
-  const pensionApresDecote = pensionBaseCNAVPL(pointsNum, valeurPointNum, decoteSeule);
-  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffet) : undefined;
-  const ageLegalParentaleEligibleFlag = dateNaissance
-    ? ageLegalParentaleEligible(dateNaissance, dateEffet)
-    : undefined;
-  const dureeRequiseAtteinte = trimestresCNAVPLNum + trimestresAutresRegimes >= trimestresRequis;
-  // ⚠️ Même limitation que la fonction publique : pas de détail carrière par
-  // année pour ce régime (trimestresCNAVPL est un total saisi à la main) —
-  // branché à 0, dette technique documentée,
-  // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
-  const trimestresCotisesAnneeReference = 0;
-  const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
-    ageLegalAtteintFlag,
-    dureeRequiseAtteinte
-  );
-  const surcoteParentalePct = surcoteParentale(
-    auMoinsUnTrimestreMajorationEnfant,
-    ageLegalParentaleEligibleFlag,
-    dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
-  );
-  // Additif pour CNAVPL (référentiel §5.4 : « mêmes règles qu'au régime
-  // général »), pas d'exclusion comme la fonction publique.
-  const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, true);
-  const surcoteMontant = pensionAvantDecoteSurcote * (surcoteTotalePct / 100);
-  const pensionApresSurcote = pensionApresDecote + surcoteMontant;
-
-  // Majoration pour 3 enfants ou plus (écart #7), 10 % flat (référentiel
-  // §5.4 : « mêmes règles qu'au régime général »), assise sur la pension
-  // après surcote — pas de plafond spécifique à ce régime (contrairement à
-  // la fonction publique).
-  const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
-  const pensionFinale = pensionApresSurcote * (1 + majorationEnfantsPct / 100);
-
-  useEffect(() => {
-    onResultChange?.({ pensionFinale });
-  }, [pensionFinale, onResultChange]);
+  const pointsSaisis = parseFloat(pointsCNAVPL) || 0;
+  const trimestresSaisis = parseInt(trimestresCNAVPL) || 0;
 
   return (
     <PanelCard>
@@ -205,37 +116,45 @@ export const CarriereCNAVPL = ({
               </div>
             </div>
 
+            {detail && (
             <div className={`${panelInsetClass}`}>
               <div className="text-xs text-muted-foreground mb-1">Pension CNAVPL</div>
               <div className={`${panelFigureClass}`}>
-                {formatEuro2(pensionFinale)} / an
+                {formatEuro2(detail.pensionFinale)} / an
               </div>
+              {(detail.pointsCNAVPL !== pointsSaisis || detail.trimestresCNAVPL > trimestresSaisis) && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Carrière projetée jusqu'au départ : {Math.round(detail.pointsCNAVPL).toLocaleString('fr-FR')} points,{' '}
+                  {detail.trimestresCNAVPL} trimestres (trimestres enfants compris).
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
-                {decoteSeule < 0
-                  ? `${decoteSeule.toFixed(2)}% décote`
+                {detail.decote < 0
+                  ? `${detail.decote.toFixed(2)}% décote`
                   : 'Aucune décote'}{' '}
                 sur trimestres tous régimes confondus
-                {surcoteTotalePct > 0 && (
+                {detail.surcoteTotalePct > 0 && (
                   <>
                     {' '}
-                    · Surcote : +{surcoteTotalePct.toFixed(2)}% ({formatEuro2(surcoteMontant)} / an) —
-                    classique {surcoteClassiquePct.toFixed(2)}% + parentale {surcoteParentalePct.toFixed(2)}%
+                    · Surcote : +{detail.surcoteTotalePct.toFixed(2)}% ({formatEuro2(detail.surcoteMontant)} / an) —
+                    classique {detail.surcoteClassiquePct.toFixed(2)}% + parentale {detail.surcoteParentalePct.toFixed(2)}%
                   </>
                 )}
               </p>
-              {dureeRequiseAtteinte && (
+              {detail.dureeRequiseAtteinte && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Surcote non calculée pour ce régime : les trimestres cotisés après l'âge légal ne
                   sont pas connus (saisie en total). Une éventuelle surcote n'est pas incluse dans
                   ce montant.
                 </p>
               )}
-              {majorationEnfantsPct > 0 && (
+              {detail.majorationEnfantsPct > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%
+                  Majoration pour {nombreEnfantsEligibles} enfants : +{detail.majorationEnfantsPct}%
                 </p>
               )}
             </div>
+            )}
           </>
         )}
       </PanelCardContent>

@@ -603,10 +603,13 @@ uniquement applicatif via `familyService`.
   ensuite) — auparavant aucune décote âge hors catégorie active. Catégorie active : âges saisis.
   Trimestres d'âge manquants arrondis au supérieur. Plafond : 20 trimestres au taux du millésime —
   ⚠️ non sourcé pour les millésimes 2011-2014 (montée en charge de la réforme 2010).
-- **Cartes FP/CNAVPL alignées sur la date d'effet du scénario.** `CarriereFonctionPublique.tsx` et
-  `CarriereCNAVPL.tsx` reçoivent `dateEffet` de Carriere.tsx (au lieu de `new Date()`) et appellent
-  les mêmes fonctions de décote que le moteur. Elles conservent néanmoins leur propre assemblage du
-  reste de la pension (duplication de `pensionConsolidee.ts`, cf. §3).
+- **Cartes FP/CNAVPL : affichage du moteur, sans calcul propre.** `calculerResultatFonctionPublique()`
+  et `calculerResultatCNAVPL()` renvoient un détail complet (`DetailFonctionPublique` : taux, décote,
+  minimum garanti, surcote, majoration enfants, NBI, RAFP ; `DetailCNAVPL` : décote, surcote,
+  majoration), exposé dans `ResultatPensionConsolidee` (`detailFonctionPublique`, `detailCNAVPL`, `null`
+  si le régime n'est pas coché). `CarriereFonctionPublique.tsx` et `CarriereCNAVPL.tsx` ne font que la
+  saisie et l'affichage de ce détail : même montant que le total consolidé, données projetées selon le
+  statut (trimestres, TIB de fin de carrière, points) signalées sous le montant.
 - **Surcote fonction publique et CNAVPL : non calculée, signalée à l'écran.** Faute de donnée datée
   (trimestres FP/CNAVPL saisis en total), la surcote de ces régimes reste à 0 ; les cartes
   `CarriereFonctionPublique.tsx`/`CarriereCNAVPL.tsx` affichent une mention dès que la durée requise
@@ -670,10 +673,6 @@ Soldés en phase 0 (2026-09-29) :
   condition « né après le recrutement » pour la majoration FP. Le régime saisi pour un enfant vaut pour
   les deux parents (une seule ligne par enfant). La condition des 8 trimestres est appréciée sur les
   droits actuels dans l'Optimisation.
-- **Cartes FP et CNAVPL de Carrière : calcul dupliqué.** `CarriereFonctionPublique.tsx` et
-  `CarriereCNAVPL.tsx` recalculent leur pension à côté du moteur, sur les trimestres RIS non projetés,
-  alors que le total consolidé utilise les trimestres projetés : écart possible entre la carte et le
-  total. MDA répercutées dans les deux cartes, la duplication reste à résorber.
 - R3 : en option « taux seul », les trimestres rachetés ne réduisent que la décote ; seule l'option
   « taux et durée » améliore la proratisation ;
 - R5 : dans l'onglet Optimisation, la date de liquidation est bornée au départ à l'âge légal et

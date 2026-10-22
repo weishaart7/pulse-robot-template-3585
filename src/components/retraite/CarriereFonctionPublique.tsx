@@ -1,5 +1,4 @@
-import { dureeAssuranceFonctionPublique, tauxProratisationFonctionPublique } from '@/lib/retraite/pensionConsolidee';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -11,28 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  tauxProratisation,
-  ageLegalAtteint,
-  ageEnMois,
-  ageLegalParentaleEligible,
-  surcotePourTrimestresCotises,
-  surcoteParentale,
-  surcoteTotale,
-  DateNaissance,
-} from '@/lib/retraite/calcul';
-import { prestationRAFP } from '@/lib/retraite/calculAgircArrco';
-import {
-  pensionBaseFonctionPublique,
-  decoteFonctionPublique,
-  minimumGaranti,
-  minimumGarantiApplicable,
-  pensionFonctionPubliqueFinale,
-  majorationEnfantsFonctionPublique,
-  pensionFonctionPubliqueAvecMajorationEnfants,
-  VALEUR_REFERENCE_MIGA_ANNUELLE_2026,
-  supplementNBI,
-} from '@/lib/retraite/calculFonctionPublique';
+import { DetailFonctionPublique } from '@/lib/retraite/pensionConsolidee';
 
 
 const formatEuro2 = (valeur: number) =>
@@ -44,20 +22,14 @@ const formatEuro2 = (valeur: number) =>
   });
 
 interface CarriereFonctionPubliqueProps {
-  // Durée d'assurance requise tous régimes confondus (même valeur que le
-  // régime général dans Carriere.tsx) : ce n'est pas une notion propre à la
-  // fonction publique, elle est partagée entre tous les régimes d'un même
-  // assuré.
-  trimestresRequis: number;
-  // Trimestres des AUTRES régimes déjà saisis (régime général + CNAVPL le
-  // cas échéant) : la décote fonction publique se base sur le total tous
-  // régimes, pas seulement les trimestres fonction publique isolés. Nommé
-  // génériquement (pas "RegimeGeneral") car ce total peut désormais
-  // regrouper plusieurs sources.
-  trimestresAutresRegimes: number;
-  /** Trimestres enfants FP (cf. trimestresEnfants.ts). */
-  bonificationEnfants?: number;
-  majorationDureeEnfants?: number;
+  /**
+   * Détail calculé par le moteur (calculerPensionConsolidee, données
+   * projetées selon le statut actuel) — source unique, la carte ne calcule
+   * rien. `null` si le régime n'est pas coché.
+   */
+  detail: DetailFonctionPublique | null;
+  /** Nombre d'enfants retenus pour la majoration (libellé). */
+  nombreEnfantsEligibles: number;
   // Remontés au parent (Carriere.tsx) car le total de trimestres tous
   // régimes doit aussi alimenter la décote du régime général — un state
   // purement local ici ne serait pas visible du composant frère.
@@ -93,35 +65,10 @@ interface CarriereFonctionPubliqueProps {
   onMoyenneAnnuelleNBIChange: (value: string) => void;
   trimestresLiquidablesNBI: string;
   onTrimestresLiquidablesNBIChange: (value: string) => void;
-  // Date de naissance du client (family_profiles, chargée une fois dans
-  // Carriere.tsx) — nécessaire à ageLegalAtteint()/ageLegalParentaleEligible()
-  // pour la surcote (écarts #5/#6). `null` tant que le profil famille n'est
-  // pas encore chargé.
-  dateNaissance: DateNaissance | null;
-  // Date d'effet du scénario (départ à l'âge légal, cf. Carriere.tsx) —
-  // même date que le total consolidé de pensionConsolidee.ts.
-  dateEffet: Date;
-  // Condition n°1 (déclarative) de la surcote parentale (référentiel §2.3.2,
-  // écart #6) — état du parent (case à cocher unique par client, pas propre
-  // à un régime).
-  auMoinsUnTrimestreMajorationEnfant: boolean;
-  // Nombre d'enfants éligibles à la majoration pour 3 enfants ou plus
-  // (écart #7, cas courant) — calculé une fois dans Carriere.tsx à partir de
-  // family_links, partagé entre les régimes (même enfants, chaque régime
-  // applique sa propre majoration sur sa propre pension).
-  nombreEnfantsEligibles: number;
-  // Reporte les résultats déjà calculés ici (pas les entrées brutes) au
-  // parent, pour le total consolidé tous régimes de Carriere.tsx — évite de
-  // dupliquer la logique de calcul FP ou de remonter le TIB/les points RAFP/
-  // les âges catégorie active, qui restent propres à ce composant.
-  onResultChange?: (result: { pensionFinale: number; rafpAnnuelle: number }) => void;
 }
 
 export const CarriereFonctionPublique = ({
-  trimestresRequis,
-  trimestresAutresRegimes,
-  bonificationEnfants = 0,
-  majorationDureeEnfants = 0,
+  detail,
   hasFonctionPublique,
   onHasFonctionPubliqueChange,
   trimestresLiquidables,
@@ -146,119 +93,12 @@ export const CarriereFonctionPublique = ({
   onMoyenneAnnuelleNBIChange,
   trimestresLiquidablesNBI,
   onTrimestresLiquidablesNBIChange,
-  dateNaissance,
-  dateEffet,
-  auMoinsUnTrimestreMajorationEnfant,
   nombreEnfantsEligibles,
-  onResultChange,
 }: CarriereFonctionPubliqueProps) => {
-  const tib = parseFloat(traitementIndiciaireBrut) || 0;
-  const trimestresLiquidablesNum = parseInt(trimestresLiquidables) || 0;
-  const pointsRAFPNum = parseFloat(pointsRAFP) || 0;
-  const ageDepartAnticipeNum = parseFloat(ageDepartAnticipe);
-  const ageAnnulationDecoteNum = parseFloat(ageAnnulationDecote);
-  // Champ déclaratif (référentiel §7.3) : année où l'agent réunit la
-  // condition d'âge/durée ouvrant droit à pension, distincte de la date
-  // d'effet — non calculée par cet outil (cf. tauxDecoteParTrimestreFonctionPublique).
-  // undefined si non renseigné, pour retomber sur le défaut 1,25 % (comportement
-  // historique inchangé en l'absence de saisie).
-  const anneeOuvertureDroitsNum = anneeOuvertureDroits === '' ? undefined : parseInt(anneeOuvertureDroits, 10);
-  const donneesTaux = {
-    trimestresLiquidables: trimestresLiquidablesNum,
-    bonificationEnfants,
-    majorationDureeEnfants,
-  };
-  const taux = tauxProratisationFonctionPublique(donneesTaux, trimestresRequis);
-  const dureeAssuranceFP = dureeAssuranceFonctionPublique(donneesTaux);
-  // Décote (référentiel §7.3) : plus favorable des décotes sur la durée tous
-  // régimes et sur l'âge, au taux du millésime d'ouverture des droits —
-  // même fonction que le total consolidé (pensionConsolidee.ts).
-  const decote = decoteFonctionPublique({
-    trimestresTousRegimes: dureeAssuranceFP + trimestresAutresRegimes,
-    trimestresRequis,
-    anneeOuvertureDroits: anneeOuvertureDroitsNum,
-    departAnticipeCategorieActive,
-    ageDepartAnticipe: ageDepartAnticipeNum,
-    ageAnnulationDecote: ageAnnulationDecoteNum,
-    dateNaissance,
-    dateEffet,
-  });
-
-  const pensionCalculee = pensionBaseFonctionPublique(tib, taux, decote);
-  const minimumGarantiValue = minimumGarantiApplicable(
-    minimumGaranti(trimestresLiquidablesNum, trimestresRequis, VALEUR_REFERENCE_MIGA_ANNUELLE_2026, departPourInvalidite),
-    decote,
-    departPourInvalidite
-  );
-  const pensionApresMiga = pensionFonctionPubliqueFinale(pensionCalculee, minimumGarantiValue);
-
-  // Surcote (classique écart #5 + parentale écart #6), assise sur la pension
-  // AVANT décote/MIGA — cf. pensionCalculeeAvantDecote ci-dessous — puis
-  // ajoutée APRÈS le MIGA (référentiel §12.3), même principe que le régime
-  // général dans Carriere.tsx.
-  const pensionCalculeeAvantDecote = pensionBaseFonctionPublique(tib, taux, 0);
-  const ageLegalAtteintFlag = dateNaissance ? ageLegalAtteint(dateNaissance, dateEffet) : undefined;
-  const ageLegalParentaleEligibleFlag = dateNaissance
-    ? ageLegalParentaleEligible(dateNaissance, dateEffet)
-    : undefined;
-  const dureeRequiseAtteinte = dureeAssuranceFP + trimestresAutresRegimes >= trimestresRequis;
-  // ⚠️ Aucun détail de carrière par année pour ce régime (trimestresLiquidables
-  // est un simple total saisi à la main, contrairement au détail carrière
-  // daté du régime général) : le nombre de trimestres cotisés sur l'année de
-  // référence n'est pas calculable ici. Branché à 0 plutôt qu'une valeur
-  // fabriquée — la porte d'éligibilité reste correctement évaluée, seul le
-  // montant reste nul faute de donnée. Dette technique documentée,
-  // cf. docs/audit/branchement-majorations-pension-finale.md §1.c.
-  const trimestresCotisesAnneeReference = 0;
-  const surcoteClassiquePct = surcotePourTrimestresCotises(
-    trimestresCotisesAnneeReference,
-    ageLegalAtteintFlag,
-    dureeRequiseAtteinte
-  );
-  const surcoteParentalePct = surcoteParentale(
-    auMoinsUnTrimestreMajorationEnfant,
-    ageLegalParentaleEligibleFlag,
-    dureeRequiseAtteinte,
-    trimestresCotisesAnneeReference
-  );
-  // Exclusif pour la fonction publique (référentiel §7.4, §12.3) : la plus
-  // élevée des deux est retenue, pas leur somme — interprétation signalée
-  // pour validation dans implementation-surcote-parentale.md §2.
-  const surcoteTotalePct = surcoteTotale(surcoteClassiquePct, surcoteParentalePct, false);
-  const surcoteMontant = pensionCalculeeAvantDecote * (surcoteTotalePct / 100);
-  const pensionApresSurcote = pensionApresMiga + surcoteMontant;
-
-  // Majoration pour 3 enfants ou plus (écart #7) — dégressive, plafonnée au
-  // dernier traitement (référentiel §7.6), assise sur la pension APRÈS MIGA
-  // et surcote (référentiel §12.3).
-  const majorationEnfantsPct = majorationEnfantsFonctionPublique(nombreEnfantsEligibles);
-  const pensionAvantNBI = pensionFonctionPubliqueAvecMajorationEnfants(
-    pensionApresSurcote,
-    majorationEnfantsPct,
-    tib
-  );
-
-  // Supplément NBI (référentiel §7.7.1) : « s'ajoute à la pension liquidée »,
-  // donc après décote/surcote/MIGA/majoration enfants. Formule sourcée
-  // uniquement pour SRE/CNRACL — non calculé si le régime d'affiliation
-  // n'est pas renseigné (sécurité par défaut, pas d'avantage accordé sans
-  // donnée vérifiable).
+  const tibSaisi = parseFloat(traitementIndiciaireBrut) || 0;
+  const trimestresSaisis = parseInt(trimestresLiquidables) || 0;
   const moyenneAnnuelleNBINum = parseFloat(moyenneAnnuelleNBI) || 0;
   const trimestresLiquidablesNBINum = parseFloat(trimestresLiquidablesNBI) || 0;
-  const montantSupplementNBI =
-    regimeAffiliation === 'SRE' || regimeAffiliation === 'CNRACL'
-      ? supplementNBI(moyenneAnnuelleNBINum, trimestresLiquidablesNBINum, trimestresRequis)
-      : 0;
-  const pensionFinale = pensionAvantNBI + montantSupplementNBI;
-
-  // RAFP : rente à partir de 5 125 points (majorée selon l'âge au départ),
-  // capital en dessous — même fonction que pensionConsolidee.ts.
-  const rafp = prestationRAFP(pointsRAFPNum, dateNaissance ? ageEnMois(dateNaissance, dateEffet) / 12 : null);
-  const rafpAnnuelle = rafp.forme === 'rente' ? rafp.renteAnnuelle : 0;
-
-  useEffect(() => {
-    onResultChange?.({ pensionFinale, rafpAnnuelle });
-  }, [pensionFinale, rafpAnnuelle, onResultChange]);
 
   return (
     <PanelCard>
@@ -474,17 +314,25 @@ export const CarriereFonctionPublique = ({
               )}
             </div>
 
+            {detail && (
             <div className="grid gap-3 md:grid-cols-2">
               <div className={`${panelInsetClass}`}>
                 <div className="text-xs text-muted-foreground mb-1">Pension fonction publique</div>
                 <div className={`${panelFigureClass}`}>
-                  {formatEuro2(pensionFinale)} / an
+                  {formatEuro2(detail.pensionFinale)} / an
                 </div>
+                {(detail.trimestresLiquidables !== trimestresSaisis || detail.traitementIndiciaireBrut !== tibSaisi) && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Carrière projetée jusqu'au départ : {detail.trimestresLiquidables} trimestres liquidables
+                    {detail.trimestresLiquidables > trimestresSaisis && ` dont ${detail.trimestresLiquidables - trimestresSaisis} projetés`},
+                    TIB de fin de carrière {formatEuro2(detail.traitementIndiciaireBrut)} / an.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Calculée : {formatEuro2(pensionCalculee)} / an · Minimum garanti :{' '}
-                  {formatEuro2(minimumGarantiValue)} / an
+                  Calculée : {formatEuro2(detail.pensionCalculee)} / an · Minimum garanti :{' '}
+                  {formatEuro2(detail.minimumGaranti)} / an
                 </p>
-                {decote < 0 && !departPourInvalidite ? (
+                {detail.decote < 0 && !departPourInvalidite ? (
                   <p className="text-xs text-muted-foreground mt-1">
                     Minimum garanti non applicable : il est réservé aux pensions sans décote (durée
                     requise ou âge d'annulation de la décote atteint), sauf invalidité.
@@ -497,30 +345,30 @@ export const CarriereFonctionPublique = ({
                     favorable.
                   </p>
                 )}
-                {dureeRequiseAtteinte && (
+                {detail.dureeRequiseAtteinte && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Surcote non calculée pour ce régime : les trimestres cotisés après l'âge légal ne
                     sont pas connus (saisie en total). Une éventuelle surcote n'est pas incluse dans
                     ce montant.
                   </p>
                 )}
-                {surcoteTotalePct > 0 && (
+                {detail.surcoteTotalePct > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Surcote : +{surcoteTotalePct.toFixed(2)}% ({formatEuro2(surcoteMontant)} / an) —
-                    classique {surcoteClassiquePct.toFixed(2)}% / parentale{' '}
-                    {surcoteParentalePct.toFixed(2)}%, la plus élevée des deux est retenue (non
+                    Surcote : +{detail.surcoteTotalePct.toFixed(2)}% ({formatEuro2(detail.surcoteMontant)} / an) —
+                    classique {detail.surcoteClassiquePct.toFixed(2)}% / parentale{' '}
+                    {detail.surcoteParentalePct.toFixed(2)}%, la plus élevée des deux est retenue (non
                     cumulables pour la fonction publique).
                   </p>
                 )}
-                {majorationEnfantsPct > 0 && (
+                {detail.majorationEnfantsPct > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Majoration pour {nombreEnfantsEligibles} enfants : +{majorationEnfantsPct}%,
-                    plafonnée au dernier traitement ({formatEuro2(tib)} / an).
+                    Majoration pour {nombreEnfantsEligibles} enfants : +{detail.majorationEnfantsPct}%,
+                    plafonnée au dernier traitement ({formatEuro2(detail.traitementIndiciaireBrut)} / an).
                   </p>
                 )}
-                {montantSupplementNBI > 0 && (
+                {detail.montantSupplementNBI > 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Supplément NBI ({regimeAffiliation}) : +{formatEuro2(montantSupplementNBI)} / an.
+                    Supplément NBI ({regimeAffiliation}) : +{formatEuro2(detail.montantSupplementNBI)} / an.
                   </p>
                 )}
                 {!regimeAffiliation && (moyenneAnnuelleNBINum > 0 || trimestresLiquidablesNBINum > 0) && (
@@ -533,27 +381,28 @@ export const CarriereFonctionPublique = ({
 
               <div className={`${panelInsetClass}`}>
                 <div className="text-xs text-muted-foreground mb-1">RAFP</div>
-                {rafp.forme === 'capital' ? (
+                {detail.rafp.forme === 'capital' ? (
                   <>
-                    <div className={`${panelFigureClass}`}>{formatEuro2(rafp.capital)} en capital</div>
+                    <div className={`${panelFigureClass}`}>{formatEuro2(detail.rafp.capital)} en capital</div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Moins de 5 125 points : versement unique (coefficient de conversion{' '}
-                      {rafp.coefficientConversion.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}, majoration{' '}
-                      {rafp.coefficientMajoration.toLocaleString('fr-FR')}), hors pension annuelle.
+                      {detail.rafp.coefficientConversion.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}, majoration{' '}
+                      {detail.rafp.coefficientMajoration.toLocaleString('fr-FR')}), hors pension annuelle.
                     </p>
                   </>
                 ) : (
                   <>
-                    <div className={`${panelFigureClass}`}>{formatEuro2(rafpAnnuelle)} / an</div>
-                    {rafp.coefficientMajoration > 1 && (
+                    <div className={`${panelFigureClass}`}>{formatEuro2(detail.rafpAnnuelle)} / an</div>
+                    {detail.rafp.coefficientMajoration > 1 && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Coefficient de majoration pour âge : {rafp.coefficientMajoration.toLocaleString('fr-FR')}
+                        Coefficient de majoration pour âge : {detail.rafp.coefficientMajoration.toLocaleString('fr-FR')}
                       </p>
                     )}
                   </>
                 )}
               </div>
             </div>
+            )}
           </>
         )}
       </PanelCardContent>

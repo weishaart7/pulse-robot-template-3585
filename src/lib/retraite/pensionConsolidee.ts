@@ -255,6 +255,9 @@ export interface ResultatPensionConsolidee {
   detailAgircArrco: DetailAgircArrco | null;
   /** Caisses à points paramétrées (CARMF…), vide si aucune. */
   detailCaissesPoints: DetailCaissePoints[];
+  /** Détail fonction publique / CNAVPL (données projetées), `null` si le régime n'est pas coché. */
+  detailFonctionPublique: DetailFonctionPublique | null;
+  detailCNAVPL: DetailCNAVPL | null;
   /** Pensions du titulaire servant d'assiette à la réversion (cf. calculReversion.ts). */
   assietteReversion: AssietteReversion;
 }
@@ -280,6 +283,28 @@ export interface AssietteReversion {
   reversionCNBF: number;
 }
 
+/** Détail du calcul de la fonction publique (affiché par CarriereFonctionPublique.tsx). */
+export interface DetailFonctionPublique {
+  traitementIndiciaireBrut: number;
+  trimestresLiquidables: number;
+  dureeAssurance: number;
+  taux: number;
+  decote: number;
+  dureeRequiseAtteinte: boolean;
+  pensionCalculee: number;
+  minimumGaranti: number;
+  surcoteClassiquePct: number;
+  surcoteParentalePct: number;
+  surcoteTotalePct: number;
+  surcoteMontant: number;
+  majorationEnfantsPct: number;
+  montantSupplementNBI: number;
+  pensionFinale: number;
+  rafp: ReturnType<typeof prestationRAFP>;
+  rafpAnnuelle: number;
+  rafpCapital: number;
+}
+
 export function calculerResultatFonctionPublique(
   donnees: DonneesFonctionPublique,
   trimestresRequis: number,
@@ -288,7 +313,7 @@ export function calculerResultatFonctionPublique(
   dateEffet: Date,
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
-): { pensionFinale: number; rafpAnnuelle: number; rafpCapital: number } {
+): DetailFonctionPublique {
   const taux = tauxProratisationFonctionPublique(donnees, trimestresRequis);
   const decote = decoteFonctionPublique({
     trimestresTousRegimes: dureeAssuranceFonctionPublique(donnees) + trimestresAutresRegimes,
@@ -359,7 +384,41 @@ export function calculerResultatFonctionPublique(
   const rafpAnnuelle = rafp.forme === 'rente' ? rafp.renteAnnuelle : 0;
   const rafpCapital = rafp.forme === 'capital' ? rafp.capital : 0;
 
-  return { pensionFinale, rafpAnnuelle, rafpCapital };
+  return {
+    traitementIndiciaireBrut: donnees.traitementIndiciaireBrut,
+    trimestresLiquidables: donnees.trimestresLiquidables,
+    dureeAssurance: dureeAssuranceFonctionPublique(donnees),
+    taux,
+    decote,
+    dureeRequiseAtteinte,
+    pensionCalculee,
+    minimumGaranti: minimumGarantiValue,
+    surcoteClassiquePct,
+    surcoteParentalePct,
+    surcoteTotalePct,
+    surcoteMontant,
+    majorationEnfantsPct,
+    montantSupplementNBI,
+    pensionFinale,
+    rafp,
+    rafpAnnuelle,
+    rafpCapital,
+  };
+}
+
+/** Détail du calcul CNAVPL (affiché par CarriereCNAVPL.tsx). */
+export interface DetailCNAVPL {
+  pointsCNAVPL: number;
+  trimestresCNAVPL: number;
+  decote: number;
+  dureeRequiseAtteinte: boolean;
+  surcoteClassiquePct: number;
+  surcoteParentalePct: number;
+  surcoteTotalePct: number;
+  surcoteMontant: number;
+  majorationEnfantsPct: number;
+  pensionFinale: number;
+  pensionHorsMajorationEnfants: number;
 }
 
 export function calculerResultatCNAVPL(
@@ -370,7 +429,7 @@ export function calculerResultatCNAVPL(
   dateEffet: Date,
   auMoinsUnTrimestreMajorationEnfant: boolean,
   nombreEnfantsEligibles: number
-): { pensionFinale: number; pensionHorsMajorationEnfants: number } {
+): DetailCNAVPL {
   const decoteSeule = decoteCNAVPL(
     donnees.trimestresCNAVPL + trimestresAutresRegimes,
     trimestresRequis,
@@ -406,7 +465,19 @@ export function calculerResultatCNAVPL(
   const majorationEnfantsPct = majorationTroisEnfants(nombreEnfantsEligibles);
   const pensionFinale = pensionApresSurcote * (1 + majorationEnfantsPct / 100);
 
-  return { pensionFinale, pensionHorsMajorationEnfants: pensionApresSurcote };
+  return {
+    pointsCNAVPL: donnees.pointsCNAVPL,
+    trimestresCNAVPL: donnees.trimestresCNAVPL,
+    decote: decoteSeule,
+    dureeRequiseAtteinte,
+    surcoteClassiquePct,
+    surcoteParentalePct,
+    surcoteTotalePct,
+    surcoteMontant,
+    majorationEnfantsPct,
+    pensionFinale,
+    pensionHorsMajorationEnfants: pensionApresSurcote,
+  };
 }
 
 /**
@@ -589,7 +660,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         auMoinsUnTrimestreMajorationEnfant,
         nombreEnfantsEligibles
       )
-    : { pensionFinale: 0, rafpAnnuelle: 0, rafpCapital: 0 };
+    : null;
 
   const resultatCNAVPL = hasCNAVPL
     ? calculerResultatCNAVPL(
@@ -603,7 +674,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         auMoinsUnTrimestreMajorationEnfant,
         nombreEnfantsEligibles
       )
-    : { pensionFinale: 0, pensionHorsMajorationEnfants: 0 };
+    : null;
 
   const resultatCNBF: ResultatCNBF = pensionBaseCNBF({
     trimestresCNBF,
@@ -620,8 +691,8 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   const autresPensionsAnnuelles =
     autresPensionsMensuelles * 12 +
     totalPensionComplementaireAnnuelle +
-    (hasFonctionPublique ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle : 0) +
-    (hasCNAVPL ? resultatCNAVPL.pensionFinale : 0) +
+    (resultatFonctionPublique ? resultatFonctionPublique.pensionFinale + resultatFonctionPublique.rafpAnnuelle : 0) +
+    (resultatCNAVPL?.pensionFinale ?? 0) +
     resultatCNBF.pensionFinale;
   const majorationMicoTotaleAvantEcretement = majorationPalier1 + majorationPalier2;
   const majorationMicoTotaleApresEcretement = ecretementMICO(
@@ -645,9 +716,9 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     pensionTotaleConsolideeTousRegimes(
       pensionTotaleRegimeGeneral,
       hasFonctionPublique,
-      resultatFonctionPublique,
+      resultatFonctionPublique ?? { pensionFinale: 0, rafpAnnuelle: 0 },
       hasCNAVPL,
-      resultatCNAVPL
+      resultatCNAVPL ?? { pensionFinale: 0 }
     ) +
     resultatCNBF.pensionFinale +
     autresPensionsDeclarees;
@@ -655,15 +726,17 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
   return {
     trimestresEnfants: trimestresEnfants ?? AUCUN_TRIMESTRE_ENFANT,
     pensionTotaleConsolidee,
+    detailFonctionPublique: resultatFonctionPublique,
+    detailCNAVPL: resultatCNAVPL,
     ageTauxPlein: ageTauxPleinAffiche(trimestresTousRegimes, trimestresRequis),
     repartitionParRegime: {
       baseRegimeGeneral: pensionBaseAjustee,
       complementaireRegimeGeneral: totalPensionComplementaireAnnuelle,
-      fonctionPublique: resultatFonctionPublique.pensionFinale,
-      rafp: resultatFonctionPublique.rafpAnnuelle,
-      cnavpl: resultatCNAVPL.pensionFinale,
+      fonctionPublique: resultatFonctionPublique?.pensionFinale ?? 0,
+      rafp: resultatFonctionPublique?.rafpAnnuelle ?? 0,
+      cnavpl: resultatCNAVPL?.pensionFinale ?? 0,
       cnbf: resultatCNBF.pensionFinale,
-      rafpCapital: resultatFonctionPublique.rafpCapital,
+      rafpCapital: resultatFonctionPublique?.rafpCapital ?? 0,
       autresPensions: autresPensionsDeclarees,
     },
     historiqueTrimestres: resultatTrimestresDetailCarriere,
@@ -689,9 +762,9 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       regimeGeneral: pensionApresSurcoteRegimeGeneral,
       trimestresRegimeGeneral: trimestresValides,
       agircArrco: detailAgircArrco?.pensionAnnuelle ?? 0,
-      fonctionPublique: resultatFonctionPublique.pensionFinale,
-      rafp: resultatFonctionPublique.rafpAnnuelle,
-      cnavpl: resultatCNAVPL.pensionHorsMajorationEnfants,
+      fonctionPublique: resultatFonctionPublique?.pensionFinale ?? 0,
+      rafp: resultatFonctionPublique?.rafpAnnuelle ?? 0,
+      cnavpl: resultatCNAVPL?.pensionHorsMajorationEnfants ?? 0,
       reversionCaissesPoints: reversionCaissesPoints(caisses.details),
       reversionCNBF: resultatCNBF.pensionHorsMajorationEnfants * PARAMETRES_CNBF.tauxReversion,
     },

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { appliquerProjectionStatut } from './projectionStatut';
 import { calculerPensionConsolidee,
   calculerResultatFonctionPublique, EntreePensionConsolidee } from './pensionConsolidee';
 import {
@@ -371,5 +372,47 @@ describe('calculerPensionConsolidee — autres pensions déclarées', () => {
       3600 + (avec.repartitionParRegime.baseRegimeGeneral - sans.repartitionParRegime.baseRegimeGeneral),
       6
     );
+  });
+});
+
+describe('détail fonction publique / CNAVPL exposé (source unique des cartes Carrière)', () => {
+  const fp = {
+    traitementIndiciaireBrut: 36000,
+    trimestresLiquidables: 80,
+    pointsRAFP: 6000,
+    departAnticipeCategorieActive: false,
+    departPourInvalidite: false,
+    moyenneAnnuelleNBI: 0,
+    trimestresLiquidablesNBI: 0,
+  };
+  const cnavpl = { trimestresCNAVPL: 40, pointsCNAVPL: 1000, valeurPointCNAVPL: 0.6599 };
+
+  it('détail cohérent avec la répartition par régime', () => {
+    const r = calculerPensionConsolidee({ ...entreeBase, fonctionPublique: fp, cnavpl });
+    expect(r.detailFonctionPublique?.pensionFinale).toBeCloseTo(r.repartitionParRegime.fonctionPublique, 6);
+    expect(r.detailFonctionPublique?.rafpAnnuelle).toBeCloseTo(r.repartitionParRegime.rafp, 6);
+    expect(r.detailCNAVPL?.pensionFinale).toBeCloseTo(r.repartitionParRegime.cnavpl, 6);
+  });
+  it('régimes non cochés : détails nuls', () => {
+    const r = calculerPensionConsolidee(entreeBase);
+    expect(r.detailFonctionPublique).toBeNull();
+    expect(r.detailCNAVPL).toBeNull();
+  });
+  it('fonctionnaire projeté : le détail reflète les trimestres et le TIB projetés', () => {
+    const projection = appliquerProjectionStatut({
+      statut: 'fonctionnaire',
+      trimestresProjetes: 40,
+      revenuAnnuel: null,
+      primesAnnuellesFP: 5000,
+      trimestresValidesRG: 0,
+      salaireAnnuelMoyenRIS: 0,
+      salaireAnnuelMoyenProjete: 0,
+      fonctionPublique: fp,
+      cnavpl: null,
+      trajectoire: { evolution: 0.015, trimestreDebut: 0 },
+    });
+    const r = calculerPensionConsolidee({ ...entreeBase, regimesPoints: [], fonctionPublique: projection.fonctionPublique });
+    expect(r.detailFonctionPublique?.trimestresLiquidables).toBe(120);
+    expect(r.detailFonctionPublique?.traitementIndiciaireBrut).toBeCloseTo(36000 * 1.015 ** 9, 6);
   });
 });

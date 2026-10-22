@@ -936,8 +936,15 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     [entreePensionConsolidee]
   );
 
-  const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres, detailAgircArrco, detailCaissesPoints } =
-    resultatPension;
+  const {
+    detailRegimeGeneral,
+    repartitionParRegime,
+    historiqueTrimestres,
+    detailAgircArrco,
+    detailCaissesPoints,
+    detailFonctionPublique,
+    detailCNAVPL,
+  } = resultatPension;
 
   // Taux moyen de prélèvements sociaux de la pension estimée (personne seule,
   // 1 part) : conversion des gains de la vérification de carrière en net.
@@ -1797,15 +1804,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       />
 
       <CarriereFonctionPublique
-        trimestresRequis={trimestresRequis}
-        trimestresAutresRegimes={
-          (parseInt(trimestresValides) || 0) +
-          trimestresEnfantsPersonne.rg +
-          (hasCNAVPL ? (parseInt(trimestresCNAVPL) || 0) + trimestresEnfantsPersonne.cnavpl : 0) +
-          (hasCNBF ? parseInt(trimestresCNBF) || 0 : 0)
-        }
-        bonificationEnfants={trimestresEnfantsPersonne.fpBonification}
-        majorationDureeEnfants={trimestresEnfantsPersonne.fpMajorationDuree}
+        detail={detailFonctionPublique}
         hasFonctionPublique={hasFonctionPublique}
         onHasFonctionPubliqueChange={setHasFonctionPublique}
         trimestresLiquidables={trimestresLiquidablesFP}
@@ -1830,25 +1829,11 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onMoyenneAnnuelleNBIChange={setMoyenneAnnuelleNBI}
         trimestresLiquidablesNBI={trimestresLiquidablesNBI}
         onTrimestresLiquidablesNBIChange={setTrimestresLiquidablesNBI}
-        dateNaissance={dateNaissanceDetail}
-        dateEffet={dateEffetScenario}
-        auMoinsUnTrimestreMajorationEnfant={aDesEnfants ? trimestresEnfantsPersonne.auMoinsUn : auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />
 
       <CarriereCNAVPL
-        trimestresRequis={trimestresRequis}
-        trimestresAutresRegimes={
-          (parseInt(trimestresValides) || 0) +
-          trimestresEnfantsPersonne.rg +
-          (hasFonctionPublique
-            ? (parseInt(trimestresLiquidablesFP) || 0) +
-              trimestresEnfantsPersonne.fpBonification +
-              trimestresEnfantsPersonne.fpMajorationDuree
-            : 0) +
-          (hasCNBF ? parseInt(trimestresCNBF) || 0 : 0)
-        }
-        trimestresEnfantsCNAVPL={trimestresEnfantsPersonne.cnavpl}
+        detail={detailCNAVPL}
         hasCNAVPL={hasCNAVPL}
         onHasCNAVPLChange={setHasCNAVPL}
         trimestresCNAVPL={trimestresCNAVPL}
@@ -1857,9 +1842,6 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         onPointsCNAVPLChange={setPointsCNAVPL}
         valeurPointCNAVPL={valeurPointCNAVPL}
         onValeurPointCNAVPLChange={setValeurPointCNAVPL}
-        dateNaissance={dateNaissanceDetail}
-        dateEffet={dateEffetScenario}
-        auMoinsUnTrimestreMajorationEnfant={aDesEnfants ? trimestresEnfantsPersonne.auMoinsUn : auMoinsUnTrimestreMajorationEnfant}
         nombreEnfantsEligibles={nombreEnfantsEligibles}
       />
 

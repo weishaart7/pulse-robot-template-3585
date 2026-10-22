@@ -143,7 +143,7 @@ describe('calculerSAM — plafonnement au PASS AVANT revalorisation', () => {
 
 describe('calculerSAM — années sans barème de validation (projections futures)', () => {
   it('une année future à 0 trimestre faute de barème reste éligible', () => {
-    const periode = (annee: number, revenu: number) => ({
+    const periode = (annee: number, revenu: number): PeriodeCarriere => ({
       employeur: 'E',
       typeActivite: 'employeur',
       dateDebut: `${annee}-01-01`,
