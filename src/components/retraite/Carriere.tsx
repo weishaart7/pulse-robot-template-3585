@@ -1,4 +1,5 @@
 import { caisseADassietteDediee, caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
+import { VerificationCarriere } from './VerificationCarriere';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
@@ -1728,6 +1729,16 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           )}
         </PanelCardContent>
       </PanelCard>
+
+      <VerificationCarriere
+        entree={entreePensionConsolidee}
+        periodes={detailCarriere}
+        trimestresRISRegimeGeneral={trimValidesRegimeGeneral}
+        historique={historiqueTrimestres}
+        trimestresEnfants={trimestresEnfantsPersonne}
+        mdaDejaAuRis={mdaDejaAuRis}
+        dateEffet={dateEffetScenario}
+      />
 
       <CarriereFonctionPublique
         trimestresRequis={trimestresRequis}

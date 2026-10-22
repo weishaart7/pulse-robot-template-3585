@@ -201,7 +201,7 @@ type SousTypeMicroEntrepreneur = keyof typeof ABATTEMENT_MICRO_ENTREPRENEUR;
  * observé qui déclencherait ce cas — à surveiller si un relevé futur en
  * produit un.
  */
-function classifierSousTypeMicroEntrepreneur(employeurTexte: string): SousTypeMicroEntrepreneur | null {
+export function classifierSousTypeMicroEntrepreneur(employeurTexte: string): SousTypeMicroEntrepreneur | null {
   const normalise = employeurTexte
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

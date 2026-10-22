@@ -238,6 +238,28 @@ uniquement applicatif via `familyService`.
   - Non couverts : caisses à points non paramétrées (RAAP des
     artistes-auteurs…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
     (chômage, maladie).
+- **Vérification de carrière (phase 4, A3, modèle Sapiendo)** — [verificationCarriere.ts](src/lib/retraite/verificationCarriere.ts),
+  panneau [VerificationCarriere.tsx](src/components/retraite/VerificationCarriere.tsx) sous « Détail de
+  carrière » dans Carrière. Contrôles sur le détail de carrière importé du RIS (périodes, revenu, régimes
+  listés par ligne) :
+  - *année manquante* : année civile sans aucune période entre la première et la dernière (+4 trimestres,
+    à justifier) ;
+  - *trimestres sous-comptés* : total RIS du régime général inférieur au total recalculé sur les revenus
+    (écart en trimestres ; années à 4 trimestres listées) ;
+  - *Agirc-Arrco absent* : année salariée au régime général (1962 et après) sans ligne Agirc-Arrco ni
+    Ircantec, points estimés sur le salaire de l'année (barème actuel) ;
+  - *RCI absent* : activité d'indépendant (libellé artisan, commerçant, indépendant ; micro-entrepreneur)
+    de 2013 et après sans ligne RCI, points du moteur des caisses à points sur le revenu (abattement
+    micro appliqué) ;
+  - *chômage sans points* : chômage indemnisé sans ligne Agirc-Arrco, points estimés sur le salaire de
+    l'année précédente au prorata de la durée ;
+  - *trimestres enfants* : MDA calculées mais non cochées « déjà au RIS », à faire valoir à la
+    liquidation.
+
+  Gain : pension annuelle recalculée par `calculerPensionConsolidee` avec la correction moins sans, ÷ 12,
+  au départ du scénario de Carrière ; gain total = toutes les corrections ensemble (effets de seuil
+  compris), hors trimestres enfants (déjà dans la pension estimée). Informatif : aucune correction n'est
+  injectée dans la pension affichée ; pas de score de fiabilité ; courriers de régularisation non fournis.
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
   carte « Revenu net à la retraite » de `Synthese.tsx` :
   - *Prélèvements sociaux* : tranche de CSG (0 / 3,8 / 6,6 / 8,3 %) selon le RFR et le nombre de parts
@@ -667,6 +689,16 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   demandée pour cette session).
 
 ### 🟠 À surveiller (cas limite, peu probable)
+
+- **Vérification de carrière — limites.** Le RIS importé ne porte ni trimestres ni points par année :
+  le contrôle des trimestres ne voit qu'un écart global (même mesure que l'indicateur de cohérence de
+  Carrière), et les contrôles de points reposent sur l'absence de la ligne du régime, avec des libellés
+  confirmés seulement pour « L'Assurance retraite », « Agirc-Arrco », « RCI » et « Ircantec ». Points
+  estimés au barème 2026 (approximation pour les années anciennes) ; chômage estimé sur le dernier salaire
+  annuel connu, pas sur le salaire journalier de référence. Années manquantes après la dernière période
+  non signalées (déjà listées comme années passées sans donnée). Gains bruts, non nets (A5). Confirmation
+  des anomalies par le conseiller et scénario « après vérification » non faits (option B écartée le
+  2026-10-22), courriers de régularisation et export PDF reportés.
 
 - **CARMF — valeurs et règles à confirmer.** Tranche et plafond des points proportionnels ASV 2026
   non publiés (8 810 € et 9 points, Fidroit 2024 ; Sapiendo évoque 9,5 points). Début de la surcote :
