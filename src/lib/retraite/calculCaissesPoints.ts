@@ -50,6 +50,13 @@
  *   déclarée (`CARCDSF_CD` : 10 + 1,93 points ; `CARCDSF_SF` : 18 points) ; les
  *   points PCV lus au RIS vont à la PCV de la profession déclarée (dentiste par
  *   défaut).
+ * - CAVP répartition (pharmaciens) : 1 annuité par année cotisée × valeur de
+ *   l'annuité, plafonnée à la durée requise ÷ 4 (retraite entière) ; taux plein
+ *   à 67 ans, minoration 1,25 % par trimestre avant 65 ans et 0,5 % de 65 à 67
+ *   ans ; surcote 0,5 % par trimestre de 67 à 70 ans. PCV des biologistes
+ *   conventionnés : 262 points + 50 au prorata du revenu (5 PASS). Volet par
+ *   capitalisation : rente estimée (calculCAVPCapitalisation.ts), ligne `id`
+ *   `cavpCapitalisation` sans réversion.
  */
 
 import { RegimeDetecte } from './parseRIS';
@@ -57,6 +64,7 @@ import { DateNaissance, ageEnMois, ageLegalPourGeneration } from './calcul';
 import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS, ParametresCaissePoints } from './parametres';
 import { decoteCNAVPL } from './calculCNAVPL';
 import { coefficientAnticipationAgircArrco } from './calculAgircArrco';
+import { renteCAVPCapitalisation } from './calculCAVPCapitalisation';
 
 export type IdentifiantCaisse = keyof typeof PARAMETRES_CAISSES_POINTS;
 
@@ -185,8 +193,20 @@ export function majorationEnfantsPct(caisse: ParametresCaissePoints, nombreEnfan
   return nombreEnfants >= 3 ? caisse.majorationTroisEnfantsPct : 0;
 }
 
+/**
+ * Minoration propre (âge de taux plein fixe) : trimestres d'anticipation
+ * arrondis au supérieur, bornés ; ceux avant `tauxRenforce.avantAge` au taux renforcé.
+ */
+export function tauxDecoteAge(decote: NonNullable<ParametresCaissePoints['decoteAge']>, ageDepart: number): number {
+  const trimestres = (age: number) => Math.max(0, Math.ceil((age - ageDepart) * 4 - 1e-6));
+  const total = Math.min(trimestres(decote.ageTauxPlein), decote.trimestresMax ?? Infinity);
+  const renforces = decote.tauxRenforce ? Math.min(total, trimestres(decote.tauxRenforce.avantAge)) : 0;
+  return (total - renforces) * decote.tauxParTrimestre + renforces * (decote.tauxRenforce?.tauxParTrimestre ?? 0);
+}
+
 export interface DetailCaissePoints {
-  id: IdentifiantCaisse;
+  /** Caisse paramétrée, ou volet par capitalisation de la CAVP (rente estimée). */
+  id: IdentifiantCaisse | 'cavpCapitalisation';
   nom: string;
   pointsAcquis: number;
   pointsProjetes: number;
@@ -214,6 +234,10 @@ export interface EntreeCaissesPoints {
   trimestresManquants: number;
   /** Classe de cotisation choisie (CNBF : C1, C2, C2+). */
   classe?: string | null;
+  /** Durée requise de la génération (plafond des annuités CAVP). */
+  trimestresRequis?: number;
+  /** Capital acquis dans le volet par capitalisation de la CAVP (extrait de compte). */
+  capitalCAVP?: number | null;
 }
 
 export interface ResultatCaissesPoints {
@@ -241,10 +265,15 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
   const details: DetailCaissePoints[] = [];
   for (const [id, pointsAcquis] of pointsParCaisse) {
     const caisse = PARAMETRES_CAISSES_POINTS[id];
-    const pointsProjetes =
+    const pointsProjetesBruts =
       caissesProjetees.includes(id) && entree.revenuAnnuel !== null
         ? (pointsAnnuelsCaisse(caisse, entree.revenuAnnuel, entree.classe) * Math.max(0, entree.trimestresProjetes)) / 4
         : 0;
+    // Retraite entière (CAVP) : annuités plafonnées à la durée requise ÷ 4.
+    const pointsProjetes =
+      caisse.plafondPointsDureeRequise && entree.trimestresRequis !== undefined
+        ? Math.max(0, Math.min(pointsProjetesBruts, entree.trimestresRequis / 4 - pointsAcquis))
+        : pointsProjetesBruts;
     const coefficientSurcote =
       ageDepart !== null && ageLegal !== null
         ? coefficientAgeCaisse(caisse, ageDepart, ageLegal, -entree.trimestresManquants)
@@ -255,11 +284,7 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
       : 0;
     // Minoration propre (âge de taux plein fixe) : trimestres manquants arrondis au supérieur.
     const minorationAge =
-      caisse.decoteAge && ageDepart !== null
-        ? -Math.min(
-            Math.max(0, Math.ceil((caisse.decoteAge.ageTauxPlein - ageDepart) * 4 - 1e-6)),
-            caisse.decoteAge.trimestresMax ?? Infinity
-          ) * caisse.decoteAge.tauxParTrimestre
+      caisse.decoteAge && ageDepart !== null ? -tauxDecoteAge(caisse.decoteAge, ageDepart)
         : 0;
     const abattement = caisse.abattementTrimestres
       ? -abattementParTrimestres(caisse.abattementTrimestres, entree.trimestresManquants, ageDepart)
@@ -295,6 +320,25 @@ export function calculerCaissesPoints(entree: EntreeCaissesPoints): ResultatCais
       capital,
       tauxReversion: caisse.tauxReversion,
     });
+  }
+  // Volet par capitalisation de la CAVP : capital déclaré ou pharmacien en activité.
+  if (ageDepart !== null && ((entree.capitalCAVP ?? 0) > 0 || caissesProjetees.includes('cavp'))) {
+    const anneesProjetees = caissesProjetees.includes('cavp') ? Math.max(0, entree.trimestresProjetes) / 4 : 0;
+    const { renteAnnuelle } = renteCAVPCapitalisation(entree.capitalCAVP ?? 0, entree.revenuAnnuel, anneesProjetees, ageDepart);
+    if (renteAnnuelle > 0) {
+      details.push({
+        id: 'cavpCapitalisation',
+        nom: 'CAVP capitalisation (estimation)',
+        pointsAcquis: 0,
+        pointsProjetes: 0,
+        valeurServicePoint: 0,
+        coefficientAge: 1,
+        majorationEnfants: 0,
+        pensionAnnuelle: renteAnnuelle,
+        capital: 0,
+        tauxReversion: 0,
+      });
+    }
   }
   return {
     details,

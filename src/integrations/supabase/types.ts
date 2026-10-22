@@ -2487,6 +2487,7 @@ export type Database = {
           has_cnbf: boolean
           trimestres_cnbf: number | null
           cnbf_classe: string
+          cavp_capital_capitalisation: number | null
           liberal_conventionne: boolean
           primes_annuelles_fp: number | null
           updated_at: string
@@ -2531,6 +2532,7 @@ export type Database = {
           has_cnbf?: boolean
           trimestres_cnbf?: number | null
           cnbf_classe?: string
+          cavp_capital_capitalisation?: number | null
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string
@@ -2575,6 +2577,7 @@ export type Database = {
           has_cnbf?: boolean
           trimestres_cnbf?: number | null
           cnbf_classe?: string
+          cavp_capital_capitalisation?: number | null
           liberal_conventionne?: boolean
           primes_annuelles_fp?: number | null
           updated_at?: string

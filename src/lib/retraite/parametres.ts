@@ -151,7 +151,15 @@ export interface ParametresCaissePoints {
     tauxAuDela: number;
   };
   /** Minoration propre à la caisse par trimestre manquant avant un âge de taux plein fixe. */
-  decoteAge?: { ageTauxPlein: number; tauxParTrimestre: number; trimestresMax?: number };
+  decoteAge?: {
+    ageTauxPlein: number;
+    tauxParTrimestre: number;
+    trimestresMax?: number;
+    /** Taux plus fort pour les trimestres d'anticipation avant cet âge (CAVP : 1,25 % avant 65 ans). */
+    tauxRenforce?: { avantAge: number; tauxParTrimestre: number };
+  };
+  /** Points (annuités) plafonnés à la durée requise de la génération ÷ 4 (CAVP : retraite entière). */
+  plafondPointsDureeRequise?: boolean;
   /**
    * Minoration selon les grilles d'anticipation Agirc-Arrco (âge et trimestres manquants, la plus
    * favorable), seulement si la retraite de base est minorée (Ircantec).
@@ -167,6 +175,12 @@ export interface ParametresCaissePoints {
   /** Majoration selon le nombre d'enfants (clé = nombre minimal), remplace `majorationTroisEnfantsPct`. */
   majorationEnfantsBaremePct?: Record<string, number>;
   tauxReversion: number;
+}
+
+export interface ParametresCAVPCapitalisation {
+  source: string;
+  /** Classes par revenu croissant (`revenuMax` null : dernière classe), part capitalisée annuelle. */
+  cotisationParClasse: { classe: number; revenuMax: number | null; cotisation: number }[];
 }
 
 export interface ParametresCNBF {
@@ -245,8 +259,9 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
-  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints; cipav: ParametresCaissePoints; cavec: ParametresCaissePoints; cnbf: ParametresCaissePoints; rci: ParametresCaissePoints; ircantec: ParametresCaissePoints; cavp: ParametresCaissePoints; cavpPcv: ParametresCaissePoints; carpimko: ParametresCaissePoints; carpimkoAsv: ParametresCaissePoints; carcdsf: ParametresCaissePoints; carcdsfPcvCd: ParametresCaissePoints; carcdsfPcvSf: ParametresCaissePoints };
   cnbf: ParametresCNBF;
+  cavpCapitalisation: ParametresCAVPCapitalisation;
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
@@ -297,6 +312,7 @@ export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
 export const PARAMETRES_MDA: ParametresMDA = PARAMS.mda;
 export const PARAMETRES_CAISSES_POINTS = PARAMS.caissesPoints;
 export const PARAMETRES_CNBF: ParametresCNBF = PARAMS.cnbf;
+export const PARAMETRES_CAVP_CAPITALISATION: ParametresCAVPCapitalisation = PARAMS.cavpCapitalisation;
 export const PARAMETRES_PROJECTION_STATUT: ParametresProjectionStatut = PARAMS.projectionStatut;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;

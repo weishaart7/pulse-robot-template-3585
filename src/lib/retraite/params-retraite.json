@@ -1330,7 +1330,8 @@
       },
       "surcote": [],
       "majorationTroisEnfantsPct": 10,
-      "tauxReversion": 0.6
+      "tauxReversion": 0.6,
+      "exclureMotifNom": "CAVP|pharmacien|biolog"
     },
     "carcdsfPcvSf": {
       "nom": "CARCDSF PCV (sages-femmes conventionnées)",
@@ -1357,6 +1358,64 @@
       },
       "surcote": [],
       "majorationTroisEnfantsPct": 0,
+      "tauxReversion": 0.6,
+      "exclureMotifNom": "CAVP|pharmacien|biolog"
+    },
+    "cavp": {
+      "nom": "CAVP répartition (pharmaciens)",
+      "motifNom": "CAVP|pharmaciens",
+      "exclureMotifNom": "\\bPCV\\b|\\bASV\\b|biolog|suppl[ée]mentaire|capitalisation",
+      "caisseLiberale": "CAVP",
+      "source": "Règles : Fidroit CAVP 2025 §3.1 (taux plein à 67 ans ; minoration 1,25 % par trimestre entre l'âge légal et 65 ans, 0,5 % par trimestre de 65 à 67 ans ; majoration 0,5 % par trimestre de 67 à 70 ans ; +10 % pour 3 enfants ; retraite plafonnée à la retraite entière, nombre d'annuités suivant la durée de référence de la base). Valeurs 2026 : cavp.fr (328,80 € par annuité cotisée, retraite entière 42,5 annuités = 13 974 €) ; 1 annuité par année cotisée, quelle que soit la classe (cotisation de répartition identique 7 657 €, taux d'appel 105,4 %). Majoration historique de 4 % (Fidroit) non appliquée, absente des montants officiels 2026. Réductions de classe 3 (droits réduits) non modélisées. Réversion 60 % (document de référence CAVP 2025, via recherche web, à confirmer)",
+      "valeurServicePoint": 328.8,
+      "acquisition": {
+        "mode": "classes",
+        "classes": [
+          {
+            "revenuMax": null,
+            "points": 1
+          }
+        ]
+      },
+      "plafondPointsDureeRequise": true,
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.005,
+        "tauxRenforce": {
+          "avantAge": 65,
+          "tauxParTrimestre": 0.0125
+        }
+      },
+      "surcote": [
+        {
+          "depuis": 67,
+          "jusquA": 70,
+          "tauxParTrimestre": 0.005
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
+    },
+    "cavpPcv": {
+      "nom": "CAVP PCV (biologistes conventionnés)",
+      "motifNom": "CAVP.*(\\bPCV\\b|\\bASV\\b|biolog|suppl[ée]mentaire)|biologistes",
+      "caisseLiberale": "CAVP",
+      "conventionneSeulement": true,
+      "source": "Règles : Fidroit CAVP 2025 §2.2 et §3.3 (262 points par an + 50 points pour une cotisation d'ajustement au plafond de 5 PASS, au prorata en dessous, soit 1 point par 4 806 € = 5 × PASS 2026 ÷ 50 ; taux plein à 67 ans, minoration 1,25 % par trimestre, 20 trimestres au plus ; +10 % pour 3 enfants ; valeur 0,3927 € des points acquis depuis 2006, valeur 2026 non trouvée, points antérieurs valorisés de même). Cotisations 2026 : brochure CAVP « Les cotisations 2026 ». Réversion 60 % (hypothèse, aucune source)",
+      "valeurServicePoint": 0.3927,
+      "acquisition": {
+        "mode": "forfaitPlusRevenuParPoint",
+        "pointsForfait": 262,
+        "revenuParPoint": 4806,
+        "pointsMaxProportionnels": 50
+      },
+      "decoteAge": {
+        "ageTauxPlein": 67,
+        "tauxParTrimestre": 0.0125,
+        "trimestresMax": 20
+      },
+      "surcote": [],
+      "majorationTroisEnfantsPct": 10,
       "tauxReversion": 0.6
     }
   },
@@ -1367,5 +1426,65 @@
     "avtsPour60Trimestres": 4059.72,
     "majorationTroisEnfantsPct": 10,
     "tauxReversion": 0.54
+  },
+  "cavpCapitalisation": {
+    "source": "Brochure CAVP « Les cotisations 2026 » (part capitalisée de 2 906 € en classe 3 à 17 436 € en classe 13, 2 à 12 fois la cotisation de référence de 1 453 €) ; tranches de revenu des classes : Fidroit CAVP 2025 §2.1.1 (barème 2025, révisable tous les 5 ans ; revenu de référence = moyenne N-4 à N-2, approché par le revenu futur). Rente : estimation, capital projeté au rendement réel central du module Épargne puis converti en annuité jusqu'à l'âge de référence INSEE (sans réversion) ; le coefficient de conversion de la CAVP n'est pas publié (taux de distribution 2024 : 3,5 %)",
+    "cotisationParClasse": [
+      {
+        "classe": 3,
+        "revenuMax": 84042,
+        "cotisation": 2906
+      },
+      {
+        "classe": 4,
+        "revenuMax": 101430,
+        "cotisation": 4359
+      },
+      {
+        "classe": 5,
+        "revenuMax": 118818,
+        "cotisation": 5812
+      },
+      {
+        "classe": 6,
+        "revenuMax": 136206,
+        "cotisation": 7265
+      },
+      {
+        "classe": 7,
+        "revenuMax": 153594,
+        "cotisation": 8718
+      },
+      {
+        "classe": 8,
+        "revenuMax": 170982,
+        "cotisation": 10171
+      },
+      {
+        "classe": 9,
+        "revenuMax": 188370,
+        "cotisation": 11624
+      },
+      {
+        "classe": 10,
+        "revenuMax": 205758,
+        "cotisation": 13077
+      },
+      {
+        "classe": 11,
+        "revenuMax": 223146,
+        "cotisation": 14530
+      },
+      {
+        "classe": 12,
+        "revenuMax": 240534,
+        "cotisation": 15983
+      },
+      {
+        "classe": 13,
+        "revenuMax": null,
+        "cotisation": 17436
+      }
+    ]
   }
 }

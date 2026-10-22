@@ -66,6 +66,7 @@ const REGIME_CONVENTIONNE: Record<string, string> = {
   CARPIMKO: 'ASV',
   CARCDSF_CD: 'PCV',
   CARCDSF_SF: 'PCV',
+  CAVP: 'PCV',
 };
 
 const formatDateFr = (dateIso: string) => {
@@ -224,6 +225,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Caisse complémentaire d'un libéral et conventionnement (calculCaissesPoints.ts).
   const [caisseLiberale, setCaisseLiberale] = useState<string>('');
   const [liberalConventionne, setLiberalConventionne] = useState(false);
+  // Capital du volet par capitalisation CAVP (extrait de compte), calculCAVPCapitalisation.ts.
+  const [capitalCAVP, setCapitalCAVP] = useState<string>('');
   // Avocats : retraite de base CNBF et classe de la complémentaire (calculCNBF.ts).
   const [hasCNBF, setHasCNBF] = useState(false);
   const [trimestresCNBF, setTrimestresCNBF] = useState<string>('');
@@ -413,6 +416,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.liberal_conventionne !== undefined) {
         setLiberalConventionne(data.liberal_conventionne);
       }
+      if (data.cavp_capital_capitalisation !== undefined && data.cavp_capital_capitalisation !== null) {
+        setCapitalCAVP(data.cavp_capital_capitalisation.toString());
+      }
       if (data.has_cnbf !== undefined) {
         setHasCNBF(data.has_cnbf);
       }
@@ -481,6 +487,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             primes_annuelles_fp: parseFloat(primesAnnuellesFP) || null,
             caisse_liberale: caisseLiberale || null,
             liberal_conventionne: liberalConventionne,
+            cavp_capital_capitalisation: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || null : null,
             has_cnbf: hasCNBF,
             trimestres_cnbf: parseInt(trimestresCNBF) || 0,
             cnbf_classe: cnbfClasse,
@@ -505,6 +512,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       primesAnnuellesFP,
       caisseLiberale,
       liberalConventionne,
+      capitalCAVP,
       hasCNBF,
       trimestresCNBF,
       cnbfClasse,
@@ -831,11 +839,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
         conventionne: liberalConventionne,
         revenuAnnuel: projectionRevenuFutur.revenuHypothese,
         trimestresProjetes: projectionStatut.trimestresCaisseProjetes,
+        capitalCAVP: caisseLiberale === 'CAVP' ? parseFloat(capitalCAVP) || 0 : 0,
       },
     }),
     [
       caisseLiberale,
       liberalConventionne,
+      capitalCAVP,
       statutActuel,
       trimestresEnfantsPersonne,
       projectionStatut,
@@ -1019,6 +1029,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         <SelectItem value="CARPIMKO" className="text-xs">CARPIMKO (auxiliaires médicaux)</SelectItem>
                         <SelectItem value="CARCDSF_CD" className="text-xs">CARCDSF (chirurgiens-dentistes)</SelectItem>
                         <SelectItem value="CARCDSF_SF" className="text-xs">CARCDSF (sages-femmes)</SelectItem>
+                        <SelectItem value="CAVP" className="text-xs">CAVP (pharmaciens)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1028,8 +1039,23 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                         checked={liberalConventionne}
                         onCheckedChange={(checked) => setLiberalConventionne(checked === true)}
                       />
-                      Conventionné ({REGIME_CONVENTIONNE[caisseLiberale]})
+                      {caisseLiberale === 'CAVP' ? 'Biologiste conventionné' : 'Conventionné'} (
+                      {REGIME_CONVENTIONNE[caisseLiberale]})
                     </label>
+                  )}
+                  {caisseLiberale === 'CAVP' && (
+                    <div className="space-y-1.5 max-w-[12rem]">
+                      <Label htmlFor={`capital-cavp-${personne}`} className="text-xs">
+                        Capital CAVP capitalisation (€)
+                      </Label>
+                      <Input
+                        id={`capital-cavp-${personne}`}
+                        type="number"
+                        className="h-8 text-xs"
+                        value={capitalCAVP}
+                        onChange={(e) => setCapitalCAVP(e.target.value)}
+                      />
+                    </div>
                   )}
                 </>
               )}
@@ -1469,6 +1495,13 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   ? `${formatEuro2(caisse.capital)} en versement unique`
                   : `${formatEuro2(caisse.pensionAnnuelle)} / an`}
               </div>
+              {caisse.id === 'cavpCapitalisation' ? (
+                <p className="text-xs text-muted-foreground">
+                  Estimation : capital déclaré, projeté avec la part capitalisée de la classe du revenu futur, converti en
+                  rente jusqu'à l'âge de référence INSEE ; le coefficient de conversion de la CAVP n'est pas publié. Sans
+                  réversion.
+                </p>
+              ) : (
               <p className="text-xs text-muted-foreground">
                 {caisse.pointsAcquis.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} points acquis
                 {caisse.pointsProjetes > 0 &&
@@ -1479,6 +1512,7 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                 {caisse.majorationEnfants > 0 && `, + ${formatEuro2(caisse.majorationEnfants)} de majoration pour 3 enfants`}
                 . Réversion {Math.round(caisse.tauxReversion * 100)} %.
               </p>
+              )}
             </div>
           ))}
 

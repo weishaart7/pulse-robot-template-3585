@@ -9,6 +9,7 @@ import {
   abattementParTrimestres,
   EntreeCaissesPoints,
   majorationEnfantsPct,
+  tauxDecoteAge,
 } from './calculCaissesPoints';
 import { MILLESIME_COURANT, PARAMETRES_CAISSES_POINTS } from './parametres';
 
@@ -414,5 +415,63 @@ describe('CARCDSF (chirurgiens-dentistes et sages-femmes)', () => {
     const c = r.details.find((d) => d.id === 'carcdsf')!;
     expect(c.majorationEnfants).toBeCloseTo((c.pensionAnnuelle * 10) / 110, 6);
     expect(r.details.find((d) => d.id === 'carcdsfPcvSf')).toBeUndefined();
+  });
+});
+
+describe('CAVP (pharmaciens)', () => {
+  const { cavp, cavpPcv } = PARAMETRES_CAISSES_POINTS;
+  const base: EntreeCaissesPoints = {
+    regimesPoints: [{ nom: 'CAVP', type: 'points', points: 20 }],
+    dateNaissance: { annee: 1970, mois: 3 },
+    dateEffet: new Date(Date.UTC(2037, 3, 1)), // 67 ans
+    nombreEnfantsEligibles: 0,
+    caisseLiberale: 'CAVP',
+    conventionne: false,
+    revenuAnnuel: 90000,
+    trimestresProjetes: 40,
+    trimestresManquants: 0,
+    trimestresRequis: 172,
+  };
+  const repartition = (r: ReturnType<typeof calculerCaissesPoints>) => r.details.find((d) => d.id === 'cavp')!;
+
+  it('reconnaissance au RIS : répartition et PCV distinguées', () => {
+    expect(caisseDuRegime('CAVP')).toBe('cavp');
+    expect(caisseDuRegime('CAVP - PCV biologistes')).toBe('cavpPcv');
+    expect(caisseDuRegime('CARCDSF - PCV')).toBe('carcdsfPcvCd');
+  });
+  it('1 annuité par année cotisée × 328,80 €, quel que soit le revenu', () => {
+    expect(pointsAnnuelsCaisse(cavp, 30000)).toBe(1);
+    expect(pointsAnnuelsCaisse(cavp, 300000)).toBe(1);
+    const d = repartition(calculerCaissesPoints(base));
+    expect(d.pointsProjetes).toBe(10);
+    expect(d.pensionAnnuelle).toBeCloseTo(30 * 328.8, 6);
+  });
+  it('annuités plafonnées à la retraite entière (durée requise ÷ 4)', () => {
+    const d = repartition(calculerCaissesPoints({ ...base, regimesPoints: [{ nom: 'CAVP', type: 'points', points: 40 }] }));
+    expect(d.pointsProjetes).toBe(3);
+    expect(d.pointsAcquis + d.pointsProjetes).toBe(43);
+  });
+  it('minoration : 1,25 % par trimestre avant 65 ans, 0,5 % de 65 à 67 ans', () => {
+    expect(tauxDecoteAge(cavp.decoteAge!, 64)).toBeCloseTo(4 * 0.0125 + 8 * 0.005, 6);
+    expect(tauxDecoteAge(cavp.decoteAge!, 66)).toBeCloseTo(4 * 0.005, 6);
+    expect(tauxDecoteAge(cavp.decoteAge!, 67)).toBe(0);
+  });
+  it('surcote 0,5 % par trimestre de 67 à 70 ans', () => {
+    expect(coefficientAgeCaisse(cavp, 68, 64)).toBeCloseTo(1.02, 6);
+    expect(coefficientAgeCaisse(cavp, 72, 64)).toBeCloseTo(1.06, 6);
+  });
+  it('PCV des biologistes conventionnés : 262 points + 50 au prorata de 5 PASS', () => {
+    const pass = MILLESIME_COURANT.pass;
+    expect(pointsAnnuelsCaisse(cavpPcv, 5 * pass)).toBeCloseTo(312, 0);
+    expect(pointsAnnuelsCaisse(cavpPcv, 0)).toBe(262);
+    expect(caissesDuLiberal('CAVP', true)).toEqual(['cavp', 'cavpPcv']);
+    expect(tauxDecoteAge(cavpPcv.decoteAge!, 60)).toBeCloseTo(20 * 0.0125, 6);
+  });
+  it('capitalisation : rente estimée ajoutée, sans réversion', () => {
+    const r = calculerCaissesPoints({ ...base, capitalCAVP: 100000 });
+    const c = r.details.find((d) => d.id === 'cavpCapitalisation')!;
+    expect(c.pensionAnnuelle).toBeGreaterThan(0);
+    expect(c.tauxReversion).toBe(0);
+    expect(r.total).toBeCloseTo(repartition(r).pensionAnnuelle + c.pensionAnnuelle, 6);
   });
 });

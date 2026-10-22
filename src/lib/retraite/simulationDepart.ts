@@ -79,6 +79,8 @@ export interface ContexteSimulationDepart {
   /** Caisse complémentaire d'un libéral et conventionnement (ASV). */
   caisseLiberale?: string | null;
   liberalConventionne?: boolean;
+  /** Capital du volet par capitalisation CAVP (extrait de compte). */
+  capitalCAVP?: number;
   /** MDA à une date d'effet (éducation acquise année après année), absent = aucune. */
   trimestresEnfantsA?: (dateEffet: Date) => TrimestresEnfantsParRegime;
   /** Salaire de projection des points Agirc-Arrco, `null` si inconnu. */
@@ -201,6 +203,8 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
           : 0,
       trimestresManquants,
       classe: ctx.cnbf?.classe ?? null,
+      trimestresRequis: dateNaissance ? trimestresRequisPourGeneration(dateNaissance, dateEffet) : undefined,
+      capitalCAVP: ctx.capitalCAVP ?? 0,
     });
     return (
       caisses.total +

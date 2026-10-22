@@ -280,6 +280,7 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     caisseLiberale: retraiteData.caisse_liberale ?? null,
     cnbf,
     liberalConventionne: retraiteData.liberal_conventionne ?? false,
+    capitalCAVP: retraiteData.caisse_liberale === 'CAVP' ? retraiteData.cavp_capital_capitalisation ?? 0 : 0,
     // Trimestres enfants recalculés à chaque date (éducation acquise année par
     // année) ; condition des 8 trimestres appréciée sur les droits actuels.
     trimestresEnfantsA: (date) =>

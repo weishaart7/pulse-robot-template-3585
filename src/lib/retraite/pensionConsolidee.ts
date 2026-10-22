@@ -170,6 +170,8 @@ export interface EntreePensionConsolidee {
     conventionne: boolean;
     revenuAnnuel: number | null;
     trimestresProjetes: number;
+    /** Capital du volet par capitalisation CAVP (extrait de compte). */
+    capitalCAVP?: number;
   };
 }
 
@@ -555,6 +557,8 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
     trimestresProjetes: entree.caissesPoints?.trimestresProjetes ?? 0,
     trimestresManquants: trimestresRequis - trimestresTousRegimes,
     classe: entree.cnbf?.classe ?? null,
+    trimestresRequis,
+    capitalCAVP: entree.caissesPoints?.capitalCAVP ?? 0,
   });
   const totalPensionComplementaireAnnuelle =
     (detailAgircArrco?.pensionAnnuelle ?? 0) +

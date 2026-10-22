@@ -31,6 +31,7 @@ export interface RetraiteData {
   cnbf_classe?: string;
   /** Libéral conventionné : régime supplémentaire (ASV…). */
   liberal_conventionne?: boolean;
+  cavp_capital_capitalisation?: number | null;
   /** Primes annuelles d’un fonctionnaire (assiette RAFP). */
   primes_annuelles_fp?: number | null;
   // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /

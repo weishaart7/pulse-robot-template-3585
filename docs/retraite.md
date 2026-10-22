@@ -180,8 +180,24 @@ uniquement applicatif via `familyService`.
     minoration de 1,25 % par trimestre, plus favorable entre âge et durée, 15 % au plus, pas de
     majoration familiale ; réversion 60 %. Les points PCV lus au RIS vont à la PCV de la profession
     déclarée (dentiste par défaut, `caisseDuRegime`).
+  - *CAVP répartition* (pharmaciens) : 1 annuité par année cotisée, quelle que soit la classe, × 328,80 €
+    (2026), plafonnée à la retraite entière = durée requise ÷ 4 annuités (`plafondPointsDureeRequise`,
+    `trimestresRequis` transmis par l'appelant) ; taux plein à 67 ans, minoration de 1,25 % par
+    trimestre avant 65 ans et 0,5 % de 65 à 67 ans (`decoteAge.tauxRenforce`) ; surcote de 0,5 % par
+    trimestre de 67 à 70 ans ; +10 % pour 3 enfants ; réversion 60 %. Majoration historique de 4 %
+    (Fidroit) non appliquée, absente des montants officiels 2026.
+  - *CAVP PCV* (biologistes conventionnés) : 262 points + 50 au prorata du revenu jusqu'à 5 PASS, valeur
+    0,3927 € ; minoration de 1,25 % par trimestre avant 67 ans, 20 trimestres au plus ; +10 % pour
+    3 enfants ; réversion 60 % (hypothèse).
+  - *CAVP capitalisation* — [calculCAVPCapitalisation.ts](src/lib/retraite/calculCAVPCapitalisation.ts),
+    bloc `cavpCapitalisation`, colonne `retraite_data.cavp_capital_capitalisation` (migration
+    `20261022170000`, saisie dans Carrière quand la CAVP est choisie) : rente estimée = capital déclaré
+    (extrait de compte) projeté avec la part capitalisée de la classe du revenu futur (2 906 à 17 436 €
+    en 2026, tranches de revenu Fidroit 2025) au rendement réel central du module Épargne, converti en
+    annuité jusqu'à l'âge de référence INSEE (moyenne hommes-femmes) ; ligne `cavpCapitalisation` des
+    caisses, dans les totaux, sans réversion.
   - Sélecteur « Caisse complémentaire » de Carrière : CARMF, CIPAV, CAVEC, CARPIMKO, CARCDSF
-    (chirurgiens-dentistes), CARCDSF (sages-femmes) ; case « Conventionné » pour les caisses à régime
+    (chirurgiens-dentistes), CARCDSF (sages-femmes), CAVP (pharmaciens) ; case « Conventionné » pour les caisses à régime
     supplémentaire (ASV ou PCV).
 - **Retraite de base des avocats (CNBF, phase 3.3)** — [calculCNBF.ts](src/lib/retraite/calculCNBF.ts),
   bloc `cnbf` de `params-retraite.json`, colonnes `has_cnbf`, `trimestres_cnbf`, `cnbf_classe`
@@ -192,7 +208,7 @@ uniquement applicatif via `familyService`.
   régimes, la carrière longue et les autres régimes ; statut avocat : trimestres CNBF et points de la
   complémentaire projetés. Pension dans les totaux, l'export PDF et la réversion (54 %, hors
   majoration, ligne « CNBF » de la Synthèse).
-  - Non couverts : caisses à points non paramétrées (CAVP, CARPV, CAVOM, CPRN,
+  - Non couverts : caisses à points non paramétrées (CARPV, CAVOM, CPRN,
     CAVAMAC, RAAP…), toujours évaluées sur les points acquis et la valeur du RIS ; points gratuits
     (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -648,6 +664,14 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
   valorisés à 1,347 € faute de ventilation au RIS (légère surévaluation). Plafond de ressources de la
   réversion (une source : 96 120 € en 2026) et complément de pension des conjoints de commerçants non
   modélisés ; arrondi des points à l'entier non appliqué.
+- **CAVP — valeurs à confirmer et limites.** Rente de capitalisation estimée : coefficient de conversion
+  CAVP non publié (tables, taux technique, option de réversion de 50 à 100 % au choix), rendement réel
+  de 2 % supposé, revenu de référence (moyenne N-4 à N-2) approché par le revenu futur, tranches de
+  classes 2025 (révisables), dérogations de classe des affiliés d'avant 2015 et réductions de classe 3
+  ignorées ; sexe non transmis au moteur (espérance de vie moyenne). Valeur 2026 du point PCV (0,3927 €,
+  Fidroit) et anciennes périodes de la PCV non distinguées ; taux de réversion de la répartition (60 %,
+  recherche web) et de la PCV (hypothèse). Libellés RIS « CAVP » et « PCV » non vérifiés sur un RIS réel.
+  Rachats et réversion de la capitalisation non modélisés.
 - **CARPIMKO — valeurs à confirmer et limites.** Coût d'acquisition 2026 (391 €) et valeur de service
   (21,48 €) de la complémentaire, coût (27,43 €) et valeur (1,50 €) du point ASV : sources secondaires
   (Perspectives Retraite, 06/2026), cohérentes entre elles mais non publiées par la caisse ; taux et
