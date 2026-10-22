@@ -15,6 +15,7 @@ const defuntSalarie: AssietteReversion = {
   fonctionPublique: 0,
   rafp: 0,
   cnavpl: 0,
+  reversionCaissesPoints: 0,
 };
 
 describe('reversionRegimeGeneralAvantPlafond', () => {

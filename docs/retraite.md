@@ -119,6 +119,21 @@ uniquement applicatif via `familyService`.
     l'exemple rafp.fr (4 448 points à 64 ans → 6 965,93 €) est un test.
   - *Optimisation* : Agirc-Arrco recalculé à chaque date de départ ; le gain d'un rachat de trimestres
     inclut l'abattement Agirc-Arrco supprimé.
+- **Caisses à points paramétrées (phase 3.2)** — [calculCaissesPoints.ts](src/lib/retraite/calculCaissesPoints.ts),
+  bloc `caissesPoints` de `params-retraite.json` (une entrée par caisse : libellé RIS, valeur de
+  service, mode d'acquisition, tranches de surcote, majoration enfants, taux de réversion, source).
+  Caisse reconnue au libellé du RIS ou déclarée par un libéral (`retraite_data.caisse_liberale`,
+  `liberal_conventionne` pour les régimes supplémentaires, migration `20261022150000`) ; points du RIS
+  + points projetés (statut libéral, revenu futur, trimestres CNAVPL projetés) × valeur de service ×
+  coefficient d'âge, + majoration pour 3 enfants. Réversion au taux de la caisse, hors majoration,
+  hors plafond de ressources (`reversionCaissesPoints`, ligne « Caisses à points » de la Synthèse).
+  Les régimes non reconnus gardent « points × valeur lue au RIS ». Recalcul à chaque date dans
+  l'Optimisation. Caisses en place :
+  - *CARMF complémentaire* : 1 point par tranche de 14 602 € de revenu, 11,52 points au maximum par an
+    (2026), valeur 77,14 € ; taux plein à l'âge légal ; surcote +1,25 %/trimestre jusqu'à 65 ans, puis
+    pension à 65 ans majorée de 0,75 %/trimestre jusqu'à 70 ans ; +10 % pour 3 enfants ; réversion 60 %.
+  - *CARMF ASV* (conventionnés) : 27 points + 1 par tranche de 8 810 €, 9 au maximum ; valeur 11,82 € ;
+    mêmes règles d'âge ; +10 % pour 3 enfants ; réversion 50 %.
   - Non couverts : projection des autres régimes à points (RCI, Ircantec, sections CNAVPL…), toujours
     évalués sur les points acquis et la valeur du RIS ; points gratuits (chômage, maladie).
 - **Revenu net à la retraite (phase 3 de l'audit, 2026-09-29)** — [calculNetRetraite.ts](src/lib/retraite/calculNetRetraite.ts),
@@ -551,6 +566,11 @@ décote -25 %, période de la surcote classique, date d'effet unique et projecti
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **CARMF — valeurs et règles à confirmer.** Tranche et plafond des points proportionnels ASV 2026
+  non publiés (8 810 € et 9 points, Fidroit 2024 ; Sapiendo évoque 9,5 points). Début de la surcote :
+  âge légal de la génération (lecture Fidroit) ; la lettre CARMF de janvier 2026 calcule la valeur
+  « à 65 ans » avec 15 % de majoration, soit depuis 62 ans. Capital optionnel (20 points ou moins) et
+  conditions de la réversion (âge, remariage) non modélisés. Départ anticipé : coefficient 1.
 - **Majoration enfants — cas « recueilli sans filiation » non calculé.** Un enfant du conjoint/
   partenaire élevé depuis plus de 9 ans, ou en adoption simple (écart #6), n'est jamais compté comme
   éligible à la majoration pour 3 enfants — `family_links` ne permet pas de déclarer cette relation

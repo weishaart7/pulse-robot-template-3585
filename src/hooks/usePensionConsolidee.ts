@@ -244,6 +244,12 @@ export const usePensionConsolidee = (personne: Personne = 'utilisateur'): UsePen
       ? { salaireAnnuel: salaireComplementaire.salaireAnnuel, trimestresProjetes: trimestresProjetesJusquADateEffet }
       : undefined,
     trimestresEnfants,
+    caissesPoints: {
+      caisseLiberale: data.caisse_liberale ?? null,
+      conventionne: data.liberal_conventionne ?? false,
+      revenuAnnuel: revenuHypothese,
+      trimestresProjetes: projectionStatut.trimestresCNAVPLProjetes,
+    },
   });
 
   const aDesDonnees = salaireAnnuelMoyen > 0 || trimestresValides > 0;

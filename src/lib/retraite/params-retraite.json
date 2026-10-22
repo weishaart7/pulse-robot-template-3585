@@ -937,5 +937,64 @@
     "cnavplPointsMaxT1": 557,
     "cnavplPointsMaxT2": 25,
     "cnavplPlafondT2EnPass": 5
+  },
+  "caissesPoints": {
+    "carmf": {
+      "nom": "CARMF (complémentaire)",
+      "motifNom": "CARMF|médecins",
+      "exclureMotifNom": "ASV|allocations? supplémentaires?",
+      "caisseLiberale": "CARMF",
+      "source": "Règles : Fidroit CARMF 2025 §2 (statuts du régime complémentaire, art. 15, 19, 34, 41, 60 ; réversion §4). Valeurs 2026 : lettre du président CARMF de janvier 2026 (taux 11,80 % sous 3,5 PASS ; point à 65 ans 88,71 € = 77,14 € × 1,15) ; Sapiendo, fiche médecin libéral 2026 (1 point par tranche de 14 602 €, 11,52 points maximum, valeur 77,14 €)",
+      "valeurServicePoint": 77.14,
+      "acquisition": {
+        "mode": "revenuParPoint",
+        "revenuParPoint": 14602,
+        "pointsMaxAnnuels": 11.52
+      },
+      "surcote": [
+        {
+          "depuis": "ageLegal",
+          "jusquA": 65,
+          "tauxParTrimestre": 0.0125
+        },
+        {
+          "depuis": 65,
+          "jusquA": 70,
+          "tauxParTrimestre": 0.0075,
+          "multiplicatif": true
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.6
+    },
+    "carmfAsv": {
+      "nom": "CARMF (ASV)",
+      "motifNom": "ASV|allocations? supplémentaires? de vieillesse",
+      "caisseLiberale": "CARMF",
+      "conventionneSeulement": true,
+      "source": "Règles : Fidroit CARMF 2025 §3 (statuts ASV art. 10, 12, 16 ; réversion 50 % §4). Valeur 2026 : 11,82 € (Sapiendo 2026 ; lettre du président CARMF de janvier 2026, 13,59 € à 65 ans = 11,82 € × 1,15). Points proportionnels : tranche de 8 810 € (Fidroit, valeur 2024, dernière connue) et 9 points au maximum — valeurs 2026 non publiées",
+      "valeurServicePoint": 11.82,
+      "acquisition": {
+        "mode": "forfaitPlusRevenuParPoint",
+        "pointsForfait": 27,
+        "revenuParPoint": 8810,
+        "pointsMaxProportionnels": 9
+      },
+      "surcote": [
+        {
+          "depuis": "ageLegal",
+          "jusquA": 65,
+          "tauxParTrimestre": 0.0125
+        },
+        {
+          "depuis": 65,
+          "jusquA": 70,
+          "tauxParTrimestre": 0.0075,
+          "multiplicatif": true
+        }
+      ],
+      "majorationTroisEnfantsPct": 10,
+      "tauxReversion": 0.5
+    }
   }
 }

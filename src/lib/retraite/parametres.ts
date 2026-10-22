@@ -88,6 +88,35 @@ export interface ParametresProjectionStatut {
   cnavplPlafondT2EnPass: number;
 }
 
+export interface TrancheSurcoteCaisse {
+  /** Âge de début : âge légal de la génération ou âge fixe. */
+  depuis: 'ageLegal' | number;
+  jusquA: number;
+  tauxParTrimestre: number;
+  /** Majoration appliquée sur le coefficient atteint à la tranche précédente. */
+  multiplicatif?: boolean;
+}
+
+export type AcquisitionCaissePoints =
+  | { mode: 'revenuParPoint'; revenuParPoint: number; pointsMaxAnnuels: number }
+  | { mode: 'forfaitPlusRevenuParPoint'; pointsForfait: number; revenuParPoint: number; pointsMaxProportionnels: number };
+
+export interface ParametresCaissePoints {
+  nom: string;
+  /** Expression reconnaissant le régime dans le libellé du RIS. */
+  motifNom: string;
+  exclureMotifNom?: string;
+  /** Caisse déclarée par un libéral (`retraite_data.caisse_liberale`). */
+  caisseLiberale: string;
+  conventionneSeulement?: boolean;
+  source: string;
+  valeurServicePoint: number;
+  acquisition: AcquisitionCaissePoints;
+  surcote: TrancheSurcoteCaisse[];
+  majorationTroisEnfantsPct: number;
+  tauxReversion: number;
+}
+
 export interface ParametresRAFP {
   source: string;
   seuilRentePoints: number;
@@ -155,6 +184,7 @@ interface ParamsRetraite {
   agircArrco: ParametresAgircArrco;
   mda: ParametresMDA;
   projectionStatut: ParametresProjectionStatut;
+  caissesPoints: { carmf: ParametresCaissePoints; carmfAsv: ParametresCaissePoints };
   rafp: ParametresRAFP;
   reversion: ParametresReversion;
   carriereLongue: ParametresCarriereLongue;
@@ -203,6 +233,7 @@ export const BAREME_RACHAT = PARAMS.rachat;
 export const PARAMETRES_AGIRC_ARRCO: ParametresAgircArrco = PARAMS.agircArrco;
 export const PARAMETRES_RAFP: ParametresRAFP = PARAMS.rafp;
 export const PARAMETRES_MDA: ParametresMDA = PARAMS.mda;
+export const PARAMETRES_CAISSES_POINTS = PARAMS.caissesPoints;
 export const PARAMETRES_PROJECTION_STATUT: ParametresProjectionStatut = PARAMS.projectionStatut;
 export const TAUX_PRELEVEMENTS_PENSIONS: Record<TrancheCSGPension, TauxPrelevementsPension> =
   PARAMS.prelevementsSociauxPensions.tranches;

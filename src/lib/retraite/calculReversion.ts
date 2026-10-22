@@ -18,7 +18,9 @@
  * - Survivant supposé non remarié, vivant seul, ayant atteint 55 ans
  *   (évaluation une fois les deux conjoints retraités).
  * - Non modélisés : majoration de 11,1 % des petites pensions après 65 ans,
- *   partage entre ex-conjoints, réversion des autres régimes à points.
+ *   partage entre ex-conjoints, réversion des régimes à points non
+ *   paramétrés (les caisses de calculCaissesPoints.ts sont réversées à leur
+ *   taux propre, hors plafond de ressources).
  */
 
 import { AssietteReversion } from './pensionConsolidee';
@@ -32,6 +34,8 @@ export interface DetailReversion {
   agircArrco: number;
   fonctionPublique: number;
   rafp: number;
+  /** Caisses à points paramétrées (CARMF…), au taux de chaque caisse. */
+  caissesPoints: number;
   total: number;
   /** Réversion régime général + CNAVPL réduite par le plafond de ressources. */
   reduiteParPlafondRessources: boolean;
@@ -43,6 +47,7 @@ const AUCUNE_REVERSION: DetailReversion = {
   agircArrco: 0,
   fonctionPublique: 0,
   rafp: 0,
+  caissesPoints: 0,
   total: 0,
   reduiteParPlafondRessources: false,
 };
@@ -82,6 +87,7 @@ export function reversionPourSurvivant(
   const agircArrco = defunt.agircArrco * PARAMETRES_REVERSION.tauxAgircArrco;
   const fonctionPublique = defunt.fonctionPublique * PARAMETRES_REVERSION.tauxFonctionPublique;
   const rafp = defunt.rafp * PARAMETRES_REVERSION.tauxRAFP;
+  const caissesPoints = defunt.reversionCaissesPoints ?? 0;
 
   return {
     regimeGeneral,
@@ -89,7 +95,8 @@ export function reversionPourSurvivant(
     agircArrco,
     fonctionPublique,
     rafp,
-    total: regimeGeneral + cnavpl + agircArrco + fonctionPublique + rafp,
+    caissesPoints,
+    total: regimeGeneral + cnavpl + agircArrco + fonctionPublique + rafp + caissesPoints,
     reduiteParPlafondRessources: soumisAuPlafond > 0 && depassement > 0,
   };
 }

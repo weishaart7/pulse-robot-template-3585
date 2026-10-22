@@ -1,3 +1,4 @@
+import { caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
@@ -211,6 +212,9 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Statut actuel : oriente la projection de carrière (projectionStatut.ts).
   const [statutActuel, setStatutActuel] = useState<StatutActuel>('salarie_prive');
   const [primesAnnuellesFP, setPrimesAnnuellesFP] = useState<string>('');
+  // Caisse complémentaire d'un libéral et conventionnement (calculCaissesPoints.ts).
+  const [caisseLiberale, setCaisseLiberale] = useState<string>('');
+  const [liberalConventionne, setLiberalConventionne] = useState(false);
   // Départ anticipé confirmé par la caisse (handicap, incapacité
   // permanente…) — utilisé par l'onglet Optimisation (taux plein dès cet âge).
   const [motifDepartAnticipeConfirme, setMotifDepartAnticipeConfirme] = useState<MotifDepartAnticipeConfirme | ''>('');
@@ -390,6 +394,12 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       if (data.statut_actuel !== undefined) {
         setStatutActuel(statutActuelDepuisTexte(data.statut_actuel));
       }
+      if (data.caisse_liberale) {
+        setCaisseLiberale(data.caisse_liberale);
+      }
+      if (data.liberal_conventionne !== undefined) {
+        setLiberalConventionne(data.liberal_conventionne);
+      }
       if (data.primes_annuelles_fp !== undefined && data.primes_annuelles_fp !== null) {
         setPrimesAnnuellesFP(data.primes_annuelles_fp.toString());
       }
@@ -447,6 +457,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
             salaire_brut_annuel: parseFloat(salaireBrutAnnuel) || null,
             statut_actuel: statutActuel,
             primes_annuelles_fp: parseFloat(primesAnnuellesFP) || null,
+            caisse_liberale: caisseLiberale || null,
+            liberal_conventionne: liberalConventionne,
             depart_anticipe_confirme_motif: motifDepartAnticipeConfirme === '' ? null : motifDepartAnticipeConfirme,
             depart_anticipe_confirme_age:
               motifDepartAnticipeConfirme === '' ? null : parseFloat(ageDepartAnticipeConfirme) || null,
@@ -466,6 +478,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
       mdaDejaAuRis,
       statutActuel,
       primesAnnuellesFP,
+      caisseLiberale,
+      liberalConventionne,
       hasFonctionPublique,
       trimestresLiquidablesFP,
       hasCNAVPL,
@@ -602,7 +616,10 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
   // Agirc-Arrco : toujours calculable (valeur de service du millésime
   // courant, cf. calculAgircArrco.ts), même sans valeur du point au RIS.
   const regimesPointsExclusCount = regimesPoints.filter(
-    (regime) => !estRegimeAgircArrco(regime.nom) && pensionComplementaireAnnuelle(regime) === undefined
+    (regime) =>
+      !estRegimeAgircArrco(regime.nom) &&
+      caisseDuRegime(regime.nom) === null &&
+      pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
   // Hypothèse de revenu futur — hook appelé une seule fois ici (plutôt que
@@ -775,8 +792,16 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
           }
         : undefined,
       trimestresEnfants: trimestresEnfantsPersonne,
+      caissesPoints: {
+        caisseLiberale: caisseLiberale || null,
+        conventionne: liberalConventionne,
+        revenuAnnuel: projectionRevenuFutur.revenuHypothese,
+        trimestresProjetes: projectionStatut.trimestresCNAVPLProjetes,
+      },
     }),
     [
+      caisseLiberale,
+      liberalConventionne,
       trimestresEnfantsPersonne,
       projectionStatut,
       projectionRevenuFutur,
@@ -797,7 +822,8 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
     [entreePensionConsolidee]
   );
 
-  const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres, detailAgircArrco } = resultatPension;
+  const { detailRegimeGeneral, repartitionParRegime, historiqueTrimestres, detailAgircArrco, detailCaissesPoints } =
+    resultatPension;
 
   // Minimum contributif (MiCo, régime général, version non majorée) : le
   // state brut (non projeté à cette étape) sert aussi à l'indicateur de
@@ -939,6 +965,34 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
                   </SelectContent>
                 </Select>
               </div>
+              {statutActuel === 'liberal' && (
+                <>
+                  <div className="space-y-1.5 min-w-[12rem]">
+                    <Label htmlFor={`caisse-liberale-${personne}`} className="text-xs">Caisse complémentaire</Label>
+                    <Select
+                      value={caisseLiberale || 'aucune'}
+                      onValueChange={(valeur) => setCaisseLiberale(valeur === 'aucune' ? '' : valeur)}
+                    >
+                      <SelectTrigger id={`caisse-liberale-${personne}`} className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="aucune" className="text-xs">Non modélisée</SelectItem>
+                        <SelectItem value="CARMF" className="text-xs">CARMF (médecins)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {caisseLiberale === 'CARMF' && (
+                    <label className="flex items-center gap-2 text-xs pb-1.5">
+                      <Checkbox
+                        checked={liberalConventionne}
+                        onCheckedChange={(checked) => setLiberalConventionne(checked === true)}
+                      />
+                      Conventionné (ASV)
+                    </label>
+                  )}
+                </>
+              )}
               {statutActuel === 'fonctionnaire' && (
                 <div className="space-y-1.5 max-w-[12rem]">
                   <Label htmlFor={`primes-fp-${personne}`} className="text-xs">Primes annuelles (€)</Label>
@@ -1316,6 +1370,25 @@ export const Carriere = ({ personne = 'utilisateur' }: CarriereProps = {}) => {
               })}
             </div>
           )}
+
+          {detailCaissesPoints.map((caisse) => (
+            <div key={caisse.id} className={`${panelInsetClass} mt-3 space-y-1`}>
+              <Label className="text-xs">
+                {caisse.nom} au départ du {dateEffetScenario.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}
+              </Label>
+              <div className={`${panelFigureClass}`}>{formatEuro2(caisse.pensionAnnuelle)} / an</div>
+              <p className="text-xs text-muted-foreground">
+                {caisse.pointsAcquis.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} points acquis
+                {caisse.pointsProjetes > 0 &&
+                  ` + ${caisse.pointsProjetes.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} points projetés`}{' '}
+                × {caisse.valeurServicePoint.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
+                {caisse.coefficientAge !== 1 &&
+                  ` × ${caisse.coefficientAge.toLocaleString('fr-FR', { maximumFractionDigits: 4 })} (surcote d'âge)`}
+                {caisse.majorationEnfants > 0 && `, + ${formatEuro2(caisse.majorationEnfants)} de majoration pour 3 enfants`}
+                . Réversion {Math.round(caisse.tauxReversion * 100)} %.
+              </p>
+            </div>
+          ))}
 
           {detailAgircArrco && (
             <div className={`${panelInsetClass} mt-3  space-y-1`}>

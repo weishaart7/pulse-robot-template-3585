@@ -346,7 +346,7 @@ const revenuSurvivant = (survivant: ResultatPersonne, defunt: ResultatPersonne, 
     [
       {
         base: propres.base + reversion.regimeGeneral + reversion.cnavpl + reversion.fonctionPublique + reversion.rafp,
-        complementaires: propres.complementaires + reversion.agircArrco,
+        complementaires: propres.complementaires + reversion.agircArrco + reversion.caissesPoints,
       },
     ],
     calculerPartsFiscales(foyerSansEnfantsACharge(FOYER_PAR_DEFAUT, situation)),
@@ -376,6 +376,7 @@ const DetailSurvivant = ({
       ['Fonction publique', reversion.fonctionPublique],
       ['RAFP', reversion.rafp],
       ['CNAVPL', reversion.cnavpl],
+      ['Caisses à points (CARMF…)', reversion.caissesPoints],
     ] as [string, number][]
   )
     .filter(([, montant]) => montant > 0)

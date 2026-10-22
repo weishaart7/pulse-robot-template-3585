@@ -51,6 +51,7 @@ import {
 } from './calculAgircArrco';
 import { EnfantAgircArrco, nombreEnfantsAChargeAgircArrco } from './enfantsEligiblesMajoration';
 import { TrimestresEnfantsParRegime } from './trimestresEnfants';
+import { calculerCaissesPoints } from './calculCaissesPoints';
 import { appliquerProjectionStatut, projeteAuRegimeGeneral, StatutActuel } from './projectionStatut';
 import { evaluerCarriereLongue, carriereLongueOuverteA, ResultatCarriereLongue } from './calculCarriereLongue';
 
@@ -72,6 +73,9 @@ export interface ContexteSimulationDepart {
   /** Revenu futur (libéral : points CNAVPL) et primes (fonctionnaire : RAFP). */
   revenuFutur?: number | null;
   primesAnnuellesFP?: number | null;
+  /** Caisse complémentaire d'un libéral et conventionnement (ASV). */
+  caisseLiberale?: string | null;
+  liberalConventionne?: boolean;
   /** MDA à une date d'effet (éducation acquise année après année), absent = aucune. */
   trimestresEnfantsA?: (dateEffet: Date) => TrimestresEnfantsParRegime;
   /** Salaire de projection des points Agirc-Arrco, `null` si inconnu. */
@@ -172,10 +176,27 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
   // Complémentaires : Agirc-Arrco (points acquis + projetés, coefficient
   // d'anticipation selon la décote de la base) + autres régimes à points.
   const { pointsAgircArrco, aUnRegimeAgircArrco, autresRegimes } = separerRegimesPoints(ctx.regimesPoints);
-  const pensionAutresRegimesPoints = autresRegimes.reduce((total, regime) => {
-    const pension = pensionComplementaireAnnuelle(regime);
-    return pension !== undefined ? total + pension : total;
-  }, 0);
+  // Caisses à points paramétrées (CARMF…) recalculées à chaque date (âge,
+  // points projetés d'un libéral) ; régimes non reconnus : points × valeur RIS.
+  const pensionAutresRegimesPointsA = (dateEffet: Date, trimestresProjetes: number): number => {
+    const caisses = calculerCaissesPoints({
+      regimesPoints: autresRegimes,
+      dateNaissance,
+      dateEffet,
+      nombreEnfantsEligibles: ctx.nombreEnfantsEligibles,
+      caisseLiberale: ctx.caisseLiberale ?? null,
+      conventionne: ctx.liberalConventionne ?? false,
+      revenuAnnuel: ctx.revenuFutur ?? null,
+      trimestresProjetes: statut === 'liberal' && cnavpl ? trimestresProjetes : 0,
+    });
+    return (
+      caisses.total +
+      caisses.regimesNonReconnus.reduce((total, regime) => {
+        const pension = pensionComplementaireAnnuelle(regime);
+        return pension !== undefined ? total + pension : total;
+      }, 0)
+    );
+  };
   const complementairesPourDepart = (
     decoteBase: number,
     ageDepartAnnees: number,
@@ -183,6 +204,7 @@ export function creerSimulateurDepart(ctx: ContexteSimulationDepart): Simulateur
     trimestresProjetes: number,
     dateEffet: Date
   ): number => {
+    const pensionAutresRegimesPoints = pensionAutresRegimesPointsA(dateEffet, trimestresProjetes);
     if (!aUnRegimeAgircArrco) return pensionAutresRegimesPoints;
     const projeterAgircArrco = statut === 'salarie_prive';
     const agirc = pensionAgircArrco({

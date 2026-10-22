@@ -1,3 +1,4 @@
+import { caisseDuRegime } from '@/lib/retraite/calculCaissesPoints';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PanelCard, PanelCardContent, PanelCardDescription, PanelCardHeader, PanelCardTitle, panelInsetClass, panelFigureClass } from '@/components/layout/panel-section';
@@ -193,7 +194,10 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
   const nombreEnfantsEligibles = nombreEnfantsEligiblesMajorationTroisEnfants(familyLinks);
 
   const regimesPointsExclusCount = regimesPoints.filter(
-    (regime) => !estRegimeAgircArrco(regime.nom) && pensionComplementaireAnnuelle(regime) === undefined
+    (regime) =>
+      !estRegimeAgircArrco(regime.nom) &&
+      caisseDuRegime(regime.nom) === null &&
+      pensionComplementaireAnnuelle(regime) === undefined
   ).length;
 
   // Trimestres cotisés par année, dérivés du détail de carrière (import RIS)
@@ -273,6 +277,8 @@ export const Trimestres = ({ personne = 'utilisateur' }: TrimestresProps = {}) =
     statutActuel: statutActuelDepuisTexte(retraiteData.statut_actuel),
     revenuFutur: revenuHypothese,
     primesAnnuellesFP: retraiteData.primes_annuelles_fp ?? null,
+    caisseLiberale: retraiteData.caisse_liberale ?? null,
+    liberalConventionne: retraiteData.liberal_conventionne ?? false,
     // Trimestres enfants recalculés à chaque date (éducation acquise année par
     // année) ; condition des 8 trimestres appréciée sur les droits actuels.
     trimestresEnfantsA: (date) =>

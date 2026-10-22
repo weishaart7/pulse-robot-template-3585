@@ -61,6 +61,7 @@ import {
 import { pensionBaseCNAVPL, decoteCNAVPL } from './calculCNAVPL';
 import { PARAMETRES_MDA } from './parametres';
 import { TrimestresEnfantsParRegime, AUCUN_TRIMESTRE_ENFANT } from './trimestresEnfants';
+import { calculerCaissesPoints, reversionCaissesPoints, DetailCaissePoints } from './calculCaissesPoints';
 import {
   separerRegimesPoints,
   pointsAgircArrcoAnnuels,
@@ -155,6 +156,17 @@ export interface EntreePensionConsolidee {
    * seuil MICO, la surcote ni la carrière longue.
    */
   trimestresEnfants?: TrimestresEnfantsParRegime;
+  /**
+   * Caisses à points paramétrées (calculCaissesPoints.ts) : caisse déclarée
+   * par un libéral, conventionnement (ASV) et projection de ses points.
+   * Absent = points du RIS seulement, sans projection.
+   */
+  caissesPoints?: {
+    caisseLiberale: string | null;
+    conventionne: boolean;
+    revenuAnnuel: number | null;
+    trimestresProjetes: number;
+  };
 }
 
 /**
@@ -228,6 +240,8 @@ export interface ResultatPensionConsolidee {
   detailRegimeGeneral: DetailRegimeGeneral;
   /** Détail Agirc-Arrco, `null` si aucun régime Agirc-Arrco dans le RIS. */
   detailAgircArrco: DetailAgircArrco | null;
+  /** Caisses à points paramétrées (CARMF…), vide si aucune. */
+  detailCaissesPoints: DetailCaissePoints[];
   /** Pensions du titulaire servant d'assiette à la réversion (cf. calculReversion.ts). */
   assietteReversion: AssietteReversion;
 }
@@ -247,6 +261,8 @@ export interface AssietteReversion {
   fonctionPublique: number;
   rafp: number;
   cnavpl: number;
+  /** Caisses à points paramétrées : réversion déjà calculée au taux de chaque caisse. */
+  reversionCaissesPoints: number;
 }
 
 export function calculerResultatFonctionPublique(
@@ -515,9 +531,22 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
         nombreEnfantsACharge: nombreEnfantsAChargeAgircArrco(enfantsAgircArrco(familyLinks), dateEffet),
       })
     : null;
+  // Caisses à points paramétrées (CARMF…) ; les régimes non reconnus gardent
+  // le calcul « points × valeur lue au RIS ».
+  const caisses = calculerCaissesPoints({
+    regimesPoints: autresRegimes,
+    dateNaissance,
+    dateEffet,
+    nombreEnfantsEligibles,
+    caisseLiberale: entree.caissesPoints?.caisseLiberale ?? null,
+    conventionne: entree.caissesPoints?.conventionne ?? false,
+    revenuAnnuel: entree.caissesPoints?.revenuAnnuel ?? null,
+    trimestresProjetes: entree.caissesPoints?.trimestresProjetes ?? 0,
+  });
   const totalPensionComplementaireAnnuelle =
     (detailAgircArrco?.pensionAnnuelle ?? 0) +
-    autresRegimes.reduce((total, regime) => {
+    caisses.total +
+    caisses.regimesNonReconnus.reduce((total, regime) => {
       const pension = pensionComplementaireAnnuelle(regime);
       return pension !== undefined ? total + pension : total;
     }, 0);
@@ -613,6 +642,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       nombreEnfantsEligibles,
     },
     detailAgircArrco,
+    detailCaissesPoints: caisses.details,
     assietteReversion: {
       regimeGeneral: pensionApresSurcoteRegimeGeneral,
       trimestresRegimeGeneral: trimestresValides,
@@ -620,6 +650,7 @@ export function calculerPensionConsolidee(entree: EntreePensionConsolidee): Resu
       fonctionPublique: resultatFonctionPublique.pensionFinale,
       rafp: resultatFonctionPublique.rafpAnnuelle,
       cnavpl: resultatCNAVPL.pensionHorsMajorationEnfants,
+      reversionCaissesPoints: reversionCaissesPoints(caisses.details),
     },
   };
 }

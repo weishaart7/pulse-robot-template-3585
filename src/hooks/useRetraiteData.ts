@@ -25,6 +25,8 @@ export interface RetraiteData {
   /** Statut actuel : oriente la projection de carrière (projectionStatut.ts). */
   statut_actuel?: string;
   caisse_liberale?: string | null;
+  /** Libéral conventionné : régime supplémentaire (ASV…). */
+  liberal_conventionne?: boolean;
   /** Primes annuelles d’un fonctionnaire (assiette RAFP). */
   primes_annuelles_fp?: number | null;
   // Carrière fonction publique / CNAVPL (CarriereFonctionPublique.tsx /
