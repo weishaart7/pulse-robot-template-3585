@@ -65,7 +65,7 @@ describe('buildBienFoncierInput', () => {
     expect(bien.chargesHorsInterets).toBe(1_200);
     expect(bien.interetsEtAssuranceEmprunt).toBe(0);
     expect(bien.quotePart).toBe(100);
-    expect(bien.travauxRenovationEnergetique).toBe(false);
+    expect(bien.montantTravauxRenovationEnergetique).toBe(0);
   });
 });
 
@@ -129,9 +129,19 @@ describe('computeFoyerFoncier — déficit imputable sur le revenu global', () =
     expect(result.nouveauDeficitReportableHorsInterets).toBe(0);
   });
 
-  it('applique le plafond majoré à 21 400 € si un bien a des travaux de rénovation énergétique', () => {
+  it('majore le plafond du seul montant des travaux de rénovation énergétique (Cerfa 2044, lignes 436/441)', () => {
     const result = computeFoyerFoncier(
-      [makeBien({ loyersBruts: 5_000, chargesHorsInterets: 30_000, travauxRenovationEnergetique: true })],
+      [makeBien({ loyersBruts: 5_000, chargesHorsInterets: 30_000, montantTravauxRenovationEnergetique: 3_000, quotePart: 50 })],
+      [],
+      0.3,
+    );
+    expect(result.plafondDeficitApplicable).toBe(PLAFOND_DEFICIT_FONCIER + 1_500);
+    expect(result.deficitImputableRevenuGlobal).toBe(PLAFOND_DEFICIT_FONCIER + 1_500);
+  });
+
+  it('plafonne la majoration à 21 400 € au total', () => {
+    const result = computeFoyerFoncier(
+      [makeBien({ loyersBruts: 5_000, chargesHorsInterets: 30_000, montantTravauxRenovationEnergetique: 15_000 })],
       [],
       0.3,
     );

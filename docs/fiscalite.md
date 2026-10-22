@@ -1257,6 +1257,94 @@ fonciers (§4).
   22 874 € (IR) + 7 175 € (PS gains d'actionnariat, seule catégorie non nulle pour ce compte) =
   **30 049 €**, identique au total du simulateur officiel.
 
+### Déclaration des revenus fonciers 2044
+
+[calculerDeclaration2044.ts](src/lib/fiscalite/calculerDeclaration2044.ts) (testé dans
+`calculerDeclaration2044.test.ts`) reproduit ligne à ligne le Cerfa 2044 n° 50156#30 (revenus 2025),
+régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix du régime dans
+`foncierFoyer.ts`, module Immobilier). Moteur pur.
+- **Entrées** : la 2044 porte le **réalisé** de l'année de revenus, prérempli depuis Immobilier et
+  Actifs/Passifs puis surchargeable (préremplissage hors du moteur, voir plus bas) ; par immeuble les lignes 211 à 230, 250 et 262 (nombre de locaux pour le forfait de 20 €
+  de la ligne 222, taux en % pour la déduction spécifique 228 appliquée à la ligne 215) ; par part de
+  société ou FPI les lignes 111 à 113 de l'attestation ; les déficits antérieurs non imputés (colonne A
+  de la rubrique 450).
+- **Calcul** : chaque ligne est arrondie à l'euro (pas de centimes sur le formulaire) ; 240 = 221 à
+  229 − 230 ; 263 = 215 − 240 − 250 + 262 ; 420 = case D (parts) + case I (immeubles).
+- **Répartition du déficit (430)** : cas 435 si les intérêts (432) dépassent les revenus bruts (431,
+  réintégrations 262 comprises) — charges hors intérêts imputables en 436, excédent en 437, intérêts
+  non couverts en 438 ; sinon cas 440 — 441 = déficit dans la limite du plafond, 442 = excédent.
+  Plafond = **10 700 € + dépenses de rénovation énergétique (ligne 434 = 112bis + 224bis), au plus
+  21 400 €** (formule du Cerfa, et non un plafond forfaitaire de 21 400 €).
+- **Déficits antérieurs (450)** : seuls les déficits des 10 années précédentes figurent (2015 à 2024
+  pour les revenus 2025) ; imputés du plus ancien au plus récent sur le bénéfice de la ligne 420,
+  colonnes « imputé » et « restant au 31/12 ». Ligne 451 = total non imputé au 31/12 de l'année
+  précédente.
+- **Report 2042** : 4BA = bénéfice 420 ; 4BC = 436 ou 441 ; 4BB = 439 ou 442 ; 4BD = 451.
+  `revenuFoncierNetImposable` (4BA après imputation des déficits antérieurs) est informatif : ce
+  calcul est fait par l'administration.
+- **Persistance** (migration `20261023100000_declaration_2044.sql`, service
+  [declaration2044Service.ts](src/services/declaration2044Service.ts), testé) : `declarations_2044`
+  (une par `user_id` et `annee`, créée à la première ouverture par `getOrCreate`),
+  `declaration_2044_immeubles` (lignes 211 à 262) et `declaration_2044_parts` (lignes 111 à 113). FK
+  `user_id` → `auth.users`, `declaration_id` → `declarations_2044` et `asset_id` (facultatif : immeuble
+  ou part saisi sans actif) → `assets`, toutes en `ON DELETE CASCADE` ; RLS par utilisateur ; un actif
+  au plus une fois par déclaration. **Seules les surcharges sont stockées** : une colonne de montant à
+  NULL = valeur préremplie (calculée à l'affichage depuis Immobilier / Actifs-Passifs), une valeur =
+  montant saisi, 0 compris ; fusion par `toImmeuble2044Input` / `toPartSociete2044Input`. Conséquence
+  de la cascade : supprimer un actif supprime aussi sa ligne dans les 2044 des années passées.
+- **Rubrique 450** : pas de table propre ; elle lit le stock unique `deficits_fonciers_reportes`
+  (`deficitFoncierService`), partagé avec la synthèse foncière d'Immobilier, regroupé par année
+  d'origine. Colonne A (non imputé au 31/12/N-1) = restant actuel + imputations enregistrées sur les
+  années N et suivantes (`toDeficitsAnterieurs2044`, [declaration2044Donnees.ts](src/services/declaration2044Donnees.ts)) :
+  table `deficit_foncier_imputations` (migration `20261023110000`, FK `deficit_id` et `user_id` en
+  CASCADE, RLS), alimentée par « Reporter le solde à l'année suivante » d'Immobilier
+  (`reporterAlAnneeSuivante`, une ligne datée par déficit consommé). Les reports appliqués avant la
+  création de cette table n'ont pas d'historique : leur consommation n'est pas reconstituée.
+- **Préremplissage** ([preremplissage2044.ts](src/lib/fiscalite/preremplissage2044.ts), testé ;
+  assemblage dans [declaration2044Donnees.ts](src/services/declaration2044Donnees.ts), `chargerDonnees2044`) :
+  ouvrir la 2044 d'une année crée une colonne reliée (`asset_id`) pour chaque actif éligible absent —
+  immeubles loués nus en direct (`estBienNuEnDirect`) côté propriétés ; parts de SCI louées nu et parts au
+  régime des revenus fonciers (SCPI, groupements) côté sociétés. Un actif retiré n'est pas recréé mais
+  sa colonne reste. Montants à la part du foyer (`computeQuotePart`) :
+  - 211 = loyers annualisés d'Immobilier ;
+  - charges classées par mots-clés du libellé (`classerCharge` : taxe(s) foncière(s) → 227, assurance /
+    PNO → 223, copropriété / syndic → 229, gestion / agence / honoraires → 221, travaux / entretien /
+    réparation → 224 ; sinon 221 avec mention « classement à vérifier » sous la grille) — le champ
+    `type_charge` n'est pas utilisé (mal renseigné en base). Charge récurrente annualisée ; ponctuelle
+    retenue seulement si datée dans l'année ;
+  - 250 = intérêts + assurance des échéances de janvier à décembre de N : tableau d'amortissement du
+    contrat (`contratDepuisEmprunt` / `construireTableau`) pour un emprunt Patrimoine relié au contrat
+    complet, intérêts capitalisés d'un différé total exclus ; emprunt relié sans contrat complet → 12
+    prochaines échéances, signalé à l'écran ; sans emprunt relié → champs Financement du bien ;
+  - parts : SCPI / groupements → 111 = revenus distribués des 12 derniers mois (approximation de
+    l'attestation, signalée) ; parts de SCI louées nu → loyers, charges et intérêts du bien à la quote-part.
+- **Reprise dans l'impôt** (`revenusFonciersPour2042`, testé ; branchée dans
+  [useFiscalOverview.ts](src/hooks/useFiscalOverview.ts)) : seule une 2044 **déjà ouverte** pour les
+  revenus 2025 (année du barème, `ANNEE_REVENUS`) compte — la Vision générale ne la crée jamais. Revenu
+  foncier net (4BA − déficits antérieurs imputés) ajouté au revenu imposable, 4BC retranché, 4BB sans
+  effet sur l'année ; prélèvements sociaux à 17,2 % du revenu foncier net, ajoutés à l'imposition totale
+  et détaillés (« Prélèvements sociaux (revenus fonciers, 2044) »). Vision générale rafraîchie à la
+  fermeture de la 2044. Si 4BC dépasse les autres revenus, le revenu imposable est ramené à 0 : le
+  déficit global reportable 6 ans (art. 156 I CGI) n'est pas modélisé.
+- **Interface** ([Declaration2044Interface.tsx](src/pages/fiscalite/components/Declaration2044Interface.tsx),
+  ouverte depuis la ligne « 2044 » de `FiscalDeclarationsCard`) : plein écran au format panneau de travail
+  (en-tête à fil d'Ariane, sélecteur « Revenus N » sur les 3 dernières années, défaut = année écoulée).
+  Sections bord à bord ([Sections2044.tsx](src/pages/fiscalite/components/2044/Sections2044.tsx)) :
+  propriétés (grille au format du Cerfa, [Grille2044.tsx](src/pages/fiscalite/components/2044/Grille2044.tsx) :
+  une ligne par numéro de ligne, une colonne par immeuble, colonne Total, lignes 215/240/261/263
+  calculées), parts de sociétés (111 à 114), résultat et répartition du déficit (420 à 442, branche 435
+  ou 440 expliquée avec le plafond), déficits antérieurs (450, lecture seule du stock Immobilier). Rail
+  droit « Report sur la 2042 » : 4BA à 4BD, plus le net imposable informatif quand 4BA et 4BD coexistent.
+  Hook [useDeclaration2044.ts](src/hooks/useDeclaration2044.ts) : chaque champ s'enregistre à la sortie
+  (champ vidé = NULL), mise à jour optimiste, recalcul immédiat. Ligne 222 saisie en nombre de locaux,
+  ligne 228 en taux (%), le montant calculé est affiché sous le champ. Ouvrir la 2044 d'une année crée
+  sa ligne `declarations_2044` et les colonnes des actifs éligibles. Suppression d'un immeuble ou d'une
+  société sans confirmation. Colonne reliée à un actif : pastille lagon dans l'en-tête ; valeur
+  préremplie en grisé (placeholder), saisie en noir avec un bouton de retour à la valeur préremplie.
+- **Non modélisé** : plafond de 15 300 € du dispositif Cosse (renvoi (1) du Cerfa), 2044 spéciale
+  (Robien, Borloo neuf, Malraux…), rubrique 460 (vente ou abandon de location après un déficit imputé
+  sur le revenu global), case 4BE (micro-foncier).
+
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)

@@ -3,7 +3,6 @@ import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LogoSpinner } from '@/components/brand/LogoSpinner';
 import { Chip, PanelTitle, SummaryRow, panelButtonClass, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,13 +17,14 @@ import {
   buildBienFoncierInput,
   buildPartsFoncieresInput,
   computeFoyerFoncier,
-  PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE,
   SEUIL_MICRO_FONCIER,
   type BienFoncierInput,
   type FoyerFoncierResult,
   type TypeDeficitFoncierReporte,
 } from '@/lib/immobilier/foncierFoyer';
 import { formatCurrency } from '@/lib/patrimoine/utils';
+import { PLAFOND_DEFICIT_FONCIER } from '@/lib/immobilier/rentabilite';
+import { useFiscalOverview } from '@/hooks/useFiscalOverview';
 import type { Emprunt } from '@/services/passifService';
 
 const ANNEE_COURANTE = new Date().getFullYear();
@@ -41,7 +41,7 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
   const [revenusParBien, setRevenusParBien] = useState<Record<string, AssetRevenu[]>>({});
   const [chargesParBien, setChargesParBien] = useState<Record<string, AssetCharge[]>>({});
   const [deficits, setDeficits] = useState<DeficitFoncierReporteRecord[]>([]);
-  const [renovationEnergetique, setRenovationEnergetique] = useState<Record<string, boolean>>({});
+  const [renovationEnergetique, setRenovationEnergetique] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [tmiInput, setTmiInput] = useState('30');
   const [isReporting, setIsReporting] = useState(false);
@@ -93,7 +93,11 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const tmi = (parseFloat(tmiInput) || 0) / 100;
+  // TMI calculé par la 2042 (module Fiscalité) dès que le foyer et des revenus y sont saisis ;
+  // saisie manuelle en repli.
+  const fiscal = useFiscalOverview();
+  const tmiFiscalite = !fiscal.loading && fiscal.foyerRenseigne && fiscal.revenusRenseignes ? fiscal.impot.tmi : null;
+  const tmi = tmiFiscalite ?? (parseFloat(tmiInput) || 0) / 100;
 
   // Biens loués nus en direct, puis parts de société au régime des revenus fonciers (même ordre
   // que `lignes` ci-dessous).
@@ -105,7 +109,7 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
           asset,
           revenusParBien[asset.id!] || [],
           chargesParBien[asset.id!] || [],
-          !!renovationEnergetique[asset.id!],
+          renovationEnergetique[asset.id!] || 0,
           emprunts,
         ),
       ),
@@ -225,6 +229,12 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
         <div className="px-8 py-6">
           <div className="max-w-[14rem] space-y-1.5">
             <Label htmlFor="tmi-foyer">Taux marginal d'imposition</Label>
+            {tmiFiscalite !== null ? (
+              <p className="text-[13px] text-foreground">
+                <span className="font-medium tabular-nums">{Math.round(tmiFiscalite * 100)} %</span>
+                <span className="ml-1.5 text-[12px] text-muted-foreground">calculé par la 2042 (Fiscalité)</span>
+              </p>
+            ) : (
             <div className="relative">
               <Input
                 id="tmi-foyer"
@@ -238,6 +248,7 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
               />
               <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[13px] text-muted-foreground">%</span>
             </div>
+            )}
           </div>
           <dl className="mt-5">
             <SummaryRow label="Loyers bruts"><span className="tabular-nums">{formatCurrency(result.loyersBrutsFoyer)}</span></SummaryRow>
@@ -250,7 +261,7 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
                   <span className="tabular-nums">{formatCurrency(result.deficitImputableRevenuGlobal)}</span>
                   <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
                     plafond {formatCurrency(result.plafondDeficitApplicable)}
-                    {result.plafondDeficitApplicable === PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE ? ' · rénovation énergétique' : ''}
+                    {result.plafondDeficitApplicable > PLAFOND_DEFICIT_FONCIER ? ' · majoré (rénovation énergétique)' : ''}
                   </span>
                 </SummaryRow>
                 <SummaryRow label="Économie d'impôt">
@@ -273,7 +284,7 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
                 <span className="text-right">Charges</span>
                 <span className="text-right">Intérêts + ass.</span>
                 <span className="text-right">Quote-part</span>
-                <span className="text-center" title="Rénovation énergétique (DPE E, F ou G)">Rénov. E/F/G</span>
+                <span className="text-center" title="Dont travaux de rénovation énergétique (sortie des classes E, F ou G), en €">Rénov. E/F/G (€)</span>
               </div>
               <ul className="divide-y divide-border border-b border-border">
                 {lignes.map((asset, index) => {
@@ -286,11 +297,17 @@ export const FoncierFoyerSection = ({ emprunts = [] }: { emprunts?: Emprunt[] })
                       <span className="text-right">{bien?.revenusDistribues ? '—' : formatCurrency(bien?.interetsEtAssuranceEmprunt || 0)}</span>
                       <span className="text-right">{bien?.quotePart ?? 100} %</span>
                       <span className="flex justify-center">
-                        {bien?.revenusDistribues ? <span className="text-muted-foreground">—</span> : <Checkbox
-                          aria-label={`Rénovation énergétique — ${asset.denomination || asset.nature}`}
-                          checked={!!renovationEnergetique[asset.id!]}
-                          onCheckedChange={(checked) =>
-                            setRenovationEnergetique((prev) => ({ ...prev, [asset.id!]: !!checked }))
+                        {bien?.revenusDistribues ? <span className="text-muted-foreground">—</span> : <Input
+                          type="number"
+                          min={0}
+                          inputMode="decimal"
+                          placeholder="0"
+                          aria-label={`Travaux de rénovation énergétique (€) — ${asset.denomination || asset.nature}`}
+                          title="Dont travaux de rénovation énergétique (sortie des classes E, F, G), compris dans les charges : majorent le plafond du déficit."
+                          className="h-7 w-20 rounded-[2px] px-1.5 text-right text-[12.5px] tabular-nums"
+                          value={renovationEnergetique[asset.id!] || ''}
+                          onChange={(e) =>
+                            setRenovationEnergetique((prev) => ({ ...prev, [asset.id!]: Math.max(0, Number(e.target.value) || 0) }))
                           }
                         />}
                       </span>

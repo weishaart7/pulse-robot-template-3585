@@ -1,4 +1,7 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { calculerDonnees2044, chargerDonnees2044 } from '@/services/declaration2044Donnees';
+import { revenusFonciersPour2042, type Declaration2044Result, type RevenusFonciers2042 } from '@/lib/fiscalite/calculerDeclaration2044';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
@@ -121,6 +124,9 @@ const REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT: RevenusCapitauxMobiliersInput = {
   case2op: false,
 };
 
+/** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
+const ANNEE_REVENUS = 2025;
+
 export interface FiscalOverview {
   loading: boolean;
   foyerRenseigne: boolean;
@@ -158,6 +164,8 @@ export interface FiscalOverview {
    */
   prelevementsSociauxGainsActionnariat: PrelevementsSociauxGainsActionnariatResult;
   parts: PartsFiscalesResult;
+  /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
+  revenusFonciers: RevenusFonciers2042 | null;
   impot: ImpotResult;
   /** Recharge les 6 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
   refetch: () => void;
@@ -186,7 +194,22 @@ export function useFiscalOverview(): FiscalOverview {
   const { data: pensions, loading: loadingPensions, refetch: refetchPensions } = usePensionsRetraitesRentes();
   const { data: capitauxMobiliers, loading: loadingCapitauxMobiliers, refetch: refetchCapitauxMobiliers } = useRevenusCapitauxMobiliers();
 
+  const { isAuthenticated } = useAuth();
+  const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
+  const [loading2044, setLoading2044] = useState(true);
+  const charger2044 = useCallback(() => {
+    if (!isAuthenticated) { setLoading2044(false); return; }
+    setLoading2044(true);
+    // Sans création : seule une 2044 déjà ouverte pour l'année des revenus compte dans l'impôt.
+    chargerDonnees2044(ANNEE_REVENUS, false)
+      .then((d) => setDeclaration2044(d ? calculerDonnees2044(ANNEE_REVENUS, d) : null))
+      .catch((error) => { if (import.meta.env.DEV) console.error('Erreur chargement 2044:', error); setDeclaration2044(null); })
+      .finally(() => setLoading2044(false));
+  }, [isAuthenticated]);
+  useEffect(() => { charger2044(); }, [charger2044]);
+
   const refetch = () => {
+    charger2044();
     refetchFoyer();
     refetchRevenus();
     refetchGains();
@@ -214,8 +237,10 @@ export function useFiscalOverview(): FiscalOverview {
     const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
     const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
     const parts = calculerPartsFiscales(foyerInput);
+    const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
-      + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable;
+      + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable
+      + (revenusFonciers?.incidenceRevenuImposable ?? 0);
     const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
       + revenuCapitauxMobiliers.impotForfaitaire;
     const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
@@ -240,9 +265,9 @@ export function useFiscalOverview(): FiscalOverview {
     );
 
     return {
-      loading: loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers,
+      loading: loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || declaration2044 !== null,
       revenuSalaires,
       gainsActionnariat,
       revenuExonereTauxEffectif,
@@ -252,9 +277,10 @@ export function useFiscalOverview(): FiscalOverview {
       prelevementsSociauxPensionsRetraitesRentes,
       prelevementsSociauxGainsActionnariat,
       parts,
+      revenusFonciers,
       impot,
     };
-  }, [foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
 }

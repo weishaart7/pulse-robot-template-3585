@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import type { DeficitFoncierReporte, TypeDeficitFoncierReporte } from '@/lib/immobilier/foncierFoyer';
 
 // Stock de déficits fonciers reportables (location nue, régime réel), saisi
@@ -18,6 +19,8 @@ export interface DeficitFoncierReporteRecord {
   created_at?: string;
   updated_at?: string;
 }
+
+export type DeficitFoncierImputationRecord = Tables<'deficit_foncier_imputations'>;
 
 const requireUser = async () => {
   const { data } = await supabase.auth.getUser();
@@ -70,6 +73,17 @@ export const deficitFoncierService = {
     return data as DeficitFoncierReporteRecord;
   },
 
+  /** Imputations datées du stock (une par déficit consommé lors d'un report à l'année suivante). */
+  async listImputations(): Promise<DeficitFoncierImputationRecord[]> {
+    const user = await requireUser();
+    const { data, error } = await supabase
+      .from('deficit_foncier_imputations')
+      .select('*')
+      .eq('user_id', user.id);
+    if (error) throw error;
+    return data || [];
+  },
+
   async delete(id: string): Promise<void> {
     const user = await requireUser();
     const { error } = await supabase
@@ -88,7 +102,7 @@ export const deficitFoncierService = {
    * explicite déclenchée par l'utilisateur (bouton dédié), jamais automatique.
    */
   async reporterAlAnneeSuivante(params: {
-    consommation: { id?: string; montantRestantApres: number }[];
+    consommation: { id?: string; montantConsomme: number; montantRestantApres: number }[];
     anneeCourante: number;
     nouveauDeficitHorsInterets: number;
     nouveauDeficitInterets: number;
@@ -104,6 +118,16 @@ export const deficitFoncierService = {
         .eq('id', c.id)
         .eq('user_id', user.id);
       if (error) throw error;
+      if (c.montantConsomme > 0) {
+        // Historique daté, relu par la 2044 pour reconstituer le stock au 31/12 de l'année précédente.
+        const { error: histError } = await supabase.from('deficit_foncier_imputations').insert({
+          deficit_id: c.id,
+          user_id: user.id,
+          annee_imputation: anneeCourante,
+          montant: c.montantConsomme,
+        });
+        if (histError) throw histError;
+      }
     }
 
     const nouvellesLignes: {

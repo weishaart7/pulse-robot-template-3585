@@ -4,9 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Home, Globe, TrendingUp, Coins, LucideIcon } from 'lucide-react';
 import IFIInterface from './IFIInterface';
 import Declaration2042Interface from './Declaration2042Interface';
+import Declaration2044Interface from './Declaration2044Interface';
 
 interface FiscalDeclarationsCardProps {
-  /** Appelé à la fermeture de la 2042 pour rafraîchir la Vision générale (voir useFiscalOverview.ts). */
+  /** Appelé à la fermeture de la 2042 ou de la 2044 pour rafraîchir la Vision générale (voir useFiscalOverview.ts). */
   onDeclarationClosed?: () => void;
 }
 
@@ -19,6 +20,7 @@ interface DeclarationItem {
 const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardProps) => {
   const [showIFI, setShowIFI] = useState(false);
   const [show2042, setShow2042] = useState(false);
+  const [show2044, setShow2044] = useState(false);
   const declarations: { category: string; items: DeclarationItem[] }[] = [
     {
       category: "Impôt sur le revenu",
@@ -41,6 +43,7 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
   const openDeclaration = (code: string) => {
     if (code === "2042-IFI") setShowIFI(true);
     else if (code === "2042") setShow2042(true);
+    else if (code === "2044") setShow2044(true);
   };
 
   return (
@@ -60,7 +63,7 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
               </h3>
               <div className="space-y-1.5">
                 {section.items.map((item, itemIndex) => {
-                  const clickable = item.code === "2042" || item.code === "2042-IFI";
+                  const clickable = item.code === "2042" || item.code === "2044" || item.code === "2042-IFI";
                   return (
                     <button
                       key={itemIndex}
@@ -89,6 +92,7 @@ const FiscalDeclarationsCard = ({ onDeclarationClosed }: FiscalDeclarationsCardP
         </CardContent>
       </Card>
 
+      {show2044 && <Declaration2044Interface onClose={() => { setShow2044(false); onDeclarationClosed?.(); }} />}
       {showIFI && <IFIInterface onClose={() => setShowIFI(false)} />}
       {show2042 && <Declaration2042Interface onClose={() => { setShow2042(false); onDeclarationClosed?.(); }} />}
     </>

@@ -21,9 +21,9 @@ import { estBienNuEnDirect } from './partsFoncieres';
 /** Revenus bruts fonciers annuels au-delà desquels le régime réel est obligatoire (sauf option antérieure). */
 export const SEUIL_MICRO_FONCIER = 15_000;
 
-/** Plafond majoré du déficit imputable sur le revenu global lorsqu'au moins un
- * bien du foyer fait l'objet de travaux de rénovation énergétique le faisant
- * sortir des classes E, F ou G (dispositif prorogé jusqu'au 31/12/2027). */
+/** Plafond maximal du déficit imputable sur le revenu global : 10 700 € majorés du
+ * montant des travaux de rénovation énergétique faisant sortir un bien des classes
+ * E, F ou G (Cerfa 2044, lignes 436/441 ; dispositif prorogé jusqu'au 31/12/2027). */
 export const PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE = 21_400;
 
 export type TypeDeficitFoncierReporte = 'hors_interets' | 'interets';
@@ -58,8 +58,9 @@ export interface BienFoncierInput {
   /** Part (en %) appliquée aux intérêts ; par défaut la quote-part du bien. 100 quand les intérêts sont
    * déjà ramenés à la part du foyer dans l'emprunt (emprunt Patrimoine relié). */
   partCredit?: number;
-  /** Le bien fait l'objet de travaux de rénovation énergétique le faisant sortir des classes E/F/G. */
-  travauxRenovationEnergetique?: boolean;
+  /** Dont travaux de rénovation énergétique (sortie des classes E/F/G), à 100 % du bien et compris dans
+   * `chargesHorsInterets` : ils majorent le plafond du déficit imputable (pondérés par la quote-part). */
+  montantTravauxRenovationEnergetique?: number;
   /** Parts de société (SCPI, groupement foncier) au régime des revenus fonciers, et non un immeuble détenu en direct. */
   partsSociete?: boolean;
   /** Montants issus des revenus distribués d'une part (aucune charge ni intérêt saisi). */
@@ -92,7 +93,7 @@ export function buildBienFoncierInput(
   asset: Asset,
   revenus: AssetRevenu[],
   charges: AssetCharge[],
-  travauxRenovationEnergetique = false,
+  montantTravauxRenovationEnergetique = 0,
   emprunts: Emprunt[] = [],
 ): BienFoncierInput {
   // Emprunt Patrimoine relié : intérêts déjà à la part du foyer (partCredit 100) ; sinon champs
@@ -107,7 +108,7 @@ export function buildBienFoncierInput(
     chargesHorsInterets: computeChargesAnnuelles(charges),
     interetsEtAssuranceEmprunt: credit.interetsAnnee + credit.assuranceAnnee,
     partCredit: relie ? 100 : undefined,
-    travauxRenovationEnergetique,
+    montantTravauxRenovationEnergetique,
     // Parts de SCI louées nu : parts de société au sens de l'art. 32 CGI (cf. partsFoncieres.ts).
     partsSociete: !estBienNuEnDirect(asset),
   };
@@ -127,7 +128,7 @@ export interface FoyerFoncierResult {
   resultatAvantInterets: number;
   /** Résultat foncier réel de l'année (après intérêts + assurance emprunt). */
   resultatFoncierGlobal: number;
-  /** 10 700 € (ou 21 400 € si rénovation énergétique sur au moins un bien). */
+  /** 10 700 € + travaux de rénovation énergétique du foyer, au plus 21 400 €. */
   plafondDeficitApplicable: number;
   /** Part du déficit de l'année imputable sur le revenu global, plafonnée. */
   deficitImputableRevenuGlobal: number;
@@ -167,9 +168,12 @@ export function computeFoyerFoncier(
   const microFoncierFermeParts = biens.some((b) => b.partsSociete) && !biens.some((b) => !b.partsSociete);
   const eligibleMicroFoncier = loyersBrutsFoyer <= SEUIL_MICRO_FONCIER && !microFoncierFermeParts;
 
-  const plafondDeficitApplicable = biens.some((b) => b.travauxRenovationEnergetique)
-    ? PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE
-    : PLAFOND_DEFICIT_FONCIER;
+  // Cerfa 2044 (lignes 436/441) : 10 700 € + dépenses de rénovation énergétique, au plus 21 400 €.
+  const travauxRenovationFoyer = biens.reduce((s, b) => s + (b.montantTravauxRenovationEnergetique || 0) * (b.quotePart / 100), 0);
+  const plafondDeficitApplicable = Math.min(
+    PLAFOND_DEFICIT_FONCIER + travauxRenovationFoyer,
+    PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE,
+  );
 
   const resultatAvantInterets = loyersBrutsFoyer - chargesHorsInteretsFoyer;
   const resultatFoncierGlobal = resultatAvantInterets - interetsFoyer;

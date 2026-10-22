@@ -9,3 +9,4 @@ export * from './calculerPrelevementsSociauxPensionsRetraitesRentes';
 export * from './calculerRevenuCapitauxMobiliers';
 export * from './calculerPrelevementsSociauxCapitauxMobiliers';
 export * from './calculerImpot';
+export * from './calculerDeclaration2044';

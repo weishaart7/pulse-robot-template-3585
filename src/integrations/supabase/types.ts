@@ -308,15 +308,13 @@ export type Database = {
           bien_etranger: boolean | null
           capital_garanti: number | null
           categorie_objet_art: string | null
-          type_fonds: string | null
-          metal: string | null
-          conservation_crypto: string | null
           cession_depart_retraite: boolean | null
           clause_entree_communaute: boolean | null
           clause_remploi: boolean | null
           conditions_787c: boolean | null
           conditions_exoneration_990i: boolean | null
           conditions_exoneration_rural: boolean | null
+          conservation_crypto: string | null
           created_at: string
           cto_multi_actifs: boolean | null
           cto_nature_sous_jacent: string | null
@@ -346,6 +344,7 @@ export type Database = {
           id: string
           licitation_acquereur: string | null
           lieu_stockage: string | null
+          metal: string | null
           meubles: number | null
           mode_detention: string | null
           mode_sortie: string | null
@@ -386,6 +385,7 @@ export type Database = {
           transfert_societe: boolean | null
           travaux_construction: number | null
           travaux_renovation: number | null
+          type_fonds: string | null
           type_groupement: string | null
           type_location: string | null
           type_location_lmnp: string | null
@@ -406,15 +406,13 @@ export type Database = {
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           categorie_objet_art?: string | null
-          type_fonds?: string | null
-          metal?: string | null
-          conservation_crypto?: string | null
           cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
           conditions_787c?: boolean | null
           conditions_exoneration_990i?: boolean | null
           conditions_exoneration_rural?: boolean | null
+          conservation_crypto?: string | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -444,6 +442,7 @@ export type Database = {
           id?: string
           licitation_acquereur?: string | null
           lieu_stockage?: string | null
+          metal?: string | null
           meubles?: number | null
           mode_detention?: string | null
           mode_sortie?: string | null
@@ -484,6 +483,7 @@ export type Database = {
           transfert_societe?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
+          type_fonds?: string | null
           type_groupement?: string | null
           type_location?: string | null
           type_location_lmnp?: string | null
@@ -504,15 +504,13 @@ export type Database = {
           bien_etranger?: boolean | null
           capital_garanti?: number | null
           categorie_objet_art?: string | null
-          type_fonds?: string | null
-          metal?: string | null
-          conservation_crypto?: string | null
           cession_depart_retraite?: boolean | null
           clause_entree_communaute?: boolean | null
           clause_remploi?: boolean | null
           conditions_787c?: boolean | null
           conditions_exoneration_990i?: boolean | null
           conditions_exoneration_rural?: boolean | null
+          conservation_crypto?: string | null
           created_at?: string
           cto_multi_actifs?: boolean | null
           cto_nature_sous_jacent?: string | null
@@ -542,6 +540,7 @@ export type Database = {
           id?: string
           licitation_acquereur?: string | null
           lieu_stockage?: string | null
+          metal?: string | null
           meubles?: number | null
           mode_detention?: string | null
           mode_sortie?: string | null
@@ -582,6 +581,7 @@ export type Database = {
           transfert_societe?: boolean | null
           travaux_construction?: number | null
           travaux_renovation?: number | null
+          type_fonds?: string | null
           type_groupement?: string | null
           type_location?: string | null
           type_location_lmnp?: string | null
@@ -598,6 +598,13 @@ export type Database = {
           {
             foreignKeyName: "assets_societe_id_fkey"
             columns: ["societe_id"]
+            isOneToOne: false
+            referencedRelation: "societes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_societe_proprietaire_id_fkey"
+            columns: ["societe_proprietaire_id"]
             isOneToOne: false
             referencedRelation: "societes"
             referencedColumns: ["id"]
@@ -830,6 +837,7 @@ export type Database = {
       creances_entre_epoux: {
         Row: {
           bien_concerne_id: string | null
+          cout_total_travaux: number | null
           created_at: string
           depense_faite: number
           epoux_creancier: string
@@ -840,12 +848,12 @@ export type Database = {
           updated_at: string
           user_id: string
           valeur_bien_apres: number | null
-          cout_total_travaux: number | null
-          valeur_bien_sans_travaux: number | null
           valeur_bien_avant: number | null
+          valeur_bien_sans_travaux: number | null
         }
         Insert: {
           bien_concerne_id?: string | null
+          cout_total_travaux?: number | null
           created_at?: string
           depense_faite: number
           epoux_creancier: string
@@ -856,12 +864,12 @@ export type Database = {
           updated_at?: string
           user_id: string
           valeur_bien_apres?: number | null
-          cout_total_travaux?: number | null
-          valeur_bien_sans_travaux?: number | null
           valeur_bien_avant?: number | null
+          valeur_bien_sans_travaux?: number | null
         }
         Update: {
           bien_concerne_id?: string | null
+          cout_total_travaux?: number | null
           created_at?: string
           depense_faite?: number
           epoux_creancier?: string
@@ -872,9 +880,8 @@ export type Database = {
           updated_at?: string
           user_id?: string
           valeur_bien_apres?: number | null
-          cout_total_travaux?: number | null
-          valeur_bien_sans_travaux?: number | null
           valeur_bien_avant?: number | null
+          valeur_bien_sans_travaux?: number | null
         }
         Relationships: [
           {
@@ -882,6 +889,224 @@ export type Database = {
             columns: ["bien_concerne_id"]
             isOneToOne: false
             referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      declaration_2044_immeubles: {
+        Row: {
+          asset_id: string | null
+          charges_non_recuperees: number | null
+          created_at: string
+          declaration_id: string
+          denomination: string | null
+          depenses_charge_locataires: number | null
+          frais_administration_gestion: number | null
+          id: string
+          indemnites_eviction: number | null
+          interets_emprunt: number | null
+          loyers_bruts: number | null
+          nombre_locaux: number | null
+          ordre: number
+          primes_assurance: number | null
+          provisions_charges: number | null
+          recettes_diverses: number | null
+          regularisation_provisions: number | null
+          reintegration_supplement_deduction: number | null
+          taux_deduction_specifique: number | null
+          taxes_foncieres: number | null
+          travaux: number | null
+          travaux_renovation_energetique: number | null
+          updated_at: string
+          user_id: string
+          valeur_locative_reservee: number | null
+        }
+        Insert: {
+          asset_id?: string | null
+          charges_non_recuperees?: number | null
+          created_at?: string
+          declaration_id: string
+          denomination?: string | null
+          depenses_charge_locataires?: number | null
+          frais_administration_gestion?: number | null
+          id?: string
+          indemnites_eviction?: number | null
+          interets_emprunt?: number | null
+          loyers_bruts?: number | null
+          nombre_locaux?: number | null
+          ordre?: number
+          primes_assurance?: number | null
+          provisions_charges?: number | null
+          recettes_diverses?: number | null
+          regularisation_provisions?: number | null
+          reintegration_supplement_deduction?: number | null
+          taux_deduction_specifique?: number | null
+          taxes_foncieres?: number | null
+          travaux?: number | null
+          travaux_renovation_energetique?: number | null
+          updated_at?: string
+          user_id: string
+          valeur_locative_reservee?: number | null
+        }
+        Update: {
+          asset_id?: string | null
+          charges_non_recuperees?: number | null
+          created_at?: string
+          declaration_id?: string
+          denomination?: string | null
+          depenses_charge_locataires?: number | null
+          frais_administration_gestion?: number | null
+          id?: string
+          indemnites_eviction?: number | null
+          interets_emprunt?: number | null
+          loyers_bruts?: number | null
+          nombre_locaux?: number | null
+          ordre?: number
+          primes_assurance?: number | null
+          provisions_charges?: number | null
+          recettes_diverses?: number | null
+          regularisation_provisions?: number | null
+          reintegration_supplement_deduction?: number | null
+          taux_deduction_specifique?: number | null
+          taxes_foncieres?: number | null
+          travaux?: number | null
+          travaux_renovation_energetique?: number | null
+          updated_at?: string
+          user_id?: string
+          valeur_locative_reservee?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "declaration_2044_immeubles_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaration_2044_immeubles_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "declarations_2044"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      declaration_2044_parts: {
+        Row: {
+          asset_id: string | null
+          created_at: string
+          declaration_id: string
+          denomination: string | null
+          dont_renovation_energetique: number | null
+          frais_et_charges: number | null
+          id: string
+          interets_emprunt: number | null
+          ordre: number
+          revenus_bruts: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          created_at?: string
+          declaration_id: string
+          denomination?: string | null
+          dont_renovation_energetique?: number | null
+          frais_et_charges?: number | null
+          id?: string
+          interets_emprunt?: number | null
+          ordre?: number
+          revenus_bruts?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          created_at?: string
+          declaration_id?: string
+          denomination?: string | null
+          dont_renovation_energetique?: number | null
+          frais_et_charges?: number | null
+          id?: string
+          interets_emprunt?: number | null
+          ordre?: number
+          revenus_bruts?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "declaration_2044_parts_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaration_2044_parts_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "declarations_2044"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      declarations_2044: {
+        Row: {
+          annee: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deficit_foncier_imputations: {
+        Row: {
+          annee_imputation: number
+          created_at: string
+          deficit_id: string
+          id: string
+          montant: number
+          user_id: string
+        }
+        Insert: {
+          annee_imputation: number
+          created_at?: string
+          deficit_id: string
+          id?: string
+          montant: number
+          user_id: string
+        }
+        Update: {
+          annee_imputation?: number
+          created_at?: string
+          deficit_id?: string
+          id?: string
+          montant?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deficit_foncier_imputations_deficit_id_fkey"
+            columns: ["deficit_id"]
+            isOneToOne: false
+            referencedRelation: "deficits_fonciers_reportes"
             referencedColumns: ["id"]
           },
         ]
@@ -1047,6 +1272,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "emprunts_actif_garantie_id_fkey"
+            columns: ["actif_garantie_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "emprunts_asset_id_fkey"
             columns: ["asset_id"]
@@ -2088,8 +2320,8 @@ export type Database = {
       passifs: {
         Row: {
           created_at: string
-          date_souscription: string | null
           date_echeance: string | null
+          date_souscription: string | null
           detenteur: string | null
           id: string
           libelle: string | null
@@ -2104,8 +2336,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          date_souscription?: string | null
           date_echeance?: string | null
+          date_souscription?: string | null
           detenteur?: string | null
           id?: string
           libelle?: string | null
@@ -2120,8 +2352,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          date_souscription?: string | null
           date_echeance?: string | null
+          date_souscription?: string | null
           detenteur?: string | null
           id?: string
           libelle?: string | null
@@ -2344,6 +2576,7 @@ export type Database = {
       recompenses: {
         Row: {
           bien_concerne_id: string | null
+          cout_total_travaux: number | null
           created_at: string
           depense_faite: number
           depense_necessaire: boolean
@@ -2356,11 +2589,11 @@ export type Database = {
           user_id: string
           valeur_bien_acquisition: number | null
           valeur_bien_liquidation: number | null
-          cout_total_travaux: number | null
           valeur_bien_sans_travaux: number | null
         }
         Insert: {
           bien_concerne_id?: string | null
+          cout_total_travaux?: number | null
           created_at?: string
           depense_faite: number
           depense_necessaire?: boolean
@@ -2373,11 +2606,11 @@ export type Database = {
           user_id: string
           valeur_bien_acquisition?: number | null
           valeur_bien_liquidation?: number | null
-          cout_total_travaux?: number | null
           valeur_bien_sans_travaux?: number | null
         }
         Update: {
           bien_concerne_id?: string | null
+          cout_total_travaux?: number | null
           created_at?: string
           depense_faite?: number
           depense_necessaire?: boolean
@@ -2390,7 +2623,6 @@ export type Database = {
           user_id?: string
           valeur_bien_acquisition?: number | null
           valeur_bien_liquidation?: number | null
-          cout_total_travaux?: number | null
           valeur_bien_sans_travaux?: number | null
         }
         Relationships: [
@@ -2453,46 +2685,46 @@ export type Database = {
           age_annulation_decote: number | null
           age_depart_anticipe: number | null
           annee_ouverture_droits: number | null
+          assiette_caisse_liberale: number | null
           au_moins_un_trimestre_majoration_enfant: boolean
-          mda_deja_au_ris: boolean
           autres_epargnes: number | null
           autres_pensions_mensuelles: number | null
+          caisse_liberale: string | null
+          cavp_capital_capitalisation: number | null
+          cnbf_classe: string
+          cprn_classe: number
           created_at: string
           depart_anticipe_categorie_active: boolean
           depart_anticipe_confirme_age: number | null
           depart_anticipe_confirme_motif: string | null
           depart_pour_invalidite: boolean
+          evolution_revenus: number
           has_cnavpl: boolean
+          has_cnbf: boolean
           has_fonction_publique: boolean
           id: string
+          liberal_conventionne: boolean
+          mda_deja_au_ris: boolean
           mode_hypothese_revenu_futur: string
           moyenne_annuelle_nbi: number | null
           personne: string
           points_cnavpl: number | null
           points_rafp: number | null
+          primes_annuelles_fp: number | null
           regime_affiliation_fp: string | null
           regimes_points: Json
           revenu_hypothese_manuel: number | null
           salaire_annuel_moyen: number | null
           salaire_brut_annuel: number | null
+          statut_actuel: string
           traitement_indiciaire_brut: number | null
           trimestres_cnavpl: number | null
+          trimestres_cnbf: number | null
           trimestres_cotises_apres_age_legal_cnavpl: number
           trimestres_cotises_apres_age_legal_fp: number
           trimestres_liquidables_fp: number | null
           trimestres_liquidables_nbi: number | null
           trimestres_valides: number | null
-          statut_actuel: string
-          caisse_liberale: string | null
-          has_cnbf: boolean
-          trimestres_cnbf: number | null
-          cnbf_classe: string
-          cavp_capital_capitalisation: number | null
-          cprn_classe: number
-          assiette_caisse_liberale: number | null
-          evolution_revenus: number
-          liberal_conventionne: boolean
-          primes_annuelles_fp: number | null
           updated_at: string
           user_id: string
           valeur_point_cnavpl: number | null
@@ -2501,46 +2733,46 @@ export type Database = {
           age_annulation_decote?: number | null
           age_depart_anticipe?: number | null
           annee_ouverture_droits?: number | null
+          assiette_caisse_liberale?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
-          mda_deja_au_ris?: boolean
           autres_epargnes?: number | null
           autres_pensions_mensuelles?: number | null
+          caisse_liberale?: string | null
+          cavp_capital_capitalisation?: number | null
+          cnbf_classe?: string
+          cprn_classe?: number
           created_at?: string
           depart_anticipe_categorie_active?: boolean
           depart_anticipe_confirme_age?: number | null
           depart_anticipe_confirme_motif?: string | null
           depart_pour_invalidite?: boolean
+          evolution_revenus?: number
           has_cnavpl?: boolean
+          has_cnbf?: boolean
           has_fonction_publique?: boolean
           id?: string
+          liberal_conventionne?: boolean
+          mda_deja_au_ris?: boolean
           mode_hypothese_revenu_futur?: string
           moyenne_annuelle_nbi?: number | null
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
+          primes_annuelles_fp?: number | null
           regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           salaire_brut_annuel?: number | null
+          statut_actuel?: string
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
+          trimestres_cnbf?: number | null
           trimestres_cotises_apres_age_legal_cnavpl?: number
           trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
           trimestres_liquidables_nbi?: number | null
           trimestres_valides?: number | null
-          statut_actuel?: string
-          caisse_liberale?: string | null
-          has_cnbf?: boolean
-          trimestres_cnbf?: number | null
-          cnbf_classe?: string
-          cavp_capital_capitalisation?: number | null
-          cprn_classe?: number
-          assiette_caisse_liberale?: number | null
-          evolution_revenus?: number
-          liberal_conventionne?: boolean
-          primes_annuelles_fp?: number | null
           updated_at?: string
           user_id: string
           valeur_point_cnavpl?: number | null
@@ -2549,46 +2781,46 @@ export type Database = {
           age_annulation_decote?: number | null
           age_depart_anticipe?: number | null
           annee_ouverture_droits?: number | null
+          assiette_caisse_liberale?: number | null
           au_moins_un_trimestre_majoration_enfant?: boolean
-          mda_deja_au_ris?: boolean
           autres_epargnes?: number | null
           autres_pensions_mensuelles?: number | null
+          caisse_liberale?: string | null
+          cavp_capital_capitalisation?: number | null
+          cnbf_classe?: string
+          cprn_classe?: number
           created_at?: string
           depart_anticipe_categorie_active?: boolean
           depart_anticipe_confirme_age?: number | null
           depart_anticipe_confirme_motif?: string | null
           depart_pour_invalidite?: boolean
+          evolution_revenus?: number
           has_cnavpl?: boolean
+          has_cnbf?: boolean
           has_fonction_publique?: boolean
           id?: string
+          liberal_conventionne?: boolean
+          mda_deja_au_ris?: boolean
           mode_hypothese_revenu_futur?: string
           moyenne_annuelle_nbi?: number | null
           personne?: string
           points_cnavpl?: number | null
           points_rafp?: number | null
+          primes_annuelles_fp?: number | null
           regime_affiliation_fp?: string | null
           regimes_points?: Json
           revenu_hypothese_manuel?: number | null
           salaire_annuel_moyen?: number | null
           salaire_brut_annuel?: number | null
+          statut_actuel?: string
           traitement_indiciaire_brut?: number | null
           trimestres_cnavpl?: number | null
+          trimestres_cnbf?: number | null
           trimestres_cotises_apres_age_legal_cnavpl?: number
           trimestres_cotises_apres_age_legal_fp?: number
           trimestres_liquidables_fp?: number | null
           trimestres_liquidables_nbi?: number | null
           trimestres_valides?: number | null
-          statut_actuel?: string
-          caisse_liberale?: string | null
-          has_cnbf?: boolean
-          trimestres_cnbf?: number | null
-          cnbf_classe?: string
-          cavp_capital_capitalisation?: number | null
-          cprn_classe?: number
-          assiette_caisse_liberale?: number | null
-          evolution_revenus?: number
-          liberal_conventionne?: boolean
-          primes_annuelles_fp?: number | null
           updated_at?: string
           user_id?: string
           valeur_point_cnavpl?: number | null
@@ -3550,18 +3782,18 @@ export type Database = {
           jour_cloture: string | null
           mois_cloture: string | null
           montant_entree: number | null
-          origine_entree: string | null
-          qualification_auto: boolean
-          remploi_entree: boolean
           nombre_salaries: number | null
           nombre_titres: number | null
+          origine_entree: string | null
           parts_negociables: boolean | null
           pays: string | null
           pourcentage_conjoint: number | null
           pourcentage_ifi: number | null
           pourcentage_utilisateur: number | null
+          qualification_auto: boolean
           qualification_bien: string
           regime_fiscal: string | null
+          remploi_entree: boolean
           reserves: number | null
           resultat_net: number | null
           rue_adresse: string | null
@@ -3594,18 +3826,18 @@ export type Database = {
           jour_cloture?: string | null
           mois_cloture?: string | null
           montant_entree?: number | null
-          origine_entree?: string | null
-          qualification_auto?: boolean
-          remploi_entree?: boolean
           nombre_salaries?: number | null
           nombre_titres?: number | null
+          origine_entree?: string | null
           parts_negociables?: boolean | null
           pays?: string | null
           pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean
           qualification_bien: string
           regime_fiscal?: string | null
+          remploi_entree?: boolean
           reserves?: number | null
           resultat_net?: number | null
           rue_adresse?: string | null
@@ -3638,18 +3870,18 @@ export type Database = {
           jour_cloture?: string | null
           mois_cloture?: string | null
           montant_entree?: number | null
-          origine_entree?: string | null
-          qualification_auto?: boolean
-          remploi_entree?: boolean
           nombre_salaries?: number | null
           nombre_titres?: number | null
+          origine_entree?: string | null
           parts_negociables?: boolean | null
           pays?: string | null
           pourcentage_conjoint?: number | null
           pourcentage_ifi?: number | null
           pourcentage_utilisateur?: number | null
+          qualification_auto?: boolean
           qualification_bien?: string
           regime_fiscal?: string | null
+          remploi_entree?: boolean
           reserves?: number | null
           resultat_net?: number | null
           rue_adresse?: string | null

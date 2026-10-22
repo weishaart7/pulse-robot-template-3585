@@ -92,9 +92,11 @@ confondus** — seules règles pertinentes pour une déclaration réelle. Moteur
   imputable sur le revenu global ; le reste du déficit, issu des autres charges, l'est dans la limite du
   plafond. Règle unique `repartirDeficitFoncier` ([rentabilite.ts](src/lib/immobilier/rentabilite.ts)),
   partagée avec le simulateur par bien.
-- Plafonne le déficit imputable sur le revenu global à 10 700 €/an, ou 21 400 € si au moins un bien est
-  coché « travaux de rénovation énergétique » (sortie des classes E/F/G, dispositif prorogé jusqu'au
-  31/12/2027) — case à cocher par bien dans le tableau, non persistée en base (saisie de simulation).
+- Plafonne le déficit imputable sur le revenu global à 10 700 €/an majorés du montant des travaux de
+  rénovation énergétique (sortie des classes E/F/G, dispositif prorogé jusqu'au 31/12/2027), au plus
+  21 400 € — formule du Cerfa 2044 (lignes 436/441), identique au moteur 2044 du module Fiscalité.
+  Montant saisi par bien dans le tableau (colonne « Rénov. E/F/G (€) », « dont » compris dans les
+  charges, pondéré par la quote-part), non persisté en base (saisie de simulation).
 - Consomme le stock de déficits reportés des années précédentes (FIFO par année d'origine, fenêtre de 10
   ans), et calcule le nouveau déficit reportable généré par l'année en cours (hors intérêts au-delà du
   plafond, et intérêts non couverts par les loyers).
@@ -102,9 +104,12 @@ confondus** — seules règles pertinentes pour une déclaration réelle. Moteur
   déclaration 2044), table `deficits_fonciers_reportes` (service
   [deficitFoncierService.ts](src/services/deficitFoncierService.ts)) — CRUD direct dans la section, plus un
   bouton explicite « Reporter le solde à l'année suivante » qui applique le résultat de la simulation
-  courante au stock persisté (`reporterAlAnneeSuivante`) ; rien n'est décrémenté automatiquement en arrière-plan.
-- TMI du foyer saisi localement dans la section (pas de persistance, pas de lien avec le module Fiscalité —
-  décision explicite, pas un gap non traité : le module Fiscalité n'a aucune section revenus fonciers/2044).
+  courante au stock persisté (`reporterAlAnneeSuivante`, qui enregistre aussi chaque consommation datée
+  dans `deficit_foncier_imputations`, relue par la rubrique 450 de la 2044) ; rien n'est décrémenté
+  automatiquement en arrière-plan.
+- TMI du foyer repris du calcul de la 2042 (`useFiscalOverview`, module Fiscalité) dès que le foyer et des
+  revenus y sont saisis ; sinon saisie locale non persistée. La 2044 (module Fiscalité) est préremplie
+  depuis les mêmes biens, charges et emprunts (voir docs/fiscalite.md).
 
 **Meublés : une seule nature « Immeubles locatifs (meublés) »** (migration `20261020140000`). LMNP / LMP est le statut du loueur, apprécié pour tout le foyer (art. 155 IV CGI : LMP si recettes meublées > 23 000 €/an et > autres revenus d'activité du foyer), non une nature : il est porté par `type_location` (« Location meublée non professionnelle (LMNP) », par défaut, ou « … professionnelle (LMP) »), lu via `estMeuble` / `estLMP` (`immobilierPropertySchema.ts`). Saisi comme « Statut du loueur » (LMNP — non professionnel / LMP — professionnel) dans `LocationFields` et `PropertyLocationSection` ; pour « loués nus », le type n'est plus proposé (toujours « Location nue », forcé à l'enregistrement), seul le régime reste ; immeubles professionnels et parking loué gardent le choix nu / meublé. Plus-value (`regimeFiscalPVI.computePVIRegime`, paramètre `typeLocation` ; `revente.ts`, `estLMNP`) et fiche (`LMNPDetailView`, `isLMP`) lisent le statut. Non modélisé : exonération IFI des biens professionnels du LMP (conditions non saisies).
 

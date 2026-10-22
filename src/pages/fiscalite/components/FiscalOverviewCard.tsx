@@ -1,4 +1,4 @@
-import { INK, VIOLET, EMBER } from '@/lib/palette';
+import { INK, VIOLET, EMBER, GRAPHITE } from '@/lib/palette';
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,7 +38,7 @@ const DetailRow = ({ label, value, color, muted = false }: { label: string; valu
 
 const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   const [activeTab, setActiveTab] = useState("income");
-  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif, pensionsRetraitesRentes, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat } = overview;
+  const { loading, foyerRenseigne, revenusRenseignes, impot, revenuSalaires, gainsActionnariat, revenuExonereTauxEffectif, pensionsRetraitesRentes, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat, revenusFonciers } = overview;
 
   const ratioImpotsRevenus = impot.revenuImposable > 0
     ? `${((impot.impotNet / impot.revenuImposable) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
@@ -49,12 +49,14 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
   const impositionTotale = impot.impotNet
     + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
     + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
-    + prelevementsSociauxGainsActionnariat.prelevementsSociaux;
+    + prelevementsSociauxGainsActionnariat.prelevementsSociaux
+    + (revenusFonciers?.prelevementsSociaux ?? 0);
 
   const composition: DonutSector[] = [
     { label: 'Salaires', value: revenuSalaires.totalNetImposable, color: INK },
     { label: "Gains d'actionnariat", value: gainsActionnariat.totalNetImposable, color: VIOLET },
     { label: 'Pensions, retraites, rentes', value: pensionsRetraitesRentes.totalNetImposable, color: EMBER },
+    { label: 'Revenus fonciers', value: revenusFonciers?.revenuFoncierNetImposable ?? 0, color: GRAPHITE },
   ]
     .filter(s => (s.value ?? 0) > 0)
     .map(s => ({ ...s, pct: impot.revenuImposable > 0 ? ((s.value ?? 0) / impot.revenuImposable) * 100 : 0 }));
@@ -109,6 +111,11 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
             label="Prélèvements sociaux (gains d'actionnariat salarié)"
             value={formatEuros(prelevementsSociauxGainsActionnariat.prelevementsSociaux)}
           />
+          <DetailRow
+            label="Prélèvements sociaux (revenus fonciers, 2044)"
+            value={revenusFonciers ? formatEuros(revenusFonciers.prelevementsSociaux) : 'Pas de 2044'}
+            muted={!revenusFonciers}
+          />
           <DetailRow label="Prélèvements sociaux (salaires)" value="Non calculé" muted />
           <DetailRow label="IFI — voir le simulateur dédié" value="Non calculé" muted />
         </div>
@@ -152,7 +159,11 @@ const FiscalOverviewCard = ({ overview }: FiscalOverviewCardProps) => {
                     />
                   )}
                   <DetailRow label="Revenus de placements" value="Non calculé" muted />
-                  <DetailRow label="Revenus fonciers" value="Non calculé" muted />
+                  <DetailRow
+                    label="Revenus fonciers nets (2044, après 4BC)"
+                    value={revenusFonciers ? formatEuros(revenusFonciers.incidenceRevenuImposable) : 'Pas de 2044'}
+                    muted={!revenusFonciers}
+                  />
                   <DetailRow label="Revenus exceptionnels (quotient)" value="Non calculé" muted />
                   <DetailRow label="Contributions sur les hauts revenus" value="Non calculé" muted />
                 </div>
