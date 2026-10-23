@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, ifi,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, ifi,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -183,6 +183,15 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
             ))}
             {revenusFonciers && revenusFonciers.deficitImputableRevenuGlobal > 0 && (
               <LigneDetail label="Déficit foncier imputable (4BC)" valeur={`− ${formatEuros(revenusFonciers.deficitImputableRevenuGlobal)}`} />
+            )}
+            {chargesDeductibles.sommesAAjouter > 0 && (
+              <LigneDetail label="Sommes à ajouter au revenu imposable (6GH)" valeur={formatEuros(chargesDeductibles.sommesAAjouter)} />
+            )}
+            {chargesDeductibles.deficitsAnterieursImputes > 0 && (
+              <LigneDetail label="Déficits globaux antérieurs imputés" valeur={`− ${formatEuros(chargesDeductibles.deficitsAnterieursImputes)}`} />
+            )}
+            {chargesDeductibles.chargesImputees > 0 && (
+              <LigneDetail label="Charges déductibles (cadre 6)" valeur={`− ${formatEuros(chargesDeductibles.chargesImputees)}`} />
             )}
             {revenuExonereTauxEffectif.totalRetenu > 0 && (
               <LigneDetail

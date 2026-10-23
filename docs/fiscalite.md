@@ -1297,6 +1297,27 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Approximation** : les « revenus nets d'autres sources » du seuil agricole sont approchés par le
   revenu imposable du foyer hors déficit agricole.
 
+### Charges déductibles (cadre 6, phase 6.1)
+
+Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges_deductibles`), où
+`revenuBrutGlobal` est le revenu imposable des cadres 1 à 5, déficit agricole imputé. Branché dans
+`useFiscalOverview.ts` (`revenuImposableTotal = revenuBrutGlobal + incidenceRevenuImposable`) et
+`FiscalOverviewCard.tsx` (lignes 6GH, déficits antérieurs, charges).
+
+- **Ordre (art. 156 CGI)** : 6GH ajouté, puis déficits globaux antérieurs `6FA`…`6FL` (les plus
+  anciens d'abord), puis les charges ; le revenu ne descend jamais sous 0, le reliquat de charges est perdu.
+- **Pensions alimentaires** : `6EL`/`6EM` et `6GI`/`6GJ` plafonnés à 6 855 € par enfant
+  (`PLAFOND_PENSION_ENFANT_MAJEUR`) ; `6GU`/`6GP` en totalité.
+- **Épargne retraite** : min(`6NS + 6RS`, `6PS`) par déclarant ; avec `6QR`, plafonds additionnés.
+  Montant effectivement imputé (réputé imputé en dernier) réintégré au RFR (art. 1417 IV 1° a CGI).
+  `6QW`, `6OS`/`6OT`, `6QS`/`6QT` informatifs (plafond saisi tel que sur l'avis ou recalculé).
+- **Autres** : `6DE`, `6DG`, `6DD` en totalité ; `6EU` plafonné à 4 003 € × `6EV`
+  (`PLAFOND_ACCUEIL_PERSONNE_AGEE`, 1 personne si `6EV` vide) ; `6HP`+`6HQ`+`6HR` plafonnés à 25 000 €.
+- **À confirmer brochure IR 2026** : 6 855 € et 4 003 € sont dérivés des montants revenus 2024
+  (6 794 € et 3 968 €) revalorisés de 0,9 % (LF 2026, comme le barème).
+- **Hors périmètre (acté)** : colonne personne à charge (`6NU`, `6RU`, `6PU`, `6OU`, `6QU`), comme au cadre 5 ;
+  déficit global de l'année reportable non calculé.
+
 ### Déclaration des revenus fonciers 2044
 
 [calculerDeclaration2044.ts](src/lib/fiscalite/calculerDeclaration2044.ts) (testé dans

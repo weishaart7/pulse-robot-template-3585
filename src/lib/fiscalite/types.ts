@@ -555,3 +555,76 @@ export interface RevenusNonSalariesInput {
   /** BNC non pro : déficits antérieurs, 2024 */
   case5mt: number | null;
 }
+
+/**
+ * Charges déductibles du revenu global (cadre 6 de la 2042 et de la 2042-C,
+ * phase 6.1) — déclarants 1 et 2 (colonne personne à charge hors périmètre).
+ */
+export interface ChargesDeductiblesInput {
+  /** CSG déductible calculée sur les revenus du patrimoine */
+  case6de: number | null;
+  /** Pension alimentaire à un enfant majeur, 1er enfant */
+  case6el: number | null;
+  /** Pension alimentaire à un enfant majeur, 2e enfant */
+  case6em: number | null;
+  /** Autres pensions alimentaires (enfants mineurs, ascendants…) */
+  case6gu: number | null;
+  /** Décision de justice avant 2006 : enfant majeur, 1er enfant */
+  case6gi: number | null;
+  /** Décision de justice avant 2006 : enfant majeur, 2e enfant */
+  case6gj: number | null;
+  /** Décision de justice avant 2006 : autres personnes */
+  case6gp: number | null;
+  /** Cotisations PER déductibles du revenu global, déclarant 1 */
+  case6ns: number | null;
+  /** Cotisations PER déductibles du revenu global, déclarant 2 */
+  case6nt: number | null;
+  /** Cotisations PERP, Préfon, Corem, CGOS, déclarant 1 */
+  case6rs: number | null;
+  /** Cotisations PERP, Préfon, Corem, CGOS, déclarant 2 */
+  case6rt: number | null;
+  /** Plafond de déduction épargne retraite (avis d'impôt), déclarant 1 */
+  case6ps: number | null;
+  /** Plafond de déduction épargne retraite (avis d'impôt), déclarant 2 */
+  case6pt: number | null;
+  /** Mutualisation des plafonds des conjoints */
+  case6qr: boolean;
+  /** Nouvellement domicilié en France en 2025 */
+  case6qw: boolean;
+  /** Cotisations PER déduites des BIC, BNC, BA, art. 62, déclarant 1 */
+  case6os: number | null;
+  /** Cotisations PER déduites des BIC, BNC, BA, art. 62, déclarant 2 */
+  case6ot: number | null;
+  /** Autres cotisations déduites des BIC, BNC, BA, art. 62 ou salaires, déclarant 1 */
+  case6qs: number | null;
+  /** Autres cotisations déduites des BIC, BNC, BA, art. 62 ou salaires, déclarant 2 */
+  case6qt: number | null;
+  /** Charges foncières des monuments historiques */
+  case6dg: number | null;
+  /** Autres déductions (art. 156 II et 156 bis CGI) */
+  case6dd: number | null;
+  /** Nombre de personnes de plus de 75 ans accueillies */
+  case6ev: number | null;
+  /** Frais d'accueil de ces personnes */
+  case6eu: number | null;
+  /** Grosses réparations des nus-propriétaires : report 2015 */
+  case6hp: number | null;
+  /** Grosses réparations des nus-propriétaires : report 2016 */
+  case6hq: number | null;
+  /** Grosses réparations des nus-propriétaires : report 2017 */
+  case6hr: number | null;
+  /** Sommes à ajouter au revenu imposable */
+  case6gh: number | null;
+  /** Déficit global 2019 non encore déduit */
+  case6fa: number | null;
+  /** Déficit global 2020 non encore déduit */
+  case6fb: number | null;
+  /** Déficit global 2021 non encore déduit */
+  case6fc: number | null;
+  /** Déficit global 2022 non encore déduit */
+  case6fd: number | null;
+  /** Déficit global 2023 non encore déduit */
+  case6fe: number | null;
+  /** Déficit global 2024 non encore déduit */
+  case6fl: number | null;
+}

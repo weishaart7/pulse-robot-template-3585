@@ -834,6 +834,126 @@ export type Database = {
         }
         Relationships: []
       }
+      charges_deductibles: {
+        Row: {
+          case_6dd: number | null
+          case_6de: number | null
+          case_6dg: number | null
+          case_6el: number | null
+          case_6em: number | null
+          case_6eu: number | null
+          case_6ev: number | null
+          case_6fa: number | null
+          case_6fb: number | null
+          case_6fc: number | null
+          case_6fd: number | null
+          case_6fe: number | null
+          case_6fl: number | null
+          case_6gh: number | null
+          case_6gi: number | null
+          case_6gj: number | null
+          case_6gp: number | null
+          case_6gu: number | null
+          case_6hp: number | null
+          case_6hq: number | null
+          case_6hr: number | null
+          case_6ns: number | null
+          case_6nt: number | null
+          case_6os: number | null
+          case_6ot: number | null
+          case_6ps: number | null
+          case_6pt: number | null
+          case_6qr: boolean | null
+          case_6qs: number | null
+          case_6qt: number | null
+          case_6qw: boolean | null
+          case_6rs: number | null
+          case_6rt: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_6dd?: number | null
+          case_6de?: number | null
+          case_6dg?: number | null
+          case_6el?: number | null
+          case_6em?: number | null
+          case_6eu?: number | null
+          case_6ev?: number | null
+          case_6fa?: number | null
+          case_6fb?: number | null
+          case_6fc?: number | null
+          case_6fd?: number | null
+          case_6fe?: number | null
+          case_6fl?: number | null
+          case_6gh?: number | null
+          case_6gi?: number | null
+          case_6gj?: number | null
+          case_6gp?: number | null
+          case_6gu?: number | null
+          case_6hp?: number | null
+          case_6hq?: number | null
+          case_6hr?: number | null
+          case_6ns?: number | null
+          case_6nt?: number | null
+          case_6os?: number | null
+          case_6ot?: number | null
+          case_6ps?: number | null
+          case_6pt?: number | null
+          case_6qr?: boolean | null
+          case_6qs?: number | null
+          case_6qt?: number | null
+          case_6qw?: boolean | null
+          case_6rs?: number | null
+          case_6rt?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_6dd?: number | null
+          case_6de?: number | null
+          case_6dg?: number | null
+          case_6el?: number | null
+          case_6em?: number | null
+          case_6eu?: number | null
+          case_6ev?: number | null
+          case_6fa?: number | null
+          case_6fb?: number | null
+          case_6fc?: number | null
+          case_6fd?: number | null
+          case_6fe?: number | null
+          case_6fl?: number | null
+          case_6gh?: number | null
+          case_6gi?: number | null
+          case_6gj?: number | null
+          case_6gp?: number | null
+          case_6gu?: number | null
+          case_6hp?: number | null
+          case_6hq?: number | null
+          case_6hr?: number | null
+          case_6ns?: number | null
+          case_6nt?: number | null
+          case_6os?: number | null
+          case_6ot?: number | null
+          case_6ps?: number | null
+          case_6pt?: number | null
+          case_6qr?: boolean | null
+          case_6qs?: number | null
+          case_6qt?: number | null
+          case_6qw?: boolean | null
+          case_6rs?: number | null
+          case_6rt?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       creances_entre_epoux: {
         Row: {
           bien_concerne_id: string | null

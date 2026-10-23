@@ -13,6 +13,7 @@ import { useRevenusCapitauxMobiliers } from './useRevenusCapitauxMobiliers';
 import { usePlusValuesGainsDivers } from './usePlusValuesGainsDivers';
 import { useRevenusFonciers2042 } from './useRevenusFonciers2042';
 import { useRevenusNonSalaries } from './useRevenusNonSalaries';
+import { useChargesDeductibles } from './useChargesDeductibles';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
@@ -27,6 +28,7 @@ import {
   calculerRevenuSalaires,
   calculerRevenusFonciers2042,
   calculerRevenusNonSalaries,
+  calculerChargesDeductibles,
   FoyerFiscalInput,
   GainsActionnariatSalarieInput,
   GainsActionnariatSalarieResult,
@@ -48,6 +50,8 @@ import {
   REVENUS_NON_SALARIES_VIDE,
   SEUIL_DEFICIT_AGRICOLE,
   RevenusNonSalariesResult,
+  ChargesDeductiblesInput,
+  ChargesDeductiblesResult,
   RevenusExoneresTauxEffectifInput,
   RevenusSalairesInput,
 } from '@/lib/fiscalite';
@@ -153,6 +157,14 @@ const REVENUS_FONCIERS_2042_PAR_DEFAUT: RevenusFonciers2042Input = {
   case4by: null, case4ea: null, case4eb: null,
 };
 
+const CHARGES_DEDUCTIBLES_PAR_DEFAUT: ChargesDeductiblesInput = {
+  case6de: null, case6el: null, case6em: null, case6gu: null, case6gi: null, case6gj: null, case6gp: null,
+  case6ns: null, case6nt: null, case6rs: null, case6rt: null, case6ps: null, case6pt: null,
+  case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
+  case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
+  case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
+};
+
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
 export const ANNEE_REVENUS = 2025;
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
@@ -203,6 +215,8 @@ export interface FiscalOverview {
   revenusNonSalaries: RevenusNonSalariesResult;
   /** Déficit agricole de l'année retranché du revenu global (0 si les autres revenus nets dépassent SEUIL_DEFICIT_AGRICOLE). */
   deficitAgricoleImpute: number;
+  /** Cadre 6 (charges déductibles, déficits globaux antérieurs, 6GH) — voir calculerChargesDeductibles.ts. */
+  chargesDeductibles: ChargesDeductiblesResult;
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
   impot: ImpotResult;
@@ -245,6 +259,7 @@ export function useFiscalOverview(): FiscalOverview {
 
   const { data: fonciers2042, loading: loadingFonciers2042, refetch: refetchFonciers2042 } = useRevenusFonciers2042();
   const { data: nonSalaries, loading: loadingNonSalaries, refetch: refetchNonSalaries } = useRevenusNonSalaries();
+  const { data: charges, loading: loadingCharges, refetch: refetchCharges } = useChargesDeductibles();
   const { isAuthenticated } = useAuth();
   const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
   const [loading2044, setLoading2044] = useState(true);
@@ -284,6 +299,7 @@ export function useFiscalOverview(): FiscalOverview {
     refetchPlusValues();
     refetchFonciers2042();
     refetchNonSalaries();
+    refetchCharges();
   };
 
   const overview = useMemo(() => {
@@ -321,7 +337,9 @@ export function useFiscalOverview(): FiscalOverview {
       + revenusNonSalaries.totalNetImposable;
     // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
     const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= SEUIL_DEFICIT_AGRICOLE ? revenusNonSalaries.deficitAgricole : 0;
-    const revenuImposableTotal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
+    const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
+    const chargesDeductibles = calculerChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal);
+    const revenuImposableTotal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
     const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
       + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
       + revenusNonSalaries.impotForfaitaire;
@@ -347,7 +365,7 @@ export function useFiscalOverview(): FiscalOverview {
       revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
       revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
         + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
-        + revenusNonSalaries.revenuExonereRetenuPourRFR,
+        + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR,
     );
 
     const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
@@ -364,9 +382,9 @@ export function useFiscalOverview(): FiscalOverview {
     const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
 
     return {
-      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries,
+      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || declaration2044 !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || declaration2044 !== null,
       revenuSalaires,
       gainsActionnariat,
       revenuExonereTauxEffectif,
@@ -381,11 +399,12 @@ export function useFiscalOverview(): FiscalOverview {
       revenusFonciers2042,
       revenusNonSalaries,
       deficitAgricoleImpute,
+      chargesDeductibles,
       impot,
       plafonnementIFI,
       ifi,
     };
-  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
 }

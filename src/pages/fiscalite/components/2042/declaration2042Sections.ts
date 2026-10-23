@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, Briefcase, LucideIcon } from 'lucide-react';
+import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, Briefcase, Receipt, LucideIcon } from 'lucide-react';
 import MenageSection from './MenageSection';
 import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { GainsActionnariatSalarieForm } from '@/components/fiscalite/GainsActionnariatSalarieForm';
@@ -9,6 +9,7 @@ import { RevenusCapitauxMobiliersForm } from '@/components/fiscalite/RevenusCapi
 import { PlusValuesGainsDiversForm } from '@/components/fiscalite/PlusValuesGainsDiversForm';
 import { RevenusFonciersForm } from '@/components/fiscalite/RevenusFonciersForm';
 import { RevenusNonSalariesForm } from '@/components/fiscalite/RevenusNonSalariesForm';
+import { ChargesDeductiblesForm } from '@/components/fiscalite/ChargesDeductiblesForm';
 
 export interface Declaration2042Section {
   id: string;
@@ -32,4 +33,5 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'plus-values', groupe: 'Cadre 3 · Plus-values', label: 'Plus-values et gains divers', icon: TrendingUp, component: PlusValuesGainsDiversForm },
   { id: 'revenus-fonciers', groupe: 'Cadre 4 · Revenus fonciers', label: 'Revenus fonciers', icon: Home, component: RevenusFonciersForm },
   { id: 'non-salaries', groupe: 'Cadre 5 · Professions non salariées', label: 'BIC, BNC, BA (2042-C-PRO)', icon: Briefcase, component: RevenusNonSalariesForm },
+  { id: 'charges-deductibles', groupe: 'Cadre 6 · Charges déductibles', label: 'Charges déductibles', icon: Receipt, component: ChargesDeductiblesForm },
 ];
