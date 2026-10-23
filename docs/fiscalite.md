@@ -2,17 +2,16 @@
 
 > Audit de fond produit le 2026-08-27, **de zéro** (aucun audit préexistant pour ce module — même
 > situation que `docs/immobilier.md` et `docs/societes.md`). Méthode : lecture intégrale des 20
-> fichiers du périmètre déclaré (pages, composants `ifi/`, moteurs `lib/ifi/` et `lib/fiscal/`), plus
-> les fichiers liés découverts en cours de route (`src/hooks/useIFI.ts`, `src/services/ifiService.ts`,
-> `src/types/ifi.ts`, `src/hooks/useFamilyData.ts`, `src/hooks/useSocietesIntegration.ts`), lecture du
+> fichiers du périmètre déclaré alors (pages, simulateur IFI historique, moteurs `lib/ifi/` et
+> `lib/fiscal/`, depuis supprimés), plus les fichiers liés découverts en cours de route
+> (`src/hooks/useFamilyData.ts`, `src/hooks/useSocietesIntegration.ts`), lecture du
 > schéma réel en base via le MCP Supabase (`execute_sql` sur les colonnes/FK/policies/RLS des 7 tables
 > `ifi_*` du projet `npypkocowjkszxtecxzq`, `get_advisors` sécurité), et `git log --oneline` sur les
 > fichiers du périmètre. Toute valeur citée comme « en base » a été vérifiée par requête directe le
 > 2026-08-27 (données réelles : 1 immeuble bâti, 1 immeuble non bâti, 2 passifs, 0 hypothèse
-> enregistrée, 0 bien indirect, 0 bien professionnel exonéré, 0 ligne `ifi_hors_france`). Ce document
-> corrige au passage une inexactitude de `docs/patrimoine.md` §6.4 (voir §2) : l'IFI de ce module ne
-> lit ni `societes.pourcentage_ifi` ni `valeur_ifi` — c'est un calcul totalement distinct de celui déjà
-> documenté dans `docs/societes.md` (`useSocietesIFI`).
+> enregistrée, 0 bien indirect, 0 bien professionnel exonéré, 0 ligne `ifi_hors_france`). L'IFI est
+> désormais la déclaration 2042-IFI préremplie depuis Patrimoine et Passifs (§2, « Déclaration
+> 2042-IFI ») ; le simulateur historique et sa saisie indépendante ont été supprimés.
 
 ## 1. Vue d'ensemble
 
@@ -21,7 +20,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 1. **La déclaration 2042, regroupée derrière le bouton « 2042 - Déclaration générale »** : ouvre
    `Declaration2042Interface.tsx` (overlay plein écran + sidebar de sections, calqué sur le pattern
-   `IFIInterface`/`IFISidebar` déjà en place pour l'IFI — voir §2). Contient aujourd'hui cinq sections :
+   du simulateur IFI historique, depuis supprimé — voir §2). Contient aujourd'hui cinq sections :
    - **Ménage — état civil et nombre de parts (Phase 1, fonctionnel)** : `MenageSection.tsx`
      (wrapper de `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx`), adossé à la table Supabase
      `foyer_fiscal` et au moteur pur `src/lib/fiscalite/calculerPartsFiscales.ts`. Seul morceau du
@@ -92,9 +91,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    agrège `foyer_fiscal` + `revenus_salaires` + `gains_actionnariat_salarie` +
    `revenus_exoneres_taux_effectif` + `pensions_retraites_rentes` + `revenus_capitaux_mobiliers`,
    calcule le revenu net imposable, le nombre de parts et l'impôt sur le revenu réel (voir §2), et
-   alimente les deux cartes. **Prélèvements sociaux et IFI restent affichés comme « non calculé »**
-   (pas de moteur pour ces deux impôts dans ce tableau de bord — l'IFI dispose de son propre
-   simulateur, point 3 ci-dessous). Les gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont
+   alimente les deux cartes. L'IFI de la 2042-IFI ouverte pour l'année suivant les revenus s'ajoute à
+   l'imposition totale (point 3 ci-dessous). Les gains d'actionnariat à taux forfaitaire (3VD/3VI/3VF) sont
    couverts, à taux proportionnel (18 %/30 %/41 %, hors barème) ; le carried-interest (1NX/1OX) rejoint
    désormais le barème comme un salaire ordinaire (voir « Bug corrigé » en §2 — 1NX/1OX n'est pas le
    carried-interest qualifiant du régime de faveur) ; les pensions/retraites/rentes le sont désormais
@@ -103,18 +101,17 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
    également (dividendes, revenus sans abattement, revenus réputés distribués, assurance-vie < 8 ans et
    ≥ 8 ans, gains de cession de bons/contrats, PFU ou option barème — voir §2) ; seuls les revenus
    fonciers n'entrent pas encore dans ce calcul (voir §4).
-3. **Un simulateur IFI complet, avec sa propre saisie** (`IFIInterface.tsx`, ouvert depuis le bouton
-   « 2042-IFI » de `FiscalDeclarationsCard`), organisé en 5 sections dans une sidebar
-   (`IFISidebar.tsx`) : Hypothèses, Liste des biens à l'IFI, Barème de l'IFI, Réduction &
-   Plafonnement, Montant redevable. Ce simulateur a ses propres tables Supabase, indépendantes de
-   `assets`/`societes` (Patrimoine/Sociétés/Immobilier) — voir §2.
+3. **La déclaration 2042-IFI** (`DeclarationIFIInterface.tsx`, ouverte depuis le bouton « 2042-IFI »
+   de `FiscalDeclarationsCard`) : écran plein format panneau de travail, sur le modèle de la 2044,
+   prérempli depuis Patrimoine (actifs immobiliers) et Passifs (emprunts reliés), seules les
+   surcharges étant enregistrées — voir §2, « Déclaration 2042-IFI ».
 
 **Écrans** :
 
 | Écran | Composant | Rôle |
 |---|---|---|
 | Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Panneau de travail (comme Immobilier, Retraite) : en-tête à fil d'Ariane « Fiscalité / Vue d'ensemble », titre 24 px et rappel (revenus 2025, barème 2026, mention des valeurs par défaut tant que le foyer ou les revenus ne sont pas saisis), puis deux colonnes séparées par un filet : déclarations à gauche sur toute la hauteur, imposition totale puis taux marginal à droite — disposition historique conservée, cartes remplacées par des bandes bord à bord |
-| Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste par impôt (code CERFA en pastille, libellé, statut sous le libellé, chevron) ; « 2042 » ouvre `Declaration2042Interface` (statut : IR net ou « Foyer à compléter »), « 2044 » `Declaration2044Interface` (revenu foncier imposable, déficit 4BC ou « Non ouverte »), « 2042-IFI » `IFIInterface` ; 2047, 2074 et 2086 « À venir » |
+| Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste par impôt (code CERFA en pastille, libellé, statut sous le libellé, chevron) ; « 2042 » ouvre `Declaration2042Interface` (statut : IR net ou « Foyer à compléter »), « 2044 » `Declaration2044Interface` (revenu foncier imposable, déficit 4BC ou « Non ouverte »), « 2042-IFI » `DeclarationIFIInterface` (IFI net, « Non assujetti » ou « Non ouverte ») ; 2047, 2074 et 2086 « À venir » |
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Overlay plein écran + sidebar de sections pilotée par [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts) (config `{id, label, icon, component}` — ajouter une sous-phase future = une entrée) ; pas de bouton « Enregistrer » global, chaque section garde sa propre sauvegarde |
 | Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Situation familiale, enfants à charge (liste dynamique), personnes invalides à charge (liste dynamique), enfants majeurs rattachés, cases à cocher (parent isolé, invalidité, ancien combattant, veuve de guerre...), synthèse du nombre de parts recalculée en direct pendant la saisie (avant même l'enregistrement) |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 19 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
@@ -122,17 +119,14 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Pensions, retraites et rentes (section 2042) | [PensionsRetraitesRentesForm.tsx](src/components/fiscalite/PensionsRetraitesRentesForm.tsx) | 7 lignes déclarant 1/déclarant 2 (`1AS`, `1AT`, `1AI`, `1AZ`, `1AO`, `1AL`, `1AM`) + rentes viagères à titre onéreux ventilées par tranche d'âge, pas déclarant (`1AW`/`1BW`/`1CW`/`1DW` rentes perçues, `1AR`/`1BR`/`1CR`/`1DR` non-résidents), vrai cadre 1 « Pensions, retraites, rentes » du CERFA (2042-K pages 115-119), hors colonnes C/D — saisie brute, revenu net imposable calculé en aval par `calculerPensionsRetraitesRentes.ts` |
 | Gains d'actionnariat salarié (section 2042) | [GainsActionnariatSalarieForm.tsx](src/components/fiscalite/GainsActionnariatSalarieForm.tsx) | 16 lignes du CERFA (stock-options, actions gratuites, carried-interest, BSPCE, management packages, options pré-28.9.2012, système du quotient), regroupées par sous-bloc visuel ; champs à case unique sans colonne déclarant 2 pour `1TZ`/`1UZ`/`1WZ`/`1VZ`, `3VD`/`3VI`/`3VF`/`3VN` et `0XX`, conformément au CERFA |
 | Revenus des valeurs et capitaux mobiliers (section 2042) | [RevenusCapitauxMobiliersForm.tsx](src/components/fiscalite/RevenusCapitauxMobiliersForm.tsx) | Cadre 2 de la 2042 (2042-K + 2042-C), 45 cases numériques + `2OP` (case à cocher, hors catégorie en pied de cadre) ; aucune colonne déclarant 1/déclarant 2 sur le CERFA — chaque case est un montant unique par foyer, contrairement au cadre 1 ; regroupées en 6 catégories conformes à la déclaration en ligne impots.gouv.fr : contrats d'assurance-vie ≥ 8 ans, < 8 ans, revenus ouvrant/n'ouvrant pas droit à abattement, autres revenus, gains de cession de bons et contrats — saisie brute, revenu net imposable calculé en aval par `calculerRevenuCapitauxMobiliers.ts` |
-| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Chiffre principal (IR + prélèvements sociaux calculés) avec pastille TMI ; détail des impôts : IR toujours affiché (décote en note), autres lignes affichées si non nulles, celles à 0 € ou non calculées (PS sur salaires, IFI, PS fonciers sans 2044) repliées sous « n autres lignes » (`LignesRepliees`) ; anneau `SectorsDonut` de la composition du revenu imposable, **taux moyen global (IR + PS) / revenu imposable** au centre ; liste « Revenu imposable et ce qu'il coûte » : par catégorie, montant et sous-ligne « IR ≈ … · PS … » — IR au barème (`impotApresDecote`) réparti au prorata des revenus soumis au barème (indicatif, barème progressif) plus l'impôt forfaitaire propre à la catégorie, PS calculés de la catégorie (salaires : prélevés en paie), crédits d'impôt non répartis, mention sous la liste ; catégories nulles et revenus non calculés repliés ; encadrés RFR, décote, impôt net |
+| Imposition totale | [FiscalOverviewCard.tsx](src/pages/fiscalite/components/FiscalOverviewCard.tsx) | Chiffre principal (IR + prélèvements sociaux calculés + IFI de la 2042-IFI ouverte) avec pastille TMI ; détail des impôts : IR toujours affiché (décote en note), autres lignes affichées si non nulles, celles à 0 € ou non calculées (PS sur salaires, IFI sans 2042-IFI, PS fonciers sans 2044) repliées sous « n autres lignes » (`LignesRepliees`) ; anneau `SectorsDonut` de la composition du revenu imposable, **taux moyen global (IR + PS, hors IFI) / revenu imposable** au centre ; liste « Revenu imposable et ce qu'il coûte » : par catégorie, montant et sous-ligne « IR ≈ … · PS … » — IR au barème (`impotApresDecote`) réparti au prorata des revenus soumis au barème (indicatif, barème progressif) plus l'impôt forfaitaire propre à la catégorie, PS calculés de la catégorie (salaires : prélevés en paie), crédits d'impôt non répartis, mention sous la liste ; catégories nulles et revenus non calculés repliés ; encadrés RFR, décote, impôt net |
 | Taux marginal | [TaxRateCard.tsx](src/pages/fiscalite/components/TaxRateCard.tsx) | TMI en chiffre secondaire (22 px, l'imposition totale reste le chiffre principal de la page), barème 2026 en 5 tranches (tranche du foyer en lagon, repère du quotient familial), encadrés quotient familial et marge avant la tranche supérieure ; à côté, revenu net imposable, RFR, revenu exonéré retenu, parts, plafonnement, impôt net |
-| Simulateur IFI | [IFIInterface.tsx](src/pages/fiscalite/components/IFIInterface.tsx) → 5 sous-écrans `ifi/*.tsx` | Wizard de déclaration IFI : hypothèses, biens/passifs, barème, montant dû |
+| Déclaration 2042-IFI (overlay) | [DeclarationIFIInterface.tsx](src/pages/fiscalite/components/DeclarationIFIInterface.tsx) → [SectionsIFI.tsx](src/pages/fiscalite/components/declarationIFI/SectionsIFI.tsx) | Sélecteur d'année (IFI N, N−1, N−2) ; actif (annexes 2 et 3), passif (annexe 4), dons et plafonnement, calcul tranche à tranche ; rail droit : IFI net et cases du Cerfa |
 
-**Tables Supabase du simulateur IFI** (toutes `user_id → auth.users(id) ON DELETE CASCADE`, RLS
-`auth.uid() = user_id` par opération, vérifiées en base) : `ifi_immeubles_batis`,
-`ifi_immeubles_non_batis`, `ifi_biens_detenus_indirectement`, `ifi_biens_professionnels_exoneres`,
-`ifi_passifs_deductions`, `ifi_hypotheses` (table générique clé/valeur), `ifi_hors_france` (schéma
-existant, **jamais consommé par aucun code** — ni service ni hook, cf. §3). Aucune de ces 7 tables ne
-porte de FK vers `assets` ou `societes` : la saisie est **intégralement indépendante** de Patrimoine,
-Immobilier et Sociétés.
+**Tables Supabase de la 2042-IFI** : `declarations_ifi` (une par foyer et par année d'imposition),
+`declaration_ifi_actifs`, `declaration_ifi_dettes` — voir §2, « Déclaration 2042-IFI ». Les 7 tables
+`ifi_*` du simulateur historique restent en base, vides (vérifié le 2026-10-23) et lues par aucun
+code ; leur suppression attend une validation explicite.
 
 **Table/moteur du foyer fiscal (Phase 1, quotient familial)** : `foyer_fiscal` (`user_id →
 auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)` — une ligne par utilisateur, comme
@@ -161,12 +155,9 @@ réduction outre-mer, décote, impôt forfaitaire, TMI) — voir §2. Périmètr
 fonciers (§4).
 
 **Flux clés** :
-- L'utilisateur clique « 2042-IFI » → `IFIInterface` s'ouvre en plein écran, saisit ses biens/passifs
-  un par un via `AjouterBienForm`/`AjouterPassifForm`, coche des hypothèses (abattement RP, plafonnement
-  actif, revenus N-1), puis navigue vers « Barème de l'IFI » où `computeIFI()` (`lib/ifi/calcul.ts`)
-  calcule en temps réel l'assiette, les tranches, la décote, le plafonnement et le montant final. Ce
-  résultat n'alimente toujours pas `FiscalOverviewCard`, qui affiche l'IFI comme « non calculé » plutôt
-  que de dupliquer ou d'approximer le résultat du simulateur.
+- L'utilisateur clique « 2042-IFI » → `DeclarationIFIInterface` crée la déclaration de l'année et une
+  ligne par actif et emprunt préremplis, l'utilisateur corrige ce qui doit l'être ; à la fermeture,
+  `useFiscalOverview` recharge la déclaration (sans la créer) et ajoute son IFI net à l'imposition totale.
 - La saisie du foyer fiscal (Ménage) et des salaires (Traitements et salaires) alimente désormais en
   temps réel `FiscalOverviewCard`/`TaxRateCard` via `useFiscalOverview` — un changement dans l'un des
   deux formulaires, une fois enregistré, se répercute sur le tableau de bord au prochain chargement de
@@ -175,8 +166,8 @@ fonciers (§4).
 
 ## 2. Architecture & décisions
 
-- **Navigation de la déclaration 2042 : pattern overlay + sidebar réutilisé de l'IFI, pas réinventé.**
-  `Declaration2042Interface.tsx` reprend à l'identique la mécanique de `IFIInterface.tsx` (overlay
+- **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
+  `Declaration2042Interface.tsx` reprend la mécanique de l'ancien `IFIInterface.tsx` (overlay
   `fixed inset-0` plein écran, sidebar de navigation par section) plutôt que d'introduire un nouveau
   mécanisme d'affichage (accordéon, route dédiée, modal) à côté de celui déjà en place. Seule
   divergence assumée : pas de bouton « Enregistrer » global avec `flush()` séquentiel comme sur l'IFI
@@ -195,22 +186,6 @@ fonciers (§4).
   de parts en direct pendant la saisie, avant l'enregistrement) — ce composant n'était pas nommé
   explicitement dans le brief de session, qui ne mentionnait que les deux « formulaires », mais son
   déplacement solidaire du `MenageForm` était nécessaire pour ne pas casser ce comportement existant.
-- **`src/lib/ifi/calcul.ts` mérite sa réputation de code de référence — c'est le seul point du
-  périmètre audité qui la mérite pleinement.** Fonctions pures, sans effet de bord, chacune
-  documentée par un commentaire citant l'article du CGI visé
-  ([calcul.ts](src/lib/ifi/calcul.ts)) : `valeurDeclareeBienDirect` (abattement résidence principale
-  30 %, abattement bois/forêts 75 %, fraction taxable des biens mixtes), `calculerAssietteTaxable`,
-  `getDetailedCalculation`/`calculerIFITheorique` (barème à 6 tranches, taux et seuils **conformes**
-  au barème IFI en vigueur : 0 % jusqu'à 800 k€, 0,5 % / 0,7 % / 1 % / 1,25 % / 1,5 % au-delà, seuils
-  800 k€/1,3 M€/2,57 M€/5 M€/10 M€ — vérifié exact), `calculerDecote` (formule 17 500 € − 1,25 % ×
-  assiette entre 1,3 M€ et 1,4 M€ — conforme à l'art. 977 CGI), `calculerPlafonnement` (art. 979 CGI,
-  seuil 75 % des revenus N-1, réduction plafonnée à l'IFI lui-même — conforme). Le code est même plus
-  rigoureux que les moteurs équivalents des autres modules : contrairement à `lib/societes/`
-  (formules IS/IFI dupliquées, cf. `docs/societes.md`), il n'existe ici **qu'un seul point de calcul**
-  (`computeIFI`), appelé à l'identique par `ListeBiensIFISection` et `BaremeIFISection`.
-- **Mais ce moteur bien conçu encadre une saisie qui, elle, ignore une partie de ses propres champs**
-  (cf. §3, 🔴 indivision et biens indirects) — la qualité du calcul central ne suffit pas à garantir un
-  résultat juste si les données qui l'alimentent sont mal transformées en amont.
 - **`src/lib/fiscalite/calculerPartsFiscales.ts` — moteur du quotient familial (Phase 1), désormais
   réellement branché à `MenageForm.tsx`/`SyntheseFoyerFiscal.tsx`.** Fonction pure couvrant l'art.
   193-197 CGI (revenus 2025/impôt 2026) : parts de base (dont veuf avec enfant(s) à charge = 2 parts,
@@ -1019,7 +994,7 @@ fonciers (§4).
   `FiscaliteSection.tsx` (calculé une seule fois par `useFiscalOverview`) plutôt que d'appeler
   Supabase chacun de leur côté — évite un double fetch et une double implémentation du même résultat.
   Ce qui reste affiché sans calcul réel, explicitement labellisé comme tel plutôt que remplacé par un
-  chiffre inventé : prélèvements sociaux, IFI (renvoie vers le simulateur dédié), revenus de
+  chiffre inventé : prélèvements sociaux, IFI sans 2042-IFI ouverte, revenus de
   placements/fonciers/exceptionnels, contributions sur les hauts revenus, retenues et soldes
   (`FiscalOverviewCard.tsx`, onglet « Impôts sur le revenu »).
 - **Vision générale Fiscalité (`FiscaliteSection.tsx`/`FiscalDeclarationsCard.tsx`/
@@ -1039,70 +1014,6 @@ fonciers (§4).
   [PatrimoineChart.tsx](src/components/patrimoine/PatrimoineChart.tsx) : le donut affiche désormais la
   vraie composition du revenu net imposable (salaires/gains d'actionnariat/pensions, légende colorée,
   interaction hover/clic identique au reste de l'app) au lieu d'un anneau décoratif sans signification.
-- **Le simulateur IFI a son propre modèle de données, entièrement indépendant de Patrimoine et
-  Sociétés — pas une friction ponctuelle mais une duplication de saisie totale et assumée par
-  construction.** `docs/patrimoine.md` §6.4 affirmait que l'IFI « lit `societes.pourcentage_ifi`/
-  `valeur_ifi` et ses propres tables » : la seconde moitié est confirmée (7 tables `ifi_*` propres),
-  mais la première est **infirmée** — aucun fichier de `src/lib/ifi/`, `src/pages/fiscalite/`,
-  `src/hooks/useIFI.ts` ni `src/services/ifiService.ts` ne référence `societes` ou `assets` (`grep`
-  confirmé, zéro occurrence). La lecture de `societes.pourcentage_ifi`/`valeur_ifi` documentée dans
-  `docs/patrimoine.md` appartient en réalité à `useSocietesIntegration.ts::useSocietesIFI`, un calcul
-  du module **Sociétés** (déjà documenté dans `docs/societes.md`), sans aucun rapport avec le
-  simulateur IFI de ce module. **Il existe donc dans l'application deux calculateurs d'IFI totalement
-  étanches** : l'un basé sur les sociétés déjà saisies (`useSocietesIFI`, alimente la carte « Impact
-  IFI » de la Synthèse Sociétés), l'autre basé sur une ressaisie manuelle complète dans le wizard
-  2042-IFI (`computeIFI`, ce module). Un utilisateur possédant une société valorisée dans Sociétés et
-  voulant l'inclure dans sa déclaration IFI doit la ressaisir de zéro dans « Biens détenus
-  indirectement », sans aucun pont, pré-remplissage ni avertissement de cohérence entre les deux
-  montants.
-- **Corollaire : aucune cohérence vérifiée entre le statut « bien professionnel » de Patrimoine/
-  Sociétés et l'exonération IFI.** Le formulaire « Biens professionnels exonérés »
-  ([AjouterBienForm.tsx:846-1033](src/pages/fiscalite/components/ifi/AjouterBienForm.tsx:846-1033))
-  ressaisit intégralement les critères d'exonération (activité principale, fonction de dirigeant,
-  pourcentage de détention) sans lire `assets.qualification_bien`, ni le champ
-  `participationAcquets`-style `bien_professionnel` utilisé côté régime matrimonial (Famille,
-  `types/participationAcquets.ts`), ni `useSocietesIntegration.ts::isHoldingAnimatrice` (Sociétés).
-  Trois modules du même produit peuvent donc avoir trois avis différents sur le caractère
-  professionnel d'un même bien, sans qu'aucun ne le signale à l'utilisateur.
-- **L'immobilier (module dédié) n'est référencé nulle part dans l'IFI.** Aucun champ, hook ni service
-  du périmètre IFI ne lit `assets`/`asset_charges`/`asset_revenus` (le socle du module Immobilier). Le
-  double-transfert Immobilier/Sociétés déjà documenté dans `docs/immobilier.md` et `docs/societes.md`
-  (un même actif avec `transfert_immobilier=true` **et** `transfert_societe=true`, confirmé sur 4
-  actifs réels) n'a donc **aucun équivalent ni aucun risque direct côté IFI** : l'IFI ne double-compte
-  jamais un bien Immobilier/Sociétés, pour la bonne raison qu'il ne les lit jamais — l'utilisateur doit
-  ressaisir un bien immobilier ou une société une troisième fois s'il veut qu'il apparaisse dans sa
-  déclaration IFI. La question posée en amont de cet audit (« comment le double-transfert est-il géré
-  côté IFI ? ») a donc pour réponse : il n'est pas géré, parce que rien de commun n'existe entre les
-  deux modèles de données.
-- **Sidebar IFI : le contenu affiché à chaque section ne correspond pas toujours à son libellé.** La
-  section « Barème de l'IFI » ([BaremeIFISection.tsx](src/pages/fiscalite/components/ifi/BaremeIFISection.tsx))
-  affiche en réalité tout le calcul de bout en bout — tranches, décote, plafonnement **et** montant
-  final dû (« Montant de l'IFI dû », ligne 168-171) — alors que les deux sections suivantes dans la
-  sidebar, « Réduction & Plafonnement de l'IFI »
-  ([ReductionsPlafonnementSection.tsx](src/pages/fiscalite/components/ifi/ReductionsPlafonnementSection.tsx))
-  et « Montant redevable à l'IFI »
-  ([MontantRedevableSection.tsx](src/pages/fiscalite/components/ifi/MontantRedevableSection.tsx)),
-  sont toutes deux des stubs (« Cette section sera développée prochainement »). Le wizard promet 5
-  étapes progressives mais n'en livre fonctionnellement que 3 (Hypothèses, Liste des biens, Barème) —
-  voir §3/§4.
-- **Persistance résiliente des hypothèses, bien conçue.** `HypothesesSection.tsx` utilise
-  `useImperativeHandle`/`forwardRef` pour exposer une méthode `flush()` appelée uniquement au clic sur
-  « Enregistrer » ([IFIInterface.tsx:45-48](src/pages/fiscalite/components/IFIInterface.tsx:45-48)),
-  qui persiste les 6 hypothèses en parallèle via `Promise.all` + `upsertByType` (idempotent, une ligne
-  par `type_hypothese`, cf. [ifiService.ts:303-334](src/services/ifiService.ts:303-334)) plutôt qu'à
-  chaque changement de champ — évite l'écriture en base à chaque frappe. `type_hypothese` n'a
-  cependant **aucune contrainte d'unicité en base** (confirmé par le commentaire du code lui-même,
-  [ifiService.ts:299-302](src/services/ifiService.ts:299-302)) : `upsertByType` relit puis écrit en
-  deux requêtes séquentielles non transactionnelles, une sauvegarde concurrente (deux onglets ouverts)
-  pourrait créer un doublon silencieux du même `type_hypothese`, auquel cas `hypotheses.find(...)`
-  côté lecture ne prendrait que le premier trouvé.
-- **Services `ifiService.ts` sans filtre `user_id` applicatif sur `getAll`/`update`/`delete`**, comme
-  la majorité des services déjà documentés dans `docs/patrimoine.md`/`docs/societes.md`/
-  `docs/immobilier.md` avant le durcissement du commit `ea3a695` — RLS correctement en place et
-  vérifiées en base (`auth.uid() = user_id` sur les 4 opérations, sur les 7 tables), risque réel donc
-  faible, mais ce module n'a **jamais reçu** le durcissement « défense en profondeur » appliqué à
-  Patrimoine/Sociétés le même jour : `git log` ne montre aucun commit touchant `ifiService.ts` après
-  sa création (`c0cf6bd`, `06c2b4c`).
 - **`src/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers.ts` — prélèvements sociaux (PS) sur
   le cadre 2 « Capitaux mobiliers » (Phase 1 du chantier PS, périmètre volontairement partiel).**
   Premier module d'un chantier plus large : calculer les PS (CSG/CRDS/prélèvement de solidarité) pour
@@ -1345,31 +1256,81 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   (Robien, Borloo neuf, Malraux…), rubrique 460 (vente ou abandon de location après un déficit imputé
   sur le revenu global), case 4BE (micro-foncier).
 
+### Déclaration 2042-IFI
+
+- **Périmètre** : formulaire 2042-IFI au 1er janvier N (art. 964 à 983 CGI), cases 9AA à 9CA (annexes 2
+  et 3), 9GF/9GH (annexe 4), 9NC/9NG (dons), 9PR/9PX (plafonnement, annexe 5). Moteur pur
+  [calculerDeclarationIFI.ts](src/lib/fiscalite/calculerDeclarationIFI.ts), cas de référence TEST-4
+  (résidence principale 4 000 000 €, IR 2025 de 28 866 €, revenus 123 280 €) : 9AA 2 800 000 €, IFI
+  théorique 13 690 € en 9GH, IFI net 13 553 €.
+- **Règles appliquées** :
+  - abattement de 30 % sur la résidence principale (9AA déclarée après abattement) ;
+  - bois, forêts et groupements forestiers exonérés à 75 % ; biens ruraux loués à long terme et parts de
+    GFA/GAF à 75 % jusqu'à 101 897 € et 50 % au-delà, seuil appliqué séparément à 9AD et à 9BA ; ces
+    trois cases sont déclarées avant exonération ;
+  - fraction taxable des biens mixtes ;
+  - dette sur un bien partiellement exonéré déductible à proportion de sa fraction imposable (la
+    résidence principale garde sa dette entière malgré l'abattement) ;
+  - prêt in fine : montant emprunté × (1 − années écoulées / durée totale) ;
+  - plafonnement des dettes (art. 974 III) : actif supérieur à 5 M€, dettes au-delà de 60 % de l'actif
+    déductibles à moitié, réduction répartie au prorata entre 9GF et 9GH ;
+  - IFI théorique déduit en 9GH (case à cocher, cochée par défaut) : barème et décote appliqués à l'actif
+    net des autres dettes, avant sa propre déduction ; cette déduction peut faire repasser le patrimoine
+    net sous le seuil de 1,3 M€ ;
+  - liquidation : barème de l'art. 977 (0,5 % à 1,5 % au-delà de 800 000 €), décote entre 1,3 et
+    1,4 M€ (17 500 € − 1,25 % du patrimoine net), réduction pour dons (75 %, plafonnée à 50 000 € et à
+    l'impôt), puis plafonnement à 75 % des revenus (art. 979), dans cet ordre.
+- **Préremplissage** ([preremplissageIFI.ts](src/lib/fiscalite/preremplissageIFI.ts)), depuis la nature de
+  l'actif dans Patrimoine, à la quote-part du foyer (`computeQuotePart`) et à `valeur_estimee` :
+  - résidence principale → 9AA ; résidences secondaires, locatifs nus et meublés, locaux professionnels,
+    maisons mobiles, parkings → 9AB ; terrains → 9BB ;
+  - bois et forêts → 9AC si `conditions_exoneration_rural` est coché, sinon 9BB ; terrains agricoles →
+    9AD si régime agricole et conditions cochées, sinon 9BB ; groupements fonciers → 9AC ou 9BA selon le
+    régime (ou le type de groupement), sinon 9CA ; exonérations jamais présumées ;
+  - parts de SCI, de SCPI et de sociétés d'épargne forestière → 9CA à 100 % de leur valeur ;
+  - bien détenu par une société (`societe_proprietaire_id`) exclu, compté dans les parts ;
+  - usufruit : pleine propriété (art. 968) ; nue-propriété : 0 €, avec la réserve des exceptions de
+    l'art. 968 (usufruit légal du conjoint, vente avec réserve d'usufruit) ;
+  - dettes : emprunts reliés (`asset_id`) à un actif retenu, à la part du foyer (`partFoyerEmprunt`),
+    capital restant dû au 1er janvier tiré du tableau d'amortissement quand le contrat est complet, sinon
+    `capital_restant_du` saisi (signalé) ; nature contenant « travaux » → 9GF, sinon 9GH ; contrat in fine
+    → dégressivité ;
+  - chaque ligne porte ses points à vérifier, affichés sous la section (exonération non retenue,
+    fraction immobilière des parts, LMP, locaux affectés à l'activité, démembrement, valeur absente).
+- **9PR et 9PX** : repris de la Vision générale pour l'IFI de l'année suivant les revenus calculés
+  (`ANNEE_IFI` = 2026), seulement quand le foyer est renseigné (sinon l'impôt calculé sur les valeurs par
+  défaut fausserait le plafonnement) : 9PR = IR après décote (avant crédits d'impôt) + impôt forfaitaire
+  + prélèvements sociaux calculés ; 9PX = revenu fiscal de référence, augmenté de la saisie « revenus
+  hors 2042 » (revenus exonérés, étrangers, prélèvement libératoire). Approximation signalée dans l'aide
+  de la case : le RFR est après abattement de 10 % sur les pensions, la 2042-IFI les veut avant. Une
+  saisie remplace la valeur reprise ; sans 9PX, pas de plafonnement.
+- **Persistance** (migration `20261023120000_declaration_ifi`, service
+  [declarationIFIService.ts](src/services/declarationIFIService.ts)) : `declarations_ifi` (`UNIQUE(user_id,
+  annee)`, case IFI théorique, 9BZ, dons, 9PR, 9PX, revenus hors 2042), `declaration_ifi_actifs` (FK
+  `asset_id`, catégorie, valeur, fraction taxable, `exclu`), `declaration_ifi_dettes` (FK `emprunt_id`,
+  ligne, montant, catégorie du bien financé, `exclue`). Toutes les FK en `ON DELETE CASCADE`
+  (`auth.users`, déclaration, `assets`, `emprunts`), RLS `(select auth.uid()) = user_id`. Colonne à NULL
+  = valeur préremplie, une valeur = surcharge ; un montant saisi sur un prêt in fine remplace le calcul
+  dégressif. Une ligne préremplie s'écarte (`exclu`/`exclue`, réversible) ; une ligne saisie à la main se
+  supprime.
+- **Assemblage** : [declarationIFIDonnees.ts](src/services/declarationIFIDonnees.ts) charge la déclaration,
+  les actifs et les emprunts, crée les lignes manquantes (écran seulement) et fusionne surcharges et
+  préremplissage ; partagé par [useDeclarationIFI.ts](src/hooks/useDeclarationIFI.ts) (écran,
+  enregistrement immédiat, mise à jour optimiste) et `useFiscalOverview` (sans création).
+- **Écran** : actif (une ligne par bien : case, valeur vénale, fraction taxable), totaux 9AA à 9CA et
+  exonérations partielles ; passif (ligne 9GF/9GH, bien financé, restant dû), case IFI théorique, totaux
+  9GF/9GH et plafonnement des dettes ; dons et plafonnement ; calcul de l'impôt tranche à tranche. Ligne
+  reliée : pastille lagon, valeur préremplie en grisé, retour à la valeur préremplie.
+- **Non modélisé** : biens professionnels exonérés (annexe 1, 9BZ : case enregistrée, aucun calcul),
+  fraction immobilière des parts de sociétés (100 % retenu, la logique `valeur_ifi`/`pourcentage_ifi` de
+  `useSocietesIFI` n'est pas reprise), dettes non déductibles (famille, art. 974 II), impôts payés à
+  l'étranger (annexe 6, 9RS), cases d'identité (9GL, 9GM, 9GN, enfants mineurs), 9PR/9PX pour une autre
+  année que `ANNEE_IFI`.
+
 ## 3. Dette identifiée
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
-- **Un bien détenu en indivision partielle est compté à 100 % de sa valeur dans l'assiette IFI, pas à
-  la quote-part réelle de l'utilisateur.** `bien_en_indivision`/`pourcentage_indivision` sont saisis
-  dans `AjouterBienForm` ([AjouterBienForm.tsx:404-422](src/pages/fiscalite/components/ifi/AjouterBienForm.tsx:404-422))
-  et persistés sur les 3 tables de biens concernées, mais **`IFIBienDirectInput`
-  ([types.ts:3-9](src/lib/ifi/types.ts:3-9)) ne porte aucun champ d'indivision**, et ni
-  `ListeBiensIFISection.tsx` ni `BaremeIFISection.tsx` ne lisent `bien.pourcentage_indivision` lors de
-  la construction de l'input de `computeIFI`. Un bien détenu à 30 % en indivision avec un tiers hors
-  foyer fiscal est donc taxé sur 100 % de sa valeur au lieu de 30 % — surestimation directe et
-  potentiellement lourde de l'IFI affiché au client, sans qu'aucun message n'avertisse que le champ
-  saisi n'a aucun effet.
-- **Les biens détenus indirectement (SCI, SCPI, assurance-vie…) reposent sur un champ de valeur libre
-  jamais rapproché du pourcentage de détention saisi à côté.** Le formulaire propose trois champs
-  indépendants sans lien de calcul entre eux : `pourcentage_capital`, `valeur_venale_parts`,
-  `valeur_bien` ([AjouterBienForm.tsx:766-841](src/pages/fiscalite/components/ifi/AjouterBienForm.tsx:766-841)).
-  `computeIFI`/`ListeBiensIFISection`/`BaremeIFISection` ne lisent **que** `bien.valeur_bien`
-  ([ListeBiensIFISection.tsx:162-169](src/pages/fiscalite/components/ifi/ListeBiensIFISection.tsx:162-169)) ;
-  `pourcentage_capital` et `valeur_venale_parts` ne sont que des informations affichées nulle part et
-  jamais utilisées pour calculer `valeur_bien` à la place de l'utilisateur. Si l'utilisateur (ou le
-  conseiller) remplit la valeur vénale des parts et le pourcentage détenu en pensant que l'outil fait
-  le produit, mais laisse « Valeur du bien » vide, le bien contribue pour **0 €** à l'assiette IFI —
-  omission silencieuse d'un bien potentiellement significatif, sans avertissement.
 - **Résolu (voir §2) — un moteur de calcul de l'impôt sur le revenu existe désormais**
   (`calculerRevenuSalaires.ts` + `calculerGainsActionnariatSalarie.ts` +
   `calculerRevenuExonereTauxEffectif.ts` + `calculerPensionsRetraitesRentes.ts` +
@@ -1382,11 +1343,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   1AR/1BR/1CR/1DR — voir §2). 1GB/1HB (associés et gérants art. 62 CGI) est désormais couverte,
   intégrée au pool standard de `calculerRevenuSalaires.ts` (audit case par case du cadre 1, voir §2).
   **Reste hors calcul** : les revenus fonciers — voir §4.
-- **Résolu — le simulateur IFI et le reste de l'écran Fiscalité n'affichent plus de montants d'IFI
-  contradictoires.** `FiscalOverviewCard.tsx` affiche désormais « IFI : non calculé — voir le
-  simulateur IFI » plutôt qu'un « 0 € » fixe qui contredisait le résultat du simulateur ouvert depuis
-  le même écran. Les deux moteurs restent non rapprochés (aucun pont, cf. §4) mais l'écran ne prétend
-  plus donner un second chiffre.
+- **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
+  pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
+- **Parts de sociétés comptées à 100 % en 9CA.** La fraction représentative d'immeubles n'est pas
+  calculée (trésorerie, actifs non immobiliers, holdings) : signalé sous l'actif, à corriger par saisie.
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
@@ -1433,37 +1393,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   régime distinct — corrigé par l'audit case par case de ce cadre (voir §2). **1AF/1BF, 1AL/1BL et
   1AR/1BR/1CR/1DR (crédit d'impôt égal à l'impôt français) sont également couverts** (voir §2) — ce
   n'est plus une exclusion.
-- **Réduction IFI pour dons (art. 978 CGI, 75 % du don plafonné à 50 000 €) absente du moteur de
-  calcul**, alors que la catégorie de dépense « Dons aux organismes d'intérêt général (réduction IFI) »
-  existe déjà comme libellé dans le module Budget
-  ([budgetTypes.ts:65](src/constants/budgetTypes.ts:65)). `IFICalculInput`
-  ([types.ts:24-30](src/lib/ifi/types.ts:24-30)) ne porte aucun champ de don, et la section
-  « Réduction & Plafonnement de l'IFI » censée l'accueillir est un stub vide (cf. §2). Un utilisateur
-  ayant fait un don éligible verra son IFI surestimé du montant de la réduction manquante, jusqu'à
-  50 000 €.
-- **Plafonnement des dettes « in fine » / anti-abus (art. 973 II et III CGI) non modélisé.** Le
-  formulaire de passif ([AjouterPassifForm.tsx](src/pages/fiscalite/components/ifi/AjouterPassifForm.tsx))
-  copie automatiquement le « Montant restant dû » saisi dans « Dette déductible »
-  ([AjouterPassifForm.tsx:32-38](src/pages/fiscalite/components/ifi/AjouterPassifForm.tsx:32-38)),
-  implicitement 100 % déductible, sans tenir compte des règles de plafonnement dégressif applicables
-  aux emprunts sans amortissement contractés pour l'acquisition de biens taxables au-delà de certains
-  seuils, ni des dettes contractées auprès de membres du groupe familial (présomption de non-
-  déductibilité sauf preuve contraire). Le champ reste éditable manuellement après la copie
-  automatique, donc l'utilisateur avisé peut corriger, mais rien ne le signale.
-- **`ifi_hypotheses.type_hypothese` sans contrainte d'unicité en base**, malgré un commentaire de code
-  qui présente `upsertByType` comme la garantie anti-doublon
-  ([ifiService.ts:299-302](src/services/ifiService.ts:299-302)) — une sauvegarde concurrente (deux
-  onglets, ou double-clic rapide sur « Enregistrer ») peut créer deux lignes pour le même
-  `type_hypothese`, avec un comportement de lecture (`hypotheses.find`) qui ne prend que la première
-  rencontrée, potentiellement pas la plus récente.
-- **`ifiService.ts` sans filtre `user_id` applicatif** sur `getAll`/`update`/`delete`, à la différence
-  du reste du durcissement « défense en profondeur » déjà appliqué ailleurs dans le repo (commit
-  `ea3a695`) — RLS vérifiées correctes en base sur les 7 tables, risque réel faible.
-- **`ifi_hors_france` : table et type persistés en base, aucun code applicatif ne les consomme.**
-  `IFIHorsFrance` est importé dans `ifiService.ts` mais aucun `ifiHorsFranceService` n'est exporté, et
-  aucun hook/composant n'y fait référence — chantier « biens hors de France » commencé au niveau du
-  schéma seulement, cohérent avec le gap `assets.bien_etranger` déjà documenté comme non construit
-  dans `docs/patrimoine.md`.
 - **Résolu — `calculerGainsActionnariatSalarie.ts` applique désormais l'abattement forfaitaire de
   10 % à 1TP/1TT/1AY/1MP/3VJ.** Ancienne réserve (Phase 4, comportement conservé sans abattement faute
   de confirmation explicite dans la brochure/BOI-RSA-ES-20-10-20-20/BOI-RSA-BASE-30-50-10/FAQ
@@ -1495,41 +1424,12 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   `--project tsconfig.app.json` la révèle). À corriger la prochaine fois qu'on touche
   `foyerFiscalService.ts`/`foyerFiscalToRow`, par exemple en castant `as unknown as Json` au point de
   sérialisation ou en élargissant `EnfantCharge`/`PersonneInvalideCharge` avec un index signature.
-- **Sidebar IFI trompeuse sur le contenu réel de chaque section** (§2) : « Barème de l'IFI » contient
-  en réalité le montant final dû, tandis que « Montant redevable à l'IFI » et « Réduction &
-  Plafonnement de l'IFI » sont des stubs vides — à renommer ou à compléter pour que le libellé
-  corresponde au contenu.
-- **Fonctionnalité « Modifier un bien/passif » non implémentée**, malgré un bouton Edit visible sur
-  chaque ligne : `handleEditBien`
-  ([ListeBiensIFISection.tsx:114-120](src/pages/fiscalite/components/ifi/ListeBiensIFISection.tsx:114-120))
-  affiche un simple toast « sera bientôt disponible » au lieu d'ouvrir un formulaire pré-rempli —
-  seule la suppression fonctionne, obligeant à supprimer puis ressaisir intégralement un bien pour le
-  corriger.
-- **`AjouterPassifForm.tsx` : `nomCreancier` mappé sur le champ générique `commentaire`**
-  ([AjouterPassifForm.tsx:50](src/pages/fiscalite/components/ifi/AjouterPassifForm.tsx:50)) plutôt que
-  sur un champ dédié — fonctionne, mais la sémantique du champ base (« commentaire libre ») ne reflète
-  pas son usage réel dans ce formulaire (nom du créancier), au risque d'un affichage confus si
-  `commentaire` est un jour réutilisé ailleurs pour autre chose.
-- **La session applicative ne survit pas à un rechargement complet de la page (`navigate`/F5),
-  observé pendant la vérification manuelle du formulaire `MenageForm` (2026-09-03).** Après connexion,
-  un rechargement complet de `http://localhost:8080` ramène systématiquement à la page d'accueil non
-  connectée, alors qu'un Supabase Auth correctement configuré (`persistSession: true` dans
-  [client.ts](src/integrations/supabase/client.ts)) devrait restaurer la session depuis
-  `localStorage`. Non spécifique au module Fiscalité ni à cette phase — observé seulement à l'occasion
-  de la vérification navigateur de cette session, jamais creusé (hors périmètre de ce chantier). À
-  investiguer séparément : config `storage`/`persistSession` du client, ou éventuel comportement propre
-  à l'environnement de prévisualisation utilisé.
-- **Résolu — `TaxRateCard.tsx` n'a plus qu'un seul jeu de seuils.** Les seuils textuels sous la barre
-  de progression sont désormais générés depuis `BAREME_2026` (`calculerImpot.ts`), la même source que
-  le calcul du TMI — l'ancienne divergence entre seuils affichés et seuils calculés (deux jeux de
   chiffres différents dans le même fichier) ne peut plus se reproduire.
 
 ## 4. Périmètre V1 / différé
 
-- **V1 — en place** : moteur de calcul IFI complet et fidèle au barème 2024-2025 (tranches, décote,
-  abattement résidence principale, abattement bois/forêts, plafonnement art. 979), saisie manuelle de
-  biens directs/indirects/exonérés et passifs déductibles avec persistance Supabase par utilisateur
-  (RLS + CASCADE conformes), hypothèses réutilisables d'une session à l'autre, compteur d'enfants
+- **V1 — en place** : déclaration 2042-IFI préremplie depuis Patrimoine et Passifs, reprise dans
+  l'imposition totale (voir §2), compteur d'enfants
   fiscalement à charge partagé avec Famille ; **foyer fiscal — état civil et nombre de parts (Phase 1)**
   : saisie complète (situation familiale, lieu de résidence, enfants à charge et personnes invalides à
   charge en listes dynamiques, enfants majeurs rattachés, toutes les cases de majoration T/L/invalidité/
@@ -1642,19 +1542,9 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   - **Pont entre `foyer_fiscal` et le module Famille** (`family_profiles`/`marital_status`/
     `family_links`) : saisie intégralement manuelle et indépendante par décision explicite de cette
     phase — aucune lecture croisée, aucun pré-remplissage depuis les enfants déjà saisis dans Famille.
-  - **Réduction IFI pour dons** (art. 978 CGI) : absente du modèle de données et du moteur de calcul.
-  - **Sections « Réduction & Plafonnement de l'IFI » et « Montant redevable à l'IFI »** : stubs vides
-    dans la sidebar du simulateur, le contenu correspondant existant déjà (de façon mal nommée) dans
-    « Barème de l'IFI ».
-  - **Pont entre le simulateur IFI et les données déjà saisies dans Patrimoine/Immobilier/Sociétés** :
-    aucune lecture croisée n'existe ; la saisie IFI est un système fermé, distinct du calcul
-    `useSocietesIFI` du module Sociétés — chantier de rapprochement non commencé.
-  - **Biens hors de France** : table `ifi_hors_france` créée en base, aucun code applicatif ne
-    l'exploite (service, hook, UI) — cohérent avec le gap `assets.bien_etranger` déjà identifié côté
-    Patrimoine.
-  - **Édition d'un bien/passif existant** : seule la création et la suppression fonctionnent.
-- **Hors périmètre de cet audit, signalé comme travail de suivi** : un rapprochement des trois moteurs
-  d'IFI de l'application (`lib/ifi::computeIFI`, `useSocietesIntegration::useSocietesIFI`, et les deux
+  - **2042-IFI** : voir « Non modélisé » en §2, « Déclaration 2042-IFI ».
+- **Hors périmètre de cet audit, signalé comme travail de suivi** : un rapprochement des moteurs
+  d'IFI de l'application (`calculerDeclarationIFI`, `useSocietesIntegration::useSocietesIFI`, et les deux
   formules d'IS/IFI déjà documentées comme divergentes dans `docs/societes.md`) serait nécessaire avant
   de présenter un montant d'IFI unique et fiable à un client détenant à la fois des biens en direct, des
   parts de société et des biens immobiliers transférés dans le module dédié.
