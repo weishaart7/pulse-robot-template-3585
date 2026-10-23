@@ -125,8 +125,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 
 **Tables Supabase de la 2042-IFI** : `declarations_ifi` (une par foyer et par année d'imposition),
 `declaration_ifi_actifs`, `declaration_ifi_dettes` — voir §2, « Déclaration 2042-IFI ». Les 7 tables
-`ifi_*` du simulateur historique restent en base, vides (vérifié le 2026-10-23) et lues par aucun
-code ; leur suppression attend une validation explicite.
+`ifi_*` du simulateur historique ont été supprimées (migration `20261023130000_drop_ifi_simulateur`,
+vides et sans dépendance, vérifié juste avant).
 
 **Table/moteur du foyer fiscal (Phase 1, quotient familial)** : `foyer_fiscal` (`user_id →
 auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)` — une ligne par utilisateur, comme
