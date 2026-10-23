@@ -131,9 +131,9 @@ vides et sans dépendance, vérifié juste avant).
 
 **Table/moteur du foyer fiscal (Phase 1, quotient familial)** : `foyer_fiscal` (`user_id →
 auth.users(id) ON DELETE CASCADE`, `UNIQUE(user_id)` — une ligne par utilisateur, comme
-`marital_status` ; RLS 4 policies), indépendante de `family_profiles`/`marital_status`/`family_links`
-(saisie manuelle, aucune FK vers Famille — décision explicite de cette phase, à rapprocher
-éventuellement d'une phase ultérieure). Le calcul du nombre de parts est fait par
+`marital_status` ; RLS 4 policies), sans FK vers Famille : la ligne reste la source du calcul, mais
+le Ménage se préremplit depuis `family_profiles`/`marital_status`/`family_links` (voir « Reprise
+depuis Famille » ci-dessous). Le calcul du nombre de parts est fait par
 [src/lib/fiscalite/calculerPartsFiscales.ts](src/lib/fiscalite/calculerPartsFiscales.ts), fonction pure
 couvrant l'art. 193-197 CGI (revenus 2025/impôt 2026) — voir §2. L'ancien dossier `src/lib/fiscal/`
 (sans « ite ») a été supprimé : sa dernière fonction, `compterEnfantsFiscalementACharge`, ne servait
@@ -1258,6 +1258,34 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   (Robien, Borloo neuf, Malraux…), rubrique 460 (vente ou abandon de location après un déficit imputé
   sur le revenu global), case 4BE (micro-foncier).
 
+### Reprise du Ménage depuis Famille
+
+- **Fonction pure** [foyerDepuisFamille.ts](src/lib/fiscalite/foyerDepuisFamille.ts) (tests associés),
+  appréciée pour l'année des revenus `ANNEE_REVENUS` :
+  - situation : Marié(e) → marié, Pacsé(e) → pacsé, Divorcé(e) → divorcé, Veuf/Veuve → veuf,
+    Célibataire et **Concubinage → célibataire** (concubins imposés séparément) ; statut absent →
+    célibataire, signalé ;
+  - enfants : membres « Enfant » vivants cochés « Fiscalement à charge » ; mineurs au 1er janvier N
+    (né après le 1er janvier N − 18, né pendant N compris) → enfant à charge avec année de naissance et
+    invalidité (« Personne handicapée ») ; 18 ans ou plus → enfant majeur rattaché ; né après N ou sans
+    date → non compté, signalé. En couple marié ou pacsé, les enfants des deux ; seul ou en
+    concubinage, ceux du client et les enfants communs (`enfant_de` = `both_parents`, choix validé) —
+    un enfant du seul partenaire est exclu et signalé ;
+  - autres personnes invalides à charge : membres non enfants vivants « Personne à charge » et
+    « Personne handicapée », année de naissance (sans date : signalé) ;
+  - invalidité P / F : `personne_handicapee` du client et `personne_handicapee_conjoint` (F seulement
+    en couple marié ou pacsé) ;
+  - ancien combattant W / S : `ancien_combattant` du client et du conjoint, seulement à plus de 74 ans
+    au 31 décembre N (sinon non coché, signalé) ;
+  - notes : séparation de corps, résidence séparée ou imposition distincte (imposition séparée à
+    vérifier) ; case T suggérée pour une personne seule non concubine avec enfant, jamais cochée.
+- **Mécanisme** (`MenageForm.tsx`) : un foyer enregistré fait foi ; sans foyer enregistré, le formulaire
+  s'ouvre sur un brouillon prérempli depuis Famille (rien n'est enregistré avant « Enregistrer »).
+  Bouton « Reprendre depuis Famille » : `appliquerFamille` remplace les champs issus de Famille et
+  conserve lieu de résidence, cases T, L, G, veuf d'ancien combattant et résidence alternée (gardée
+  pour un enfant de même année de naissance). Encadré en tête de section : état (repris à enregistrer,
+  conforme, ou n écarts), écarts listés par `ecartsAvecFamille`, notes de la reprise.
+
 ### Déclaration 2042-IFI
 
 - **Périmètre** : formulaire 2042-IFI au 1er janvier N (art. 964 à 983 CGI), cases 9AA à 9CA (annexes 2
@@ -1551,9 +1579,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     majorations `plafondComplementaire` sur une même personne (architecture actuelle : somme
     indépendante des plafonds par ligne, pas d'agrégation par personne), et l'interaction entre le
     plafond spécifique de la case T (4 262 €) et une personne invalide à charge unique (voir §3).
-  - **Pont entre `foyer_fiscal` et le module Famille** (`family_profiles`/`marital_status`/
-    `family_links`) : saisie intégralement manuelle et indépendante par décision explicite de cette
-    phase — aucune lecture croisée, aucun pré-remplissage depuis les enfants déjà saisis dans Famille.
+  - **Reprise depuis Famille** : résidence alternée, lieu de résidence, cases T, L et G, et
+    changement de situation en cours d'année (mariage, PACS, divorce, décès) restent manuels.
   - **2042-IFI** : voir « Non modélisé » en §2, « Déclaration 2042-IFI ».
 - **Hors périmètre de cet audit, signalé comme travail de suivi** : un rapprochement des moteurs
   d'IFI de l'application (`calculerDeclarationIFI`, `useSocietesIntegration::useSocietesIFI`, et les deux

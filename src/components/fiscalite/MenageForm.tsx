@@ -1,10 +1,15 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AddButton } from '@/components/layout/workspace-panel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2 } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Trash2, Users } from 'lucide-react';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
+import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
+import { ANNEE_REVENUS } from '@/hooks/useFiscalOverview';
+import { appliquerFamille, ecartsAvecFamille, foyerDepuisFamille } from '@/lib/fiscalite/foyerDepuisFamille';
+import { panelButtonClass } from '@/components/layout/workspace-panel';
+import { cn } from '@/lib/utils';
 import { FoyerFiscal } from '@/services/foyerFiscalService';
 import { EnfantCharge, FoyerFiscalInput, PersonneInvalideCharge } from '@/lib/fiscalite';
 import { AideTooltip, SousGroupe } from './DeclarationLigne';
@@ -57,14 +62,40 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   const { data, loading, saving, saveData } = useFoyerFiscal();
   const [foyer, setFoyer] = useState<FoyerFiscalInput>(FOYER_VIDE);
   const [foyerId, setFoyerId] = useState<string | undefined>(undefined);
+  /** Brouillon prérempli depuis Famille, pas encore enregistré. */
+  const [repris, setRepris] = useState(false);
+  const [initialise, setInitialise] = useState(false);
 
+  const profil = useFamilyProfile();
+  const marital = useMaritalStatus();
+  const liens = useFamilyLinks();
+  const familleChargee = !profil.loading && !marital.loading && !liens.loading;
+  const famille = useMemo(
+    () => (familleChargee ? foyerDepuisFamille(profil.data, marital.data, liens.data, ANNEE_REVENUS) : null),
+    [familleChargee, profil.data, marital.data, liens.data],
+  );
+
+  // Foyer enregistré : il fait foi. Sinon, à la première ouverture, brouillon prérempli depuis Famille.
   useEffect(() => {
+    if (loading || initialise) return;
     if (data) {
       const { id, ...input } = data;
       setFoyer(input);
       setFoyerId(id);
+      setInitialise(true);
+    } else if (famille) {
+      setFoyer(appliquerFamille(FOYER_VIDE, famille.valeurs));
+      setRepris(true);
+      setInitialise(true);
     }
-  }, [data]);
+  }, [data, loading, famille, initialise]);
+
+  const ecarts = famille ? ecartsAvecFamille(foyer, famille.valeurs) : [];
+  const reprendreFamille = () => {
+    if (!famille) return;
+    setFoyer(prev => appliquerFamille(prev, famille.valeurs));
+    setRepris(true);
+  };
 
   useEffect(() => {
     onChange?.(foyer);
@@ -113,10 +144,11 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   const handleSubmit = async () => {
     const saved = await saveData({ ...foyer, id: foyerId });
     setFoyerId(saved.id);
+    setRepris(false);
     onSaved?.(saved);
   };
 
-  if (loading) {
+  if (loading || !initialise) {
     return <Cadre2042Chargement texte="Chargement du foyer fiscal..." />;
   }
 
@@ -127,6 +159,14 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
       saving={saving}
       onSave={handleSubmit}
     >
+      <RepriseFamille
+        repris={repris}
+        ecarts={ecarts}
+        notes={famille?.notes ?? []}
+        onReprendre={reprendreFamille}
+        disponible={!!famille}
+      />
+
       <SousGroupe titre="Situation du foyer">
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 py-4 sm:grid-cols-2">
           <ChampMenage label="Situation familiale">
@@ -244,6 +284,51 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
     </Cadre2042>
   );
 };
+
+/**
+ * Lien avec Famille : bouton de reprise, état du brouillon, écarts entre le Ménage et Famille, et
+ * points que Famille ne permet pas de trancher.
+ */
+const RepriseFamille = ({ repris, ecarts, notes, onReprendre, disponible }: {
+  repris: boolean;
+  ecarts: string[];
+  notes: string[];
+  onReprendre: () => void;
+  disponible: boolean;
+}) => (
+  <div className="mb-6 rounded-[2px] border border-border">
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <div className="flex min-w-0 items-start gap-2.5">
+        <Users className="mt-0.5 h-4 w-4 shrink-0 text-lagon-ink" />
+        <div className="min-w-0 text-[13px]">
+          <p className="font-medium text-foreground">
+            {repris ? 'Repris depuis Famille, à enregistrer' : ecarts.length > 0 ? `${ecarts.length} écart${ecarts.length > 1 ? 's' : ''} avec Famille` : 'Conforme à Famille'}
+          </p>
+          <p className="text-[12.5px] text-muted-foreground">
+            {repris
+              ? 'Situation, enfants, personnes à charge et invalidités viennent de Famille ; vérifiez puis enregistrez.'
+              : `Situation appréciée pour les revenus ${ANNEE_REVENUS} ; la résidence alternée, le lieu et les cases T, L, G restent à saisir ici.`}
+          </p>
+        </div>
+      </div>
+      <button type="button" onClick={onReprendre} disabled={!disponible} className={cn(panelButtonClass, 'inline-flex items-center gap-1.5 disabled:opacity-50')}>
+        <RefreshCw className="h-3.5 w-3.5" />
+        Reprendre depuis Famille
+      </button>
+    </div>
+    {(ecarts.length > 0 || notes.length > 0) && (
+      <div className="space-y-1.5 border-t border-border bg-secondary px-4 py-3 text-[12.5px]">
+        {ecarts.map((e, i) => <p key={`e${i}`} className="text-foreground">{e}</p>)}
+        {notes.map((n, i) => (
+          <p key={`n${i}`} className="flex items-start gap-1.5 text-citron-ink">
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+            <span>{n}</span>
+          </p>
+        ))}
+      </div>
+    )}
+  </div>
+);
 
 const ChampMenage = ({ label, aide, inline, children }: { label: string; aide?: string; inline?: boolean; children: ReactNode }) => (
   <div className={inline ? 'flex items-center gap-2.5' : 'space-y-1.5'}>
