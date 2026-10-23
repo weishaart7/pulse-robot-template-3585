@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, LucideIcon } from 'lucide-react';
+import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, LucideIcon } from 'lucide-react';
 import MenageSection from './MenageSection';
 import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { GainsActionnariatSalarieForm } from '@/components/fiscalite/GainsActionnariatSalarieForm';
@@ -7,6 +7,7 @@ import { RevenusExoneresTauxEffectifForm } from '@/components/fiscalite/RevenusE
 import { PensionsRetraitesRentesForm } from '@/components/fiscalite/PensionsRetraitesRentesForm';
 import { RevenusCapitauxMobiliersForm } from '@/components/fiscalite/RevenusCapitauxMobiliersForm';
 import { PlusValuesGainsDiversForm } from '@/components/fiscalite/PlusValuesGainsDiversForm';
+import { RevenusFonciersForm } from '@/components/fiscalite/RevenusFonciersForm';
 
 export interface Declaration2042Section {
   id: string;
@@ -28,4 +29,5 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'actionnariat', groupe: 'Cadre 1 · Salaires, pensions', label: "Gains d'actionnariat salarié", icon: LineChart, component: GainsActionnariatSalarieForm },
   { id: 'capitaux-mobiliers', groupe: 'Cadre 2 · Capitaux mobiliers', label: 'Valeurs et capitaux mobiliers', icon: Coins, component: RevenusCapitauxMobiliersForm },
   { id: 'plus-values', groupe: 'Cadre 3 · Plus-values', label: 'Plus-values et gains divers', icon: TrendingUp, component: PlusValuesGainsDiversForm },
+  { id: 'revenus-fonciers', groupe: 'Cadre 4 · Revenus fonciers', label: 'Revenus fonciers', icon: Home, component: RevenusFonciersForm },
 ];

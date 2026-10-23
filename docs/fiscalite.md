@@ -87,6 +87,13 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      `3PC`/`3PE`), impatriés (`3VQ`/`3VR`), capital-risque (`3VC`), PEAC (`3EX`). Calcul en aval par
      `calculerPlusValuesGainsDivers.ts` (voir §2, « Plus-values et gains divers »).
 
+   - **Revenus fonciers — cadre 4 de la 2042 et de la 2042-C (phase 4.1, fonctionnel)** :
+     `RevenusFonciersForm.tsx`, adossé à la table Supabase dédiée `revenus_fonciers_2042` (un montant
+     par foyer, `user_id → auth.users(id) ON DELETE CASCADE`, RLS 4 policies). Saisie de `4BE`/`4BK`
+     (micro-foncier), `4BL`, `4BY`, `4EA`/`4EB`, `4BN`/`4BZ` ; les cases `4BA` à `4BD` du régime réel y
+     sont affichées en lecture seule depuis la 2044 de 2025 (composant `LectureLigne`). Calcul en aval
+     par `calculerRevenusFonciers2042.ts` (voir §2, « Revenus fonciers saisis dans la 2042 »).
+
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
    `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
@@ -1213,6 +1220,24 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
 - **Hors périmètre (acté)** : exit tax (`3WM`…`3YA`) et report 150-0 B ter (`3WH`…`3WT`), rares et
   adossés aux 2074 ; non-résidents (`3SE`), non gérés par le logiciel.
 
+### Revenus fonciers saisis dans la 2042 (cadre 4, phase 4.1)
+
+Moteur pur `calculerRevenusFonciers2042(input, revenuFoncierReel)`, où `revenuFoncierReel` est le
+revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Branché dans
+`useFiscalOverview.ts`, `FiscalOverviewCard.tsx` (ligne « Revenus fonciers » réel + micro, ligne
+« Prélèvements sociaux (micro-foncier) ») et `Dashboard.tsx`.
+
+- **4BE (micro-foncier)** : abattement de 30 % (art. 32 CGI), 70 % au barème ; PS 17,2 % sur ce net
+  (revenus fonciers non concernés par la hausse de CSG de la LFSS 2026). Avertissement non bloquant si
+  une 2044 est ouverte pour l'année ou si 4BE dépasse 15 000 €.
+- **4BK / 4BL** (source étrangère, crédit d'impôt égal à l'impôt français) : fractions de 4BE (après
+  abattement) et de 4BA (plafonnée au revenu foncier net de la 2044), jamais additionnées ; retirées du
+  revenu imposable et ajoutées au revenu retenu pour le taux effectif, comme 1AF/1AL.
+- **4EA / 4EB** : 4EA et 70 % de 4EB ajoutés aux revenus exonérés retenus pour le taux effectif, sans PS.
+- **4BY** (amortissement Robien/Borloo neuf déduit) : réintégré au RFR seulement.
+- **4BN / 4BZ** : informatives.
+- **Hypothèse à confronter au simulateur** : 4BK soumis aux PS comme le reste de 4BE.
+
 ### Déclaration des revenus fonciers 2044
 
 [calculerDeclaration2044.ts](src/lib/fiscalite/calculerDeclaration2044.ts) (testé dans
@@ -1440,8 +1465,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   et gains divers »).
 - **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
   que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.
-- **Dashboard sans PS fonciers** : l'imposition totale du Dashboard (`Dashboard.tsx`) n'additionne pas
-  `revenusFonciers.prelevementsSociaux`, contrairement à `FiscalOverviewCard.tsx`.
 
 - **Plafonnement du quotient familial — interaction non modélisée entre la case T (parent isolé) et une
   personne invalide à charge unique.** La brochure DGFiP (IR 2026, p.85) précise que lorsque le foyer

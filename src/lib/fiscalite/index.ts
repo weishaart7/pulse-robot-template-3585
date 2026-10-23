@@ -11,4 +11,5 @@ export * from './calculerPrelevementsSociauxCapitauxMobiliers';
 export * from './calculerPlusValuesGainsDivers';
 export * from './calculerImpot';
 export * from './calculerDeclaration2044';
+export * from './calculerRevenusFonciers2042';
 export * from './calculerDeclarationIFI';

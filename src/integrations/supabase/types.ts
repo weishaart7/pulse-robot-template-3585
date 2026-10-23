@@ -2997,6 +2997,51 @@ export type Database = {
         }
         Relationships: []
       }
+      revenus_fonciers_2042: {
+        Row: {
+          case_4be: number | null
+          case_4bk: number | null
+          case_4bl: number | null
+          case_4bn: boolean | null
+          case_4by: number | null
+          case_4bz: boolean | null
+          case_4ea: number | null
+          case_4eb: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_4be?: number | null
+          case_4bk?: number | null
+          case_4bl?: number | null
+          case_4bn?: boolean | null
+          case_4by?: number | null
+          case_4bz?: boolean | null
+          case_4ea?: number | null
+          case_4eb?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_4be?: number | null
+          case_4bk?: number | null
+          case_4bl?: number | null
+          case_4bn?: boolean | null
+          case_4by?: number | null
+          case_4bz?: boolean | null
+          case_4ea?: number | null
+          case_4eb?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       revenus_salaires: {
         Row: {
           case_1aa: number | null

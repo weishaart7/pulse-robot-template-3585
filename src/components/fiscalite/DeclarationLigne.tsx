@@ -292,3 +292,15 @@ export const TexteLigne = ({ label, code1, code2, value1, value2, onChange1, onC
     </div>
   );
 };
+
+/** Ligne en lecture seule à case unique : montant repris d'une autre déclaration (ex. 4BA depuis la 2044). */
+export const LectureLigne = ({ label, extra, aide, code, value }: { label: string; extra?: string; aide?: string; code: string; value: number | null }) => (
+  <div className={cn(LIGNE, GRILLE_DECLARANTS)}>
+    <LigneLabel label={label} extra={extra} aide={aide} />
+    <div className="flex items-center justify-between gap-2 rounded-[2px] border border-border/50 bg-muted/40 px-2 py-1.5 text-sm tabular-nums">
+      <span className="rounded-[2px] bg-lagon-soft px-1 text-[11px] font-medium text-lagon-ink">{code}</span>
+      <span>{value === null ? '—' : `${Math.round(value).toLocaleString('fr-FR')} €`}</span>
+    </div>
+    <span className="hidden sm:block" />
+  </div>
+);

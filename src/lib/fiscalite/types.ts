@@ -250,3 +250,18 @@ export interface PlusValuesGainsDiversInput {
   case3vc: number | null;
   case3ex: number | null;
 }
+
+/**
+ * Cases foncières saisies dans la 2042 (cadre 4 de la 2042 et de la 2042-C,
+ * phase 4.1). Le régime réel 4BA à 4BD vient de la 2044 (calculerDeclaration2044.ts).
+ */
+export interface RevenusFonciers2042Input {
+  case4be: number | null;
+  case4bk: number | null;
+  case4bl: number | null;
+  case4bn: boolean;
+  case4bz: boolean;
+  case4by: number | null;
+  case4ea: number | null;
+  case4eb: number | null;
+}

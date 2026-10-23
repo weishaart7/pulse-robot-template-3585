@@ -201,4 +201,14 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '3VR', label: "Impatriés : moins-values non imputables (50 %)", sectionId: 'plus-values', elementId: 'case-3VR' },
   { code: '3VC', label: "Produits et plus-values exonérés de capital-risque", sectionId: 'plus-values', elementId: 'case-3VC' },
   { code: '3EX', label: "Gain net exonéré sur retrait du PEAC", sectionId: 'plus-values', elementId: 'case-3EX' },
+
+  // Revenus fonciers (cadre 4)
+  { code: '4BE', label: "Micro-foncier : recettes brutes", sectionId: 'revenus-fonciers', elementId: 'case-4BE' },
+  { code: '4BK', label: "Micro-foncier : dont recettes de source étrangère avec crédit d'impôt", sectionId: 'revenus-fonciers', elementId: 'case-4BK' },
+  { code: '4BL', label: "Régime réel : dont revenus de source étrangère avec crédit d'impôt", sectionId: 'revenus-fonciers', elementId: 'case-4BL' },
+  { code: '4BY', label: "Amortissement Robien ou Borloo neuf déduit", sectionId: 'revenus-fonciers', elementId: 'case-4BY' },
+  { code: '4EA', label: "Revenus fonciers exonérés (réel) retenus pour le taux effectif", sectionId: 'revenus-fonciers', elementId: 'case-4EA' },
+  { code: '4EB', label: "Recettes foncières exonérées (micro) retenues pour le taux effectif", sectionId: 'revenus-fonciers', elementId: 'case-4EB' },
+  { code: '4BN', label: "Vous ne percevez plus de revenus fonciers en 2026", sectionId: 'revenus-fonciers', elementId: 'case-4BN' },
+  { code: '4BZ', label: "Vous souscrivez une déclaration n° 2044 spéciale", sectionId: 'revenus-fonciers', elementId: 'case-4BZ' },
 ];
