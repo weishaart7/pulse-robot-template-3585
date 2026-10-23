@@ -10,3 +10,4 @@ export * from './calculerRevenuCapitauxMobiliers';
 export * from './calculerPrelevementsSociauxCapitauxMobiliers';
 export * from './calculerImpot';
 export * from './calculerDeclaration2044';
+export * from './calculerDeclarationIFI';
