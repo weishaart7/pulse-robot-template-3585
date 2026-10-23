@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculerDonnees2044, chargerDonnees2044 } from '@/services/declaration2044Donnees';
 import { revenusFonciersPour2042, type Declaration2044Result, type RevenusFonciers2042 } from '@/lib/fiscalite/calculerDeclaration2044';
+import { calculerDonneesIFI, chargerDonneesIFI, type DonneesIFI, type Plafonnement2042 } from '@/services/declarationIFIDonnees';
+import type { DeclarationIFIResultat } from '@/lib/fiscalite/calculerDeclarationIFI';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
@@ -125,7 +127,9 @@ const REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT: RevenusCapitauxMobiliersInput = {
 };
 
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
-const ANNEE_REVENUS = 2025;
+export const ANNEE_REVENUS = 2025;
+/** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
+export const ANNEE_IFI = ANNEE_REVENUS + 1;
 
 export interface FiscalOverview {
   loading: boolean;
@@ -167,6 +171,14 @@ export interface FiscalOverview {
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
   impot: ImpotResult;
+  /**
+   * Cases 9PR et 9PX de la 2042-IFI de ANNEE_IFI, reprises de ce calcul : impôt au barème après décote
+   * (avant crédits d'impôt), impôt forfaitaire et prélèvements sociaux calculés ; RFR pour les revenus.
+   * null tant que le foyer n'est pas renseigné : l'impôt calculé sur les valeurs par défaut fausserait le plafonnement.
+   */
+  plafonnementIFI: Plafonnement2042 | null;
+  /** 2042-IFI de ANNEE_IFI ; null sans déclaration ouverte pour cette année. */
+  ifi: DeclarationIFIResultat | null;
   /** Recharge les 6 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
   refetch: () => void;
 }
@@ -208,8 +220,22 @@ export function useFiscalOverview(): FiscalOverview {
   }, [isAuthenticated]);
   useEffect(() => { charger2044(); }, [charger2044]);
 
+  const [donneesIFI, setDonneesIFI] = useState<DonneesIFI | null>(null);
+  const [loadingIFI, setLoadingIFI] = useState(true);
+  const chargerIFI = useCallback(() => {
+    if (!isAuthenticated) { setLoadingIFI(false); return; }
+    setLoadingIFI(true);
+    // Sans création : seule une 2042-IFI déjà ouverte pour l'année est reprise.
+    chargerDonneesIFI(ANNEE_IFI, false)
+      .then(setDonneesIFI)
+      .catch((error) => { if (import.meta.env.DEV) console.error('Erreur chargement IFI:', error); setDonneesIFI(null); })
+      .finally(() => setLoadingIFI(false));
+  }, [isAuthenticated]);
+  useEffect(() => { chargerIFI(); }, [chargerIFI]);
+
   const refetch = () => {
     charger2044();
+    chargerIFI();
     refetchFoyer();
     refetchRevenus();
     refetchGains();
@@ -264,8 +290,18 @@ export function useFiscalOverview(): FiscalOverview {
       revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR,
     );
 
+    const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
+      impots: impot.impotApresDecote + impot.impotForfaitaire
+        + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
+        + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
+        + prelevementsSociauxGainsActionnariat.prelevementsSociaux
+        + (revenusFonciers?.prelevementsSociaux ?? 0),
+      revenus: impot.revenuFiscalReference,
+    };
+    const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
+
     return {
-      loading: loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers,
+      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers,
       foyerRenseigne: foyer !== null,
       revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || declaration2044 !== null,
       revenuSalaires,
@@ -279,8 +315,10 @@ export function useFiscalOverview(): FiscalOverview {
       parts,
       revenusFonciers,
       impot,
+      plafonnementIFI,
+      ifi,
     };
-  }, [declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
 }

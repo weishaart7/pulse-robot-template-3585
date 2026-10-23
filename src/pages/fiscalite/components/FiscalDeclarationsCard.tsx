@@ -3,14 +3,14 @@ import { ChevronRight } from 'lucide-react';
 import { PanelTitle } from '@/components/layout/workspace-panel';
 import { cn } from '@/lib/utils';
 import type { FiscalOverview } from '@/hooks/useFiscalOverview';
-import IFIInterface from './IFIInterface';
+import DeclarationIFIInterface from './DeclarationIFIInterface';
 import Declaration2042Interface from './Declaration2042Interface';
 import Declaration2044Interface from './Declaration2044Interface';
 import { formatEuros } from './FiscalOverviewCard';
 
 interface FiscalDeclarationsCardProps {
   overview: FiscalOverview;
-  /** Appelé à la fermeture de la 2042 ou de la 2044 pour rafraîchir la Vision générale (voir useFiscalOverview.ts). */
+  /** Appelé à la fermeture d'une déclaration pour rafraîchir la Vision générale (voir useFiscalOverview.ts). */
   onDeclarationClosed?: () => void;
 }
 
@@ -52,6 +52,11 @@ const FiscalDeclarationsCard = ({ overview, onDeclarationClosed }: FiscalDeclara
       return rf.deficitImputableRevenuGlobal > 0
         ? `Déficit ${formatEuros(rf.deficitImputableRevenuGlobal)}`
         : `${formatEuros(rf.revenuFoncierNetImposable)} imposables`;
+    }
+    if (d.ouvrable === '2042-IFI') {
+      const ifi = overview.ifi;
+      if (!ifi) return 'Non ouverte';
+      return ifi.assujetti ? `${formatEuros(ifi.ifiNet)} d'IFI` : 'Non assujetti';
     }
     return null;
   };
@@ -99,7 +104,7 @@ const FiscalDeclarationsCard = ({ overview, onDeclarationClosed }: FiscalDeclara
         ))}
       </div>
 
-      {ouverte === '2042-IFI' && <IFIInterface onClose={() => setOuverte(null)} />}
+      {ouverte === '2042-IFI' && <DeclarationIFIInterface onClose={fermer} plafonnement2042={overview.plafonnementIFI} />}
       {ouverte === '2042' && <Declaration2042Interface onClose={fermer} />}
       {ouverte === '2044' && <Declaration2044Interface onClose={fermer} />}
     </>

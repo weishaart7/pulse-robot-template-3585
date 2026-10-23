@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { PanelTitle } from '@/components/layout/workspace-panel';
 import { SectorsDonut, type DonutSector } from '@/components/ui/sectors-donut';
 import { CITRON_MID, GREY, LAGON, LAGON_DEEP, LAGON_INK } from '@/components/budget/budgetColors';
-import { FiscalOverview } from '@/hooks/useFiscalOverview';
+import { ANNEE_IFI, FiscalOverview } from '@/hooks/useFiscalOverview';
 import { cn } from '@/lib/utils';
 
 // Imposition totale : chiffre principal et pastille TMI, détail des impôts calculés (lignes à 0 € ou non
@@ -70,15 +70,16 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers,
+    revenusFonciers, ifi,
   } = overview;
 
-  // IFI et PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
-  const impositionTotale = impot.impotNet
+  // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
+  const impositionRevenus = impot.impotNet
     + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
     + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
     + prelevementsSociauxGainsActionnariat.prelevementsSociaux
     + (revenusFonciers?.prelevementsSociaux ?? 0);
+  const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
   const impots: Ligne[] = [
     { label: 'Impôt sur le revenu (IR)', valeur: impot.impotNet },
@@ -89,7 +90,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
       ? { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: revenusFonciers.prelevementsSociaux }
       : { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: null, texte: 'Pas de 2044' },
     { label: 'Prélèvements sociaux (salaires)', valeur: null, texte: 'Prélevés en paie' },
-    { label: 'IFI', valeur: null, texte: 'Voir la 2042-IFI' },
+    ifi
+      ? { label: `IFI ${ANNEE_IFI} (2042-IFI)`, valeur: ifi.ifiNet }
+      : { label: 'IFI', valeur: null, texte: 'Pas de 2042-IFI' },
   ];
   // L'IR reste toujours visible, même à 0 €.
   const impotsVisibles = impots.filter((l, i) => i === 0 || (l.valeur ?? 0) > 0);
@@ -117,7 +120,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const secteurs: DonutSector[] = revenus
     .filter((r) => r.valeur > 0)
     .map((r) => ({ label: r.label, value: r.valeur, color: r.couleur, pct: impot.revenuImposable > 0 ? (r.valeur / impot.revenuImposable) * 100 : 0 }));
-  const tauxMoyenGlobal = impot.revenuImposable > 0 ? formatPct((impositionTotale / impot.revenuImposable) * 100) : '—';
+  const tauxMoyenGlobal = impot.revenuImposable > 0 ? formatPct((impositionRevenus / impot.revenuImposable) * 100) : '—';
 
   const coutCategorie = (r: (typeof revenusAvecCout)[number]) =>
     `IR ≈ ${formatEuros(r.ir)} · PS ${r.ps === null ? 'prélevés en paie' : formatEuros(r.ps)}`;
@@ -132,7 +135,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
         </span>
       </div>
       <p className="mt-2 text-[12.5px] text-muted-foreground">
-        IR et prélèvements sociaux calculés ; IFI et prélèvements sociaux sur les salaires non inclus.
+        IR, prélèvements sociaux et IFI calculés ; prélèvements sociaux sur les salaires non inclus.
       </p>
 
       <div className="mt-4">
