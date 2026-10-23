@@ -94,6 +94,16 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      sont affichées en lecture seule depuis la 2044 de 2025 (composant `LectureLigne`). Calcul en aval
      par `calculerRevenusFonciers2042.ts` (voir §2, « Revenus fonciers saisis dans la 2042 »).
 
+   - **Revenus des professions non salariées — cadre 5, 2042-C-PRO, régimes micro (phase 5.1,
+     fonctionnel)** : `RevenusNonSalariesForm.tsx`, adossé à la table Supabase dédiée
+     `revenus_non_salaries` (déclarants 1/2, `user_id → auth.users(id) ON DELETE CASCADE`, RLS 4
+     policies). 16 paires de cases : versement libératoire (`5TA`/`5TB`/`5TE`), micro-BIC professionnel
+     (`5KO`/`5KP`) et non professionnel (`5NO`/`5NP`), locations meublées non professionnelles
+     (`5NG`/`5NH`/`5NI`, et `5NJ`/`5NK`/`5NL` soumises aux cotisations sociales), micro-BNC
+     (`5HQ`/`5KU`), revenus à soumettre aux PS (`5HY`). Codes vérifiés sur la brochure DGFiP IR 2026
+     (« La 2042 C PRO et ses références », p. 163-182). Calcul en aval par `calculerRevenusNonSalaries.ts`
+     (voir §2, « Revenus des professions non salariées »).
+
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
    `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
@@ -1237,6 +1247,31 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 - **4BY** (amortissement Robien/Borloo neuf déduit) : réintégré au RFR seulement.
 - **4BN / 4BZ** : informatives.
 - **Hypothèse à confronter au simulateur** : 4BK soumis aux PS comme le reste de 4BE.
+
+### Revenus des professions non salariées (cadre 5, phase 5.1)
+
+Moteur pur `calculerRevenusNonSalaries(input)`, branché dans `useFiscalOverview.ts`,
+`FiscalOverviewCard.tsx` (ligne « Revenus non salariés (micro) », ligne de PS « locations meublées et
+non salariés ») et `Dashboard.tsx`.
+
+- **Abattements** (recettes brutes saisies, abattement calculé, minimum 305 € par activité et par
+  déclarant) : 71 % ventes (`5TA`, `5KO`, `5NO`), 50 % services et meublés classés ou à l'année
+  (`5TB`, `5KP`, `5NP`, `5NG`, `5NI`, `5NJ`, `5NL`), 30 % meublés de tourisme non classés (`5NH`,
+  `5NK`, loi Le Meur), 34 % BNC (`5TE`, `5HQ`, `5KU`).
+- **Versement libératoire** (`5TA`/`5TB`/`5TE`) : impôt déjà payé ; net après abattement retenu pour le
+  taux effectif (art. 197 C CGI), donc pour le RFR.
+- **Prélèvements sociaux 18,6 %** (revenus du patrimoine 2025, LFSS 2026) : net des LMNP
+  `5NG`/`5NH`/`5NI`, calculés d'office par la DGFiP, et `5HY`/`5IY` saisis tels quels. Aucun PS sur les
+  revenus professionnels ni sur `5NJ`/`5NK`/`5NL` (cotisations sociales) ; les BIC/BNC non
+  professionnels hors meublés n'en supportent que via `5HY`/`5IY` (brochure p. 182).
+- **Seuils** (alertes non bloquantes) : 188 700 € ventes et 77 700 € services + BNC, par déclarant ;
+  77 700 € toutes locations meublées non professionnelles et 15 000 € meublés non classés, par foyer.
+- **Hors périmètre (phase 5.2)** : régimes réels BIC/BNC (bénéfices, déficits, revenus de source
+  étrangère), bénéfices agricoles, plus-values et moins-values professionnelles, revenus exonérés zonés
+  (`5KN`/`5NN`/`5HP`/`5TH`…), colonne personne à charge, réductions et crédits d'impôt de la
+  2042-C-PRO.
+- **Hypothèse à confronter au simulateur** : seuils de 188 700 € et 77 700 € pour les activités non
+  meublées (non relus sur la brochure, site impots.gouv.fr en maintenance pendant la session).
 
 ### Déclaration des revenus fonciers 2044
 

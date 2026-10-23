@@ -265,3 +265,58 @@ export interface RevenusFonciers2042Input {
   case4ea: number | null;
   case4eb: number | null;
 }
+
+/**
+ * Revenus des professions non salariées, régimes micro (2042-C-PRO, phase 5.1) —
+ * recettes brutes, déclarants 1 et 2 (colonne personne à charge hors périmètre).
+ */
+export interface RevenusNonSalariesInput {
+  /** micro-entrepreneur VFL : ventes, chiffre d'affaires brut */
+  case5ta: number | null;
+  case5ua: number | null;
+  /** micro-entrepreneur VFL : prestations de services et locations meublées */
+  case5tb: number | null;
+  case5ub: number | null;
+  /** micro-entrepreneur VFL : revenus non commerciaux, recettes brutes */
+  case5te: number | null;
+  case5ue: number | null;
+  /** micro-BIC professionnel : ventes de marchandises et assimilées */
+  case5ko: number | null;
+  case5lo: number | null;
+  /** micro-BIC professionnel : prestations de services et locations meublées */
+  case5kp: number | null;
+  case5lp: number | null;
+  /** micro-BIC non professionnel : ventes de marchandises et assimilées */
+  case5no: number | null;
+  case5oo: number | null;
+  /** micro-BIC non professionnel : prestations de services */
+  case5np: number | null;
+  case5op: number | null;
+  /** LMNP micro-BIC : chambres d'hôtes et meublés de tourisme classés */
+  case5ng: number | null;
+  case5og: number | null;
+  /** LMNP micro-BIC : meublés de tourisme non classés */
+  case5nh: number | null;
+  case5oh: number | null;
+  /** LMNP micro-BIC : autres locations meublées */
+  case5ni: number | null;
+  case5oi: number | null;
+  /** LMNP soumises aux cotisations sociales : chambres d'hôtes et meublés de tourisme classés */
+  case5nj: number | null;
+  case5oj: number | null;
+  /** LMNP soumises aux cotisations sociales : meublés de tourisme non classés */
+  case5nk: number | null;
+  case5ok: number | null;
+  /** LMNP soumises aux cotisations sociales : autres locations meublées */
+  case5nl: number | null;
+  case5ol: number | null;
+  /** micro-BNC professionnel : recettes brutes */
+  case5hq: number | null;
+  case5iq: number | null;
+  /** micro-BNC non professionnel : recettes brutes */
+  case5ku: number | null;
+  case5lu: number | null;
+  /** BA, BIC, BNC à imposer aux prélèvements sociaux : revenus nets */
+  case5hy: number | null;
+  case5iy: number | null;
+}

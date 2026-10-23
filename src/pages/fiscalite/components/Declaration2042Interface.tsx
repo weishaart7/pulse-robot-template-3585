@@ -25,6 +25,7 @@ import { gainsActionnariatSalarieService } from '@/services/gainsActionnariatSal
 import { revenusCapitauxMobiliersService } from '@/services/revenusCapitauxMobiliersService';
 import { plusValuesGainsDiversService } from '@/services/plusValuesGainsDiversService';
 import { revenusFonciers2042Service } from '@/services/revenusFonciers2042Service';
+import { revenusNonSalariesService } from '@/services/revenusNonSalariesService';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,7 @@ const Declaration2042Interface = ({ onClose, overview }: Declaration2042Interfac
         revenusCapitauxMobiliersService.deleteRevenusCapitauxMobiliers(),
         plusValuesGainsDiversService.deletePlusValuesGainsDivers(),
         revenusFonciers2042Service.deleteRevenusFonciers2042(),
+        revenusNonSalariesService.deleteRevenusNonSalaries(),
       ]);
       setResetKey(k => k + 1);
       toast({
@@ -199,7 +201,7 @@ const Declaration2042Interface = ({ onClose, overview }: Declaration2042Interfac
             <AlertDialogTitle>Supprimer toutes les données de la 2042 ?</AlertDialogTitle>
             <AlertDialogDescription>
               Cela supprimera définitivement toutes les données saisies dans la déclaration 2042
-              (ménage, salaires, pensions, gains d'actionnariat salarié, revenus de capitaux mobiliers, plus-values, revenus fonciers saisis dans la 2042,
+              (ménage, salaires, pensions, gains d'actionnariat salarié, revenus de capitaux mobiliers, plus-values, revenus fonciers saisis dans la 2042, revenus non salariés,
               salaires exonérés à taux effectif). Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -108,7 +108,7 @@ const Dashboard = () => {
   const { data: maritalStatus } = useMaritalStatus();
   const { data: familyLinks } = useFamilyLinks();
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
-  const { impot, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat, plusValuesGainsDivers, revenusFonciers, revenusFonciers2042 } = useFiscalOverview();
+  const { impot, prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat, plusValuesGainsDivers, revenusFonciers, revenusFonciers2042, revenusNonSalaries } = useFiscalOverview();
 
   // Même calcul que FiscalOverviewCard.tsx (module Fiscalité) : IFI et prélèvements
   // sociaux sur les salaires non inclus, seules les impositions effectivement calculées sont sommées.
@@ -118,7 +118,8 @@ const Dashboard = () => {
     + prelevementsSociauxGainsActionnariat.prelevementsSociaux
     + plusValuesGainsDivers.prelevementsSociaux
     + (revenusFonciers?.prelevementsSociaux ?? 0)
-    + revenusFonciers2042.prelevementsSociaux;
+    + revenusFonciers2042.prelevementsSociaux
+    + revenusNonSalaries.prelevementsSociaux;
 
   useEffect(() => {
     assetDemembrementService.getAllForUser()

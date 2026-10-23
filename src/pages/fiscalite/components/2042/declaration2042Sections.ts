@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, LucideIcon } from 'lucide-react';
+import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, Briefcase, LucideIcon } from 'lucide-react';
 import MenageSection from './MenageSection';
 import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { GainsActionnariatSalarieForm } from '@/components/fiscalite/GainsActionnariatSalarieForm';
@@ -8,6 +8,7 @@ import { PensionsRetraitesRentesForm } from '@/components/fiscalite/PensionsRetr
 import { RevenusCapitauxMobiliersForm } from '@/components/fiscalite/RevenusCapitauxMobiliersForm';
 import { PlusValuesGainsDiversForm } from '@/components/fiscalite/PlusValuesGainsDiversForm';
 import { RevenusFonciersForm } from '@/components/fiscalite/RevenusFonciersForm';
+import { RevenusNonSalariesForm } from '@/components/fiscalite/RevenusNonSalariesForm';
 
 export interface Declaration2042Section {
   id: string;
@@ -30,4 +31,5 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'capitaux-mobiliers', groupe: 'Cadre 2 · Capitaux mobiliers', label: 'Valeurs et capitaux mobiliers', icon: Coins, component: RevenusCapitauxMobiliersForm },
   { id: 'plus-values', groupe: 'Cadre 3 · Plus-values', label: 'Plus-values et gains divers', icon: TrendingUp, component: PlusValuesGainsDiversForm },
   { id: 'revenus-fonciers', groupe: 'Cadre 4 · Revenus fonciers', label: 'Revenus fonciers', icon: Home, component: RevenusFonciersForm },
+  { id: 'non-salaries', groupe: 'Cadre 5 · Professions non salariées', label: 'Régimes micro (2042-C-PRO)', icon: Briefcase, component: RevenusNonSalariesForm },
 ];

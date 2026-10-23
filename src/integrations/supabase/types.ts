@@ -3042,6 +3042,123 @@ export type Database = {
         }
         Relationships: []
       }
+      revenus_non_salaries: {
+        Row: {
+          case_5hq: number | null
+          case_5hy: number | null
+          case_5iq: number | null
+          case_5iy: number | null
+          case_5ko: number | null
+          case_5kp: number | null
+          case_5ku: number | null
+          case_5lo: number | null
+          case_5lp: number | null
+          case_5lu: number | null
+          case_5ng: number | null
+          case_5nh: number | null
+          case_5ni: number | null
+          case_5nj: number | null
+          case_5nk: number | null
+          case_5nl: number | null
+          case_5no: number | null
+          case_5np: number | null
+          case_5og: number | null
+          case_5oh: number | null
+          case_5oi: number | null
+          case_5oj: number | null
+          case_5ok: number | null
+          case_5ol: number | null
+          case_5oo: number | null
+          case_5op: number | null
+          case_5ta: number | null
+          case_5tb: number | null
+          case_5te: number | null
+          case_5ua: number | null
+          case_5ub: number | null
+          case_5ue: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_5hq?: number | null
+          case_5hy?: number | null
+          case_5iq?: number | null
+          case_5iy?: number | null
+          case_5ko?: number | null
+          case_5kp?: number | null
+          case_5ku?: number | null
+          case_5lo?: number | null
+          case_5lp?: number | null
+          case_5lu?: number | null
+          case_5ng?: number | null
+          case_5nh?: number | null
+          case_5ni?: number | null
+          case_5nj?: number | null
+          case_5nk?: number | null
+          case_5nl?: number | null
+          case_5no?: number | null
+          case_5np?: number | null
+          case_5og?: number | null
+          case_5oh?: number | null
+          case_5oi?: number | null
+          case_5oj?: number | null
+          case_5ok?: number | null
+          case_5ol?: number | null
+          case_5oo?: number | null
+          case_5op?: number | null
+          case_5ta?: number | null
+          case_5tb?: number | null
+          case_5te?: number | null
+          case_5ua?: number | null
+          case_5ub?: number | null
+          case_5ue?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_5hq?: number | null
+          case_5hy?: number | null
+          case_5iq?: number | null
+          case_5iy?: number | null
+          case_5ko?: number | null
+          case_5kp?: number | null
+          case_5ku?: number | null
+          case_5lo?: number | null
+          case_5lp?: number | null
+          case_5lu?: number | null
+          case_5ng?: number | null
+          case_5nh?: number | null
+          case_5ni?: number | null
+          case_5nj?: number | null
+          case_5nk?: number | null
+          case_5nl?: number | null
+          case_5no?: number | null
+          case_5np?: number | null
+          case_5og?: number | null
+          case_5oh?: number | null
+          case_5oi?: number | null
+          case_5oj?: number | null
+          case_5ok?: number | null
+          case_5ol?: number | null
+          case_5oo?: number | null
+          case_5op?: number | null
+          case_5ta?: number | null
+          case_5tb?: number | null
+          case_5te?: number | null
+          case_5ua?: number | null
+          case_5ub?: number | null
+          case_5ue?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       revenus_salaires: {
         Row: {
           case_1aa: number | null

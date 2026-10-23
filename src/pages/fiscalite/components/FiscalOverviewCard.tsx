@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { PanelTitle } from '@/components/layout/workspace-panel';
 import { SectorsDonut, type DonutSector } from '@/components/ui/sectors-donut';
-import { CITRON_INK, CITRON_MID, GREY, LAGON, LAGON_DEEP, LAGON_INK } from '@/components/budget/budgetColors';
+import { CITRON_INK, CITRON_MID, GREY, LAGON, LAGON_DEEP, LAGON_INK, LAGON_MID } from '@/components/budget/budgetColors';
 import { ANNEE_IFI, FiscalOverview } from '@/hooks/useFiscalOverview';
 import { cn } from '@/lib/utils';
 
@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, ifi,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, ifi,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -80,7 +80,8 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     + prelevementsSociauxGainsActionnariat.prelevementsSociaux
     + plusValuesGainsDivers.prelevementsSociaux
     + (revenusFonciers?.prelevementsSociaux ?? 0)
-    + revenusFonciers2042.prelevementsSociaux;
+    + revenusFonciers2042.prelevementsSociaux
+    + revenusNonSalaries.prelevementsSociaux;
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
   const impots: Ligne[] = [
@@ -93,6 +94,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
       ? { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: revenusFonciers.prelevementsSociaux }
       : { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: null, texte: 'Pas de 2044' },
     { label: 'Prélèvements sociaux (micro-foncier)', valeur: revenusFonciers2042.prelevementsSociaux },
+    { label: 'Prélèvements sociaux (locations meublées et non salariés)', valeur: revenusNonSalaries.prelevementsSociaux },
     { label: 'Prélèvements sociaux (salaires)', valeur: null, texte: 'Prélevés en paie' },
     ifi
       ? { label: `IFI ${ANNEE_IFI} (2042-IFI)`, valeur: ifi.ifiNet }
@@ -111,6 +113,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     { label: 'Pensions, retraites et rentes', valeur: pensionsRetraitesRentes.totalNetImposable, couleur: LAGON, forfaitaire: pensionsRetraitesRentes.impotForfaitaire, ps: prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux },
     { label: 'Capitaux mobiliers', valeur: revenuCapitauxMobiliers.totalNetImposable, couleur: GREY, forfaitaire: revenuCapitauxMobiliers.impotForfaitaire, ps: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
     { label: 'Plus-values et gains divers', valeur: plusValuesGainsDivers.totalNetImposable, couleur: CITRON_INK, forfaitaire: plusValuesGainsDivers.impotForfaitaire, ps: plusValuesGainsDivers.prelevementsSociaux },
+    { label: 'Revenus non salariés (micro)', valeur: revenusNonSalaries.totalNetImposable, couleur: LAGON_MID, forfaitaire: 0, ps: revenusNonSalaries.prelevementsSociaux },
     {
       label: 'Revenus fonciers',
       valeur: (revenusFonciers?.revenuFoncierNetImposable ?? 0) - revenusFonciers2042.deductionReel4BL + revenusFonciers2042.totalNetImposable,
