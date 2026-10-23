@@ -50,11 +50,22 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
       saving={saving} onSave={handleSubmit}>
         <SousGroupe titre="CSG et pensions alimentaires">
           <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
-          <SingleMontantLigne label="Pension alimentaire versée à un enfant majeur" extra="1er enfant, plafond 6 855 €" code="6EL" value={ch.case6el} onChange={v => update('case6el', v)} />
-          <SingleMontantLigne label="Pension alimentaire versée à un enfant majeur" extra="2e enfant, plafond 6 855 €" code="6EM" value={ch.case6em} onChange={v => update('case6em', v)} />
+          <MontantEclateLigne
+            label="Pension alimentaire versée à un enfant majeur"
+            aide="Plafond 6 855 € par enfant."
+            items={[
+              { label: '1er enfant', code: '6EL', value: ch.case6el, onChange: v => update('case6el', v) },
+              { label: '2e enfant', code: '6EM', value: ch.case6em, onChange: v => update('case6em', v) },
+            ]}
+          />
           <SingleMontantLigne label="Autres pensions alimentaires versées" extra="enfants mineurs, ascendants…" code="6GU" value={ch.case6gu} onChange={v => update('case6gu', v)} />
-          <SingleMontantLigne label="Décision de justice définitive avant 2006 : enfant majeur" extra="1er enfant" code="6GI" value={ch.case6gi} onChange={v => update('case6gi', v)} />
-          <SingleMontantLigne label="Décision de justice définitive avant 2006 : enfant majeur" extra="2e enfant" code="6GJ" value={ch.case6gj} onChange={v => update('case6gj', v)} />
+          <MontantEclateLigne
+            label="Décision de justice définitive avant 2006 : enfant majeur"
+            items={[
+              { label: '1er enfant', code: '6GI', value: ch.case6gi, onChange: v => update('case6gi', v) },
+              { label: '2e enfant', code: '6GJ', value: ch.case6gj, onChange: v => update('case6gj', v) },
+            ]}
+          />
           <SingleMontantLigne label="Décision de justice définitive avant 2006 : autres personnes" code="6GP" value={ch.case6gp} onChange={v => update('case6gp', v)} />
         </SousGroupe>
 
@@ -72,8 +83,14 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
         <SousGroupe titre="Autres déductions">
           <SingleMontantLigne label="Charges foncières des monuments historiques" extra="art. 156 II CGI" code="6DG" value={ch.case6dg} onChange={v => update('case6dg', v)} />
           <SingleMontantLigne label="Autres déductions" extra="art. 156 II et 156 bis CGI" code="6DD" value={ch.case6dd} onChange={v => update('case6dd', v)} />
-          <SingleMontantLigne label="Personnes de plus de 75 ans accueillies sous votre toit" extra="nombre" code="6EV" value={ch.case6ev} onChange={v => update('case6ev', v)} />
-          <SingleMontantLigne label="Frais d'accueil de ces personnes" extra="plafond 4 003 € par personne" code="6EU" value={ch.case6eu} onChange={v => update('case6eu', v)} />
+          <MontantEclateLigne
+            label="Personnes de plus de 75 ans accueillies sous votre toit"
+            aide="Frais d'accueil plafonnés à 4 003 € par personne."
+            items={[
+              { label: 'Nombre', code: '6EV', value: ch.case6ev, onChange: v => update('case6ev', v) },
+              { label: "Frais d'accueil", code: '6EU', value: ch.case6eu, onChange: v => update('case6eu', v) },
+            ]}
+          />
           <MontantEclateLigne
             label="Grosses réparations des nus-propriétaires : report des années antérieures"
             aide="Imputables sur le revenu global dans la limite de 25 000 € par an."

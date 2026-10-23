@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { usePrelevementSourceDivers } from '@/hooks/usePrelevementSourceDivers';
 import { PrelevementSourceDivers } from '@/services/prelevementSourceDiversService';
 import { PRELEVEMENT_SOURCE_DIVERS_VIDE, PrelevementSourceDiversInput } from '@/lib/fiscalite';
-import { MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
+import { CaseLigne, MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 interface PrelevementSourceDiversFormProps {
@@ -105,8 +105,14 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
         <SousGroupe titre="Revenus de source étrangère et taux effectif">
           <SingleMontantLigne label="Revenus exonérés retenus pour le calcul du taux effectif" extra="autres que salaires, pensions et revenus fonciers" code="8TI" value={ps.case8ti} onChange={v => update('case8ti', v)} />
           <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" value={ps.case8tk} onChange={v => update('case8tk', v)} />
-          <SingleMontantLigne label="Revenus de capitaux mobiliers et plus-values étrangers" extra="crédit d'impôt égal à l'impôt étranger" aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant." code="8PL" value={ps.case8pl} onChange={v => update('case8pl', v)} />
-          <SingleMontantLigne label="Impôt payé à l'étranger sur ces revenus" code="8VL" value={ps.case8vl} onChange={v => update('case8vl', v)} />
+          <MontantEclateLigne
+            label="Revenus de capitaux mobiliers et plus-values étrangers, crédit d'impôt égal à l'impôt étranger"
+            aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant."
+            items={[
+              { label: 'Revenus', code: '8PL', value: ps.case8pl, onChange: v => update('case8pl', v) },
+              { label: 'Impôt payé à l\'étranger', code: '8VL', value: ps.case8vl, onChange: v => update('case8vl', v) },
+            ]}
+          />
           <SingleMontantLigne label="Autres revenus nets étrangers" extra="crédit d'impôt égal à l'impôt étranger" aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant." code="8PM" value={ps.case8pm} onChange={v => update('case8pm', v)} />
           <MontantEclateLigne
             label="Impôt payé à l'étranger sur ces autres revenus"
@@ -164,8 +170,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
         </SousGroupe>
 
         <SousGroupe titre="Revenus du patrimoine exonérés de CSG et de CRDS" aide="Affiliés à un régime d'assurance maladie de l'EEE, du Royaume-Uni ou de la Suisse : seuls les montants saisis réduisent les prélèvements sociaux (le prélèvement de solidarité reste dû).">
-          <SingleCaseLigne label="Affiliation hors régime français, déclarant 1" code="8SH" checked={ps.case8sh} onChange={v => update('case8sh', v)} />
-          <SingleCaseLigne label="Affiliation hors régime français, déclarant 2" code="8SI" checked={ps.case8si} onChange={v => update('case8si', v)} />
+          <CaseLigne label="Affiliation hors régime français" code1="8SH" code2="8SI" checked1={ps.case8sh} checked2={ps.case8si} onChange1={v => update('case8sh', v)} onChange2={v => update('case8si', v)} />
           <SingleMontantLigne label="Revenus fonciers" extra="après abattement si régime micro" code="8RF" value={ps.case8rf} onChange={v => update('case8rf', v)} />
           <SingleMontantLigne label="Rentes viagères à titre onéreux" extra="montant net après abattement" code="8RV" value={ps.case8rv} onChange={v => update('case8rv', v)} />
           <SingleMontantLigne label="Revenus de capitaux mobiliers" code="8RC" value={ps.case8rc} onChange={v => update('case8rc', v)} />
