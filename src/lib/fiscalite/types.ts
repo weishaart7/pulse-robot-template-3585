@@ -210,3 +210,29 @@ export interface RevenusCapitauxMobiliersInput {
   /** Hors catégorie : option pour l'imposition au barème (case à cocher, en pied de cadre). */
   case2op: boolean;
 }
+
+/**
+ * Cadre 3 de la 2042-C « Plus-values et gains divers » (phase 3.1) — un montant
+ * par foyer, sans colonne déclarant. Gains d'actionnariat 3VD/3VI/3VF/3VJ/3VK/3VN
+ * hors de ce type (voir GainsActionnariatSalarieInput).
+ */
+export interface PlusValuesGainsDiversInput {
+  // Gains de cession de valeurs mobilières et assimilés
+  case3vg: number | null;
+  case3sg: number | null;
+  case3vh: number | null;
+  case3ua: number | null;
+  case3sl: number | null;
+  case3va: number | null;
+  case3vt: number | null;
+  case3pi: number | null;
+  case3sb: number | null;
+  case3we: number | null;
+  // Actifs numériques
+  case3an: number | null;
+  case3bn: number | null;
+  case3cn: boolean;
+  // Plus-values immobilières (RFR seulement)
+  case3vz: number | null;
+  case3vw: number | null;
+}

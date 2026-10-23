@@ -105,10 +105,12 @@ export interface RevenuCapitauxMobiliersResult {
    * sur option barème 2OP) : réduit `totalNetImposable`, mais est réintégré
    * au RFR — art. 1417 IV 1° a CGI, confirmé (l-expert-comptable.com) :
    * « L'abattement de 40 % sur les dividendes [...] est expressément
-   * réintégré dans le RFR. » Nul en l'absence d'option barème : le PFU taxe
-   * alors les dividendes bruts sans abattement, déjà reflétés en totalité
-   * dans `impotForfaitaire`, donc déjà dans le RFR sans réintégration
-   * supplémentaire.
+   * réintégré dans le RFR. » Nul en l'absence d'option barème.
+   *
+   * **Bases imposées au PFU** (12,8 % et 7,5 %, sans option barème) : retenues
+   * au RFR pour leur montant brut (art. 1417 IV 1° c CGI). `calculerImpot.ts`
+   * ne reçoit que le montant d'impôt forfaitaire, jamais sa base : elles
+   * doivent donc être transmises ici, comme au cadre 3.
    *
    * **2DH, montant brut intégral** (produits ayant fait l'objet du
    * prélèvement libératoire de 7,5 % à la source sur primes antérieures au
@@ -280,14 +282,15 @@ export function calculerRevenuCapitauxMobiliers(
 
   const baseTaux128 = dividendes + sansAbattement + revenusReputesDistribues
     + contratMoinsDe8AnsPost2017 + net2ww + case2vp;
+  const baseTaux75 = net2vv + case2vo;
 
   return {
     totalNetImposable: toujoursBareme,
-    impotForfaitaire: baseTaux128 * TAUX_PFU + (net2vv + case2vo) * TAUX_PFU_REDUIT_2VV,
+    impotForfaitaire: baseTaux128 * TAUX_PFU + baseTaux75 * TAUX_PFU_REDUIT_2VV,
     creditImpotAssuranceVie,
     creditImpotEtranger2AB,
     creditImpotValeursEtrangeres2CK,
-    revenuExonereRetenuPourRFR: revenuExonereRetenuPourRFRContratsAssuranceVie,
+    revenuExonereRetenuPourRFR: revenuExonereRetenuPourRFRContratsAssuranceVie + baseTaux128 + baseTaux75,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
 }

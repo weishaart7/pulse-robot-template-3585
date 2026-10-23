@@ -77,6 +77,15 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      réputés distribués, assurance-vie < 8 ans et ≥ 8 ans, gains de cession de bons/contrats, PFU ou
      option barème selon `2OP`) est calculé en aval par `calculerRevenuCapitauxMobiliers.ts` (voir §2).
 
+   - **Plus-values et gains divers — cadre 3 de la 2042-C (phase 3.1, fonctionnel)** :
+     `PlusValuesGainsDiversForm.tsx`, adossé à la table Supabase dédiée `plus_values_gains_divers`
+     (un montant par foyer, `user_id → auth.users(id) ON DELETE CASCADE`, RLS 4 policies). 15 cases :
+     valeurs mobilières (`3VG`/`3SG`/`3VH`), abattement renforcé et départ à la retraite
+     (`3UA`/`3SL`/`3VA`), PEA avant 5 ans (`3VT`), instruments financiers à 50 % (`3PI`), report
+     150-0 D bis expiré (`3SB`), complément de prix (`3WE`), actifs numériques (`3AN`/`3BN`/`3CN`),
+     plus-values immobilières pour le RFR (`3VZ`/`3VW`). Calcul en aval par
+     `calculerPlusValuesGainsDivers.ts` (voir §2, « Plus-values et gains divers »).
+
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
    à plat dans `FiscaliteSection.tsx`, en dehors de tout bouton « 2042 » (qui n'avait alors aucun
    `onClick`) — la section Fiscalité ne compte plus désormais qu'un seul point d'entrée vers ces
@@ -475,9 +484,10 @@ fonciers (§4).
   **`calculerRevenuCapitauxMobiliers.ts` étendu du même champ `revenuExonereRetenuPourRFR`.** Sur option
   barème (2OP), l'abattement de 40 % sur les dividendes (2DC/2FU) réduit `totalNetImposable` mais est
   réintégré dans le RFR — confirmé, art. 1417 IV 1° a CGI (l-expert-comptable.com) : *« L'abattement de
-  40 % sur les dividendes [...] est expressément réintégré dans le RFR. »* Nul en l'absence d'option
-  barème (le PFU taxe alors les dividendes bruts sans abattement, déjà comptés en totalité via
-  `impotForfaitaire`). Sommé avec celui de `calculerRevenuSalaires.ts` dans `useFiscalOverview.ts` avant
+  40 % sur les dividendes [...] est expressément réintégré dans le RFR. »* Sans option barème, ce sont
+  les bases imposées au PFU qui y sont ajoutées pour leur montant brut (art. 1417 IV 1° c CGI) : base à
+  12,8 % (2DC/2FU sans abattement, 2TS/2TR/2TT/2TQ/2TZ, 2GO × 1,25, 2ZZ, 2WW net, 2VP) et base à 7,5 %
+  (2VV net, 2VO) — `calculerImpot` ne recevant que le montant de l'impôt forfaitaire, jamais sa base. Sommé avec celui de `calculerRevenuSalaires.ts` dans `useFiscalOverview.ts` avant
   transmission à `calculerImpot`.
   **3 cases supplémentaires réintégrées au RFR dans `calculerRevenuSalaires.ts`, sans plafond (totalité
   du montant saisi) : 1AQ/1BQ, 1DY/1EY, 1SM/1DN.** Chacune confirmée par une source primaire (texte de
@@ -1169,6 +1179,29 @@ fonciers (§4).
   22 874 € (IR) + 7 175 € (PS gains d'actionnariat, seule catégorie non nulle pour ce compte) =
   **30 049 €**, identique au total du simulateur officiel.
 
+### Plus-values et gains divers (cadre 3, phase 3.1)
+
+Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `useFiscalOverview.ts`
+(barème, impôt forfaitaire, RFR, prélèvements sociaux, et la carte « Imposition totale » / Dashboard).
+
+- **Option barème** : la case `2OP` du cadre 2 vaut pour les capitaux mobiliers ET les plus-values
+  mobilières (option globale, art. 200 A CGI) ; elle n'est pas dupliquée au cadre 3. `3AN` suit sa
+  propre option `3CN` (art. 150 VH bis CGI).
+- **PFU (défaut)** : `3VG + 3WE`, `3UA − 3VA`, `3VT` et la moitié de `3PI` taxés à 12,8 % ; les
+  abattements pour durée de détention `3SG`/`3SL` ne s'appliquent pas, l'abattement fixe `3VA` si.
+- **Barème (2OP)** : les mêmes montants, nets de `3SG`/`3SL`/`3VA`, rejoignent le revenu imposable.
+- **RFR** : bases imposées au PFU, abattements `3SG`/`3SL`/`3VA` réintégrés, `3VZ` et `3VW`.
+- **Prélèvements sociaux 18,6 %** (CSG 10,6 % LFSS 2026 + CRDS 0,5 % + solidarité 7,5 %, applicable
+  aux revenus du patrimoine 2025 ; revenus fonciers, plus-values immobilières et assurance-vie restent
+  à 17,2 %) sur `3VG + 3UA + 3WE + 3AN`, avant tout abattement. `3VT` exclu (PS prélevés à la source
+  sur le PEA), `3VZ`/`3VW` exclus (prélevés chez le notaire).
+- **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
+  saisie de `3VG`/`3AN`, reliquat reportable seulement).
+- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3SB` toujours au barème ;
+  `3PI` à 50 % suivant `2OP` ; `3PI`/`3SB` hors PS ; `3VW` retenu au RFR.
+- **Hors périmètre** : exit tax (`3WM`…`3YA`), BSPCE (`3SJ`…`3PE`), report 150-0 B ter
+  (`3WH`…`3WT`), impatriés (`3VQ`/`3VR`), capital-risque (`3VC`), non-résidents (`3SE`), PEAC (`3EX`).
+
 ### Déclaration des revenus fonciers 2044
 
 [calculerDeclaration2044.ts](src/lib/fiscalite/calculerDeclaration2044.ts) (testé dans
@@ -1389,6 +1422,14 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   calculée (trésorerie, actifs non immobiliers, holdings) : signalé sous l'actif, à corriger par saisie.
 
 ### 🟠 À surveiller (cas limite, peu probable)
+
+- **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3SB` imposé au barème, `3PI` à 50 %
+  suivant `2OP`, `3PI`/`3SB` sans prélèvements sociaux, `3VW` retenu au RFR (voir §2, « Plus-values
+  et gains divers »).
+- **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
+  que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.
+- **Dashboard sans PS fonciers** : l'imposition totale du Dashboard (`Dashboard.tsx`) n'additionne pas
+  `revenusFonciers.prelevementsSociaux`, contrairement à `FiscalOverviewCard.tsx`.
 
 - **Plafonnement du quotient familial — interaction non modélisée entre la case T (parent isolé) et une
   personne invalide à charge unique.** La brochure DGFiP (IR 2026, p.85) précise que lorsque le foyer

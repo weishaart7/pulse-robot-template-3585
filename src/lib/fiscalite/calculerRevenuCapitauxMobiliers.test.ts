@@ -41,9 +41,14 @@ describe('calculerRevenuCapitauxMobiliers — sans option barème (PFU 12,8 %)',
     expect(result.impotForfaitaire).toBeCloseTo(10000 * 0.128);
   });
 
-  it("revenuExonereRetenuPourRFR est nul sans option barème et sans contrat ≥ 8 ans (dividendes PFU sur le montant brut, déjà dans le RFR)", () => {
+  it("sans option barème, la base PFU brute est retenue au RFR (art. 1417 IV 1° c CGI), dividendes sans abattement de 40 %", () => {
     const result = calculer(makeInput({ case2dc: 10000 }));
-    expect(result.revenuExonereRetenuPourRFR).toBe(0);
+    expect(result.revenuExonereRetenuPourRFR).toBe(10000);
+  });
+
+  it('sans option barème, la base à 7,5 % (2VV net, 2VO) est aussi retenue au RFR', () => {
+    const result = calculer(makeInput({ case2vo: 3000, case2tr: 2000 }));
+    expect(result.revenuExonereRetenuPourRFR).toBe(5000);
   });
 
   it('agrège 2FU avec 2DC', () => {
@@ -242,7 +247,7 @@ describe('calculerRevenuCapitauxMobiliers — contrats de 8 ans et plus (Phase 2
 
   it("l'abattement sur 2CH/2VV/2WW est réintégré dans revenuExonereRetenuPourRFR, quelle que soit l'option 2OP", () => {
     const sansOption = calculer(makeInput({ case2vv: 10000 })); // 4600 € d'abattement
-    expect(sansOption.revenuExonereRetenuPourRFR).toBe(4600);
+    expect(sansOption.revenuExonereRetenuPourRFR).toBe(4600 + 5400); // + base PFU nette à 7,5 %
     const avecOption = calculer(makeInput({ case2op: true, case2vv: 10000 }));
     expect(avecOption.revenuExonereRetenuPourRFR).toBe(4600);
   });
@@ -251,7 +256,8 @@ describe('calculerRevenuCapitauxMobiliers — contrats de 8 ans et plus (Phase 2
     const result = calculer(makeInput({ case2ch: 1000, case2dh: 1000, case2vv: 1000, case2ww: 10000 }));
     // Abattement 4600 : 1000 sur 2CH, 1000 sur 2DH, 1000 sur 2VV, 1600 restant sur 2WW
     // RFR = 2DH brut (1000) + abattement 2CH (1000) + abattement 2VV (1000) + abattement 2WW (1600)
-    expect(result.revenuExonereRetenuPourRFR).toBe(1000 + 1000 + 1000 + 1600);
+    // + base PFU : 2WW net (8400) ; 2VV net nul ; 2CH au barème, déjà dans le revenu imposable
+    expect(result.revenuExonereRetenuPourRFR).toBe(1000 + 1000 + 1000 + 1600 + 8400);
   });
 });
 

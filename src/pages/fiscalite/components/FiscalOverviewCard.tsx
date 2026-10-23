@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { PanelTitle } from '@/components/layout/workspace-panel';
 import { SectorsDonut, type DonutSector } from '@/components/ui/sectors-donut';
-import { CITRON_MID, GREY, LAGON, LAGON_DEEP, LAGON_INK } from '@/components/budget/budgetColors';
+import { CITRON_INK, CITRON_MID, GREY, LAGON, LAGON_DEEP, LAGON_INK } from '@/components/budget/budgetColors';
 import { ANNEE_IFI, FiscalOverview } from '@/hooks/useFiscalOverview';
 import { cn } from '@/lib/utils';
 
@@ -68,7 +68,7 @@ interface Ligne {
 
 const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
-    impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, revenuExonereTauxEffectif,
+    impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
     revenusFonciers, ifi,
   } = overview;
@@ -78,6 +78,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
     + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
     + prelevementsSociauxGainsActionnariat.prelevementsSociaux
+    + plusValuesGainsDivers.prelevementsSociaux
     + (revenusFonciers?.prelevementsSociaux ?? 0);
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
@@ -86,6 +87,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     { label: 'Prélèvements sociaux (capitaux mobiliers)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
     { label: 'Prélèvements sociaux (pensions, retraites, rentes)', valeur: prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux },
     { label: "Prélèvements sociaux (gains d'actionnariat salarié)", valeur: prelevementsSociauxGainsActionnariat.prelevementsSociaux },
+    { label: 'Prélèvements sociaux (plus-values)', valeur: plusValuesGainsDivers.prelevementsSociaux },
     revenusFonciers
       ? { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: revenusFonciers.prelevementsSociaux }
       : { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: null, texte: 'Pas de 2044' },
@@ -106,6 +108,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     { label: "Gains d'actionnariat salarié", valeur: gainsActionnariat.totalNetImposable, couleur: CITRON_MID, forfaitaire: gainsActionnariat.impotForfaitaire, ps: prelevementsSociauxGainsActionnariat.prelevementsSociaux },
     { label: 'Pensions, retraites et rentes', valeur: pensionsRetraitesRentes.totalNetImposable, couleur: LAGON, forfaitaire: pensionsRetraitesRentes.impotForfaitaire, ps: prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux },
     { label: 'Capitaux mobiliers', valeur: revenuCapitauxMobiliers.totalNetImposable, couleur: GREY, forfaitaire: revenuCapitauxMobiliers.impotForfaitaire, ps: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
+    { label: 'Plus-values et gains divers', valeur: plusValuesGainsDivers.totalNetImposable, couleur: CITRON_INK, forfaitaire: plusValuesGainsDivers.impotForfaitaire, ps: plusValuesGainsDivers.prelevementsSociaux },
     { label: 'Revenus fonciers (2044)', valeur: revenusFonciers?.revenuFoncierNetImposable ?? 0, couleur: LAGON_INK, forfaitaire: 0, ps: revenusFonciers?.prelevementsSociaux ?? 0 },
   ];
   const baseBareme = revenus.reduce((s, r) => s + r.valeur, 0);

@@ -10,11 +10,13 @@ import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
 import { useRevenusExoneresTauxEffectif } from './useRevenusExoneresTauxEffectif';
 import { usePensionsRetraitesRentes } from './usePensionsRetraitesRentes';
 import { useRevenusCapitauxMobiliers } from './useRevenusCapitauxMobiliers';
+import { usePlusValuesGainsDivers } from './usePlusValuesGainsDivers';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
   calculerPartsFiscales,
   calculerPensionsRetraitesRentes,
+  calculerPlusValuesGainsDivers,
   calculerPrelevementsSociauxCapitauxMobiliers,
   calculerPrelevementsSociauxGainsActionnariatSalarie,
   calculerPrelevementsSociauxPensionsRetraitesRentes,
@@ -28,6 +30,8 @@ import {
   PartsFiscalesResult,
   PensionsRetraitesRentesInput,
   PensionsRetraitesRentesResult,
+  PlusValuesGainsDiversInput,
+  PlusValuesGainsDiversResult,
   PrelevementsSociauxCapitauxMobiliersResult,
   PrelevementsSociauxGainsActionnariatResult,
   PrelevementsSociauxPensionsResult,
@@ -126,6 +130,13 @@ const REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT: RevenusCapitauxMobiliersInput = {
   case2op: false,
 };
 
+const PLUS_VALUES_PAR_DEFAUT: PlusValuesGainsDiversInput = {
+  case3vg: null, case3sg: null, case3vh: null, case3ua: null, case3sl: null, case3va: null,
+  case3vt: null, case3pi: null, case3sb: null, case3we: null,
+  case3an: null, case3bn: null, case3cn: false,
+  case3vz: null, case3vw: null,
+};
+
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
 export const ANNEE_REVENUS = 2025;
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
@@ -140,6 +151,8 @@ export interface FiscalOverview {
   revenuExonereTauxEffectif: RevenuExonereTauxEffectifResult;
   pensionsRetraitesRentes: PensionsRetraitesRentesResult;
   revenuCapitauxMobiliers: RevenuCapitauxMobiliersResult;
+  /** Cadre 3 (phase 3.1) : barème, PFU 12,8 %, RFR et prélèvements sociaux à 18,6 % — voir calculerPlusValuesGainsDivers.ts. */
+  plusValuesGainsDivers: PlusValuesGainsDiversResult;
   /**
    * Prélèvements sociaux (17,2 %) — périmètre partiel : seuls les capitaux
    * mobiliers « prélevés à la source » sont couverts pour l'instant (voir
@@ -179,7 +192,7 @@ export interface FiscalOverview {
   plafonnementIFI: Plafonnement2042 | null;
   /** 2042-IFI de ANNEE_IFI ; null sans déclaration ouverte pour cette année. */
   ifi: DeclarationIFIResultat | null;
-  /** Recharge les 6 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
+  /** Recharge les 7 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
   refetch: () => void;
 }
 
@@ -205,6 +218,8 @@ export function useFiscalOverview(): FiscalOverview {
   const { data: exoneres, loading: loadingExoneres, refetch: refetchExoneres } = useRevenusExoneresTauxEffectif();
   const { data: pensions, loading: loadingPensions, refetch: refetchPensions } = usePensionsRetraitesRentes();
   const { data: capitauxMobiliers, loading: loadingCapitauxMobiliers, refetch: refetchCapitauxMobiliers } = useRevenusCapitauxMobiliers();
+
+  const { data: plusValues, loading: loadingPlusValues, refetch: refetchPlusValues } = usePlusValuesGainsDivers();
 
   const { isAuthenticated } = useAuth();
   const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
@@ -242,6 +257,7 @@ export function useFiscalOverview(): FiscalOverview {
     refetchExoneres();
     refetchPensions();
     refetchCapitauxMobiliers();
+    refetchPlusValues();
   };
 
   const overview = useMemo(() => {
@@ -261,14 +277,17 @@ export function useFiscalOverview(): FiscalOverview {
     const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
     const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
     const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
+    // 2OP vaut pour le cadre 2 et pour les plus-values mobilières du cadre 3.
+    const plusValuesGainsDivers = calculerPlusValuesGainsDivers(plusValues ?? PLUS_VALUES_PAR_DEFAUT, capitauxMobiliersInput.case2op);
     const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
     const parts = calculerPartsFiscales(foyerInput);
     const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
     const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
       + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable
+      + plusValuesGainsDivers.totalNetImposable
       + (revenusFonciers?.incidenceRevenuImposable ?? 0);
     const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
-      + revenuCapitauxMobiliers.impotForfaitaire;
+      + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire;
     const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
     // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
     // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
@@ -287,7 +306,8 @@ export function useFiscalOverview(): FiscalOverview {
       revenuCapitauxMobiliers.creditImpotAssuranceVie,
       revenuCapitauxMobiliers.creditImpotEtranger2AB,
       revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
-      revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR,
+      revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
+        + plusValuesGainsDivers.revenuExonereRetenuPourRFR,
     );
 
     const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
@@ -295,20 +315,22 @@ export function useFiscalOverview(): FiscalOverview {
         + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
         + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
         + prelevementsSociauxGainsActionnariat.prelevementsSociaux
+        + plusValuesGainsDivers.prelevementsSociaux
         + (revenusFonciers?.prelevementsSociaux ?? 0),
       revenus: impot.revenuFiscalReference,
     };
     const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
 
     return {
-      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers,
+      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || declaration2044 !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || declaration2044 !== null,
       revenuSalaires,
       gainsActionnariat,
       revenuExonereTauxEffectif,
       pensionsRetraitesRentes,
       revenuCapitauxMobiliers,
+      plusValuesGainsDivers,
       prelevementsSociauxCapitauxMobiliers,
       prelevementsSociauxPensionsRetraitesRentes,
       prelevementsSociauxGainsActionnariat,
@@ -318,7 +340,7 @@ export function useFiscalOverview(): FiscalOverview {
       plafonnementIFI,
       ifi,
     };
-  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
 }

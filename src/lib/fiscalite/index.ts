@@ -8,6 +8,7 @@ export * from './calculerPensionsRetraitesRentes';
 export * from './calculerPrelevementsSociauxPensionsRetraitesRentes';
 export * from './calculerRevenuCapitauxMobiliers';
 export * from './calculerPrelevementsSociauxCapitauxMobiliers';
+export * from './calculerPlusValuesGainsDivers';
 export * from './calculerImpot';
 export * from './calculerDeclaration2044';
 export * from './calculerDeclarationIFI';

@@ -172,4 +172,21 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '2VT', label: 'Moins-values de cession non imputées à reporter, provenant de 2024', sectionId: 'capitaux-mobiliers', elementId: 'case-2VT' },
   { code: '2VU', label: 'Moins-values de cession non imputées à reporter, provenant de 2025', sectionId: 'capitaux-mobiliers', elementId: 'case-2VU' },
   { code: '2OP', label: 'Option pour l\'imposition au barème des revenus de capitaux mobiliers', sectionId: 'capitaux-mobiliers', elementId: 'case-2OP' },
+
+  // Plus-values et gains divers (cadre 3)
+  { code: '3VG', label: 'Plus-value de cession de valeurs mobilières avant abattement', sectionId: 'plus-values', elementId: 'case-3VG' },
+  { code: '3SG', label: 'Abattement pour durée de détention de droit commun', sectionId: 'plus-values', elementId: 'case-3SG' },
+  { code: '3VH', label: 'Moins-value de cession de valeurs mobilières 2025', sectionId: 'plus-values', elementId: 'case-3VH' },
+  { code: '3UA', label: 'Plus-value avant abattement renforcé ou départ à la retraite', sectionId: 'plus-values', elementId: 'case-3UA' },
+  { code: '3SL', label: 'Abattement pour durée de détention renforcé', sectionId: 'plus-values', elementId: 'case-3SL' },
+  { code: '3VA', label: 'Abattement fixe départ à la retraite d\'un dirigeant de PME', sectionId: 'plus-values', elementId: 'case-3VA' },
+  { code: '3VT', label: 'Gain sur retrait ou rachat du PEA avant 5 ans', sectionId: 'plus-values', elementId: 'case-3VT' },
+  { code: '3PI', label: 'Profits sur instruments financiers taxables à 50 %', sectionId: 'plus-values', elementId: 'case-3PI' },
+  { code: '3SB', label: 'Plus-values en report dont le report a expiré en 2025', sectionId: 'plus-values', elementId: 'case-3SB' },
+  { code: '3WE', label: 'Complément de prix perçu en 2025', sectionId: 'plus-values', elementId: 'case-3WE' },
+  { code: '3AN', label: 'Plus-value de cession d\'actifs numériques', sectionId: 'plus-values', elementId: 'case-3AN' },
+  { code: '3BN', label: 'Moins-value de cession d\'actifs numériques', sectionId: 'plus-values', elementId: 'case-3BN' },
+  { code: '3CN', label: 'Option barème des plus-values d\'actifs numériques', sectionId: 'plus-values', elementId: 'case-3CN' },
+  { code: '3VZ', label: 'Plus-values immobilières déjà imposées à 19 %', sectionId: 'plus-values', elementId: 'case-3VZ' },
+  { code: '3VW', label: 'Plus-value exonérée, première cession d\'un logement (remploi)', sectionId: 'plus-values', elementId: 'case-3VW' },
 ];

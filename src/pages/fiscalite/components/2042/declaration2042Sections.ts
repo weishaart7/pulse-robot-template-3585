@@ -1,11 +1,12 @@
 import { ComponentType } from 'react';
-import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, LucideIcon } from 'lucide-react';
+import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, LucideIcon } from 'lucide-react';
 import MenageSection from './MenageSection';
 import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { GainsActionnariatSalarieForm } from '@/components/fiscalite/GainsActionnariatSalarieForm';
 import { RevenusExoneresTauxEffectifForm } from '@/components/fiscalite/RevenusExoneresTauxEffectifForm';
 import { PensionsRetraitesRentesForm } from '@/components/fiscalite/PensionsRetraitesRentesForm';
 import { RevenusCapitauxMobiliersForm } from '@/components/fiscalite/RevenusCapitauxMobiliersForm';
+import { PlusValuesGainsDiversForm } from '@/components/fiscalite/PlusValuesGainsDiversForm';
 
 export interface Declaration2042Section {
   id: string;
@@ -26,4 +27,5 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'pensions', groupe: 'Cadre 1 · Salaires, pensions', label: 'Pensions, retraites et rentes', icon: PiggyBank, component: PensionsRetraitesRentesForm },
   { id: 'actionnariat', groupe: 'Cadre 1 · Salaires, pensions', label: "Gains d'actionnariat salarié", icon: LineChart, component: GainsActionnariatSalarieForm },
   { id: 'capitaux-mobiliers', groupe: 'Cadre 2 · Capitaux mobiliers', label: 'Valeurs et capitaux mobiliers', icon: Coins, component: RevenusCapitauxMobiliersForm },
+  { id: 'plus-values', groupe: 'Cadre 3 · Plus-values', label: 'Plus-values et gains divers', icon: TrendingUp, component: PlusValuesGainsDiversForm },
 ];

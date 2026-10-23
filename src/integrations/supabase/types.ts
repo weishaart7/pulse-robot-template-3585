@@ -2336,6 +2336,72 @@ export type Database = {
         }
         Relationships: []
       }
+      plus_values_gains_divers: {
+        Row: {
+          case_3an: number | null
+          case_3bn: number | null
+          case_3cn: boolean | null
+          case_3pi: number | null
+          case_3sb: number | null
+          case_3sg: number | null
+          case_3sl: number | null
+          case_3ua: number | null
+          case_3va: number | null
+          case_3vg: number | null
+          case_3vh: number | null
+          case_3vt: number | null
+          case_3vw: number | null
+          case_3vz: number | null
+          case_3we: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_3an?: number | null
+          case_3bn?: number | null
+          case_3cn?: boolean | null
+          case_3pi?: number | null
+          case_3sb?: number | null
+          case_3sg?: number | null
+          case_3sl?: number | null
+          case_3ua?: number | null
+          case_3va?: number | null
+          case_3vg?: number | null
+          case_3vh?: number | null
+          case_3vt?: number | null
+          case_3vw?: number | null
+          case_3vz?: number | null
+          case_3we?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_3an?: number | null
+          case_3bn?: number | null
+          case_3cn?: boolean | null
+          case_3pi?: number | null
+          case_3sb?: number | null
+          case_3sg?: number | null
+          case_3sl?: number | null
+          case_3ua?: number | null
+          case_3va?: number | null
+          case_3vg?: number | null
+          case_3vh?: number | null
+          case_3vt?: number | null
+          case_3vw?: number | null
+          case_3vz?: number | null
+          case_3we?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recompenses: {
         Row: {
           bien_concerne_id: string | null
