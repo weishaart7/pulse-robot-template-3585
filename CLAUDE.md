@@ -2,26 +2,36 @@
 
 ## Projet
 
-Logiciel de gestion de patrimoine — outil interne (pas un produit grand public). Manipule des données patrimoniales et fiscales sensibles : montants d'actifs, identités de bénéficiaires, données de succession (DMTG), IFI, etc.
+Outil interne de gestion de patrimoine (données patrimoniales et fiscales sensibles : montants, bénéficiaires, successions/DMTG, IFI, 2042…).
 
-Stack : React + Vite + TypeScript, Tailwind CSS, shadcn/ui, Supabase (Postgres + Auth). Backend = Supabase managé (projet `npypkocowjkszxtecxzq`, région eu-west-3), pas de backend custom.
+Stack : React + Vite + TS, Tailwind, shadcn/ui, Supabase managé (projet `npypkocowjkszxtecxzq`, eu-west-3), pas de backend custom.
 
-## Règles permanentes
+Carte du code (par module : budget, famille, fiscalite, immobilier, patrimoine, retraite, societes, transmission, alertes) :
+- `src/pages/{module}` → écrans · `src/components/{module}` → UI · `src/lib/{module}` → règles métier / calculs purs · `src/services/*Service.ts` → accès Supabase
+- `supabase/migrations/` → schéma (source de vérité) · `src/integrations/supabase/types.ts` → types générés
+- Tests Vitest colocalisés (`*.test.ts`). Commandes : `npm run typecheck`, `npm test`, `npm run lint`.
 
-Ces règles s'appliquent à tout le code du projet, pas seulement aux zones en cours de modification.
+## Économie de contexte
 
-- **RGPD strict.** Aucune donnée personnelle ou patrimoniale sensible (montants, identités de bénéficiaires, adresses, etc.) ne doit apparaître dans un log exécuté en production.
-- **Pas de `console.log` actif en production.** Si un log est utile en développement, l'encadrer systématiquement avec `if (import.meta.env.DEV)`.
-- **FK avec `ON DELETE CASCADE` sur toutes les tables métier.** Toute nouvelle table portant un `user_id` doit avoir une FK vers `auth.users(id) ON DELETE CASCADE`. Toute table fille (rattachée à un parent métier comme `assets` ou `societes`) doit avoir une FK vers la table parente, également en `ON DELETE CASCADE`.
-- **Pas de credentials hardcodés.** URL et clés Supabase exclusivement via `import.meta.env.VITE_*`. `.env` doit rester listé dans `.gitignore`.
-- **Vérification avant migration destructive.** Avant toute modification de contrainte ou suppression de données, vérifier l'absence de lignes orphelines / de violations sur les données existantes en base (pas seulement en théorie sur le schéma).
+- **Ne jamais lire en entier** : `src/integrations/supabase/types.ts` (~4 500 l.), les `docs/*.md` (souvent 50–185 Ko), les référentiels (`docs/*-referentiel*.md`, `Successions-Referentiel-Complet.md`). Les cibler par `grep` puis lecture par plage (`offset/limit`).
+- Ignorer `node_modules/`, `dist/`, lockfiles, `supabase/migrations/` anciennes (lire seulement les migrations de la table concernée).
+- `exemples/` contient des données clients réelles : ne lire que sur demande explicite, jamais recopier dans le code, les tests ou le chat.
+- Avant une session sur un module, lire `docs/{module}.md` par sections pertinentes plutôt que tout le fichier.
 
-## Méthode de travail attendue
+## Règles permanentes (tout le code)
 
-- Pour toute fonctionnalité impliquant des règles métier non triviales (fiscalité, calculs réglementaires), exposer les règles et la séquence d'intervention fichier par fichier **avant** de coder, et attendre validation explicite.
-- Travailler par phases validées une à une : ne pas enchaîner une phase suivante sans résumé de la précédente et accord explicite de l'utilisateur.
-- Signaler toute découverte de code mort, d'incohérence ou d'élargissement de périmètre dès qu'elle est constatée, plutôt que de l'absorber silencieusement dans le travail en cours.
+- **RGPD** : aucune donnée personnelle/patrimoniale dans un log de prod. Tout `console.*` encadré par `if (import.meta.env.DEV)`.
+- **FK `ON DELETE CASCADE`** : toute table avec `user_id` → `auth.users(id)` ; toute table fille → sa table parente métier.
+- **Pas de credentials hardcodés** : Supabase uniquement via `import.meta.env.VITE_*` ; `.env` reste gitignoré.
+- **Migration destructive** : vérifier d'abord en base réelle (MCP Supabase `execute_sql`) l'absence d'orphelins/violations.
+
+## Méthode de travail
+
+- Règles métier non triviales (fiscalité, calculs réglementaires) : exposer règles + séquence fichier par fichier **avant** de coder, attendre validation.
+- Phases validées une à une, avec résumé et accord explicite avant la suivante.
+- Signaler immédiatement code mort, incohérence ou élargissement de périmètre.
+- Audits et analyses : réponse dans le chat, pas de nouveau fichier dans `docs/`.
 
 ## Documentation vivante
 
-À la fin de chaque session touchant un module, mets à jour `docs/{module}.md` en conséquence, en réécrivant les sections concernées (pas d'historique daté, le fichier reflète toujours l'état actuel).
+En fin de session touchant un module, mettre à jour `docs/{module}.md` en réécrivant uniquement les sections concernées (édition ciblée, pas de réécriture complète ; pas d'historique daté).
