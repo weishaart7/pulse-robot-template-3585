@@ -105,7 +105,7 @@ const FiscalDeclarationsCard = ({ overview, onDeclarationClosed }: FiscalDeclara
       </div>
 
       {ouverte === '2042-IFI' && <DeclarationIFIInterface onClose={fermer} plafonnement2042={overview.plafonnementIFI} />}
-      {ouverte === '2042' && <Declaration2042Interface onClose={fermer} />}
+      {ouverte === '2042' && <Declaration2042Interface onClose={fermer} overview={overview} />}
       {ouverte === '2044' && <Declaration2044Interface onClose={fermer} />}
     </>
   );

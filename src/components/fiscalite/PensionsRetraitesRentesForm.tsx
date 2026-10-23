@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
 import { usePensionsRetraitesRentes } from '@/hooks/usePensionsRetraitesRentes';
 import { PensionsRetraitesRentes } from '@/services/pensionsRetraitesRentesService';
 import { PensionsRetraitesRentesInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne, MontantParTrancheAgeLigne } from './DeclarationLigne';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Cadre2042, Cadre2042Chargement, IntertitreCadre, SeparateurCadre } from './Cadre2042';
 
 const PENSIONS_VIDE: PensionsRetraitesRentesInput = {
   case1as: null,
@@ -65,20 +61,14 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-0">
-          <LoadingSpinner text="Chargement des pensions, retraites et rentes..." />
-        </CardContent>
-      </Card>
+      <Cadre2042Chargement texte="Chargement des pensions, retraites et rentes..." />
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Pensions, retraites et rentes</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <Cadre2042 titre="Pensions, retraites et rentes"
+      description="Cadre 1 de la 2042 : montants bruts, par déclarant ; abattements et fractions imposables sont calculés par l'outil."
+      saving={saving} onSave={handleSubmit}>
         <DeclarantsHeader />
         <MontantLigne
           label="Pensions, retraites et rentes"
@@ -131,13 +121,12 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
           onChange1={v => update('case1hk', v)} onChange2={v => update('case1hl', v)}
         />
 
-        <Separator />
+        <SeparateurCadre />
 
-        <p className="text-sm font-medium">Rentes viagères à titre onéreux</p>
-        <p className="text-sm text-muted-foreground">
+        <IntertitreCadre titre="Rentes viagères à titre onéreux">
           Montant perçu par le foyer, ventilé par âge d'entrée en jouissance de la rente — pas par
           déclarant.
-        </p>
+        </IntertitreCadre>
         <MontantParTrancheAgeLigne
           label="Rentes perçues"
           tranches={[
@@ -157,13 +146,7 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
             { ageLabel: 'À partir de 70 ans', code: '1DR', value: pensions.case1dr, onChange: v => update('case1dr', v) },
           ]}
         />
-
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Enregistrer
-        </Button>
-      </CardContent>
-    </Card>
+    </Cadre2042>
   );
 };
 

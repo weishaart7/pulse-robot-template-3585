@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
 import { useRevenusExoneresTauxEffectif } from '@/hooks/useRevenusExoneresTauxEffectif';
 import { RevenusExoneresTauxEffectif } from '@/services/revenusExoneresTauxEffectifService';
 import { RevenusExoneresTauxEffectifInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne, TexteLigne } from './DeclarationLigne';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 const REVENUS_VIDE: RevenusExoneresTauxEffectifInput = {
   case1ac: null,
@@ -50,26 +47,14 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-0">
-          <LoadingSpinner text="Chargement des salaires et pensions exonérés..." />
-        </CardContent>
-      </Card>
+      <Cadre2042Chargement texte="Chargement des salaires et pensions exonérés..." />
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Salaires et pensions exonérés retenus pour le calcul du taux effectif</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <p className="text-sm text-muted-foreground">
-          Salaires et pensions de source étrangère exonérés selon la convention fiscale applicable
-          (après déduction de l'impôt étranger), et salaires des détachés à l'étranger exonérés en
-          application de l'article 81 A du CGI. Ces montants ne sont pas imposés en France : ils
-          servent uniquement à calculer le taux effectif appliqué au reste du revenu.
-        </p>
+    <Cadre2042 titre="Salaires et pensions exonérés retenus pour le calcul du taux effectif"
+      description="Salaires et pensions de source étrangère exonérés selon la convention fiscale applicable (après déduction de l'impôt étranger), et salaires des détachés à l'étranger exonérés en application de l'article 81 A du CGI. Ces montants ne sont pas imposés en France : ils servent uniquement à calculer le taux effectif appliqué au reste du revenu."
+      saving={saving} onSave={handleSubmit}>
 
         <DeclarantsHeader />
 
@@ -104,13 +89,7 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
           value1={revenus.caseRse} value2={revenus.caseRsf}
           onChange1={v => update('caseRse', v)} onChange2={v => update('caseRsf', v)}
         />
-
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Enregistrer
-        </Button>
-      </CardContent>
-    </Card>
+    </Cadre2042>
   );
 };
 

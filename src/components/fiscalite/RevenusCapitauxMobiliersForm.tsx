@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
 import { useRevenusCapitauxMobiliers } from '@/hooks/useRevenusCapitauxMobiliers';
 import { RevenusCapitauxMobiliers } from '@/services/revenusCapitauxMobiliersService';
 import { RevenusCapitauxMobiliersInput } from '@/lib/fiscalite';
 import { MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 const REVENUS_VIDE: RevenusCapitauxMobiliersInput = {
   case2dh: null, case2ch: null, case2uu: null, case2vv: null, case2ww: null,
@@ -51,20 +48,14 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-0">
-          <LoadingSpinner text="Chargement des revenus de capitaux mobiliers..." />
-        </CardContent>
-      </Card>
+      <Cadre2042Chargement texte="Chargement des revenus de capitaux mobiliers..." />
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Revenus des valeurs et capitaux mobiliers</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <Cadre2042 titre="Revenus des valeurs et capitaux mobiliers"
+      description="Cadre 2 de la 2042 : un montant par foyer, sans colonne déclarant. Classement de la déclaration en ligne."
+      saving={saving} onSave={handleSubmit}>
         <SousGroupe titre="Produits des contrats d'assurance-vie et de capitalisation de 8 ans et plus">
           <SingleMontantLigne label="Produits soumis au prélèvement libératoire" extra="versements avant le 27.9.2017" code="2DH" value={revenus.case2dh} onChange={v => update('case2dh', v)} />
           <SingleMontantLigne label="Autres produits" extra="versements avant le 27.9.2017" code="2CH" value={revenus.case2ch} onChange={v => update('case2ch', v)} />
@@ -155,13 +146,7 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
           checked={revenus.case2op}
           onChange={v => update('case2op', v)}
         />
-
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Enregistrer
-        </Button>
-      </CardContent>
-    </Card>
+    </Cadre2042>
   );
 };
 

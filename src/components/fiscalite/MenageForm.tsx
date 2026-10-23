@@ -1,16 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
+import { AddButton } from '@/components/layout/workspace-panel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { FoyerFiscal } from '@/services/foyerFiscalService';
 import { EnfantCharge, FoyerFiscalInput, PersonneInvalideCharge } from '@/lib/fiscalite';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { AideTooltip, SousGroupe } from './DeclarationLigne';
+import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 const SITUATION_FAMILLE_OPTIONS: { value: FoyerFiscalInput['situationFamille']; label: string }[] = [
   { value: 'marie', label: 'Marié(e)' },
@@ -119,213 +117,147 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardContent className="p-0">
-          <LoadingSpinner text="Chargement du foyer fiscal..." />
-        </CardContent>
-      </Card>
-    );
+    return <Cadre2042Chargement texte="Chargement du foyer fiscal..." />;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Votre foyer fiscal</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Votre situation familiale</Label>
+    <Cadre2042
+      titre="Ménage — état civil et parts"
+      description="Situation du foyer au 1er janvier : elle détermine le nombre de parts du quotient familial, recalculé en direct à droite."
+      saving={saving}
+      onSave={handleSubmit}
+    >
+      <SousGroupe titre="Situation du foyer">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 py-4 sm:grid-cols-2">
+          <ChampMenage label="Situation familiale">
             <Select value={foyer.situationFamille} onValueChange={v => update('situationFamille', v as FoyerFiscalInput['situationFamille'])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-[2px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {SITUATION_FAMILLE_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Lieu de résidence fiscale</Label>
+          </ChampMenage>
+          <ChampMenage label="Lieu de résidence fiscale">
             <Select value={foyer.lieuResidence} onValueChange={v => update('lieuResidence', v as FoyerFiscalInput['lieuResidence'])}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="rounded-[2px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {LIEU_RESIDENCE_OPTIONS.map(o => (
                   <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </ChampMenage>
         </div>
+      </SousGroupe>
 
-        <Separator />
-
-        {/* Enfants à charge */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>Enfants à charge</Label>
-            <Button type="button" variant="outline" size="sm" onClick={ajouterEnfant}>
-              <Plus className="h-4 w-4 mr-1" /> Ajouter un enfant
-            </Button>
-          </div>
-
-          {foyer.enfantsCharge.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucun enfant à charge saisi.</p>
-          )}
-
-          {foyer.enfantsCharge.map((e, index) => (
-            <div key={index} className="flex flex-wrap items-end gap-4 p-3 rounded-lg bg-muted/50">
-              <div className="space-y-1">
-                <Label className="text-xs">Année de naissance</Label>
-                <Input
-                  type="number"
-                  className="w-28"
-                  value={e.anneeNaissance}
-                  onChange={ev => updateEnfant(index, { anneeNaissance: Number(ev.target.value) })}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={`enfant-${index}-invalide`}
-                  checked={e.invalide}
-                  onCheckedChange={c => updateEnfant(index, { invalide: !!c })}
-                />
-                <Label htmlFor={`enfant-${index}-invalide`} className="text-sm font-normal">
-                  Enfant en situation d'invalidité
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id={`enfant-${index}-alternee`}
-                  checked={e.residenceAlternee}
-                  onCheckedChange={c => updateEnfant(index, { residenceAlternee: !!c })}
-                />
-                <Label htmlFor={`enfant-${index}-alternee`} className="text-sm font-normal">
-                  Garde alternée (résidence alternée)
-                </Label>
-              </div>
-              <Button type="button" variant="ghost" size="icon" onClick={() => supprimerEnfant(index)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-2">
-          <Label>Nombre d'enfants majeurs rattachés à votre foyer fiscal</Label>
-          <p className="text-xs text-muted-foreground">
-            Un enfant majeur qui demande son rattachement à votre déclaration plutôt que de déclarer ses propres revenus.
-          </p>
-          <Input
-            type="number"
-            min={0}
-            className="w-28"
-            value={foyer.enfantsMajeursRattaches}
-            onChange={ev => update('enfantsMajeursRattaches', Math.max(0, Number(ev.target.value)))}
-          />
-        </div>
-
-        <Separator />
-
-        {/* Personnes invalides à charge (hors enfant) */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label>Autres personnes invalides à votre charge (hors enfants)</Label>
-            <Button type="button" variant="outline" size="sm" onClick={ajouterPersonneInvalide}>
-              <Plus className="h-4 w-4 mr-1" /> Ajouter une personne
-            </Button>
-          </div>
-
-          {foyer.personnesInvalidesCharge.length === 0 && (
-            <p className="text-sm text-muted-foreground">Aucune personne saisie.</p>
-          )}
-
-          {foyer.personnesInvalidesCharge.map((p, index) => (
-            <div key={index} className="flex flex-wrap items-end gap-4 p-3 rounded-lg bg-muted/50">
-              <div className="space-y-1">
-                <Label className="text-xs">Année de naissance</Label>
-                <Input
-                  type="number"
-                  className="w-28"
-                  value={p.anneeNaissance}
-                  onChange={ev => updatePersonneInvalide(index, { anneeNaissance: Number(ev.target.value) })}
-                />
-              </div>
-              <Button type="button" variant="ghost" size="icon" onClick={() => supprimerPersonneInvalide(index)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <Separator />
-
-        {/* Cases à cocher */}
-        <div className="space-y-3">
-          <CaseACocher
-            id="parent-isole"
-            checked={foyer.parentIsole}
-            onCheckedChange={v => update('parentIsole', v)}
-            label="Je vis seul(e) avec au moins un enfant à ma charge (T)"
-          />
-          <CaseACocher
-            id="ancien-parent-isole"
-            checked={foyer.ancienParentIsole}
-            onCheckedChange={v => update('ancienParentIsole', v)}
-            label="J'ai élevé seul(e) un enfant pendant au moins 5 ans, mais ce n'est plus le cas aujourd'hui (L)"
-          />
-          <CaseACocher
-            id="invalidite-declarant1"
-            checked={foyer.invaliditeDeclarant1}
-            onCheckedChange={v => update('invaliditeDeclarant1', v)}
-            label="Vous êtes en situation d'invalidité (P)"
-          />
-          {estCouple && (
+      <SousGroupe titre="Enfants à charge">
+        {foyer.enfantsCharge.length === 0 && <LigneVide>Aucun enfant à charge saisi.</LigneVide>}
+        {foyer.enfantsCharge.map((e, index) => (
+          <div key={index} className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border/50 py-2.5">
+            <span className="w-16 text-[13px] font-medium text-foreground">Enfant {index + 1}</span>
+            <ChampMenage label="Né(e) en" inline>
+              <Input
+                type="number"
+                className="w-24 rounded-[2px] tabular-nums"
+                value={e.anneeNaissance}
+                onChange={ev => updateEnfant(index, { anneeNaissance: Number(ev.target.value) })}
+              />
+            </ChampMenage>
             <CaseACocher
-              id="invalidite-declarant2"
-              checked={foyer.invaliditeDeclarant2}
-              onCheckedChange={v => update('invaliditeDeclarant2', v)}
-              label="Votre conjoint(e) est en situation d'invalidité (F)"
+              id={`enfant-${index}-invalide`}
+              checked={e.invalide}
+              onCheckedChange={c => updateEnfant(index, { invalide: c })}
+              label="En situation d'invalidité"
             />
-          )}
-          <CaseACocher
-            id="ancien-combattant-declarant1"
-            checked={foyer.ancienCombattantDeclarant1}
-            onCheckedChange={v => update('ancienCombattantDeclarant1', v)}
-            label="Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, et âgé(e) de plus de 74 ans (W)"
-          />
-          {estCouple && (
             <CaseACocher
-              id="ancien-combattant-declarant2"
-              checked={foyer.ancienCombattantDeclarant2}
-              onCheckedChange={v => update('ancienCombattantDeclarant2', v)}
-              label="Votre conjoint(e) est dans cette situation (S)"
+              id={`enfant-${index}-alternee`}
+              checked={e.residenceAlternee}
+              onCheckedChange={c => updateEnfant(index, { residenceAlternee: c })}
+              label="Résidence alternée"
             />
-          )}
-          <CaseACocher
-            id="veuf-ancien-combattant"
-            checked={foyer.veufAncienCombattant}
-            onCheckedChange={v => update('veufAncienCombattant', v)}
-            label="Vous êtes veuf/veuve d'un(e) ancien(ne) combattant(e) décédé(e) après 74 ans (W)"
-          />
-          <CaseACocher
-            id="veuve-de-guerre"
-            checked={foyer.veuveDeGuerre}
-            onCheckedChange={v => update('veuveDeGuerre', v)}
-            label="Vous êtes titulaire d'une pension de veuve de guerre (G)"
-          />
+            <button type="button" aria-label={`Supprimer l'enfant ${index + 1}`} onClick={() => supprimerEnfant(index)} className="ml-auto rounded-[2px] p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="flex flex-wrap items-center justify-between gap-4 py-3">
+          <ChampMenage label="Enfants majeurs rattachés" aide="Enfant majeur qui demande son rattachement à votre déclaration plutôt que de déclarer ses propres revenus." inline>
+            <Input
+              type="number"
+              min={0}
+              className="w-20 rounded-[2px] tabular-nums"
+              value={foyer.enfantsMajeursRattaches}
+              onChange={ev => update('enfantsMajeursRattaches', Math.max(0, Number(ev.target.value)))}
+            />
+          </ChampMenage>
+          <AddButton tone="citron" onClick={ajouterEnfant}>Ajouter un enfant</AddButton>
         </div>
+      </SousGroupe>
 
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Enregistrer
-        </Button>
-      </CardContent>
-    </Card>
+      <SousGroupe titre="Autres personnes invalides à charge (hors enfants)">
+        {foyer.personnesInvalidesCharge.length === 0 && <LigneVide>Aucune personne saisie.</LigneVide>}
+        {foyer.personnesInvalidesCharge.map((p, index) => (
+          <div key={index} className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border/50 py-2.5">
+            <span className="w-16 text-[13px] font-medium text-foreground">Personne {index + 1}</span>
+            <ChampMenage label="Né(e) en" inline>
+              <Input
+                type="number"
+                className="w-24 rounded-[2px] tabular-nums"
+                value={p.anneeNaissance}
+                onChange={ev => updatePersonneInvalide(index, { anneeNaissance: Number(ev.target.value) })}
+              />
+            </ChampMenage>
+            <button type="button" aria-label={`Supprimer la personne ${index + 1}`} onClick={() => supprimerPersonneInvalide(index)} className="ml-auto rounded-[2px] p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive">
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        <div className="flex justify-end py-3">
+          <AddButton tone="citron" onClick={ajouterPersonneInvalide}>Ajouter une personne</AddButton>
+        </div>
+      </SousGroupe>
+
+      <SousGroupe titre="Situations particulières">
+        <CaseSituation code="T" id="parent-isole" checked={foyer.parentIsole} onCheckedChange={v => update('parentIsole', v)}
+          label="Je vis seul(e) avec au moins un enfant à ma charge" />
+        <CaseSituation code="L" id="ancien-parent-isole" checked={foyer.ancienParentIsole} onCheckedChange={v => update('ancienParentIsole', v)}
+          label="J'ai élevé seul(e) un enfant pendant au moins 5 ans, ce n'est plus le cas aujourd'hui" />
+        <CaseSituation code="P" id="invalidite-declarant1" checked={foyer.invaliditeDeclarant1} onCheckedChange={v => update('invaliditeDeclarant1', v)}
+          label="Vous êtes en situation d'invalidité" />
+        {estCouple && (
+          <CaseSituation code="F" id="invalidite-declarant2" checked={foyer.invaliditeDeclarant2} onCheckedChange={v => update('invaliditeDeclarant2', v)}
+            label="Votre conjoint(e) est en situation d'invalidité" />
+        )}
+        <CaseSituation code="W" id="ancien-combattant-declarant1" checked={foyer.ancienCombattantDeclarant1} onCheckedChange={v => update('ancienCombattantDeclarant1', v)}
+          label="Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, âgé(e) de plus de 74 ans" />
+        {estCouple && (
+          <CaseSituation code="S" id="ancien-combattant-declarant2" checked={foyer.ancienCombattantDeclarant2} onCheckedChange={v => update('ancienCombattantDeclarant2', v)}
+            label="Votre conjoint(e) est dans cette situation" />
+        )}
+        <CaseSituation code="W" id="veuf-ancien-combattant" checked={foyer.veufAncienCombattant} onCheckedChange={v => update('veufAncienCombattant', v)}
+          label="Vous êtes veuf/veuve d'un(e) ancien(ne) combattant(e) décédé(e) après 74 ans" />
+        <CaseSituation code="G" id="veuve-de-guerre" checked={foyer.veuveDeGuerre} onCheckedChange={v => update('veuveDeGuerre', v)}
+          label="Vous êtes titulaire d'une pension de veuve de guerre" />
+      </SousGroupe>
+    </Cadre2042>
   );
 };
+
+const ChampMenage = ({ label, aide, inline, children }: { label: string; aide?: string; inline?: boolean; children: ReactNode }) => (
+  <div className={inline ? 'flex items-center gap-2.5' : 'space-y-1.5'}>
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted-foreground">
+      {label}
+      {aide && <AideTooltip texte={aide} />}
+    </span>
+    {children}
+  </div>
+);
+
+const LigneVide = ({ children }: { children: ReactNode }) => (
+  <p className="border-b border-border/50 py-3 text-[13px] text-muted-foreground">{children}</p>
+);
 
 interface CaseACocherProps {
   id: string;
@@ -335,10 +267,21 @@ interface CaseACocherProps {
 }
 
 const CaseACocher = ({ id, checked, onCheckedChange, label }: CaseACocherProps) => (
-  <div className="flex items-center gap-2">
+  <label htmlFor={id} className="flex cursor-pointer items-center gap-2 text-[13px] font-normal text-foreground">
     <Checkbox id={id} checked={checked} onCheckedChange={c => onCheckedChange(!!c)} />
-    <Label htmlFor={id} className="text-sm font-normal">{label}</Label>
-  </div>
+    {label}
+  </label>
+);
+
+/** Case du cadre A de la 2042 : libellé à gauche, lettre de la case et case à cocher à droite. */
+const CaseSituation = ({ code, ...props }: CaseACocherProps & { code: string }) => (
+  <label htmlFor={props.id} className="grid cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border/50 py-2.5 font-normal">
+    <span className="text-[13px] leading-5 text-foreground">{props.label}</span>
+    <span className="flex items-center gap-2">
+      <span className="rounded-[2px] bg-lagon-soft px-1.5 text-[11px] font-medium text-lagon-ink">{code}</span>
+      <Checkbox id={props.id} checked={props.checked} onCheckedChange={c => props.onCheckedChange(!!c)} />
+    </span>
+  </label>
 );
 
 export default MenageForm;

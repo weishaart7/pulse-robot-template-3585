@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
 import { useGainsActionnariatSalarie } from '@/hooks/useGainsActionnariatSalarie';
 import { GainsActionnariatSalarie } from '@/services/gainsActionnariatSalarieService';
 import { GainsActionnariatSalarieInput } from '@/lib/fiscalite';
 import { DeclarantsHeader, MontantLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Cadre2042, Cadre2042Chargement, SeparateurCadre } from './Cadre2042';
 
 const GAINS_VIDE: GainsActionnariatSalarieInput = {
   case1tp: null,
@@ -64,20 +60,13 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-0">
-          <LoadingSpinner text="Chargement des gains d'actionnariat salarié..." />
-        </CardContent>
-      </Card>
+      <Cadre2042Chargement texte="Chargement des gains d'actionnariat salarié..." />
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Gains d'actionnariat salarié</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <Cadre2042 titre="Gains d'actionnariat salarié"
+      description="Stock-options, actions gratuites, BSPCE et carried-interest : le gain d'acquisition au barème (catégorie des salaires) et les gains historiques à taux forfaitaire." saving={saving} onSave={handleSubmit}>
         <DeclarantsHeader />
         <MontantLigne
           label="Rabais excédentaire sur options sur titres"
@@ -151,17 +140,15 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
           onChange1={v => update('case1mp', v)} onChange2={v => update('case1mq', v)}
         />
 
-        <Separator />
+        <SeparateurCadre />
 
         <SousGroupe
           titre="Gains de levée d'options / actions gratuites attribuées avant le 28.9.2012"
           aide="Le taux applicable dépend de la date d'attribution et de la durée de conservation des titres — un seul des trois montants est normalement renseigné."
         >
-          <div className="flex flex-wrap gap-2">
-            <SingleMontantLigne label="Gains taxables à 18 %" code="3VD" value={gains.case3vd} onChange={v => update('case3vd', v)} />
-            <SingleMontantLigne label="Gains taxables à 30 %" code="3VI" value={gains.case3vi} onChange={v => update('case3vi', v)} />
-            <SingleMontantLigne label="Gains taxables à 41 %" code="3VF" value={gains.case3vf} onChange={v => update('case3vf', v)} />
-          </div>
+          <SingleMontantLigne label="Gains taxables à 18 %" code="3VD" value={gains.case3vd} onChange={v => update('case3vd', v)} />
+          <SingleMontantLigne label="Gains taxables à 30 %" code="3VI" value={gains.case3vi} onChange={v => update('case3vi', v)} />
+          <SingleMontantLigne label="Gains taxables à 41 %" code="3VF" value={gains.case3vf} onChange={v => update('case3vf', v)} />
         </SousGroupe>
 
         <MontantLigne
@@ -177,7 +164,7 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
           onChange={v => update('case3vn', v)}
         />
 
-        <Separator />
+        <SeparateurCadre />
 
         <SousGroupe
           titre="Revenus exceptionnels ou différés à imposer selon le système du quotient"
@@ -190,13 +177,7 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
             onChange={v => update('case0xx', v)}
           />
         </SousGroupe>
-
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Enregistrer
-        </Button>
-      </CardContent>
-    </Card>
+    </Cadre2042>
   );
 };
 

@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { WorkspaceHeader, panelButtonClass } from '@/components/layout/workspace-panel';
+import type { FiscalOverview } from '@/hooks/useFiscalOverview';
 import { AppleSpotlight } from '@/components/block/apple-spotlight';
 import {
   AlertDialog,
@@ -11,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Loader2, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Loader2, Search, Trash2 } from 'lucide-react';
 import Declaration2042Sidebar from './2042/Declaration2042Sidebar';
 import { DECLARATION_2042_SECTIONS } from './2042/declaration2042Sections';
 import { DECLARATION_2042_CASES } from './2042/declaration2042CasesIndex';
@@ -22,12 +24,15 @@ import { pensionsRetraitesRentesService } from '@/services/pensionsRetraitesRent
 import { gainsActionnariatSalarieService } from '@/services/gainsActionnariatSalarieService';
 import { revenusCapitauxMobiliersService } from '@/services/revenusCapitauxMobiliersService';
 import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface Declaration2042InterfaceProps {
   onClose: () => void;
+  /** Vision générale : résumé de l'impôt dans la navigation, rechargé à chaque changement de section. */
+  overview: FiscalOverview;
 }
 
-const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) => {
+const Declaration2042Interface = ({ onClose, overview }: Declaration2042InterfaceProps) => {
   const [activeSection, setActiveSection] = useState(DECLARATION_2042_SECTIONS[0].id);
   const [recherche, setRecherche] = useState('');
   const [spotlightOuvert, setSpotlightOuvert] = useState(false);
@@ -66,6 +71,21 @@ const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) =>
     }
   };
 
+  // Chaque section s'enregistre à part : changer de section recharge l'impôt du résumé.
+  const { refetch } = overview;
+  useEffect(() => { refetch(); }, [activeSection]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const sectionActive = DECLARATION_2042_SECTIONS.find(section => section.id === activeSection) ?? DECLARATION_2042_SECTIONS[0];
+
+  // ⌘K / Ctrl+K ouvre la recherche de case.
+  useEffect(() => {
+    const raccourci = (ev: KeyboardEvent) => {
+      if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); setSpotlightOuvert(true); }
+    };
+    window.addEventListener('keydown', raccourci);
+    return () => window.removeEventListener('keydown', raccourci);
+  }, []);
+
   const ActiveComponent =
     DECLARATION_2042_SECTIONS.find(section => section.id === activeSection)?.component
     ?? DECLARATION_2042_SECTIONS[0].component;
@@ -93,37 +113,44 @@ const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) =>
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-50 flex">
-      <Declaration2042Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onClose} size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <h1 className="text-2xl font-bold">2042 - Déclaration générale</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setConfirmSuppression(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Supprimer toutes les données
-            </Button>
+    <div className="workspace-panel fixed inset-0 z-50 flex flex-col bg-background">
+      <WorkspaceHeader
+        icon={<FileText />}
+        trail={['Fiscalité', '2042 — Déclaration générale', sectionActive.label]}
+        actions={(
+          <>
             <button
               type="button"
               onClick={() => setSpotlightOuvert(true)}
-              className="ml-auto flex w-80 items-center gap-3 rounded-2xl border bg-popover px-4 py-2.5 text-sm text-muted-foreground shadow-sm transition-colors hover:bg-accent"
+              aria-label="Rechercher une case"
+              className={cn(panelButtonClass, 'inline-flex items-center gap-2 text-muted-foreground xl:w-72')}
             >
-              <Search className="h-5 w-5 shrink-0" />
-              <span className="truncate">Rechercher une case (ex. 1AJ, revenus salariés...)</span>
+              <Search className="h-3.5 w-3.5 shrink-0" />
+              <span className="hidden flex-1 truncate text-left font-normal xl:inline">Rechercher une case (1AJ, dividendes…)</span>
+              <kbd className="rounded-[2px] border border-border px-1 text-[10.5px] text-muted-foreground">⌘K</kbd>
             </button>
-          </div>
-        </div>
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmSuppression(true)}
+              aria-label="Supprimer toutes les données de la 2042"
+              title="Supprimer toutes les données de la 2042"
+              className={cn(panelButtonClass, 'border-transparent text-destructive hover:bg-destructive/10 hover:text-destructive')}
+            >
+              <Trash2 className="h-3.5 w-3.5 xl:mr-1.5" />
+              <span className="hidden xl:inline">Tout supprimer</span>
+            </Button>
+            <Button variant="ghost" onClick={onClose} className={panelButtonClass}>
+              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+              Retour
+            </Button>
+          </>
+        )}
+      />
 
+      <div className="flex min-h-0 flex-1">
+      <Declaration2042Sidebar activeSection={activeSection} onSectionChange={setActiveSection} overview={overview} />
+
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <AppleSpotlight
           isOpen={spotlightOuvert}
           handleClose={() => { setSpotlightOuvert(false); setRecherche(''); }}
@@ -138,11 +165,14 @@ const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) =>
                 <button
                   key={`${c.code}-${i}`}
                   type="button"
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-accent text-sm flex flex-col gap-0.5"
+                  className="flex w-full items-start gap-3 rounded-[2px] px-3 py-2 text-left text-[13px] hover:bg-secondary"
                   onClick={() => allerVersCase(c)}
                 >
-                  <span className="font-medium">{c.code} — {c.label}</span>
-                  <span className="text-xs text-muted-foreground">{section?.label}</span>
+                  <span className="mt-px rounded-[2px] bg-lagon-soft px-1.5 text-[11.5px] font-medium tabular-nums text-lagon-ink">{c.code}</span>
+                  <span className="min-w-0">
+                    <span className="block text-foreground">{c.label}</span>
+                    <span className="block text-[12px] text-muted-foreground">{section?.groupe} · {section?.label}</span>
+                  </span>
                 </button>
               );
             })
@@ -151,9 +181,12 @@ const Declaration2042Interface = ({ onClose }: Declaration2042InterfaceProps) =>
           )}
         </AppleSpotlight>
 
-        <div className="flex-1 overflow-auto p-6">
-          <ActiveComponent key={resetKey} />
-        </div>
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto min-h-full max-w-[1180px]">
+            <ActiveComponent key={resetKey} />
+          </div>
+        </main>
+      </div>
       </div>
 
       <AlertDialog open={confirmSuppression} onOpenChange={open => { if (!open && !suppressionEnCours) setConfirmSuppression(false); }}>

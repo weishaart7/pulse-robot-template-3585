@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
 import { useRevenusSalaires } from '@/hooks/useRevenusSalaires';
 import { RevenusSalaires } from '@/services/revenusSalairesService';
 import { RevenusSalairesInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne } from './DeclarationLigne';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Cadre2042, Cadre2042Chargement, SeparateurCadre } from './Cadre2042';
 
 const REVENUS_VIDE: RevenusSalairesInput = {
   case1aj: null,
@@ -79,20 +75,14 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-0">
-          <LoadingSpinner text="Chargement des revenus de salaires..." />
-        </CardContent>
-      </Card>
+      <Cadre2042Chargement texte="Chargement des revenus de salaires..." />
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Traitements et salaires</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
+    <Cadre2042 titre="Traitements et salaires"
+      description="Cadre 1 de la 2042 : salaire net imposable et revenus assimilés, par déclarant. L'abattement de 10 % ou les frais réels (1AK/1BK) sont appliqués par l'outil, au plus favorable."
+      saving={saving} onSave={handleSubmit}>
         <DeclarantsHeader />
         <MontantLigne
           label="Traitements et salaires"
@@ -142,7 +132,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           onChange1={v => update('case1av', v)} onChange2={v => update('case1bv', v)}
         />
 
-        <Separator />
+        <SeparateurCadre />
 
         <MontantLigne
           label="Autres revenus imposables"
@@ -171,7 +161,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           onChange1={v => update('case1ak', v)} onChange2={v => update('case1bk', v)}
         />
 
-        <Separator />
+        <SeparateurCadre />
 
         <MontantLigne
           label="Revenus des associés et gérants"
@@ -231,13 +221,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           checked1={revenus.case1gk} checked2={revenus.case1gl}
           onChange1={v => update('case1gk', v)} onChange2={v => update('case1gl', v)}
         />
-
-        <Button type="button" onClick={handleSubmit} disabled={saving}>
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Enregistrer
-        </Button>
-      </CardContent>
-    </Card>
+    </Cadre2042>
   );
 };
 

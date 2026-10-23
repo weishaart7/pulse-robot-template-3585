@@ -23,12 +23,12 @@ const MenageSection = () => {
   const [foyerDraft, setFoyerDraft] = useState<FoyerFiscalInput>(FOYER_INITIAL);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2">
-        <MenageForm onChange={setFoyerDraft} />
-      </div>
-      <div className="lg:col-span-1">
-        <SyntheseFoyerFiscal foyer={foyerDraft} />
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <MenageForm onChange={setFoyerDraft} />
+      <div className="px-8 pb-8 xl:pl-0 xl:pt-[88px]">
+        <div className="xl:sticky xl:top-8">
+          <SyntheseFoyerFiscal foyer={foyerDraft} />
+        </div>
       </div>
     </div>
   );
