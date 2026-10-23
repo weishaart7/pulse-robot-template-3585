@@ -235,4 +235,18 @@ export interface PlusValuesGainsDiversInput {
   // Plus-values immobilières (RFR seulement)
   case3vz: number | null;
   case3vw: number | null;
+  // BSPCE (phase 3.2)
+  case3sj: number | null;
+  case3tj: number | null;
+  case3tk: number | null;
+  case3sk: number | null;
+  case3tl: number | null;
+  case3tm: number | null;
+  case3pc: number | null;
+  case3pe: number | null;
+  // Autres régimes (phase 3.2)
+  case3vq: number | null;
+  case3vr: number | null;
+  case3vc: number | null;
+  case3ex: number | null;
 }

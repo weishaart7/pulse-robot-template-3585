@@ -10,6 +10,8 @@ const PLUS_VALUES_VIDE: PlusValuesGainsDiversInput = {
   case3vt: null, case3pi: null, case3sb: null, case3we: null,
   case3an: null, case3bn: null, case3cn: false,
   case3vz: null, case3vw: null,
+  case3sj: null, case3tj: null, case3tk: null, case3sk: null, case3tl: null, case3tm: null, case3pc: null, case3pe: null,
+  case3vq: null, case3vr: null, case3vc: null, case3ex: null,
 };
 
 interface PlusValuesGainsDiversFormProps {
@@ -64,6 +66,24 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
           <SingleMontantLigne label="Profits sur instruments financiers taxables à 50 %" code="3PI" value={pv.case3pi} onChange={v => update('case3pi', v)} />
           <SingleMontantLigne label="Plus-values en report dont le report a expiré en 2025" extra="art. 150-0 D bis, plus-values imposables" code="3SB" value={pv.case3sb} onChange={v => update('case3sb', v)} />
           <SingleMontantLigne label="Complément de prix perçu en 2025" code="3WE" value={pv.case3we} onChange={v => update('case3we', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BSPCE — bons de souscription de parts de créateur d'entreprise">
+          <SingleMontantLigne label="Gains de cession, BSPCE attribués avant le 1.1.2018" extra="activité depuis au moins 3 ans" code="3SJ" value={pv.case3sj} onChange={v => update('case3sj', v)} />
+          <SingleMontantLigne label="Gains de cession, BSPCE du 1.1.2018 au 31.12.2024 — gain avant abattement" extra="activité depuis au moins 3 ans" code="3TJ" value={pv.case3tj} onChange={v => update('case3tj', v)} />
+          <SingleMontantLigne label="Abattement fixe sur 3TJ" extra="départ à la retraite d'un dirigeant de PME" code="3TK" value={pv.case3tk} onChange={v => update('case3tk', v)} />
+          <SingleMontantLigne label="Gains de cession, BSPCE jusqu'au 31.12.2024 taxables à 30 %" extra="activité depuis moins de 3 ans" code="3SK" value={pv.case3sk} onChange={v => update('case3sk', v)} />
+          <SingleMontantLigne label="Gain de cession, BSPCE à compter du 1.1.2025 — gain avant abattement" code="3TL" value={pv.case3tl} onChange={v => update('case3tl', v)} />
+          <SingleMontantLigne label="Abattement fixe sur 3TL" extra="départ à la retraite d'un dirigeant de PME" code="3TM" value={pv.case3tm} onChange={v => update('case3tm', v)} />
+          <SingleMontantLigne label="Gain d'exercice BSPCE à compter du 1.1.2025, taxable à 12,8 %" extra="activité depuis au moins 3 ans" code="3PC" value={pv.case3pc} onChange={v => update('case3pc', v)} />
+          <SingleMontantLigne label="Gain d'exercice BSPCE à compter du 1.1.2025, taxable à 30 %" extra="activité depuis moins de 3 ans" code="3PE" value={pv.case3pe} onChange={v => update('case3pe', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Autres régimes">
+          <SingleMontantLigne label="Impatriés : plus-values exonérées" extra="50 %" code="3VQ" value={pv.case3vq} onChange={v => update('case3vq', v)} />
+          <SingleMontantLigne label="Impatriés : moins-values non imputables" extra="50 %" code="3VR" value={pv.case3vr} onChange={v => update('case3vr', v)} />
+          <SingleMontantLigne label="Produits et plus-values exonérés provenant de structures de capital-risque" code="3VC" value={pv.case3vc} onChange={v => update('case3vc', v)} />
+          <SingleMontantLigne label="Gain net exonéré sur retrait du plan d'épargne avenir climat (PEAC)" code="3EX" value={pv.case3ex} onChange={v => update('case3ex', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Cession d'actifs numériques" aide="Report de la déclaration n° 2086.">

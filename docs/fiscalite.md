@@ -77,13 +77,14 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      réputés distribués, assurance-vie < 8 ans et ≥ 8 ans, gains de cession de bons/contrats, PFU ou
      option barème selon `2OP`) est calculé en aval par `calculerRevenuCapitauxMobiliers.ts` (voir §2).
 
-   - **Plus-values et gains divers — cadre 3 de la 2042-C (phase 3.1, fonctionnel)** :
+   - **Plus-values et gains divers — cadre 3 de la 2042-C (phases 3.1 et 3.2, fonctionnel)** :
      `PlusValuesGainsDiversForm.tsx`, adossé à la table Supabase dédiée `plus_values_gains_divers`
-     (un montant par foyer, `user_id → auth.users(id) ON DELETE CASCADE`, RLS 4 policies). 15 cases :
+     (un montant par foyer, `user_id → auth.users(id) ON DELETE CASCADE`, RLS 4 policies). 27 cases :
      valeurs mobilières (`3VG`/`3SG`/`3VH`), abattement renforcé et départ à la retraite
      (`3UA`/`3SL`/`3VA`), PEA avant 5 ans (`3VT`), instruments financiers à 50 % (`3PI`), report
      150-0 D bis expiré (`3SB`), complément de prix (`3WE`), actifs numériques (`3AN`/`3BN`/`3CN`),
-     plus-values immobilières pour le RFR (`3VZ`/`3VW`). Calcul en aval par
+     plus-values immobilières pour le RFR (`3VZ`/`3VW`), BSPCE (`3SJ`/`3TJ`/`3TK`/`3SK`/`3TL`/`3TM`/
+     `3PC`/`3PE`), impatriés (`3VQ`/`3VR`), capital-risque (`3VC`), PEAC (`3EX`). Calcul en aval par
      `calculerPlusValuesGainsDivers.ts` (voir §2, « Plus-values et gains divers »).
 
    Avant cette réorganisation, `MenageForm`/`SyntheseFoyerFiscal`/`RevenusSalairesForm` étaient montés
@@ -1179,7 +1180,7 @@ fonciers (§4).
   22 874 € (IR) + 7 175 € (PS gains d'actionnariat, seule catégorie non nulle pour ce compte) =
   **30 049 €**, identique au total du simulateur officiel.
 
-### Plus-values et gains divers (cadre 3, phase 3.1)
+### Plus-values et gains divers (cadre 3, phases 3.1 et 3.2)
 
 Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `useFiscalOverview.ts`
 (barème, impôt forfaitaire, RFR, prélèvements sociaux, et la carte « Imposition totale » / Dashboard).
@@ -1195,12 +1196,22 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   aux revenus du patrimoine 2025 ; revenus fonciers, plus-values immobilières et assurance-vie restent
   à 17,2 %) sur `3VG + 3UA + 3WE + 3AN`, avant tout abattement. `3VT` exclu (PS prélevés à la source
   sur le PEA), `3VZ`/`3VW` exclus (prélevés chez le notaire).
+- **BSPCE** (art. 163 bis G CGI ; LF 2025 distingue gain d'exercice et gain de cession pour les titres
+  souscrits depuis le 1.1.2025) : activité ≥ 3 ans — `3SJ`, `3TJ − 3TK`, `3TL − 3TM`, `3PC` suivent
+  `2OP` (12,8 % ou barème), abattements fixes `3TK`/`3TM` réintégrés au RFR ; activité < 3 ans —
+  `3SK`, `3PE` à 30 % sans option, retenus au RFR. PS 18,6 % sur l'ensemble avant abattement.
+- **Autres régimes** : `3VQ` (moitié exonérée des impatriés, art. 155 B CGI) au RFR seulement ;
+  `3VC` (capital-risque, exonéré d'IR) au RFR et aux PS 18,6 %.
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
-  saisie de `3VG`/`3AN`, reliquat reportable seulement).
+  saisie de `3VG`/`3AN`, reliquat reportable seulement), `3VR` (non imputable), `3EX` (exonéré,
+  saisi pour information).
 - **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3SB` toujours au barème ;
-  `3PI` à 50 % suivant `2OP` ; `3PI`/`3SB` hors PS ; `3VW` retenu au RFR.
-- **Hors périmètre** : exit tax (`3WM`…`3YA`), BSPCE (`3SJ`…`3PE`), report 150-0 B ter
-  (`3WH`…`3WT`), impatriés (`3VQ`/`3VR`), capital-risque (`3VC`), non-résidents (`3SE`), PEAC (`3EX`).
+  `3PI` à 50 % suivant `2OP` ; `3PI`/`3SB` hors PS ; `3VW` retenu au RFR ; PS à 18,6 % sur les gains
+  d'exercice `3PC`/`3PE` (régime des revenus du patrimoine) ; `3VQ` hors PS ; contribution salariale
+  spécifique de 10 % évoquée par une source pour certains gains cédés du 16.2.2025 au 31.12.2027, non
+  modélisée.
+- **Hors périmètre (acté)** : exit tax (`3WM`…`3YA`) et report 150-0 B ter (`3WH`…`3WT`), rares et
+  adossés aux 2074 ; non-résidents (`3SE`), non gérés par le logiciel.
 
 ### Déclaration des revenus fonciers 2044
 
@@ -1424,7 +1435,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 ### 🟠 À surveiller (cas limite, peu probable)
 
 - **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3SB` imposé au barème, `3PI` à 50 %
-  suivant `2OP`, `3PI`/`3SB` sans prélèvements sociaux, `3VW` retenu au RFR (voir §2, « Plus-values
+  suivant `2OP`, `3PI`/`3SB` sans prélèvements sociaux, `3VW` retenu au RFR, PS 18,6 % sur `3PC`/`3PE`,
+  `3VQ` sans PS, contribution de 10 % non modélisée (voir §2, « Plus-values
   et gains divers »).
 - **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
   que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.

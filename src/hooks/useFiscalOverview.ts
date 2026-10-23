@@ -135,6 +135,8 @@ const PLUS_VALUES_PAR_DEFAUT: PlusValuesGainsDiversInput = {
   case3vt: null, case3pi: null, case3sb: null, case3we: null,
   case3an: null, case3bn: null, case3cn: false,
   case3vz: null, case3vw: null,
+  case3sj: null, case3tj: null, case3tk: null, case3sk: null, case3tl: null, case3tm: null, case3pc: null, case3pe: null,
+  case3vq: null, case3vr: null, case3vc: null, case3ex: null,
 };
 
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */

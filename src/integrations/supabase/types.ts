@@ -2341,14 +2341,26 @@ export type Database = {
           case_3an: number | null
           case_3bn: number | null
           case_3cn: boolean | null
+          case_3ex: number | null
+          case_3pc: number | null
+          case_3pe: number | null
           case_3pi: number | null
           case_3sb: number | null
           case_3sg: number | null
+          case_3sj: number | null
+          case_3sk: number | null
           case_3sl: number | null
+          case_3tj: number | null
+          case_3tk: number | null
+          case_3tl: number | null
+          case_3tm: number | null
           case_3ua: number | null
           case_3va: number | null
+          case_3vc: number | null
           case_3vg: number | null
           case_3vh: number | null
+          case_3vq: number | null
+          case_3vr: number | null
           case_3vt: number | null
           case_3vw: number | null
           case_3vz: number | null
@@ -2362,14 +2374,26 @@ export type Database = {
           case_3an?: number | null
           case_3bn?: number | null
           case_3cn?: boolean | null
+          case_3ex?: number | null
+          case_3pc?: number | null
+          case_3pe?: number | null
           case_3pi?: number | null
           case_3sb?: number | null
           case_3sg?: number | null
+          case_3sj?: number | null
+          case_3sk?: number | null
           case_3sl?: number | null
+          case_3tj?: number | null
+          case_3tk?: number | null
+          case_3tl?: number | null
+          case_3tm?: number | null
           case_3ua?: number | null
           case_3va?: number | null
+          case_3vc?: number | null
           case_3vg?: number | null
           case_3vh?: number | null
+          case_3vq?: number | null
+          case_3vr?: number | null
           case_3vt?: number | null
           case_3vw?: number | null
           case_3vz?: number | null
@@ -2383,14 +2407,26 @@ export type Database = {
           case_3an?: number | null
           case_3bn?: number | null
           case_3cn?: boolean | null
+          case_3ex?: number | null
+          case_3pc?: number | null
+          case_3pe?: number | null
           case_3pi?: number | null
           case_3sb?: number | null
           case_3sg?: number | null
+          case_3sj?: number | null
+          case_3sk?: number | null
           case_3sl?: number | null
+          case_3tj?: number | null
+          case_3tk?: number | null
+          case_3tl?: number | null
+          case_3tm?: number | null
           case_3ua?: number | null
           case_3va?: number | null
+          case_3vc?: number | null
           case_3vg?: number | null
           case_3vh?: number | null
+          case_3vq?: number | null
+          case_3vr?: number | null
           case_3vt?: number | null
           case_3vw?: number | null
           case_3vz?: number | null

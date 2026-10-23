@@ -7,6 +7,8 @@ const VIDE: PlusValuesGainsDiversInput = {
   case3vt: null, case3pi: null, case3sb: null, case3we: null,
   case3an: null, case3bn: null, case3cn: false,
   case3vz: null, case3vw: null,
+  case3sj: null, case3tj: null, case3tk: null, case3sk: null, case3tl: null, case3tm: null, case3pc: null, case3pe: null,
+  case3vq: null, case3vr: null, case3vc: null, case3ex: null,
 };
 
 describe('calculerPlusValuesGainsDivers', () => {
@@ -58,5 +60,31 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(r.impotForfaitaire).toBe(0);
     expect(r.prelevementsSociaux).toBe(0);
     expect(r.revenuExonereRetenuPourRFR).toBe(50000);
+  });
+
+  it('BSPCE ≥ 3 ans : 3SJ, 3TJ − 3TK, 3TL − 3TM, 3PC au PFU ; abattements fixes au RFR ; PS sur le brut', () => {
+    const r = calculerPlusValuesGainsDivers({ ...VIDE, case3sj: 1000, case3tj: 3000, case3tk: 1000, case3tl: 2000, case3tm: 500, case3pc: 1500 }, false);
+    expect(r.impotForfaitaire).toBeCloseTo(6000 * 0.128);
+    expect(r.revenuExonereRetenuPourRFR).toBe(6000 + 1500);
+    expect(r.basePrelevementsSociaux).toBe(7500);
+  });
+
+  it('BSPCE ≥ 3 ans au barème sur option 2OP', () => {
+    expect(calculerPlusValuesGainsDivers({ ...VIDE, case3sj: 1000, case3pc: 500 }, true).totalNetImposable).toBe(1500);
+  });
+
+  it('BSPCE < 3 ans (3SK, 3PE) : 30 % même sur option 2OP, au RFR et aux PS', () => {
+    const r = calculerPlusValuesGainsDivers({ ...VIDE, case3sk: 1000, case3pe: 1000 }, true);
+    expect(r.totalNetImposable).toBe(0);
+    expect(r.impotForfaitaire).toBeCloseTo(600);
+    expect(r.revenuExonereRetenuPourRFR).toBe(2000);
+    expect(r.prelevementsSociaux).toBeCloseTo(2000 * 0.186);
+  });
+
+  it('3VQ et 3VC au RFR ; 3VC seul soumis aux PS ; 3VR et 3EX sans effet', () => {
+    const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vq: 4000, case3vc: 1000, case3vr: 700, case3ex: 300 }, false);
+    expect(r.impotForfaitaire).toBe(0);
+    expect(r.revenuExonereRetenuPourRFR).toBe(5000);
+    expect(r.basePrelevementsSociaux).toBe(1000);
   });
 });
