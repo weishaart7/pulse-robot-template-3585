@@ -1052,6 +1052,126 @@ export type Database = {
           },
         ]
       }
+      declaration_ifi_actifs: {
+        Row: {
+          asset_id: string | null
+          categorie: string | null
+          created_at: string
+          declaration_id: string
+          denomination: string | null
+          exclu: boolean
+          fraction_taxable: number | null
+          id: string
+          ordre: number
+          updated_at: string
+          user_id: string
+          valeur: number | null
+        }
+        Insert: {
+          asset_id?: string | null
+          categorie?: string | null
+          created_at?: string
+          declaration_id: string
+          denomination?: string | null
+          exclu?: boolean
+          fraction_taxable?: number | null
+          id?: string
+          ordre?: number
+          updated_at?: string
+          user_id: string
+          valeur?: number | null
+        }
+        Update: {
+          asset_id?: string | null
+          categorie?: string | null
+          created_at?: string
+          declaration_id?: string
+          denomination?: string | null
+          exclu?: boolean
+          fraction_taxable?: number | null
+          id?: string
+          ordre?: number
+          updated_at?: string
+          user_id?: string
+          valeur?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "declaration_ifi_actifs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaration_ifi_actifs_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "declarations_ifi"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      declaration_ifi_dettes: {
+        Row: {
+          categorie_bien: string | null
+          created_at: string
+          declaration_id: string
+          denomination: string | null
+          emprunt_id: string | null
+          exclue: boolean
+          id: string
+          ligne: string | null
+          montant: number | null
+          ordre: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          categorie_bien?: string | null
+          created_at?: string
+          declaration_id: string
+          denomination?: string | null
+          emprunt_id?: string | null
+          exclue?: boolean
+          id?: string
+          ligne?: string | null
+          montant?: number | null
+          ordre?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          categorie_bien?: string | null
+          created_at?: string
+          declaration_id?: string
+          denomination?: string | null
+          emprunt_id?: string | null
+          exclue?: boolean
+          id?: string
+          ligne?: string | null
+          montant?: number | null
+          ordre?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "declaration_ifi_dettes_declaration_id_fkey"
+            columns: ["declaration_id"]
+            isOneToOne: false
+            referencedRelation: "declarations_ifi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "declaration_ifi_dettes_emprunt_id_fkey"
+            columns: ["emprunt_id"]
+            isOneToOne: false
+            referencedRelation: "emprunts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       declarations_2044: {
         Row: {
           annee: number
@@ -1071,6 +1191,51 @@ export type Database = {
           annee?: number
           created_at?: string
           id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      declarations_ifi: {
+        Row: {
+          annee: number
+          biens_professionnels_exoneres: boolean
+          created_at: string
+          deduire_ifi_theorique: boolean
+          dons_france: number | null
+          dons_ue: number | null
+          id: string
+          impots_revenus_n1: number | null
+          revenus_hors_2042: number | null
+          revenus_n1: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee: number
+          biens_professionnels_exoneres?: boolean
+          created_at?: string
+          deduire_ifi_theorique?: boolean
+          dons_france?: number | null
+          dons_ue?: number | null
+          id?: string
+          impots_revenus_n1?: number | null
+          revenus_hors_2042?: number | null
+          revenus_n1?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee?: number
+          biens_professionnels_exoneres?: boolean
+          created_at?: string
+          deduire_ifi_theorique?: boolean
+          dons_france?: number | null
+          dons_ue?: number | null
+          id?: string
+          impots_revenus_n1?: number | null
+          revenus_hors_2042?: number | null
+          revenus_n1?: number | null
           updated_at?: string
           user_id?: string
         }
