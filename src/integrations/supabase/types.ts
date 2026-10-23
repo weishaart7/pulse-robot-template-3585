@@ -3044,114 +3044,552 @@ export type Database = {
       }
       revenus_non_salaries: {
         Row: {
+          case_5ak: number | null
+          case_5bk: number | null
+          case_5df: number | null
+          case_5ef: number | null
+          case_5ey: number | null
+          case_5fy: number | null
+          case_5ga: number | null
+          case_5gb: number | null
+          case_5gc: number | null
+          case_5gd: number | null
+          case_5ge: number | null
+          case_5gf: number | null
+          case_5gg: number | null
+          case_5gh: number | null
+          case_5gi: number | null
+          case_5gj: number | null
+          case_5ha: number | null
+          case_5hb: number | null
+          case_5hc: number | null
+          case_5he: number | null
+          case_5hf: number | null
+          case_5hk: number | null
+          case_5hp: number | null
           case_5hq: number | null
+          case_5hr: number | null
+          case_5hs: number | null
+          case_5ht: number | null
+          case_5hv: number | null
+          case_5hw: number | null
+          case_5hx: number | null
           case_5hy: number | null
+          case_5ia: number | null
+          case_5ib: number | null
+          case_5ic: number | null
+          case_5ie: number | null
+          case_5if: number | null
+          case_5ip: number | null
           case_5iq: number | null
+          case_5ir: number | null
+          case_5is: number | null
+          case_5it: number | null
+          case_5iu: number | null
+          case_5iv: number | null
+          case_5iw: number | null
+          case_5ix: number | null
           case_5iy: number | null
+          case_5jg: number | null
+          case_5jj: number | null
+          case_5jk: number | null
+          case_5jt: number | null
+          case_5ju: number | null
+          case_5kb: number | null
+          case_5kc: number | null
+          case_5ke: number | null
+          case_5kf: number | null
+          case_5kj: number | null
+          case_5kn: number | null
           case_5ko: number | null
           case_5kp: number | null
+          case_5kq: number | null
+          case_5kr: number | null
+          case_5kt: number | null
           case_5ku: number | null
+          case_5kv: number | null
+          case_5kw: number | null
+          case_5kx: number | null
+          case_5ky: number | null
+          case_5kz: number | null
+          case_5lb: number | null
+          case_5lc: number | null
+          case_5ld: number | null
+          case_5le: number | null
+          case_5lf: number | null
+          case_5lj: number | null
+          case_5ln: number | null
           case_5lo: number | null
           case_5lp: number | null
+          case_5lq: number | null
+          case_5lr: number | null
+          case_5lt: number | null
           case_5lu: number | null
+          case_5lv: number | null
+          case_5lw: number | null
+          case_5lx: number | null
+          case_5ly: number | null
+          case_5lz: number | null
+          case_5mt: number | null
+          case_5na: number | null
+          case_5nb: number | null
+          case_5nc: number | null
+          case_5ne: number | null
+          case_5nf: number | null
           case_5ng: number | null
           case_5nh: number | null
           case_5ni: number | null
           case_5nj: number | null
           case_5nk: number | null
           case_5nl: number | null
+          case_5nm: number | null
+          case_5nn: number | null
           case_5no: number | null
           case_5np: number | null
+          case_5nq: number | null
+          case_5nr: number | null
+          case_5nt: number | null
+          case_5nx: number | null
+          case_5ny: number | null
+          case_5oa: number | null
+          case_5ob: number | null
+          case_5oc: number | null
+          case_5oe: number | null
+          case_5of: number | null
           case_5og: number | null
           case_5oh: number | null
           case_5oi: number | null
           case_5oj: number | null
           case_5ok: number | null
           case_5ol: number | null
+          case_5om: number | null
+          case_5on: number | null
           case_5oo: number | null
           case_5op: number | null
+          case_5oq: number | null
+          case_5or: number | null
+          case_5ox: number | null
+          case_5oy: number | null
+          case_5qa: number | null
+          case_5qb: number | null
+          case_5qc: number | null
+          case_5qd: number | null
+          case_5qe: number | null
+          case_5qf: number | null
+          case_5qg: number | null
+          case_5qn: number | null
+          case_5qo: number | null
+          case_5qp: number | null
+          case_5qq: number | null
+          case_5ra: number | null
+          case_5rb: number | null
+          case_5rc: number | null
+          case_5rd: number | null
+          case_5re: number | null
+          case_5rf: number | null
+          case_5rg: number | null
+          case_5rn: number | null
+          case_5ro: number | null
+          case_5rp: number | null
+          case_5rq: number | null
+          case_5rr: number | null
+          case_5rw: number | null
+          case_5rz: number | null
+          case_5so: number | null
           case_5ta: number | null
           case_5tb: number | null
           case_5te: number | null
+          case_5th: number | null
           case_5ua: number | null
           case_5ub: number | null
           case_5ue: number | null
+          case_5uh: number | null
+          case_5ui: number | null
+          case_5ur: number | null
+          case_5vi: number | null
+          case_5vr: number | null
+          case_5we: number | null
+          case_5xa: number | null
+          case_5xb: number | null
+          case_5xe: number | null
+          case_5xj: number | null
+          case_5xn: number | null
+          case_5xo: number | null
+          case_5xs: number | null
+          case_5ya: number | null
+          case_5yb: number | null
+          case_5yj: number | null
+          case_5yn: number | null
+          case_5yo: number | null
+          case_5ys: number | null
           created_at: string
           id: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          case_5ak?: number | null
+          case_5bk?: number | null
+          case_5df?: number | null
+          case_5ef?: number | null
+          case_5ey?: number | null
+          case_5fy?: number | null
+          case_5ga?: number | null
+          case_5gb?: number | null
+          case_5gc?: number | null
+          case_5gd?: number | null
+          case_5ge?: number | null
+          case_5gf?: number | null
+          case_5gg?: number | null
+          case_5gh?: number | null
+          case_5gi?: number | null
+          case_5gj?: number | null
+          case_5ha?: number | null
+          case_5hb?: number | null
+          case_5hc?: number | null
+          case_5he?: number | null
+          case_5hf?: number | null
+          case_5hk?: number | null
+          case_5hp?: number | null
           case_5hq?: number | null
+          case_5hr?: number | null
+          case_5hs?: number | null
+          case_5ht?: number | null
+          case_5hv?: number | null
+          case_5hw?: number | null
+          case_5hx?: number | null
           case_5hy?: number | null
+          case_5ia?: number | null
+          case_5ib?: number | null
+          case_5ic?: number | null
+          case_5ie?: number | null
+          case_5if?: number | null
+          case_5ip?: number | null
           case_5iq?: number | null
+          case_5ir?: number | null
+          case_5is?: number | null
+          case_5it?: number | null
+          case_5iu?: number | null
+          case_5iv?: number | null
+          case_5iw?: number | null
+          case_5ix?: number | null
           case_5iy?: number | null
+          case_5jg?: number | null
+          case_5jj?: number | null
+          case_5jk?: number | null
+          case_5jt?: number | null
+          case_5ju?: number | null
+          case_5kb?: number | null
+          case_5kc?: number | null
+          case_5ke?: number | null
+          case_5kf?: number | null
+          case_5kj?: number | null
+          case_5kn?: number | null
           case_5ko?: number | null
           case_5kp?: number | null
+          case_5kq?: number | null
+          case_5kr?: number | null
+          case_5kt?: number | null
           case_5ku?: number | null
+          case_5kv?: number | null
+          case_5kw?: number | null
+          case_5kx?: number | null
+          case_5ky?: number | null
+          case_5kz?: number | null
+          case_5lb?: number | null
+          case_5lc?: number | null
+          case_5ld?: number | null
+          case_5le?: number | null
+          case_5lf?: number | null
+          case_5lj?: number | null
+          case_5ln?: number | null
           case_5lo?: number | null
           case_5lp?: number | null
+          case_5lq?: number | null
+          case_5lr?: number | null
+          case_5lt?: number | null
           case_5lu?: number | null
+          case_5lv?: number | null
+          case_5lw?: number | null
+          case_5lx?: number | null
+          case_5ly?: number | null
+          case_5lz?: number | null
+          case_5mt?: number | null
+          case_5na?: number | null
+          case_5nb?: number | null
+          case_5nc?: number | null
+          case_5ne?: number | null
+          case_5nf?: number | null
           case_5ng?: number | null
           case_5nh?: number | null
           case_5ni?: number | null
           case_5nj?: number | null
           case_5nk?: number | null
           case_5nl?: number | null
+          case_5nm?: number | null
+          case_5nn?: number | null
           case_5no?: number | null
           case_5np?: number | null
+          case_5nq?: number | null
+          case_5nr?: number | null
+          case_5nt?: number | null
+          case_5nx?: number | null
+          case_5ny?: number | null
+          case_5oa?: number | null
+          case_5ob?: number | null
+          case_5oc?: number | null
+          case_5oe?: number | null
+          case_5of?: number | null
           case_5og?: number | null
           case_5oh?: number | null
           case_5oi?: number | null
           case_5oj?: number | null
           case_5ok?: number | null
           case_5ol?: number | null
+          case_5om?: number | null
+          case_5on?: number | null
           case_5oo?: number | null
           case_5op?: number | null
+          case_5oq?: number | null
+          case_5or?: number | null
+          case_5ox?: number | null
+          case_5oy?: number | null
+          case_5qa?: number | null
+          case_5qb?: number | null
+          case_5qc?: number | null
+          case_5qd?: number | null
+          case_5qe?: number | null
+          case_5qf?: number | null
+          case_5qg?: number | null
+          case_5qn?: number | null
+          case_5qo?: number | null
+          case_5qp?: number | null
+          case_5qq?: number | null
+          case_5ra?: number | null
+          case_5rb?: number | null
+          case_5rc?: number | null
+          case_5rd?: number | null
+          case_5re?: number | null
+          case_5rf?: number | null
+          case_5rg?: number | null
+          case_5rn?: number | null
+          case_5ro?: number | null
+          case_5rp?: number | null
+          case_5rq?: number | null
+          case_5rr?: number | null
+          case_5rw?: number | null
+          case_5rz?: number | null
+          case_5so?: number | null
           case_5ta?: number | null
           case_5tb?: number | null
           case_5te?: number | null
+          case_5th?: number | null
           case_5ua?: number | null
           case_5ub?: number | null
           case_5ue?: number | null
+          case_5uh?: number | null
+          case_5ui?: number | null
+          case_5ur?: number | null
+          case_5vi?: number | null
+          case_5vr?: number | null
+          case_5we?: number | null
+          case_5xa?: number | null
+          case_5xb?: number | null
+          case_5xe?: number | null
+          case_5xj?: number | null
+          case_5xn?: number | null
+          case_5xo?: number | null
+          case_5xs?: number | null
+          case_5ya?: number | null
+          case_5yb?: number | null
+          case_5yj?: number | null
+          case_5yn?: number | null
+          case_5yo?: number | null
+          case_5ys?: number | null
           created_at?: string
           id?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          case_5ak?: number | null
+          case_5bk?: number | null
+          case_5df?: number | null
+          case_5ef?: number | null
+          case_5ey?: number | null
+          case_5fy?: number | null
+          case_5ga?: number | null
+          case_5gb?: number | null
+          case_5gc?: number | null
+          case_5gd?: number | null
+          case_5ge?: number | null
+          case_5gf?: number | null
+          case_5gg?: number | null
+          case_5gh?: number | null
+          case_5gi?: number | null
+          case_5gj?: number | null
+          case_5ha?: number | null
+          case_5hb?: number | null
+          case_5hc?: number | null
+          case_5he?: number | null
+          case_5hf?: number | null
+          case_5hk?: number | null
+          case_5hp?: number | null
           case_5hq?: number | null
+          case_5hr?: number | null
+          case_5hs?: number | null
+          case_5ht?: number | null
+          case_5hv?: number | null
+          case_5hw?: number | null
+          case_5hx?: number | null
           case_5hy?: number | null
+          case_5ia?: number | null
+          case_5ib?: number | null
+          case_5ic?: number | null
+          case_5ie?: number | null
+          case_5if?: number | null
+          case_5ip?: number | null
           case_5iq?: number | null
+          case_5ir?: number | null
+          case_5is?: number | null
+          case_5it?: number | null
+          case_5iu?: number | null
+          case_5iv?: number | null
+          case_5iw?: number | null
+          case_5ix?: number | null
           case_5iy?: number | null
+          case_5jg?: number | null
+          case_5jj?: number | null
+          case_5jk?: number | null
+          case_5jt?: number | null
+          case_5ju?: number | null
+          case_5kb?: number | null
+          case_5kc?: number | null
+          case_5ke?: number | null
+          case_5kf?: number | null
+          case_5kj?: number | null
+          case_5kn?: number | null
           case_5ko?: number | null
           case_5kp?: number | null
+          case_5kq?: number | null
+          case_5kr?: number | null
+          case_5kt?: number | null
           case_5ku?: number | null
+          case_5kv?: number | null
+          case_5kw?: number | null
+          case_5kx?: number | null
+          case_5ky?: number | null
+          case_5kz?: number | null
+          case_5lb?: number | null
+          case_5lc?: number | null
+          case_5ld?: number | null
+          case_5le?: number | null
+          case_5lf?: number | null
+          case_5lj?: number | null
+          case_5ln?: number | null
           case_5lo?: number | null
           case_5lp?: number | null
+          case_5lq?: number | null
+          case_5lr?: number | null
+          case_5lt?: number | null
           case_5lu?: number | null
+          case_5lv?: number | null
+          case_5lw?: number | null
+          case_5lx?: number | null
+          case_5ly?: number | null
+          case_5lz?: number | null
+          case_5mt?: number | null
+          case_5na?: number | null
+          case_5nb?: number | null
+          case_5nc?: number | null
+          case_5ne?: number | null
+          case_5nf?: number | null
           case_5ng?: number | null
           case_5nh?: number | null
           case_5ni?: number | null
           case_5nj?: number | null
           case_5nk?: number | null
           case_5nl?: number | null
+          case_5nm?: number | null
+          case_5nn?: number | null
           case_5no?: number | null
           case_5np?: number | null
+          case_5nq?: number | null
+          case_5nr?: number | null
+          case_5nt?: number | null
+          case_5nx?: number | null
+          case_5ny?: number | null
+          case_5oa?: number | null
+          case_5ob?: number | null
+          case_5oc?: number | null
+          case_5oe?: number | null
+          case_5of?: number | null
           case_5og?: number | null
           case_5oh?: number | null
           case_5oi?: number | null
           case_5oj?: number | null
           case_5ok?: number | null
           case_5ol?: number | null
+          case_5om?: number | null
+          case_5on?: number | null
           case_5oo?: number | null
           case_5op?: number | null
+          case_5oq?: number | null
+          case_5or?: number | null
+          case_5ox?: number | null
+          case_5oy?: number | null
+          case_5qa?: number | null
+          case_5qb?: number | null
+          case_5qc?: number | null
+          case_5qd?: number | null
+          case_5qe?: number | null
+          case_5qf?: number | null
+          case_5qg?: number | null
+          case_5qn?: number | null
+          case_5qo?: number | null
+          case_5qp?: number | null
+          case_5qq?: number | null
+          case_5ra?: number | null
+          case_5rb?: number | null
+          case_5rc?: number | null
+          case_5rd?: number | null
+          case_5re?: number | null
+          case_5rf?: number | null
+          case_5rg?: number | null
+          case_5rn?: number | null
+          case_5ro?: number | null
+          case_5rp?: number | null
+          case_5rq?: number | null
+          case_5rr?: number | null
+          case_5rw?: number | null
+          case_5rz?: number | null
+          case_5so?: number | null
           case_5ta?: number | null
           case_5tb?: number | null
           case_5te?: number | null
+          case_5th?: number | null
           case_5ua?: number | null
           case_5ub?: number | null
           case_5ue?: number | null
+          case_5uh?: number | null
+          case_5ui?: number | null
+          case_5ur?: number | null
+          case_5vi?: number | null
+          case_5vr?: number | null
+          case_5we?: number | null
+          case_5xa?: number | null
+          case_5xb?: number | null
+          case_5xe?: number | null
+          case_5xj?: number | null
+          case_5xn?: number | null
+          case_5xo?: number | null
+          case_5xs?: number | null
+          case_5ya?: number | null
+          case_5yb?: number | null
+          case_5yj?: number | null
+          case_5yn?: number | null
+          case_5yo?: number | null
+          case_5ys?: number | null
           created_at?: string
           id?: string
           updated_at?: string

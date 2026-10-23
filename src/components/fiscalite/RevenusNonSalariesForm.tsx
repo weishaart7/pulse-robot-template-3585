@@ -1,24 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useRevenusNonSalaries } from '@/hooks/useRevenusNonSalaries';
 import { RevenusNonSalaries } from '@/services/revenusNonSalariesService';
-import { calculerRevenusNonSalaries, RevenusNonSalariesInput } from '@/lib/fiscalite';
-import { DeclarantsHeader, MontantLigne, SousGroupe } from './DeclarationLigne';
+import { calculerRevenusNonSalaries, REVENUS_NON_SALARIES_VIDE, RevenusNonSalariesInput } from '@/lib/fiscalite';
+import { DeclarantsHeader, MontantEclateLigne, MontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
-const NON_SALARIES_VIDE: RevenusNonSalariesInput = {
-  case5ta: null, case5ua: null, case5tb: null, case5ub: null, case5te: null, case5ue: null,
-  case5ko: null, case5lo: null, case5kp: null, case5lp: null, case5no: null, case5oo: null,
-  case5np: null, case5op: null, case5ng: null, case5og: null, case5nh: null, case5oh: null,
-  case5ni: null, case5oi: null, case5nj: null, case5oj: null, case5nk: null, case5ok: null,
-  case5nl: null, case5ol: null, case5hq: null, case5iq: null, case5ku: null, case5lu: null,
-  case5hy: null, case5iy: null,
-};
 
 const TEXTE_ALERTE = {
   ventes_au_dela_du_seuil: 'Ventes au-delà de 188 700 € pour un déclarant : le régime micro ne s\'applique plus.',
   services_au_dela_du_seuil: 'Prestations de services et BNC au-delà de 77 700 € pour un déclarant : le régime micro ne s\'applique plus.',
   meubles_au_dela_du_seuil: 'Locations meublées non professionnelles au-delà de 77 700 € pour le foyer : régime réel obligatoire.',
   meubles_non_classes_au_dela_du_seuil: 'Meublés de tourisme non classés au-delà de 15 000 € pour le foyer : régime réel obligatoire.',
+  ba_micro_au_dela_du_seuil: 'Recettes agricoles au-delà de 120 000 € (moyenne triennale) pour un déclarant : le micro-BA ne s\'applique plus.',
 } as const;
 
 interface RevenusNonSalariesFormProps {
@@ -27,7 +20,7 @@ interface RevenusNonSalariesFormProps {
 
 export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps) => {
   const { data, loading, saving, saveData } = useRevenusNonSalaries();
-  const [rns, setRns] = useState<RevenusNonSalariesInput>(NON_SALARIES_VIDE);
+  const [rns, setRns] = useState<RevenusNonSalariesInput>(REVENUS_NON_SALARIES_VIDE);
   const [rnsId, setRnsId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -56,7 +49,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
 
   return (
     <Cadre2042 titre="Revenus des professions non salariées"
-      description="Cadre 5 (2042-C-PRO), régimes micro : recettes brutes, sans déduire l'abattement, calculé ici (minimum 305 €)."
+      description="Cadre 5 (2042-C-PRO). Micro : recettes brutes, abattement calculé ici (minimum 305 €). Réel : bénéfice ou déficit issu de la comptabilité."
       saving={saving} onSave={handleSubmit}>
         <DeclarantsHeader />
         {alertes.map(a => (
@@ -91,6 +84,146 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
         <SousGroupe titre="Revenus non commerciaux — micro-BNC">
           <MontantLigne label="Professionnels : recettes brutes" extra="abattement 34 %" code1="5HQ" code2="5IQ" value1={rns.case5hq} value2={rns.case5iq} onChange1={v => update('case5hq', v)} onChange2={v => update('case5iq', v)} />
           <MontantLigne label="Non professionnels : recettes brutes" extra="abattement 34 %" code1="5KU" code2="5LU" value1={rns.case5ku} value2={rns.case5lu} onChange1={v => update('case5ku', v)} onChange2={v => update('case5lu', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BIC professionnels — plus-values et revenus exonérés du micro-BIC">
+          <MontantLigne label="Plus-values nettes à court terme" code1="5KX" code2="5LX" value1={rns.case5kx} value2={rns.case5lx} onChange1={v => update('case5kx', v)} onChange2={v => update('case5lx', v)} />
+          <MontantLigne label="Moins-values nettes à court terme" code1="5KJ" code2="5LJ" value1={rns.case5kj} value2={rns.case5lj} onChange1={v => update('case5kj', v)} onChange2={v => update('case5lj', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5KQ" code2="5LQ" value1={rns.case5kq} value2={rns.case5lq} onChange1={v => update('case5kq', v)} onChange2={v => update('case5lq', v)} />
+          <MontantLigne label="Moins-values nettes à long terme" code1="5KR" code2="5LR" value1={rns.case5kr} value2={rns.case5lr} onChange1={v => update('case5kr', v)} onChange2={v => update('case5lr', v)} />
+          <MontantLigne label="Revenus nets exonérés (régimes zonés)" code1="5KN" code2="5LN" value1={rns.case5kn} value2={rns.case5ln} onChange1={v => update('case5kn', v)} onChange2={v => update('case5ln', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BIC professionnels — régime du bénéfice réel">
+          <MontantLigne label="Revenus imposables" code1="5KC" code2="5LC" value1={rns.case5kc} value2={rns.case5lc} onChange1={v => update('case5kc', v)} onChange2={v => update('case5lc', v)} />
+          <MontantLigne label="Déficits" code1="5KF" code2="5LF" value1={rns.case5kf} value2={rns.case5lf} onChange1={v => update('case5kf', v)} onChange2={v => update('case5lf', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5KE" code2="5LE" value1={rns.case5ke} value2={rns.case5le} onChange1={v => update('case5ke', v)} onChange2={v => update('case5le', v)} />
+          <MontantLigne label="Produits de brevets taxables à 10 %" code1="5UI" code2="5VI" value1={rns.case5ui} value2={rns.case5vi} onChange1={v => update('case5ui', v)} onChange2={v => update('case5vi', v)} />
+          <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5DF" code2="5EF" value1={rns.case5df} value2={rns.case5ef} onChange1={v => update('case5df', v)} onChange2={v => update('case5ef', v)} />
+          <MontantLigne label="Revenus exonérés (régimes zonés)" code1="5KB" code2="5LB" value1={rns.case5kb} value2={rns.case5lb} onChange1={v => update('case5kb', v)} onChange2={v => update('case5lb', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BIC non professionnels — plus-values et revenus exonérés du micro-BIC">
+          <MontantLigne label="Plus-values nettes à court terme" code1="5NX" code2="5OX" value1={rns.case5nx} value2={rns.case5ox} onChange1={v => update('case5nx', v)} onChange2={v => update('case5ox', v)} />
+          <MontantLigne label="Moins-values nettes à court terme" code1="5IU" code2="5RZ" value1={rns.case5iu} value2={rns.case5rz} onChange1={v => update('case5iu', v)} onChange2={v => update('case5rz', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5NQ" code2="5OQ" value1={rns.case5nq} value2={rns.case5oq} onChange1={v => update('case5nq', v)} onChange2={v => update('case5oq', v)} />
+          <MontantLigne label="Moins-values nettes à long terme" code1="5NR" code2="5OR" value1={rns.case5nr} value2={rns.case5or} onChange1={v => update('case5nr', v)} onChange2={v => update('case5or', v)} />
+          <MontantLigne label="Revenus nets exonérés (régimes zonés)" code1="5NN" code2="5ON" value1={rns.case5nn} value2={rns.case5on} onChange1={v => update('case5nn', v)} onChange2={v => update('case5on', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BIC non professionnels — régime du bénéfice réel" aide="Déficits imputables uniquement sur les BIC non professionnels des six années suivantes.">
+          <MontantLigne label="Revenus imposables" code1="5NC" code2="5OC" value1={rns.case5nc} value2={rns.case5oc} onChange1={v => update('case5nc', v)} onChange2={v => update('case5oc', v)} />
+          <MontantLigne label="Déficits" code1="5NF" code2="5OF" value1={rns.case5nf} value2={rns.case5of} onChange1={v => update('case5nf', v)} onChange2={v => update('case5of', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5NE" code2="5OE" value1={rns.case5ne} value2={rns.case5oe} onChange1={v => update('case5ne', v)} onChange2={v => update('case5oe', v)} />
+          <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5UR" code2="5VR" value1={rns.case5ur} value2={rns.case5vr} onChange1={v => update('case5ur', v)} onChange2={v => update('case5vr', v)} />
+          <MontantLigne label="Revenus exonérés (régimes zonés)" code1="5NB" code2="5OB" value1={rns.case5nb} value2={rns.case5ob} onChange1={v => update('case5nb', v)} onChange2={v => update('case5ob', v)} />
+          <MontantEclateLigne
+            label="Déficits des années antérieures non encore déduits"
+            items={[
+              { label: '2019', code: '5RN', value: rns.case5rn, onChange: v => update('case5rn', v) },
+              { label: '2020', code: '5RO', value: rns.case5ro, onChange: v => update('case5ro', v) },
+              { label: '2021', code: '5RP', value: rns.case5rp, onChange: v => update('case5rp', v) },
+              { label: '2022', code: '5RQ', value: rns.case5rq, onChange: v => update('case5rq', v) },
+              { label: '2023', code: '5RR', value: rns.case5rr, onChange: v => update('case5rr', v) },
+              { label: '2024', code: '5RW', value: rns.case5rw, onChange: v => update('case5rw', v) },
+            ]}
+          />
+        </SousGroupe>
+
+        <SousGroupe titre="Locations meublées non professionnelles — régime du bénéfice réel" aide="Déficits imputables uniquement sur les revenus des locations meublées non professionnelles des dix années suivantes.">
+          <MontantLigne label="Revenus imposables" code1="5NA" code2="5OA" value1={rns.case5na} value2={rns.case5oa} onChange1={v => update('case5na', v)} onChange2={v => update('case5oa', v)} />
+          <MontantLigne label="Revenus soumis aux cotisations sociales" code1="5NM" code2="5OM" value1={rns.case5nm} value2={rns.case5om} onChange1={v => update('case5nm', v)} onChange2={v => update('case5om', v)} />
+          <MontantLigne label="Déficits" code1="5NY" code2="5OY" value1={rns.case5ny} value2={rns.case5oy} onChange1={v => update('case5ny', v)} onChange2={v => update('case5oy', v)} />
+          <MontantLigne label="Déficits relevant des organismes de sécurité sociale" code1="5WE" code2="5XE" value1={rns.case5we} value2={rns.case5xe} onChange1={v => update('case5we', v)} onChange2={v => update('case5xe', v)} />
+          <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5EY" code2="5FY" value1={rns.case5ey} value2={rns.case5fy} onChange1={v => update('case5ey', v)} onChange2={v => update('case5fy', v)} />
+          <MontantEclateLigne
+            label="Déficits des années antérieures non encore déduits"
+            items={[
+              { label: '2015', code: '5GA', value: rns.case5ga, onChange: v => update('case5ga', v) },
+              { label: '2016', code: '5GB', value: rns.case5gb, onChange: v => update('case5gb', v) },
+              { label: '2017', code: '5GC', value: rns.case5gc, onChange: v => update('case5gc', v) },
+              { label: '2018', code: '5GD', value: rns.case5gd, onChange: v => update('case5gd', v) },
+              { label: '2019', code: '5GE', value: rns.case5ge, onChange: v => update('case5ge', v) },
+              { label: '2020', code: '5GF', value: rns.case5gf, onChange: v => update('case5gf', v) },
+              { label: '2021', code: '5GG', value: rns.case5gg, onChange: v => update('case5gg', v) },
+              { label: '2022', code: '5GH', value: rns.case5gh, onChange: v => update('case5gh', v) },
+              { label: '2023', code: '5GI', value: rns.case5gi, onChange: v => update('case5gi', v) },
+              { label: '2024', code: '5GJ', value: rns.case5gj, onChange: v => update('case5gj', v) },
+            ]}
+          />
+        </SousGroupe>
+
+        <SousGroupe titre="BNC professionnels — plus-values et revenus exonérés du micro-BNC">
+          <MontantLigne label="Plus-values nettes à court terme" code1="5HV" code2="5IV" value1={rns.case5hv} value2={rns.case5iv} onChange1={v => update('case5hv', v)} onChange2={v => update('case5iv', v)} />
+          <MontantLigne label="Moins-values nettes à court terme" code1="5KZ" code2="5LZ" value1={rns.case5kz} value2={rns.case5lz} onChange1={v => update('case5kz', v)} onChange2={v => update('case5lz', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5HR" code2="5IR" value1={rns.case5hr} value2={rns.case5ir} onChange1={v => update('case5hr', v)} onChange2={v => update('case5ir', v)} />
+          <MontantLigne label="Moins-values nettes à long terme" code1="5HS" code2="5IS" value1={rns.case5hs} value2={rns.case5is} onChange1={v => update('case5hs', v)} onChange2={v => update('case5is', v)} />
+          <MontantLigne label="Revenus nets exonérés (régimes zonés)" code1="5HP" code2="5IP" value1={rns.case5hp} value2={rns.case5ip} onChange1={v => update('case5hp', v)} onChange2={v => update('case5ip', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BNC professionnels — régime de la déclaration contrôlée">
+          <MontantLigne label="Revenus imposables" code1="5QC" code2="5RC" value1={rns.case5qc} value2={rns.case5rc} onChange1={v => update('case5qc', v)} onChange2={v => update('case5rc', v)} />
+          <MontantLigne label="Déficits" code1="5QE" code2="5RE" value1={rns.case5qe} value2={rns.case5re} onChange1={v => update('case5qe', v)} onChange2={v => update('case5re', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5QD" code2="5RD" value1={rns.case5qd} value2={rns.case5rd} onChange1={v => update('case5qd', v)} onChange2={v => update('case5rd', v)} />
+          <MontantLigne label="Produits de brevets taxables à 10 %" code1="5QA" code2="5RA" value1={rns.case5qa} value2={rns.case5ra} onChange1={v => update('case5qa', v)} onChange2={v => update('case5ra', v)} />
+          <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5XJ" code2="5YJ" value1={rns.case5xj} value2={rns.case5yj} onChange1={v => update('case5xj', v)} onChange2={v => update('case5yj', v)} />
+          <MontantLigne label="Revenus exonérés (régimes zonés)" code1="5QB" code2="5RB" value1={rns.case5qb} value2={rns.case5rb} onChange1={v => update('case5qb', v)} onChange2={v => update('case5rb', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BNC non professionnels — plus-values et revenus exonérés du micro-BNC">
+          <MontantLigne label="Plus-values nettes à court terme" code1="5KY" code2="5LY" value1={rns.case5ky} value2={rns.case5ly} onChange1={v => update('case5ky', v)} onChange2={v => update('case5ly', v)} />
+          <MontantLigne label="Moins-values nettes à court terme" code1="5JU" code2="5LD" value1={rns.case5ju} value2={rns.case5ld} onChange1={v => update('case5ju', v)} onChange2={v => update('case5ld', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5KV" code2="5LV" value1={rns.case5kv} value2={rns.case5lv} onChange1={v => update('case5kv', v)} onChange2={v => update('case5lv', v)} />
+          <MontantLigne label="Moins-values nettes à long terme" code1="5KW" code2="5LW" value1={rns.case5kw} value2={rns.case5lw} onChange1={v => update('case5kw', v)} onChange2={v => update('case5lw', v)} />
+          <MontantLigne label="Revenus nets exonérés (régimes zonés)" code1="5TH" code2="5UH" value1={rns.case5th} value2={rns.case5uh} onChange1={v => update('case5th', v)} onChange2={v => update('case5uh', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="BNC non professionnels — régime de la déclaration contrôlée" aide="Déficits imputables uniquement sur les BNC non professionnels des six années suivantes.">
+          <MontantLigne label="Revenus imposables" code1="5JG" code2="5RF" value1={rns.case5jg} value2={rns.case5rf} onChange1={v => update('case5jg', v)} onChange2={v => update('case5rf', v)} />
+          <MontantLigne label="Déficits" code1="5JJ" code2="5RG" value1={rns.case5jj} value2={rns.case5rg} onChange1={v => update('case5jj', v)} onChange2={v => update('case5rg', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5SO" code2="5NT" value1={rns.case5so} value2={rns.case5nt} onChange1={v => update('case5so', v)} onChange2={v => update('case5nt', v)} />
+          <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5XS" code2="5YS" value1={rns.case5xs} value2={rns.case5ys} onChange1={v => update('case5xs', v)} onChange2={v => update('case5ys', v)} />
+          <MontantLigne label="Revenus exonérés (régimes zonés)" code1="5HK" code2="5JK" value1={rns.case5hk} value2={rns.case5jk} onChange1={v => update('case5hk', v)} onChange2={v => update('case5jk', v)} />
+          <MontantEclateLigne
+            label="Déficits des années antérieures non encore déduits"
+            items={[
+              { label: '2019', code: '5HT', value: rns.case5ht, onChange: v => update('case5ht', v) },
+              { label: '2020', code: '5IT', value: rns.case5it, onChange: v => update('case5it', v) },
+              { label: '2021', code: '5JT', value: rns.case5jt, onChange: v => update('case5jt', v) },
+              { label: '2022', code: '5KT', value: rns.case5kt, onChange: v => update('case5kt', v) },
+              { label: '2023', code: '5LT', value: rns.case5lt, onChange: v => update('case5lt', v) },
+              { label: '2024', code: '5MT', value: rns.case5mt, onChange: v => update('case5mt', v) },
+            ]}
+          />
+        </SousGroupe>
+
+        <SousGroupe titre="Bénéfices agricoles — régime micro-BA" aide="Recettes brutes : abattement de 87 % calculé ici, minimum 305 €.">
+          <MontantLigne label="Recettes brutes (abattement 87 %)" code1="5XB" code2="5YB" value1={rns.case5xb} value2={rns.case5yb} onChange1={v => update('case5xb', v)} onChange2={v => update('case5yb', v)} />
+          <MontantLigne label="Plus-values nettes à court terme" code1="5HW" code2="5IW" value1={rns.case5hw} value2={rns.case5iw} onChange1={v => update('case5hw', v)} onChange2={v => update('case5iw', v)} />
+          <MontantLigne label="Moins-values nettes à court terme" code1="5XO" code2="5YO" value1={rns.case5xo} value2={rns.case5yo} onChange1={v => update('case5xo', v)} onChange2={v => update('case5yo', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5HX" code2="5IX" value1={rns.case5hx} value2={rns.case5ix} onChange1={v => update('case5hx', v)} onChange2={v => update('case5ix', v)} />
+          <MontantLigne label="Moins-values nettes à long terme" code1="5XN" code2="5YN" value1={rns.case5xn} value2={rns.case5yn} onChange1={v => update('case5xn', v)} onChange2={v => update('case5yn', v)} />
+          <MontantLigne label="Revenus nets exonérés (régimes zonés)" code1="5XA" code2="5YA" value1={rns.case5xa} value2={rns.case5ya} onChange1={v => update('case5xa', v)} onChange2={v => update('case5ya', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Bénéfices agricoles — régime du bénéfice réel" aide="Le déficit de l'année ne s'impute sur le revenu global que si les autres revenus nets du foyer n'excèdent pas 128 826 €.">
+          <MontantLigne label="Revenus imposables" code1="5HC" code2="5IC" value1={rns.case5hc} value2={rns.case5ic} onChange1={v => update('case5hc', v)} onChange2={v => update('case5ic', v)} />
+          <MontantLigne label="Déficits" code1="5HF" code2="5IF" value1={rns.case5hf} value2={rns.case5if} onChange1={v => update('case5hf', v)} onChange2={v => update('case5if', v)} />
+          <MontantLigne label="Plus-values nettes à long terme" code1="5HE" code2="5IE" value1={rns.case5he} value2={rns.case5ie} onChange1={v => update('case5he', v)} onChange2={v => update('case5ie', v)} />
+          <MontantLigne label="Produits de brevets taxables à 10 %" code1="5HA" code2="5IA" value1={rns.case5ha} value2={rns.case5ia} onChange1={v => update('case5ha', v)} onChange2={v => update('case5ia', v)} />
+          <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5AK" code2="5BK" value1={rns.case5ak} value2={rns.case5bk} onChange1={v => update('case5ak', v)} onChange2={v => update('case5bk', v)} />
+          <MontantLigne label="Revenus exonérés (régimes zonés)" code1="5HB" code2="5IB" value1={rns.case5hb} value2={rns.case5ib} onChange1={v => update('case5hb', v)} onChange2={v => update('case5ib', v)} />
+          <MontantEclateLigne
+            label="Déficits des années antérieures non encore déduits"
+            items={[
+              { label: '2019', code: '5QF', value: rns.case5qf, onChange: v => update('case5qf', v) },
+              { label: '2020', code: '5QG', value: rns.case5qg, onChange: v => update('case5qg', v) },
+              { label: '2021', code: '5QN', value: rns.case5qn, onChange: v => update('case5qn', v) },
+              { label: '2022', code: '5QO', value: rns.case5qo, onChange: v => update('case5qo', v) },
+              { label: '2023', code: '5QP', value: rns.case5qp, onChange: v => update('case5qp', v) },
+              { label: '2024', code: '5QQ', value: rns.case5qq, onChange: v => update('case5qq', v) },
+            ]}
+          />
         </SousGroupe>
 
         <SousGroupe titre="BA, BIC, BNC à imposer aux prélèvements sociaux" aide="Revenus non professionnels non soumis aux cotisations sociales, hors locations meublées : montant net après abattement (micro-BIC 71 % ou 50 %, micro-BNC 34 %).">

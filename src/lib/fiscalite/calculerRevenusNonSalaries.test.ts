@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { calculerRevenusNonSalaries, netMicro } from './calculerRevenusNonSalaries';
-import { RevenusNonSalariesInput } from './types';
+import { calculerRevenusNonSalaries, netMicro, REVENUS_NON_SALARIES_VIDE } from './calculerRevenusNonSalaries';
 
-const VIDE: RevenusNonSalariesInput = { case5ta: null, case5ua: null, case5tb: null, case5ub: null, case5te: null, case5ue: null, case5ko: null, case5lo: null, case5kp: null, case5lp: null, case5no: null, case5oo: null, case5np: null, case5op: null, case5ng: null, case5og: null, case5nh: null, case5oh: null, case5ni: null, case5oi: null, case5nj: null, case5oj: null, case5nk: null, case5ok: null, case5nl: null, case5ol: null, case5hq: null, case5iq: null, case5ku: null, case5lu: null, case5hy: null, case5iy: null };
+const VIDE = REVENUS_NON_SALARIES_VIDE;
 
 describe('calculerRevenusNonSalaries', () => {
   it('abattements micro : 71 % ventes, 50 % services, 34 % BNC, minimum 305 €', () => {
@@ -35,5 +34,39 @@ describe('calculerRevenusNonSalaries', () => {
     expect(calculerRevenusNonSalaries({ ...VIDE, case5kp: 40000, case5hq: 40000 }).alertes).toEqual(['services_au_dela_du_seuil']);
     expect(calculerRevenusNonSalaries({ ...VIDE, case5nh: 8000, case5oh: 8000 }).alertes).toEqual(['meubles_non_classes_au_dela_du_seuil']);
     expect(calculerRevenusNonSalaries({ ...VIDE, case5ko: 190000 }).alertes).toEqual(['ventes_au_dela_du_seuil']);
+  });
+
+  it('réel professionnel : bénéfices et déficits sur le revenu global, PV court terme au barème', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5kc: 30000, case5qe: 40000, case5kx: 1000, case5kj: 500 });
+    expect(r.totalNetImposable).toBe(30000 - 40000 + 1000 - 500);
+  });
+
+  it('non professionnel : déficits et déficits antérieurs limités à la catégorie, plancher 0', () => {
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5nc: 5000, case5nf: 3000, case5rw: 4000 }).totalNetImposable).toBe(0);
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5jg: 8000, case5jj: 3000 }).totalNetImposable).toBe(5000);
+  });
+
+  it('LMNP réel : déficits sur les revenus LMNP, PS sur le net hors cotisations', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5na: 10000, case5ny: 4000, case5nm: 3000 });
+    expect(r.totalNetImposable).toBe(9000);
+    expect(r.basePrelevementsSociaux).toBe(6000);
+  });
+
+  it('BA : micro 87 %, déficits antérieurs sur les BA, déficit de l\'année transmis à part', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5xb: 20000, case5hc: 10000, case5qq: 3000, case5if: 7000 });
+    expect(r.totalNetImposable).toBe(2600 + 10000 - 3000);
+    expect(r.deficitAgricole).toBe(7000);
+  });
+
+  it('PV long terme 12,8 % avec PS 18,6 % ; brevets 10 % sans PS ; exonérés zonés au RFR', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5ke: 10000, case5ui: 5000, case5kn: 2000, case5kr: 900 });
+    expect(r.totalNetImposable).toBe(0);
+    expect(r.impotForfaitaire).toBeCloseTo(1280 + 500);
+    expect(r.basePrelevementsSociaux).toBe(10000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(17000);
+  });
+
+  it('source étrangère avec crédit d\'impôt : hors barème, au taux effectif', () => {
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5df: 4000, case5xs: 1000 }).revenuCreditImpotEgalImpotFrancais).toBe(5000);
   });
 });

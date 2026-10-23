@@ -31,5 +31,5 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'capitaux-mobiliers', groupe: 'Cadre 2 · Capitaux mobiliers', label: 'Valeurs et capitaux mobiliers', icon: Coins, component: RevenusCapitauxMobiliersForm },
   { id: 'plus-values', groupe: 'Cadre 3 · Plus-values', label: 'Plus-values et gains divers', icon: TrendingUp, component: PlusValuesGainsDiversForm },
   { id: 'revenus-fonciers', groupe: 'Cadre 4 · Revenus fonciers', label: 'Revenus fonciers', icon: Home, component: RevenusFonciersForm },
-  { id: 'non-salaries', groupe: 'Cadre 5 · Professions non salariées', label: 'Régimes micro (2042-C-PRO)', icon: Briefcase, component: RevenusNonSalariesForm },
+  { id: 'non-salaries', groupe: 'Cadre 5 · Professions non salariées', label: 'BIC, BNC, BA (2042-C-PRO)', icon: Briefcase, component: RevenusNonSalariesForm },
 ];

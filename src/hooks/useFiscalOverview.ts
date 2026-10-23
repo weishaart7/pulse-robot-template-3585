@@ -45,7 +45,8 @@ import {
   RevenusCapitauxMobiliersInput,
   RevenusFonciers2042Input,
   RevenusFonciers2042Result,
-  RevenusNonSalariesInput,
+  REVENUS_NON_SALARIES_VIDE,
+  SEUIL_DEFICIT_AGRICOLE,
   RevenusNonSalariesResult,
   RevenusExoneresTauxEffectifInput,
   RevenusSalairesInput,
@@ -152,15 +153,6 @@ const REVENUS_FONCIERS_2042_PAR_DEFAUT: RevenusFonciers2042Input = {
   case4by: null, case4ea: null, case4eb: null,
 };
 
-const REVENUS_NON_SALARIES_PAR_DEFAUT: RevenusNonSalariesInput = {
-  case5ta: null, case5ua: null, case5tb: null, case5ub: null, case5te: null, case5ue: null,
-  case5ko: null, case5lo: null, case5kp: null, case5lp: null, case5no: null, case5oo: null,
-  case5np: null, case5op: null, case5ng: null, case5og: null, case5nh: null, case5oh: null,
-  case5ni: null, case5oi: null, case5nj: null, case5oj: null, case5nk: null, case5ok: null,
-  case5nl: null, case5ol: null, case5hq: null, case5iq: null, case5ku: null, case5lu: null,
-  case5hy: null, case5iy: null,
-};
-
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
 export const ANNEE_REVENUS = 2025;
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
@@ -209,6 +201,8 @@ export interface FiscalOverview {
   revenusFonciers2042: RevenusFonciers2042Result;
   /** Cadre 5 (2042-C-PRO), régimes micro — voir calculerRevenusNonSalaries.ts. */
   revenusNonSalaries: RevenusNonSalariesResult;
+  /** Déficit agricole de l'année retranché du revenu global (0 si les autres revenus nets dépassent SEUIL_DEFICIT_AGRICOLE). */
+  deficitAgricoleImpute: number;
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
   impot: ImpotResult;
@@ -314,19 +308,23 @@ export function useFiscalOverview(): FiscalOverview {
     const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
     const parts = calculerPartsFiscales(foyerInput);
     const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
-    const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_PAR_DEFAUT);
+    const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE);
     const revenusFonciers2042 = calculerRevenusFonciers2042(
       fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT,
       revenusFonciers?.revenuFoncierNetImposable ?? null,
     );
-    const revenuImposableTotal = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
+    const revenuImposableAvantDeficitAgricole = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
       + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable
       + plusValuesGainsDivers.totalNetImposable
       + (revenusFonciers?.incidenceRevenuImposable ?? 0)
       + revenusFonciers2042.totalNetImposable - revenusFonciers2042.deductionReel4BL
       + revenusNonSalaries.totalNetImposable;
+    // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
+    const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= SEUIL_DEFICIT_AGRICOLE ? revenusNonSalaries.deficitAgricole : 0;
+    const revenuImposableTotal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
     const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
-      + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire;
+      + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
+      + revenusNonSalaries.impotForfaitaire;
     const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
     // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
     // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
@@ -335,7 +333,7 @@ export function useFiscalOverview(): FiscalOverview {
       + revenuSalaires.revenuCreditImpotEgalImpotFrancais
       + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
       + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
-      + revenusNonSalaries.revenuExonereTauxEffectif;
+      + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais;
     const impot = calculerImpot(
       revenuImposableTotal,
       parts,
@@ -348,7 +346,8 @@ export function useFiscalOverview(): FiscalOverview {
       revenuCapitauxMobiliers.creditImpotEtranger2AB,
       revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
       revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
-        + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR,
+        + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
+        + revenusNonSalaries.revenuExonereRetenuPourRFR,
     );
 
     const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
@@ -381,6 +380,7 @@ export function useFiscalOverview(): FiscalOverview {
       revenusFonciers,
       revenusFonciers2042,
       revenusNonSalaries,
+      deficitAgricoleImpute,
       impot,
       plafonnementIFI,
       ifi,

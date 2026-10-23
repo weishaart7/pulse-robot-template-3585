@@ -319,4 +319,239 @@ export interface RevenusNonSalariesInput {
   /** BA, BIC, BNC à imposer aux prélèvements sociaux : revenus nets */
   case5hy: number | null;
   case5iy: number | null;
+  // Phase 5.2 : régimes réels, LMNP au réel, bénéfices agricoles, plus-values professionnelles
+  /** BA micro : recettes brutes (abattement 87 %) */
+  case5xb: number | null;
+  case5yb: number | null;
+  /** BA micro : revenus nets exonérés (régimes zonés) */
+  case5xa: number | null;
+  case5ya: number | null;
+  /** BA micro : plus-values nettes à court terme */
+  case5hw: number | null;
+  case5iw: number | null;
+  /** BA micro : moins-values nettes à court terme */
+  case5xo: number | null;
+  case5yo: number | null;
+  /** BA micro : plus-values nettes à long terme */
+  case5hx: number | null;
+  case5ix: number | null;
+  /** BA micro : moins-values nettes à long terme */
+  case5xn: number | null;
+  case5yn: number | null;
+  /** BA réel : revenus exonérés (régimes zonés) */
+  case5hb: number | null;
+  case5ib: number | null;
+  /** BA réel : revenus imposables */
+  case5hc: number | null;
+  case5ic: number | null;
+  /** BA réel : revenus de source étrangère avec crédit d'impôt égal à l'impôt français */
+  case5ak: number | null;
+  case5bk: number | null;
+  /** BA réel : produits de brevets taxables à 10 % */
+  case5ha: number | null;
+  case5ia: number | null;
+  /** BA réel : déficits */
+  case5hf: number | null;
+  case5if: number | null;
+  /** BA réel : plus-values nettes à long terme */
+  case5he: number | null;
+  case5ie: number | null;
+  /** BIC pro micro : revenus nets exonérés (régimes zonés) */
+  case5kn: number | null;
+  case5ln: number | null;
+  /** BIC pro micro : plus-values nettes à court terme */
+  case5kx: number | null;
+  case5lx: number | null;
+  /** BIC pro micro : moins-values nettes à court terme */
+  case5kj: number | null;
+  case5lj: number | null;
+  /** BIC pro micro : plus-values nettes à long terme */
+  case5kq: number | null;
+  case5lq: number | null;
+  /** BIC pro micro : moins-values nettes à long terme */
+  case5kr: number | null;
+  case5lr: number | null;
+  /** BIC pro réel : revenus exonérés (régimes zonés) */
+  case5kb: number | null;
+  case5lb: number | null;
+  /** BIC pro réel : revenus imposables */
+  case5kc: number | null;
+  case5lc: number | null;
+  /** BIC pro réel : revenus de source étrangère avec crédit d'impôt égal à l'impôt français */
+  case5df: number | null;
+  case5ef: number | null;
+  /** BIC pro réel : produits de brevets taxables à 10 % */
+  case5ui: number | null;
+  case5vi: number | null;
+  /** BIC pro réel : déficits */
+  case5kf: number | null;
+  case5lf: number | null;
+  /** BIC pro réel : plus-values nettes à long terme */
+  case5ke: number | null;
+  case5le: number | null;
+  /** BIC non pro micro : revenus nets exonérés (régimes zonés) */
+  case5nn: number | null;
+  case5on: number | null;
+  /** BIC non pro micro : plus-values nettes à court terme */
+  case5nx: number | null;
+  case5ox: number | null;
+  /** BIC non pro micro : moins-values nettes à court terme */
+  case5iu: number | null;
+  case5rz: number | null;
+  /** BIC non pro micro : plus-values nettes à long terme */
+  case5nq: number | null;
+  case5oq: number | null;
+  /** BIC non pro micro : moins-values nettes à long terme */
+  case5nr: number | null;
+  case5or: number | null;
+  /** BIC non pro réel : revenus exonérés (régimes zonés) */
+  case5nb: number | null;
+  case5ob: number | null;
+  /** BIC non pro réel : revenus imposables */
+  case5nc: number | null;
+  case5oc: number | null;
+  /** BIC non pro réel : revenus de source étrangère avec crédit d'impôt égal à l'impôt français */
+  case5ur: number | null;
+  case5vr: number | null;
+  /** BIC non pro réel : déficits */
+  case5nf: number | null;
+  case5of: number | null;
+  /** BIC non pro réel : plus-values nettes à long terme */
+  case5ne: number | null;
+  case5oe: number | null;
+  /** LMNP réel : revenus imposables */
+  case5na: number | null;
+  case5oa: number | null;
+  /** LMNP réel : revenus de source étrangère avec crédit d'impôt égal à l'impôt français */
+  case5ey: number | null;
+  case5fy: number | null;
+  /** LMNP réel : revenus soumis aux cotisations sociales */
+  case5nm: number | null;
+  case5om: number | null;
+  /** LMNP réel : déficits */
+  case5ny: number | null;
+  case5oy: number | null;
+  /** LMNP réel : déficits relevant des organismes de sécurité sociale */
+  case5we: number | null;
+  case5xe: number | null;
+  /** BNC pro micro : revenus nets exonérés (régimes zonés) */
+  case5hp: number | null;
+  case5ip: number | null;
+  /** BNC pro micro : plus-values nettes à court terme */
+  case5hv: number | null;
+  case5iv: number | null;
+  /** BNC pro micro : moins-values nettes à court terme */
+  case5kz: number | null;
+  case5lz: number | null;
+  /** BNC pro micro : plus-values nettes à long terme */
+  case5hr: number | null;
+  case5ir: number | null;
+  /** BNC pro micro : moins-values nettes à long terme */
+  case5hs: number | null;
+  case5is: number | null;
+  /** BNC pro réel : revenus exonérés (régimes zonés) */
+  case5qb: number | null;
+  case5rb: number | null;
+  /** BNC pro réel : revenus imposables */
+  case5qc: number | null;
+  case5rc: number | null;
+  /** BNC pro réel : revenus de source étrangère avec crédit d'impôt égal à l'impôt français */
+  case5xj: number | null;
+  case5yj: number | null;
+  /** BNC pro réel : produits de brevets taxables à 10 % */
+  case5qa: number | null;
+  case5ra: number | null;
+  /** BNC pro réel : déficits */
+  case5qe: number | null;
+  case5re: number | null;
+  /** BNC pro réel : plus-values nettes à long terme */
+  case5qd: number | null;
+  case5rd: number | null;
+  /** BNC non pro micro : revenus nets exonérés (régimes zonés) */
+  case5th: number | null;
+  case5uh: number | null;
+  /** BNC non pro micro : plus-values nettes à court terme */
+  case5ky: number | null;
+  case5ly: number | null;
+  /** BNC non pro micro : moins-values nettes à court terme */
+  case5ju: number | null;
+  case5ld: number | null;
+  /** BNC non pro micro : plus-values nettes à long terme */
+  case5kv: number | null;
+  case5lv: number | null;
+  /** BNC non pro micro : moins-values nettes à long terme */
+  case5kw: number | null;
+  case5lw: number | null;
+  /** BNC non pro réel : revenus exonérés (régimes zonés) */
+  case5hk: number | null;
+  case5jk: number | null;
+  /** BNC non pro réel : revenus imposables */
+  case5jg: number | null;
+  case5rf: number | null;
+  /** BNC non pro réel : revenus de source étrangère avec crédit d'impôt égal à l'impôt français */
+  case5xs: number | null;
+  case5ys: number | null;
+  /** BNC non pro réel : déficits */
+  case5jj: number | null;
+  case5rg: number | null;
+  /** BNC non pro réel : plus-values nettes à long terme */
+  case5so: number | null;
+  case5nt: number | null;
+  // Phase 5.2 : déficits antérieurs non encore déduits (foyer)
+  /** BA : déficits antérieurs non encore déduits, 2019 */
+  case5qf: number | null;
+  /** BA : déficits antérieurs, 2020 */
+  case5qg: number | null;
+  /** BA : déficits antérieurs, 2021 */
+  case5qn: number | null;
+  /** BA : déficits antérieurs, 2022 */
+  case5qo: number | null;
+  /** BA : déficits antérieurs, 2023 */
+  case5qp: number | null;
+  /** BA : déficits antérieurs, 2024 */
+  case5qq: number | null;
+  /** BIC non pro : déficits antérieurs non encore déduits, 2019 */
+  case5rn: number | null;
+  /** BIC non pro : déficits antérieurs, 2020 */
+  case5ro: number | null;
+  /** BIC non pro : déficits antérieurs, 2021 */
+  case5rp: number | null;
+  /** BIC non pro : déficits antérieurs, 2022 */
+  case5rq: number | null;
+  /** BIC non pro : déficits antérieurs, 2023 */
+  case5rr: number | null;
+  /** BIC non pro : déficits antérieurs, 2024 */
+  case5rw: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2015 */
+  case5ga: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2016 */
+  case5gb: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2017 */
+  case5gc: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2018 */
+  case5gd: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2019 */
+  case5ge: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2020 */
+  case5gf: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2021 */
+  case5gg: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2022 */
+  case5gh: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2023 */
+  case5gi: number | null;
+  /** LMNP : déficits antérieurs non encore déduits, 2024 */
+  case5gj: number | null;
+  /** BNC non pro : déficits antérieurs non encore déduits, 2019 */
+  case5ht: number | null;
+  /** BNC non pro : déficits antérieurs, 2020 */
+  case5it: number | null;
+  /** BNC non pro : déficits antérieurs, 2021 */
+  case5jt: number | null;
+  /** BNC non pro : déficits antérieurs, 2022 */
+  case5kt: number | null;
+  /** BNC non pro : déficits antérieurs, 2023 */
+  case5lt: number | null;
+  /** BNC non pro : déficits antérieurs, 2024 */
+  case5mt: number | null;
 }
