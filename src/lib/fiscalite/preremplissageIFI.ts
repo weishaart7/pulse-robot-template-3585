@@ -60,9 +60,7 @@ export function ligneActifIFI(asset: Asset): LigneActifIFI | null {
     return null;
   }
 
-  if (!categorie) {
-    aVerifier.push('Seule la fraction de la valeur des parts représentative d\'immeubles est imposable (100 % retenu).');
-  }
+  // Parts en 9CA : la limite « fraction représentative d'immeubles » est rappelée une fois, sur la case.
   if (asset.mode_detention === 'Nue-propriété') {
     // Art. 968 : l'usufruitier déclare la pleine propriété, sauf usufruit légal ou réserve
     // d'usufruit sur une vente à un héritier (répartition selon l'art. 669).

@@ -71,6 +71,8 @@ export interface DeclarationIFIResultat {
   case9BA: number;
   case9BB: number;
   case9CA: number;
+  /** Part imposable de la valeur déclarée, par catégorie (abattement, exonération partielle) : 1 hors abattement. */
+  tauxImposable: Record<CategorieBienIFI, number>;
   /** Fraction exonérée des biens ruraux, forestiers et GFA/GAF, retranchée de l'actif. */
   exonerationsPartielles: number;
   actifBrut: number;
@@ -236,6 +238,11 @@ export function calculerDeclarationIFI(input: DeclarationIFIInput): DeclarationI
     case9BA: Math.round(declare.partsGfaGaf),
     case9BB: Math.round(declare.autreNonBati),
     case9CA,
+    tauxImposable: Object.fromEntries(
+      (Object.keys(declare) as CategorieBienIFI[]).map((c) => [
+        c, declare[c] > 0 ? imposable[c] / declare[c] : valeurImposable(c, 1),
+      ]),
+    ) as Record<CategorieBienIFI, number>,
     exonerationsPartielles,
     actifBrut,
     dettesDeductibles: Math.round(dettesDeductibles),

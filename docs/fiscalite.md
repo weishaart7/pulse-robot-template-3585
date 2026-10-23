@@ -1251,7 +1251,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   ligne 228 en taux (%), le montant calculé est affiché sous le champ. Ouvrir la 2044 d'une année crée
   sa ligne `declarations_2044` et les colonnes des actifs éligibles. Suppression d'un immeuble ou d'une
   société sans confirmation. Colonne reliée à un actif : pastille lagon dans l'en-tête ; valeur
-  préremplie en grisé (placeholder), saisie en noir avec un bouton de retour à la valeur préremplie.
+  préremplie en clair (placeholder), saisie en gras avec un bouton de retour à la valeur préremplie ;
+  montants formatés avec séparateur de milliers hors saisie (`MontantCellule`, partagé avec la 2042-IFI).
 - **Non modélisé** : plafond de 15 300 € du dispositif Cosse (renvoi (1) du Cerfa), 2044 spéciale
   (Robien, Borloo neuf, Malraux…), rubrique 460 (vente ou abandon de location après un déficit imputé
   sur le revenu global), case 4BE (micro-foncier).
@@ -1295,8 +1296,9 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     capital restant dû au 1er janvier tiré du tableau d'amortissement quand le contrat est complet, sinon
     `capital_restant_du` saisi (signalé) ; nature contenant « travaux » → 9GF, sinon 9GH ; contrat in fine
     → dégressivité ;
-  - chaque ligne porte ses points à vérifier, affichés sous la section (exonération non retenue,
-    fraction immobilière des parts, LMP, locaux affectés à l'activité, démembrement, valeur absente).
+  - chaque ligne porte ses points à vérifier, affichés sous son nom (exonération non retenue, LMP,
+    locaux affectés à l'activité, démembrement, valeur absente) ; la limite des parts en 9CA (fraction
+    représentative d'immeubles, 100 % retenu) est rappelée une fois, sur la case.
 - **9PR et 9PX** : repris de la Vision générale pour l'IFI de l'année suivant les revenus calculés
   (`ANNEE_IFI` = 2026), seulement quand le foyer est renseigné (sinon l'impôt calculé sur les valeurs par
   défaut fausserait le plafonnement) : 9PR = IR après décote (avant crédits d'impôt) + impôt forfaitaire
@@ -1317,10 +1319,19 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   les actifs et les emprunts, crée les lignes manquantes (écran seulement) et fusionne surcharges et
   préremplissage ; partagé par [useDeclarationIFI.ts](src/hooks/useDeclarationIFI.ts) (écran,
   enregistrement immédiat, mise à jour optimiste) et `useFiscalOverview` (sans création).
-- **Écran** : actif (une ligne par bien : case, valeur vénale, fraction taxable), totaux 9AA à 9CA et
-  exonérations partielles ; passif (ligne 9GF/9GH, bien financé, restant dû), case IFI théorique, totaux
-  9GF/9GH et plafonnement des dettes ; dons et plafonnement ; calcul de l'impôt tranche à tranche. Ligne
-  reliée : pastille lagon, valeur préremplie en grisé, retour à la valeur préremplie.
+- **Écran** : quatre étapes numérotées, sur page blanche à structure teintée (en-têtes de groupe en taupe
+  soutenu `#ebe6e0`, lignes de total et rail droit en taupe clair `secondary`).
+  - Actif groupé par case du Cerfa, dans l'ordre du formulaire : en-tête de groupe (code, libellé, règle
+    d'abattement ou d'exonération, sous-total imposable), puis une ligne par bien (case, valeur vénale,
+    part taxable, montant imposable calculé avec le taux de la case, `tauxImposable` du moteur) ; pied :
+    exonérations partielles et actif imposable.
+  - Passif : une ligne par dette (ligne 9GF/9GH, bien financé, restant dû), l'IFI théorique en dernière
+    ligne avec sa case à cocher ; pied : plafonnement des dettes et passif déductible.
+  - Dons et plafonnement ; encadré citron quand 9PR/9PX ne sont pas repris.
+  - Calcul de l'impôt tranche à tranche, IFI net sur bandeau lagon.
+  - Rail droit : IFI net, résumé actif / passif / patrimoine net, cases du Cerfa (cases renseignées en
+    lagon, cases à zéro estompées).
+  - Ligne reliée : pastille lagon, valeur reprise en clair, saisie en gras avec retour à la valeur reprise.
 - **Non modélisé** : biens professionnels exonérés (annexe 1, 9BZ : case enregistrée, aucun calcul),
   fraction immobilière des parts de sociétés (100 % retenu, la logique `valeur_ifi`/`pourcentage_ifi` de
   `useSocietesIFI` n'est pas reprise), dettes non déductibles (famille, art. 974 II), impôts payés à

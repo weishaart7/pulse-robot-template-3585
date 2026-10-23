@@ -89,7 +89,7 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
         <div>
           <PanelCardTitle>Propriétés rurales et urbaines</PanelCardTitle>
           <PanelCardDescription>
-            Montants encaissés et payés en {annee}, un immeuble (ou groupe d’immeubles de même nature) par colonne. Les biens loués nus d’Immobilier sont préremplis (en grisé) à la part du foyer ; une saisie remplace la valeur préremplie.
+            Montants encaissés et payés en {annee}, un immeuble (ou groupe d’immeubles de même nature) par colonne. Les biens loués nus d’Immobilier sont préremplis à la part du foyer ; une saisie (en gras) remplace la valeur préremplie.
           </PanelCardDescription>
         </div>
         <AddButton onClick={ajouterImmeuble}>Ajouter un immeuble</AddButton>

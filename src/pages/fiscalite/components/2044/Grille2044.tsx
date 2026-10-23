@@ -10,11 +10,14 @@ export const formatEuros = (v: number) =>
   `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(v)} €`;
 
 /**
- * Champ montant : NULL = non saisi, la valeur préremplie (Immobilier / Passifs) s'affiche en grisé et
- * compte dans le calcul. Une saisie la remplace ; le bouton de retour efface la saisie (NULL).
+ * Champ montant : NULL = non saisi, la valeur préremplie (Immobilier / Passifs) s'affiche en clair et
+ * compte dans le calcul. Une saisie la remplace (en gras) ; le bouton de retour efface la saisie (NULL).
+ * Hors focus, les montants sont formatés avec séparateur de milliers.
  */
-export function MontantCellule({ value, prerempli, onCommit, step, suffixe, ariaLabel, min = 0 }: {
+export function MontantCellule({ value, prerempli, onCommit, step, suffixe, ariaLabel, min = 0, discret }: {
   value: number | null;
+  /** Valeur reprise affichée en retrait (valeur par défaut rarement modifiée, ex. 100 %). */
+  discret?: boolean;
   prerempli?: number;
   /** Valeur minimale acceptée (1 pour le nombre de locaux). */
   min?: number;
@@ -24,10 +27,13 @@ export function MontantCellule({ value, prerempli, onCommit, step, suffixe, aria
   ariaLabel: string;
 }) {
   const [brouillon, setBrouillon] = useState(value === null ? '' : String(value));
+  const [focus, setFocus] = useState(false);
   useEffect(() => { setBrouillon(value === null ? '' : String(value)); }, [value]);
+  const formater = (v: number) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(v);
 
   const valider = () => {
-    const prochaine = brouillon.trim() === '' ? null : Math.max(min, Number(brouillon.replace(',', '.')));
+    setFocus(false);
+    const prochaine = brouillon.trim() === '' ? null : Math.max(min, Number(brouillon.replace(/[\s\u00a0\u202f]/g, '').replace(',', '.')));
     if (prochaine !== null && Number.isNaN(prochaine)) { setBrouillon(value === null ? '' : String(value)); return; }
     if (prochaine !== value) onCommit(prochaine);
   };
@@ -48,13 +54,12 @@ export function MontantCellule({ value, prerempli, onCommit, step, suffixe, aria
         </button>
       )}
       <input
-        type="number"
-        inputMode="decimal"
-        min={min}
-        step={step}
+        type="text"
+        inputMode={step === 1 ? 'numeric' : 'decimal'}
         aria-label={ariaLabel}
-        value={brouillon}
-        placeholder={prerempli !== undefined ? String(Math.round(prerempli)) : '0'}
+        value={focus || value === null ? brouillon : formater(value)}
+        placeholder={prerempli !== undefined ? formater(Math.round(prerempli)) : '0'}
+        onFocus={() => setFocus(true)}
         onChange={(e) => setBrouillon(e.target.value)}
         onBlur={valider}
         onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
@@ -64,7 +69,8 @@ export function MontantCellule({ value, prerempli, onCommit, step, suffixe, aria
           '[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none',
           suffixe && 'pr-6',
           surcharge && 'pl-6',
-          prerempli !== undefined && 'placeholder:text-muted-foreground',
+          prerempli !== undefined && (discret ? 'placeholder:text-muted-foreground' : 'placeholder:text-foreground/80'),
+          value !== null && 'font-medium text-foreground',
         )}
       />
       {suffixe && <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">{suffixe}</span>}
