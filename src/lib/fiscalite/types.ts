@@ -744,4 +744,34 @@ export interface PrelevementSourceDiversInput {
   case8si: boolean;
   /** Revenus exonérés non retenus pour le taux effectif */
   case8vf: boolean;
+  /** Revenus non salariaux de source étrangère, CSG 9,2 % (phase 8.2) */
+  case8tq: number | null;
+  /** Salaires de source étrangère, CSG 9,2 % (phase 8.2) */
+  case8tr: number | null;
+  /** Allocations de préretraite, CSG 9,2 % (phase 8.2) */
+  case8sc: number | null;
+  /** Allocations de chômage, CSG 6,2 % (phase 8.2) */
+  case8sw: number | null;
+  /** Allocations de chômage, CSG 3,8 % (phase 8.2) */
+  case8sx: number | null;
+  /** Indemnités journalières de maladie, maternité, accident du travail, CSG 6,2 % (phase 8.2) */
+  case8tw: number | null;
+  /** Pensions de retraite et d'invalidité, CSG 8,3 %, déclarant 1 (phase 8.2) */
+  case8tv: number | null;
+  /** Pensions de retraite et d'invalidité, CSG 8,3 %, déclarant 2 (phase 8.2) */
+  case8qv: number | null;
+  /** Pensions de retraite et d'invalidité, CSG 6,6 %, déclarant 1 (phase 8.2) */
+  case8th: number | null;
+  /** Pensions de retraite et d'invalidité, CSG 6,6 %, déclarant 2 (phase 8.2) */
+  case8qh: number | null;
+  /** Pensions de retraite et d'invalidité, CSG 3,8 %, déclarant 1 (phase 8.2) */
+  case8tx: number | null;
+  /** Pensions de retraite et d'invalidité, CSG 3,8 %, déclarant 2 (phase 8.2) */
+  case8qx: number | null;
+  /** Pensions en capital soumises à imposition forfaitaire, CSG 8,3 % (phase 8.2) */
+  case8sa: number | null;
+  /** Pensions en capital soumises à imposition forfaitaire, CSG 6,6 % (phase 8.2) */
+  case8sd: number | null;
+  /** Pensions en capital soumises à imposition forfaitaire, CSG 3,8 % (phase 8.2) */
+  case8sb: number | null;
 }

@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -94,6 +94,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
       : { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: null, texte: 'Pas de 2044' },
     { label: 'Prélèvements sociaux (micro-foncier)', valeur: revenusFonciers2042.prelevementsSociaux },
     { label: 'Prélèvements sociaux (locations meublées et non salariés)', valeur: revenusNonSalaries.prelevementsSociaux },
+    { label: "Contributions sociales (revenus d'activité étrangers)", valeur: prelevementSourceDivers.contributionsSocialesRevenusActivite },
     { label: 'Exonération de CSG et CRDS (8RF à 8RM)', valeur: reductionPrelevementsSociaux === 0 ? 0 : -reductionPrelevementsSociaux },
     { label: 'Prélèvements sociaux (salaires)', valeur: null, texte: 'Prélevés en paie' },
     ifi

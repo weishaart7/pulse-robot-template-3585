@@ -239,7 +239,7 @@ export interface FiscalOverview {
   prelevementSourceDivers: PrelevementSourceDiversResult;
   /** Exonération de CSG-CRDS (8RF…8RM) effectivement retranchée, plafonnée aux PS du patrimoine calculés. */
   reductionPrelevementsSociaux: number;
-  /** Prélèvements sociaux calculés, toutes catégories, après exonération 8RF…8RM. */
+  /** Prélèvements sociaux calculés, toutes catégories, après exonération 8RF…8RM, contributions 8TQ…8SB comprises. */
   prelevementsSociauxTotal: number;
   /** Solde après prélèvement à la source ; null si aucun cadre 8 n'est saisi. */
   solde: SoldeImpotResult | null;
@@ -426,7 +426,8 @@ export function useFiscalOverview(): FiscalOverview {
       prelevementSourceDivers.reductionPrelevementsSociaux,
       Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
     );
-    const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux;
+    const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux
+      + prelevementSourceDivers.contributionsSocialesRevenusActivite;
     const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet, prelevementsSociauxTotal) : null;
 
     const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {

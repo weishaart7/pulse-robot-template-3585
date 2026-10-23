@@ -1340,7 +1340,7 @@ Moteur pur `calculerReductionsCreditsImpot(input, foyer, revenuImposable)` (tabl
   10 000 €) ; à appliquer quand la 2042-RICI sera couverte.
 - **Hors périmètre (acté)** : 2042-RICI, report des dons excédentaires des années antérieures.
 
-### Prélèvement à la source et divers (cadre 8, phase 8.1)
+### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)
 
 Moteur pur `calculerPrelevementSourceDivers(input)` (table `prelevement_source_divers`), plus
 `creditImpotEgalImpotEtranger` et `calculerSoldeImpot`. Branché dans `useFiscalOverview.ts`, qui expose
@@ -1361,8 +1361,14 @@ cadre 8 est enregistré).
   calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. `8SH`/`8SI` sont
   informatifs : sans montants saisis, aucune exonération n'est calculée.
 - **Informatifs** : `8HR`/`8HS` (CDHR non calculée), `8TA`, `8UT`, `8TT`, `8UU`, `8VF`.
-- **Hors périmètre (acté)** : `8TM`, `8TN`, `8TD`, `8VN`, `8RP`/`8RQ` ; contributions sociales sur
-  revenus d'activité et de remplacement étrangers (`8TQ`…`8SB`) en phase 8.2.
+- **Contributions sociales sur revenus d'activité et de remplacement étrangers** (phase 8.2, mêmes
+  table et formulaire) : CSG au taux de la case (9,2 % `8TQ`/`8TR`/`8SC`, 6,2 % `8SW`/`8TW`, 3,8 % `8SX`,
+  8,3 % `8TV`/`8QV`/`8SA`, 6,6 % `8TH`/`8QH`/`8SD`, 3,8 % `8TX`/`8QX`/`8SB`), CRDS 0,5 % sur toutes,
+  CASA 0,3 % sur les pensions à 8,3 % et 6,6 % et sur `8SC`. Comprises dans `prelevementsSociauxTotal`
+  et le solde PS, hors plafond de l'exonération `8RF`…`8RM`.
+  - **Hypothèse à confronter au simulateur** : montants saisis pris tels quels, sans l'abattement de
+    1,75 % pour frais professionnels sur salaires et chômage.
+- **Hors périmètre (acté)** : `8TM`, `8TN`, `8TD`, `8VN`, `8RP`/`8RQ`.
 
 ### Déclaration des revenus fonciers 2044
 

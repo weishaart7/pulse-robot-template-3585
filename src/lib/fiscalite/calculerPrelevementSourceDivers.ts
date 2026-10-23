@@ -8,7 +8,13 @@ export const TAUX_CSG_CRDS_FONCIER = 0.097;
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
   case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8vf: false,
+  case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null,
 };
+
+/** CRDS sur tous les revenus d'activité et de remplacement (ord. 96-50). */
+export const TAUX_CRDS = 0.005;
+/** CASA sur les pensions et préretraites soumises à la CSG au taux de 8,3 % ou 6,6 % (art. L14-10-4 CASF). */
+export const TAUX_CASA = 0.003;
 
 const montant = (v: number | null) => Math.max(0, v ?? 0);
 const somme = (...v: (number | null)[]) => v.reduce<number>((s, x) => s + montant(x), 0);
@@ -29,6 +35,11 @@ export interface PrelevementSourceDiversResult {
   prelevementsSociauxDejaPayes: number;
   /** 8EA : avance déjà reçue, retranchée des réductions et crédits restant à recevoir. */
   avanceReductionsCredits: number;
+  /**
+   * CSG, CRDS et CASA sur les revenus d'activité et de remplacement de source
+   * étrangère (8TQ…8SB, phase 8.2), au taux de CSG de chaque case.
+   */
+  contributionsSocialesRevenusActivite: number;
 }
 
 /**
@@ -36,6 +47,8 @@ export interface PrelevementSourceDiversResult {
  * égal à l'impôt étranger (voir `creditImpotEgalImpotEtranger`, qui dépend
  * de l'impôt calculé). Informatives : 8HR/8HS (CDHR non calculée), 8TA,
  * 8UT, 8TT, 8UU, 8VF, 8SH/8SI (seuls les montants 8RF…8RM ont un effet).
+ * Contributions 8TQ…8SB : montants saisis tels que déclarés, sans abattement
+ * pour frais professionnels de 1,75 % (hypothèse à confronter au simulateur).
  */
 export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversInput): PrelevementSourceDiversResult {
   return {
@@ -50,6 +63,15 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
     prelevementsSociauxDejaPayes: somme(input.case8hx, input.case8ix, input.case8jx, input.case8kx)
       - somme(input.case8hz, input.case8iz, input.case8jz, input.case8kz),
     avanceReductionsCredits: montant(input.case8ea),
+    contributionsSocialesRevenusActivite: Math.round(
+      somme(input.case8tq, input.case8tr) * (0.092 + TAUX_CRDS)
+      + montant(input.case8sc) * (0.092 + TAUX_CRDS + TAUX_CASA)
+      + somme(input.case8sw, input.case8tw) * (0.062 + TAUX_CRDS)
+      + montant(input.case8sx) * (0.038 + TAUX_CRDS)
+      + somme(input.case8tv, input.case8qv, input.case8sa) * (0.083 + TAUX_CRDS + TAUX_CASA)
+      + somme(input.case8th, input.case8qh, input.case8sd) * (0.066 + TAUX_CRDS + TAUX_CASA)
+      + somme(input.case8tx, input.case8qx, input.case8sb) * (0.038 + TAUX_CRDS),
+    ),
   };
 }
 

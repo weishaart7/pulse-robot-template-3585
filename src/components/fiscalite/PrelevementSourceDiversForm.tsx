@@ -120,6 +120,49 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           <SingleCaseLigne label="Revenus exonérés non retenus pour le calcul du taux effectif" aide="Conventions internationales, organisations internationales, missions diplomatiques : informatif." code="8VF" checked={ps.case8vf} onChange={v => update('case8vf', v)} />
         </SousGroupe>
 
+        <SousGroupe titre="Revenus d'activité et de remplacement soumis aux contributions sociales" aide="Revenus de source étrangère et salaire différé de l'héritier d'un exploitant agricole : CSG au taux indiqué, CRDS 0,5 %, CASA 0,3 % sur les pensions à 8,3 % et 6,6 % et les préretraites.">
+          <SingleMontantLigne label="Revenus non salariaux · CSG 9,2 %" code="8TQ" value={ps.case8tq} onChange={v => update('case8tq', v)} />
+          <SingleMontantLigne label="Salaires · CSG 9,2 %" code="8TR" value={ps.case8tr} onChange={v => update('case8tr', v)} />
+          <SingleMontantLigne label="Allocations de préretraite · CSG 9,2 %" code="8SC" value={ps.case8sc} onChange={v => update('case8sc', v)} />
+          <MontantEclateLigne
+            label="Allocations de chômage"
+            items={[
+              { label: '6,2 %', code: '8SW', value: ps.case8sw, onChange: v => update('case8sw', v) },
+              { label: '3,8 %', code: '8SX', value: ps.case8sx, onChange: v => update('case8sx', v) },
+            ]}
+          />
+          <SingleMontantLigne label="Indemnités journalières de maladie, maternité, accident du travail · CSG 6,2 %" code="8TW" value={ps.case8tw} onChange={v => update('case8tw', v)} />
+          <MontantEclateLigne
+            label="Pensions de retraite et d'invalidité · CSG 8,3 %"
+            items={[
+              { label: 'Déclarant 1', code: '8TV', value: ps.case8tv, onChange: v => update('case8tv', v) },
+              { label: 'Déclarant 2', code: '8QV', value: ps.case8qv, onChange: v => update('case8qv', v) },
+            ]}
+          />
+          <MontantEclateLigne
+            label="Pensions de retraite et d'invalidité · CSG 6,6 %"
+            items={[
+              { label: 'Déclarant 1', code: '8TH', value: ps.case8th, onChange: v => update('case8th', v) },
+              { label: 'Déclarant 2', code: '8QH', value: ps.case8qh, onChange: v => update('case8qh', v) },
+            ]}
+          />
+          <MontantEclateLigne
+            label="Pensions de retraite et d'invalidité · CSG 3,8 %"
+            items={[
+              { label: 'Déclarant 1', code: '8TX', value: ps.case8tx, onChange: v => update('case8tx', v) },
+              { label: 'Déclarant 2', code: '8QX', value: ps.case8qx, onChange: v => update('case8qx', v) },
+            ]}
+          />
+          <MontantEclateLigne
+            label="Pensions en capital soumises à imposition forfaitaire"
+            items={[
+              { label: '8,3 %', code: '8SA', value: ps.case8sa, onChange: v => update('case8sa', v) },
+              { label: '6,6 %', code: '8SD', value: ps.case8sd, onChange: v => update('case8sd', v) },
+              { label: '3,8 %', code: '8SB', value: ps.case8sb, onChange: v => update('case8sb', v) },
+            ]}
+          />
+        </SousGroupe>
+
         <SousGroupe titre="Revenus du patrimoine exonérés de CSG et de CRDS" aide="Affiliés à un régime d'assurance maladie de l'EEE, du Royaume-Uni ou de la Suisse : seuls les montants saisis réduisent les prélèvements sociaux (le prélèvement de solidarité reste dû).">
           <SingleCaseLigne label="Affiliation hors régime français, déclarant 1" code="8SH" checked={ps.case8sh} onChange={v => update('case8sh', v)} />
           <SingleCaseLigne label="Affiliation hors régime français, déclarant 2" code="8SI" checked={ps.case8si} onChange={v => update('case8si', v)} />

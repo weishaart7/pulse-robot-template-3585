@@ -2585,17 +2585,32 @@ export type Database = {
           case_8kz: number | null
           case_8pl: number | null
           case_8pm: number | null
+          case_8qh: number | null
+          case_8qv: number | null
+          case_8qx: number | null
           case_8rc: number | null
           case_8rf: number | null
           case_8rm: number | null
           case_8rv: number | null
+          case_8sa: number | null
+          case_8sb: number | null
+          case_8sc: number | null
+          case_8sd: number | null
           case_8sh: boolean | null
           case_8si: boolean | null
+          case_8sw: number | null
+          case_8sx: number | null
           case_8ta: number | null
           case_8tf: number | null
+          case_8th: number | null
           case_8ti: number | null
           case_8tk: number | null
+          case_8tq: number | null
+          case_8tr: number | null
           case_8tt: boolean | null
+          case_8tv: number | null
+          case_8tw: number | null
+          case_8tx: number | null
           case_8um: number | null
           case_8ut: number | null
           case_8uu: boolean | null
@@ -2634,17 +2649,32 @@ export type Database = {
           case_8kz?: number | null
           case_8pl?: number | null
           case_8pm?: number | null
+          case_8qh?: number | null
+          case_8qv?: number | null
+          case_8qx?: number | null
           case_8rc?: number | null
           case_8rf?: number | null
           case_8rm?: number | null
           case_8rv?: number | null
+          case_8sa?: number | null
+          case_8sb?: number | null
+          case_8sc?: number | null
+          case_8sd?: number | null
           case_8sh?: boolean | null
           case_8si?: boolean | null
+          case_8sw?: number | null
+          case_8sx?: number | null
           case_8ta?: number | null
           case_8tf?: number | null
+          case_8th?: number | null
           case_8ti?: number | null
           case_8tk?: number | null
+          case_8tq?: number | null
+          case_8tr?: number | null
           case_8tt?: boolean | null
+          case_8tv?: number | null
+          case_8tw?: number | null
+          case_8tx?: number | null
           case_8um?: number | null
           case_8ut?: number | null
           case_8uu?: boolean | null
@@ -2683,17 +2713,32 @@ export type Database = {
           case_8kz?: number | null
           case_8pl?: number | null
           case_8pm?: number | null
+          case_8qh?: number | null
+          case_8qv?: number | null
+          case_8qx?: number | null
           case_8rc?: number | null
           case_8rf?: number | null
           case_8rm?: number | null
           case_8rv?: number | null
+          case_8sa?: number | null
+          case_8sb?: number | null
+          case_8sc?: number | null
+          case_8sd?: number | null
           case_8sh?: boolean | null
           case_8si?: boolean | null
+          case_8sw?: number | null
+          case_8sx?: number | null
           case_8ta?: number | null
           case_8tf?: number | null
+          case_8th?: number | null
           case_8ti?: number | null
           case_8tk?: number | null
+          case_8tq?: number | null
+          case_8tr?: number | null
           case_8tt?: boolean | null
+          case_8tv?: number | null
+          case_8tw?: number | null
+          case_8tx?: number | null
           case_8um?: number | null
           case_8ut?: number | null
           case_8uu?: boolean | null

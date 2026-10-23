@@ -7,6 +7,7 @@ export interface PrelevementSourceDivers extends PrelevementSourceDiversInput {
 
 const CASES_NUMERIQUES = [
   'case8hv', 'case8iv', 'case8jv', 'case8kv', 'case8hw', 'case8iw', 'case8jw', 'case8kw', 'case8hx', 'case8ix', 'case8jx', 'case8kx', 'case8hy', 'case8iy', 'case8jy', 'case8ky', 'case8hz', 'case8iz', 'case8jz', 'case8kz', 'case8hr', 'case8hs', 'case8ea', 'case8tk', 'case8ta', 'case8ut', 'case8ti', 'case8pl', 'case8vl', 'case8pm', 'case8vm', 'case8wm', 'case8um', 'case8tf', 'case8rf', 'case8rv', 'case8rc', 'case8rm',
+  'case8tq', 'case8tr', 'case8sc', 'case8sw', 'case8sx', 'case8tw', 'case8tv', 'case8qv', 'case8th', 'case8qh', 'case8tx', 'case8qx', 'case8sa', 'case8sd', 'case8sb',
 ] as const;
 const CASES_A_COCHER = ['case8tt', 'case8uu', 'case8sh', 'case8si', 'case8vf'] as const;
 
