@@ -15,6 +15,7 @@ import { useRevenusFonciers2042 } from './useRevenusFonciers2042';
 import { useRevenusNonSalaries } from './useRevenusNonSalaries';
 import { useChargesDeductibles } from './useChargesDeductibles';
 import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
+import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
@@ -31,6 +32,10 @@ import {
   calculerRevenusNonSalaries,
   calculerChargesDeductibles,
   calculerReductionsCreditsImpot,
+  calculerPrelevementSourceDivers,
+  PRELEVEMENT_SOURCE_DIVERS_VIDE,
+  calculerSoldeImpot,
+  creditImpotEgalImpotEtranger,
   FoyerFiscalInput,
   GainsActionnariatSalarieInput,
   GainsActionnariatSalarieResult,
@@ -56,6 +61,8 @@ import {
   ChargesDeductiblesResult,
   ReductionsCreditsImpotInput,
   ReductionsCreditsImpotResult,
+  PrelevementSourceDiversResult,
+  SoldeImpotResult,
   RevenusExoneresTauxEffectifInput,
   RevenusSalairesInput,
 } from '@/lib/fiscalite';
@@ -228,6 +235,14 @@ export interface FiscalOverview {
   chargesDeductibles: ChargesDeductiblesResult;
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
+  /** Cadre 8 (8TI/8TK, 8TF, PAS déjà payé, exonération CSG-CRDS) — voir calculerPrelevementSourceDivers.ts. */
+  prelevementSourceDivers: PrelevementSourceDiversResult;
+  /** Exonération de CSG-CRDS (8RF…8RM) effectivement retranchée, plafonnée aux PS du patrimoine calculés. */
+  reductionPrelevementsSociaux: number;
+  /** Prélèvements sociaux calculés, toutes catégories, après exonération 8RF…8RM. */
+  prelevementsSociauxTotal: number;
+  /** Solde après prélèvement à la source ; null si aucun cadre 8 n'est saisi. */
+  solde: SoldeImpotResult | null;
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
   impot: ImpotResult;
@@ -272,6 +287,7 @@ export function useFiscalOverview(): FiscalOverview {
   const { data: nonSalaries, loading: loadingNonSalaries, refetch: refetchNonSalaries } = useRevenusNonSalaries();
   const { data: charges, loading: loadingCharges, refetch: refetchCharges } = useChargesDeductibles();
   const { data: reductions, loading: loadingReductions, refetch: refetchReductions } = useReductionsCreditsImpot();
+  const { data: prelevementSource, loading: loadingPrelevementSource, refetch: refetchPrelevementSource } = usePrelevementSourceDivers();
   const { isAuthenticated } = useAuth();
   const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
   const [loading2044, setLoading2044] = useState(true);
@@ -313,6 +329,7 @@ export function useFiscalOverview(): FiscalOverview {
     refetchNonSalaries();
     refetchCharges();
     refetchReductions();
+    refetchPrelevementSource();
   };
 
   const overview = useMemo(() => {
@@ -360,15 +377,19 @@ export function useFiscalOverview(): FiscalOverview {
     // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
     // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
     // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
+    const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
+    const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
     const revenuExonereEtCreditImpot = revenuExonereTauxEffectif.totalRetenu
       + revenuSalaires.revenuCreditImpotEgalImpotFrancais
       + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
       + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
-      + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais;
+      + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais
+      + prelevementSourceDivers.revenuTauxEffectif;
     const reductionsCreditsImpot = calculerReductionsCreditsImpot(
       reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
     );
-    const impot = calculerImpot(
+    // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
+    const calculer = (creditEtranger: number) => calculerImpot(
       revenuImposableTotal,
       parts,
       foyerInput.situationFamille,
@@ -384,25 +405,40 @@ export function useFiscalOverview(): FiscalOverview {
         + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR,
       reductionsCreditsImpot.totalReductions,
       reductionsCreditsImpot.creditServicesPersonne,
+      creditEtranger,
+      prelevementSourceDivers.reprises,
     );
+    const impotSansCreditEtranger = calculer(0);
+    const impot = calculer(creditImpotEgalImpotEtranger(
+      prelevementSourceInput,
+      impotSansCreditEtranger.impotApresDecote + impotSansCreditEtranger.impotForfaitaire - impotSansCreditEtranger.reductionsImpot,
+      revenuImposableTotal,
+    ));
+    const prelevementsSociauxBruts = prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
+      + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
+      + prelevementsSociauxGainsActionnariat.prelevementsSociaux
+      + plusValuesGainsDivers.prelevementsSociaux
+      + (revenusFonciers?.prelevementsSociaux ?? 0)
+      + revenusFonciers2042.prelevementsSociaux
+      + revenusNonSalaries.prelevementsSociaux;
+    // PS des gains d'actionnariat (régime salarial) exclus du plafond de l'exonération patrimoine.
+    const reductionPrelevementsSociaux = Math.min(
+      prelevementSourceDivers.reductionPrelevementsSociaux,
+      Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
+    );
+    const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux;
+    const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet, prelevementsSociauxTotal) : null;
 
     const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
-      impots: impot.impotApresDecote + impot.impotForfaitaire
-        + prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
-        + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
-        + prelevementsSociauxGainsActionnariat.prelevementsSociaux
-        + plusValuesGainsDivers.prelevementsSociaux
-        + (revenusFonciers?.prelevementsSociaux ?? 0)
-        + revenusFonciers2042.prelevementsSociaux
-        + revenusNonSalaries.prelevementsSociaux,
+      impots: impot.impotApresDecote + impot.impotForfaitaire + prelevementsSociauxTotal,
       revenus: impot.revenuFiscalReference,
     };
     const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
 
     return {
-      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions,
+      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions || loadingPrelevementSource,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || reductions !== null || declaration2044 !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || reductions !== null || prelevementSource !== null || declaration2044 !== null,
       revenuSalaires,
       gainsActionnariat,
       revenuExonereTauxEffectif,
@@ -419,11 +455,15 @@ export function useFiscalOverview(): FiscalOverview {
       deficitAgricoleImpute,
       chargesDeductibles,
       reductionsCreditsImpot,
+      prelevementSourceDivers,
+      reductionPrelevementsSociaux,
+      prelevementsSociauxTotal,
+      solde,
       impot,
       plafonnementIFI,
       ifi,
     };
-  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
 }

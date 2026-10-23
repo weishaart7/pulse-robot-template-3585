@@ -1340,6 +1340,30 @@ Moteur pur `calculerReductionsCreditsImpot(input, foyer, revenuImposable)` (tabl
   10 000 €) ; à appliquer quand la 2042-RICI sera couverte.
 - **Hors périmètre (acté)** : 2042-RICI, report des dons excédentaires des années antérieures.
 
+### Prélèvement à la source et divers (cadre 8, phase 8.1)
+
+Moteur pur `calculerPrelevementSourceDivers(input)` (table `prelevement_source_divers`), plus
+`creditImpotEgalImpotEtranger` et `calculerSoldeImpot`. Branché dans `useFiscalOverview.ts`, qui expose
+désormais `prelevementsSociauxTotal` (repris par `FiscalOverviewCard.tsx`, `Dashboard.tsx` et le
+plafonnement IFI) et `solde` (bloc « Après prélèvement à la source » de la carte, affiché dès qu'un
+cadre 8 est enregistré).
+
+- **Solde** : impôt net − (`8HV`…`8KV` + `8HW`…`8KW`) + `8HY`…`8KY` + `8EA` ; PS calculés −
+  `8HX`…`8KX` + `8HZ`…`8KZ`. Positif : reste à payer ; négatif : à rembourser.
+- **Taux effectif** : `8TI` et `8TK` ajoutés au revenu retenu pour le taux effectif (8TK comme 1AF).
+- **Crédit égal à l'impôt étranger** (`8PL`/`8VL`, `8PM`/`8VM`+`8WM`+`8UM`), non restituable, imputé
+  avec 2AB : par catégorie, min(impôt étranger, impôt français × revenus / revenu imposable), l'impôt
+  français étant pris après décote, impôt forfaitaire et réductions. Calcul en deux passes de
+  `calculerImpot` (le crédit dépend de l'impôt). Approximation : prorata sur le revenu imposable, et non
+  sur le revenu de la catégorie après abattements.
+- **8TF** : ajouté à l'impôt net.
+- **Exonération CSG-CRDS** (`8RF` à 9,7 %, `8RV`/`8RC`/`8RM` à 11,1 %), plafonnée aux PS du patrimoine
+  calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. `8SH`/`8SI` sont
+  informatifs : sans montants saisis, aucune exonération n'est calculée.
+- **Informatifs** : `8HR`/`8HS` (CDHR non calculée), `8TA`, `8UT`, `8TT`, `8UU`, `8VF`.
+- **Hors périmètre (acté)** : `8TM`, `8TN`, `8TD`, `8VN`, `8RP`/`8RQ` ; contributions sociales sur
+  revenus d'activité et de remplacement étrangers (`8TQ`…`8SB`) en phase 8.2.
+
 ### Déclaration des revenus fonciers 2044
 
 [calculerDeclaration2044.ts](src/lib/fiscalite/calculerDeclaration2044.ts) (testé dans

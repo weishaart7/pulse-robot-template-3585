@@ -2558,6 +2558,156 @@ export type Database = {
         }
         Relationships: []
       }
+      prelevement_source_divers: {
+        Row: {
+          case_8ea: number | null
+          case_8hr: number | null
+          case_8hs: number | null
+          case_8hv: number | null
+          case_8hw: number | null
+          case_8hx: number | null
+          case_8hy: number | null
+          case_8hz: number | null
+          case_8iv: number | null
+          case_8iw: number | null
+          case_8ix: number | null
+          case_8iy: number | null
+          case_8iz: number | null
+          case_8jv: number | null
+          case_8jw: number | null
+          case_8jx: number | null
+          case_8jy: number | null
+          case_8jz: number | null
+          case_8kv: number | null
+          case_8kw: number | null
+          case_8kx: number | null
+          case_8ky: number | null
+          case_8kz: number | null
+          case_8pl: number | null
+          case_8pm: number | null
+          case_8rc: number | null
+          case_8rf: number | null
+          case_8rm: number | null
+          case_8rv: number | null
+          case_8sh: boolean | null
+          case_8si: boolean | null
+          case_8ta: number | null
+          case_8tf: number | null
+          case_8ti: number | null
+          case_8tk: number | null
+          case_8tt: boolean | null
+          case_8um: number | null
+          case_8ut: number | null
+          case_8uu: boolean | null
+          case_8vf: boolean | null
+          case_8vl: number | null
+          case_8vm: number | null
+          case_8wm: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_8ea?: number | null
+          case_8hr?: number | null
+          case_8hs?: number | null
+          case_8hv?: number | null
+          case_8hw?: number | null
+          case_8hx?: number | null
+          case_8hy?: number | null
+          case_8hz?: number | null
+          case_8iv?: number | null
+          case_8iw?: number | null
+          case_8ix?: number | null
+          case_8iy?: number | null
+          case_8iz?: number | null
+          case_8jv?: number | null
+          case_8jw?: number | null
+          case_8jx?: number | null
+          case_8jy?: number | null
+          case_8jz?: number | null
+          case_8kv?: number | null
+          case_8kw?: number | null
+          case_8kx?: number | null
+          case_8ky?: number | null
+          case_8kz?: number | null
+          case_8pl?: number | null
+          case_8pm?: number | null
+          case_8rc?: number | null
+          case_8rf?: number | null
+          case_8rm?: number | null
+          case_8rv?: number | null
+          case_8sh?: boolean | null
+          case_8si?: boolean | null
+          case_8ta?: number | null
+          case_8tf?: number | null
+          case_8ti?: number | null
+          case_8tk?: number | null
+          case_8tt?: boolean | null
+          case_8um?: number | null
+          case_8ut?: number | null
+          case_8uu?: boolean | null
+          case_8vf?: boolean | null
+          case_8vl?: number | null
+          case_8vm?: number | null
+          case_8wm?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_8ea?: number | null
+          case_8hr?: number | null
+          case_8hs?: number | null
+          case_8hv?: number | null
+          case_8hw?: number | null
+          case_8hx?: number | null
+          case_8hy?: number | null
+          case_8hz?: number | null
+          case_8iv?: number | null
+          case_8iw?: number | null
+          case_8ix?: number | null
+          case_8iy?: number | null
+          case_8iz?: number | null
+          case_8jv?: number | null
+          case_8jw?: number | null
+          case_8jx?: number | null
+          case_8jy?: number | null
+          case_8jz?: number | null
+          case_8kv?: number | null
+          case_8kw?: number | null
+          case_8kx?: number | null
+          case_8ky?: number | null
+          case_8kz?: number | null
+          case_8pl?: number | null
+          case_8pm?: number | null
+          case_8rc?: number | null
+          case_8rf?: number | null
+          case_8rm?: number | null
+          case_8rv?: number | null
+          case_8sh?: boolean | null
+          case_8si?: boolean | null
+          case_8ta?: number | null
+          case_8tf?: number | null
+          case_8ti?: number | null
+          case_8tk?: number | null
+          case_8tt?: boolean | null
+          case_8um?: number | null
+          case_8ut?: number | null
+          case_8uu?: boolean | null
+          case_8vf?: boolean | null
+          case_8vl?: number | null
+          case_8vm?: number | null
+          case_8wm?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recompenses: {
         Row: {
           bien_concerne_id: string | null

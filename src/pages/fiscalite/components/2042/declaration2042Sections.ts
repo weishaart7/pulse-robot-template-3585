@@ -1,5 +1,5 @@
 import { ComponentType } from 'react';
-import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, Briefcase, Receipt, HandHeart, LucideIcon } from 'lucide-react';
+import { Users, Wallet, LineChart, Globe, PiggyBank, Coins, TrendingUp, Home, Briefcase, Receipt, HandHeart, Landmark, LucideIcon } from 'lucide-react';
 import MenageSection from './MenageSection';
 import { RevenusSalairesForm } from '@/components/fiscalite/RevenusSalairesForm';
 import { GainsActionnariatSalarieForm } from '@/components/fiscalite/GainsActionnariatSalarieForm';
@@ -11,6 +11,7 @@ import { RevenusFonciersForm } from '@/components/fiscalite/RevenusFonciersForm'
 import { RevenusNonSalariesForm } from '@/components/fiscalite/RevenusNonSalariesForm';
 import { ChargesDeductiblesForm } from '@/components/fiscalite/ChargesDeductiblesForm';
 import { ReductionsCreditsImpotForm } from '@/components/fiscalite/ReductionsCreditsImpotForm';
+import { PrelevementSourceDiversForm } from '@/components/fiscalite/PrelevementSourceDiversForm';
 
 export interface Declaration2042Section {
   id: string;
@@ -36,4 +37,5 @@ export const DECLARATION_2042_SECTIONS: Declaration2042Section[] = [
   { id: 'non-salaries', groupe: 'Cadre 5 · Professions non salariées', label: 'BIC, BNC, BA (2042-C-PRO)', icon: Briefcase, component: RevenusNonSalariesForm },
   { id: 'charges-deductibles', groupe: 'Cadre 6 · Charges déductibles', label: 'Charges déductibles', icon: Receipt, component: ChargesDeductiblesForm },
   { id: 'reductions-credits', groupe: 'Cadre 7 · Réductions et crédits', label: "Réductions et crédits d'impôt", icon: HandHeart, component: ReductionsCreditsImpotForm },
+  { id: 'prelevement-source', groupe: 'Cadre 8 · Prélèvement à la source et divers', label: 'Prélèvement à la source et divers', icon: Landmark, component: PrelevementSourceDiversForm },
 ];

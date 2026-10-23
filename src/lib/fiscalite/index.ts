@@ -15,4 +15,5 @@ export * from './calculerRevenusFonciers2042';
 export * from './calculerRevenusNonSalaries';
 export * from './calculerChargesDeductibles';
 export * from './calculerReductionsCreditsImpot';
+export * from './calculerPrelevementSourceDivers';
 export * from './calculerDeclarationIFI';

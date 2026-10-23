@@ -652,3 +652,96 @@ export interface ReductionsCreditsImpotInput {
   /** Hors CERFA : membres du foyer âgés de plus de 65 ans (majoration du plafond services à la personne) */
   membresPlus65Ans: number | null;
 }
+
+/**
+ * Prélèvement à la source et divers (cadre 8 de la 2042 et de la 2042-C,
+ * phase 8.1). Contributions sociales sur revenus d'activité étrangers : phase 8.2.
+ */
+export interface PrelevementSourceDiversInput {
+  /** Retenue à la source sur salaires et pensions, déclarant 1 */
+  case8hv: number | null;
+  /** Retenue à la source, déclarant 2 */
+  case8iv: number | null;
+  /** Retenue à la source, 1re personne à charge */
+  case8jv: number | null;
+  /** Retenue à la source, 2e personne à charge */
+  case8kv: number | null;
+  /** Acomptes d'impôt sur le revenu, déclarant 1 */
+  case8hw: number | null;
+  /** Acomptes d'IR, déclarant 2 */
+  case8iw: number | null;
+  /** Acomptes d'IR, 1re personne à charge */
+  case8jw: number | null;
+  /** Acomptes d'IR, 2e personne à charge */
+  case8kw: number | null;
+  /** Acomptes de prélèvements sociaux, déclarant 1 */
+  case8hx: number | null;
+  /** Acomptes de PS, déclarant 2 */
+  case8ix: number | null;
+  /** Acomptes de PS, 1re personne à charge */
+  case8jx: number | null;
+  /** Acomptes de PS, 2e personne à charge */
+  case8kx: number | null;
+  /** Remboursement de trop-prélevé d'IR déjà obtenu, déclarant 1 */
+  case8hy: number | null;
+  /** Trop-prélevé d'IR, déclarant 2 */
+  case8iy: number | null;
+  /** Trop-prélevé d'IR, 1re personne à charge */
+  case8jy: number | null;
+  /** Trop-prélevé d'IR, 2e personne à charge */
+  case8ky: number | null;
+  /** Remboursement de trop-prélevé de PS déjà obtenu, déclarant 1 */
+  case8hz: number | null;
+  /** Trop-prélevé de PS, déclarant 2 */
+  case8iz: number | null;
+  /** Trop-prélevé de PS, 1re personne à charge */
+  case8jz: number | null;
+  /** Trop-prélevé de PS, 2e personne à charge */
+  case8kz: number | null;
+  /** Acompte de CDHR versé en 2025, déclarant 1 */
+  case8hr: number | null;
+  /** Acompte de CDHR versé en 2025, déclarant 2 */
+  case8hs: number | null;
+  /** Avance de 60 % sur réductions et crédits d'impôt reçue en début d'année */
+  case8ea: number | null;
+  /** Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français */
+  case8tk: number | null;
+  /** Non-résidents : retenue à la source prélevée en France */
+  case8ta: number | null;
+  /** Plus-values en report d'imposition non expiré */
+  case8ut: number | null;
+  /** Revenus exonérés retenus pour le taux effectif (autres que salaires, pensions, fonciers) */
+  case8ti: number | null;
+  /** Revenus de capitaux mobiliers et plus-values étrangers ouvrant droit à un crédit égal à l'impôt étranger */
+  case8pl: number | null;
+  /** Impôt payé à l'étranger sur ces revenus */
+  case8vl: number | null;
+  /** Autres revenus nets étrangers ouvrant droit à un crédit égal à l'impôt étranger */
+  case8pm: number | null;
+  /** Impôt étranger sur autres revenus, déclarant 1 */
+  case8vm: number | null;
+  /** Impôt étranger sur autres revenus, déclarant 2 */
+  case8wm: number | null;
+  /** Impôt étranger sur autres revenus, personne à charge */
+  case8um: number | null;
+  /** Reprises de réductions ou de crédits d'impôt */
+  case8tf: number | null;
+  /** Revenus fonciers (micro, après abattement) exonérés de CSG et de CRDS */
+  case8rf: number | null;
+  /** Rentes viagères à titre onéreux (net après abattement) exonérées de CSG et de CRDS */
+  case8rv: number | null;
+  /** Revenus de capitaux mobiliers exonérés de CSG et de CRDS */
+  case8rc: number | null;
+  /** Plus-values mobilières exonérées de CSG et de CRDS */
+  case8rm: number | null;
+  /** Contrats de capitalisation ou d'assurance-vie souscrits à l'étranger */
+  case8tt: boolean;
+  /** Comptes ouverts, détenus, utilisés ou clos à l'étranger */
+  case8uu: boolean;
+  /** Affilié à un régime d'assurance maladie EEE, Royaume-Uni ou Suisse, déclarant 1 */
+  case8sh: boolean;
+  /** Même situation, déclarant 2 */
+  case8si: boolean;
+  /** Revenus exonérés non retenus pour le taux effectif */
+  case8vf: boolean;
+}
