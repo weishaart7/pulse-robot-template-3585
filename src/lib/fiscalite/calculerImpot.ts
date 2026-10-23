@@ -79,6 +79,10 @@ export interface ImpotResult {
   creditImpotAssuranceVie: number;
   creditImpotEtranger2AB: number;
   creditImpotValeursEtrangeres2CK: number;
+  /** Réductions d'impôt du cadre 7 effectivement imputées (non restituables). */
+  reductionsImpot: number;
+  /** Crédits d'impôt restituables du cadre 7 (services à la personne). */
+  creditsImpotCadre7: number;
   impotNet: number;
   tmi: number;
   revenuExceptionnelQuotient: number;
@@ -231,6 +235,9 @@ function calculerImpotApresQuotientFamilial(
  * ces derniers d'une restitution à laquelle ils ont droit. **2CK est
  * restituable** (« l'excédent vous sera restitué ») : soustrait sans
  * plancher, comme `creditImpotAssuranceVie`.
+ * `reductionsImpot` (cadre 7, non restituables) s'imputent les premières sur
+ * l'impôt après décote augmenté de l'impôt forfaitaire, plancher 0 ;
+ * `creditsImpotCadre7` (services à la personne) sont restituables, sans plancher.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -244,6 +251,8 @@ export function calculerImpot(
   creditImpotEtranger2AB = 0,
   creditImpotValeursEtrangeres2CK = 0,
   revenuExonereRetenuPourRFR = 0,
+  reductionsImpot = 0,
+  creditsImpotCadre7 = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -285,17 +294,21 @@ export function calculerImpot(
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
-  const impotAvantCreditsFinaux = impotApresDecote + Math.max(0, impotForfaitaire);
+  const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire);
+  const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotAvantReductions));
+  const impotAvantCreditsFinaux = impotAvantReductions - reductionsImpotAppliquees;
 
   // 2AB (non restituable) plafonné sur l'impôt restant dû, avant les crédits restituables (2CK, assurance-vie).
   const creditImpotEtranger2ABApplique = Math.max(0, Math.min(creditImpotEtranger2AB, impotAvantCreditsFinaux));
   const creditImpotAssuranceVieApplique = Math.max(0, creditImpotAssuranceVie);
   const creditImpotValeursEtrangeres2CKApplique = Math.max(0, creditImpotValeursEtrangeres2CK);
+  const creditsImpotCadre7Appliques = Math.max(0, creditsImpotCadre7);
 
   const impotNet = impotAvantCreditsFinaux
     - creditImpotEtranger2ABApplique
     - creditImpotAssuranceVieApplique
-    - creditImpotValeursEtrangeres2CKApplique;
+    - creditImpotValeursEtrangeres2CKApplique
+    - creditsImpotCadre7Appliques;
 
   return {
     revenuImposable: revenu,
@@ -320,6 +333,8 @@ export function calculerImpot(
     creditImpotAssuranceVie: creditImpotAssuranceVieApplique,
     creditImpotEtranger2AB: creditImpotEtranger2ABApplique,
     creditImpotValeursEtrangeres2CK: creditImpotValeursEtrangeres2CKApplique,
+    reductionsImpot: reductionsImpotAppliquees,
+    creditsImpotCadre7: creditsImpotCadre7Appliques,
     impotNet,
     tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
     revenuExceptionnelQuotient: revenuExceptionnel,

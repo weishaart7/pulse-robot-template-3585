@@ -14,6 +14,7 @@ import { usePlusValuesGainsDivers } from './usePlusValuesGainsDivers';
 import { useRevenusFonciers2042 } from './useRevenusFonciers2042';
 import { useRevenusNonSalaries } from './useRevenusNonSalaries';
 import { useChargesDeductibles } from './useChargesDeductibles';
+import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
@@ -29,6 +30,7 @@ import {
   calculerRevenusFonciers2042,
   calculerRevenusNonSalaries,
   calculerChargesDeductibles,
+  calculerReductionsCreditsImpot,
   FoyerFiscalInput,
   GainsActionnariatSalarieInput,
   GainsActionnariatSalarieResult,
@@ -52,6 +54,8 @@ import {
   RevenusNonSalariesResult,
   ChargesDeductiblesInput,
   ChargesDeductiblesResult,
+  ReductionsCreditsImpotInput,
+  ReductionsCreditsImpotResult,
   RevenusExoneresTauxEffectifInput,
   RevenusSalairesInput,
 } from '@/lib/fiscalite';
@@ -165,6 +169,11 @@ const CHARGES_DEDUCTIBLES_PAR_DEFAUT: ChargesDeductiblesInput = {
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
 };
 
+const REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT: ReductionsCreditsImpotInput = {
+  case7ud: null, case7uq: null, case7uj: null, case7uf: null,
+  case7db: null, case7dr: null, case7dl: null, case7dq: false, case7dg: false, membresPlus65Ans: null,
+};
+
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
 export const ANNEE_REVENUS = 2025;
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
@@ -217,6 +226,8 @@ export interface FiscalOverview {
   deficitAgricoleImpute: number;
   /** Cadre 6 (charges déductibles, déficits globaux antérieurs, 6GH) — voir calculerChargesDeductibles.ts. */
   chargesDeductibles: ChargesDeductiblesResult;
+  /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
+  reductionsCreditsImpot: ReductionsCreditsImpotResult;
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
   impot: ImpotResult;
@@ -260,6 +271,7 @@ export function useFiscalOverview(): FiscalOverview {
   const { data: fonciers2042, loading: loadingFonciers2042, refetch: refetchFonciers2042 } = useRevenusFonciers2042();
   const { data: nonSalaries, loading: loadingNonSalaries, refetch: refetchNonSalaries } = useRevenusNonSalaries();
   const { data: charges, loading: loadingCharges, refetch: refetchCharges } = useChargesDeductibles();
+  const { data: reductions, loading: loadingReductions, refetch: refetchReductions } = useReductionsCreditsImpot();
   const { isAuthenticated } = useAuth();
   const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
   const [loading2044, setLoading2044] = useState(true);
@@ -300,6 +312,7 @@ export function useFiscalOverview(): FiscalOverview {
     refetchFonciers2042();
     refetchNonSalaries();
     refetchCharges();
+    refetchReductions();
   };
 
   const overview = useMemo(() => {
@@ -352,6 +365,9 @@ export function useFiscalOverview(): FiscalOverview {
       + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
       + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
       + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais;
+    const reductionsCreditsImpot = calculerReductionsCreditsImpot(
+      reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
+    );
     const impot = calculerImpot(
       revenuImposableTotal,
       parts,
@@ -366,6 +382,8 @@ export function useFiscalOverview(): FiscalOverview {
       revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
         + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
         + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR,
+      reductionsCreditsImpot.totalReductions,
+      reductionsCreditsImpot.creditServicesPersonne,
     );
 
     const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
@@ -382,9 +400,9 @@ export function useFiscalOverview(): FiscalOverview {
     const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
 
     return {
-      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges,
+      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions,
       foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || declaration2044 !== null,
+      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || reductions !== null || declaration2044 !== null,
       revenuSalaires,
       gainsActionnariat,
       revenuExonereTauxEffectif,
@@ -400,11 +418,12 @@ export function useFiscalOverview(): FiscalOverview {
       revenusNonSalaries,
       deficitAgricoleImpute,
       chargesDeductibles,
+      reductionsCreditsImpot,
       impot,
       plafonnementIFI,
       ifi,
     };
-  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
 }

@@ -628,3 +628,27 @@ export interface ChargesDeductiblesInput {
   /** Déficit global 2024 non encore déduit */
   case6fl: number | null;
 }
+
+/** Réductions et crédits d'impôt du cadre 7 de la 2042 (phase 7.1, 2042-RICI hors périmètre). */
+export interface ReductionsCreditsImpotInput {
+  /** Dons aux organismes d'aide aux personnes en difficulté, du 1.1 au 13.10.2025 */
+  case7ud: number | null;
+  /** Dons aux organismes d'aide aux personnes en difficulté, du 14.10 au 31.12.2025 */
+  case7uq: number | null;
+  /** Dons pour la sauvegarde du patrimoine religieux */
+  case7uj: number | null;
+  /** Dons aux autres organismes d'intérêt général */
+  case7uf: number | null;
+  /** Dépenses de services à la personne */
+  case7db: number | null;
+  /** Aides perçues pour les services à la personne (APA, PCH, CESU préfinancé…) */
+  case7dr: number | null;
+  /** Ascendants de plus de 65 ans bénéficiaires de l'APA */
+  case7dl: number | null;
+  /** Premier emploi direct d'un salarié à domicile en 2025 */
+  case7dq: boolean;
+  /** Carte d'invalidité ou CMI invalidité dans le foyer */
+  case7dg: boolean;
+  /** Hors CERFA : membres du foyer âgés de plus de 65 ans (majoration du plafond services à la personne) */
+  membresPlus65Ans: number | null;
+}

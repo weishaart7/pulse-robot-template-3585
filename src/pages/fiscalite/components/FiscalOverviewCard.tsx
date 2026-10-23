@@ -84,6 +84,12 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     + revenusNonSalaries.prelevementsSociaux;
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
+  const noteImpot = [
+    impot.decote > 0 ? `après décote de ${formatEuros(impot.decote)}` : null,
+    impot.reductionsImpot > 0 ? `réductions ${formatEuros(impot.reductionsImpot)}` : null,
+    impot.creditsImpotCadre7 > 0 ? `crédit services à la personne ${formatEuros(impot.creditsImpotCadre7)}` : null,
+  ].filter(Boolean).join(' · ') || undefined;
+
   const impots: Ligne[] = [
     { label: 'Impôt sur le revenu (IR)', valeur: impot.impotNet },
     { label: 'Prélèvements sociaux (capitaux mobiliers)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
@@ -157,7 +163,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
             key={l.label}
             label={l.label}
             valeur={l.valeur === null ? l.texte! : formatEuros(l.valeur)}
-            note={l.label.startsWith('Impôt sur le revenu') && impot.decote > 0 ? `après décote de ${formatEuros(impot.decote)}` : undefined}
+            note={l.label.startsWith('Impôt sur le revenu') ? noteImpot : undefined}
           />
         ))}
         <LignesRepliees nombre={impotsReplies.length}>

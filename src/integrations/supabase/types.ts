@@ -2620,6 +2620,57 @@ export type Database = {
           },
         ]
       }
+      reductions_credits_impot: {
+        Row: {
+          case_7db: number | null
+          case_7dg: boolean | null
+          case_7dl: number | null
+          case_7dq: boolean | null
+          case_7dr: number | null
+          case_7ud: number | null
+          case_7uf: number | null
+          case_7uj: number | null
+          case_7uq: number | null
+          created_at: string
+          id: string
+          membres_plus_65_ans: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_7db?: number | null
+          case_7dg?: boolean | null
+          case_7dl?: number | null
+          case_7dq?: boolean | null
+          case_7dr?: number | null
+          case_7ud?: number | null
+          case_7uf?: number | null
+          case_7uj?: number | null
+          case_7uq?: number | null
+          created_at?: string
+          id?: string
+          membres_plus_65_ans?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_7db?: number | null
+          case_7dg?: boolean | null
+          case_7dl?: number | null
+          case_7dq?: boolean | null
+          case_7dr?: number | null
+          case_7ud?: number | null
+          case_7uf?: number | null
+          case_7uj?: number | null
+          case_7uq?: number | null
+          created_at?: string
+          id?: string
+          membres_plus_65_ans?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       retraite_carriere_detail: {
         Row: {
           created_at: string

@@ -426,4 +426,15 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '6FD', label: "Déficit global 2022 non encore déduit", sectionId: 'charges-deductibles', elementId: 'case-6FD' },
   { code: '6FE', label: "Déficit global 2023 non encore déduit", sectionId: 'charges-deductibles', elementId: 'case-6FE' },
   { code: '6FL', label: "Déficit global 2024 non encore déduit", sectionId: 'charges-deductibles', elementId: 'case-6FL' },
+
+  // Cadre 7 · Réductions et crédits d'impôt
+  { code: '7UD', label: "Dons aux personnes en difficulté, du 1.1 au 13.10.2025", sectionId: 'reductions-credits', elementId: 'case-7UD' },
+  { code: '7UQ', label: "Dons aux personnes en difficulté, du 14.10 au 31.12.2025", sectionId: 'reductions-credits', elementId: 'case-7UQ' },
+  { code: '7UJ', label: "Dons pour la sauvegarde du patrimoine religieux", sectionId: 'reductions-credits', elementId: 'case-7UJ' },
+  { code: '7UF', label: "Dons aux autres organismes d'intérêt général", sectionId: 'reductions-credits', elementId: 'case-7UF' },
+  { code: '7DB', label: "Dépenses de services à la personne", sectionId: 'reductions-credits', elementId: 'case-7DB' },
+  { code: '7DR', label: "Aides perçues pour les services à la personne", sectionId: 'reductions-credits', elementId: 'case-7DR' },
+  { code: '7DL', label: "Ascendants de plus de 65 ans bénéficiaires de l'APA", sectionId: 'reductions-credits', elementId: 'case-7DL' },
+  { code: '7DQ', label: "Premier emploi direct d'un salarié à domicile en 2025", sectionId: 'reductions-credits', elementId: 'case-7DQ' },
+  { code: '7DG', label: "Carte d'invalidité ou CMI invalidité", sectionId: 'reductions-credits', elementId: 'case-7DG' },
 ];
