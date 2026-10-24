@@ -1,4 +1,4 @@
-import { FoyerFiscalInput, MajorationDetail, PartsFiscalesResult } from './types';
+import { FoyerFiscalInput, MajorationDetail, MajorationNonRetenue, PartsFiscalesResult } from './types';
 
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
@@ -23,6 +23,15 @@ interface EnfantRang {
   invalide: boolean;
   residenceAlternee: boolean;
   estMajeurRattache: boolean;
+}
+
+/**
+ * Rang occupé par chaque enfant, en tenant compte des personnes invalides recueillies : la brochure
+ * décompte les enfants en résidence alternée après elles (elles gardent leur part propre, hors
+ * progression). Le rang des enfants à charge exclusive et des majeurs rattachés n'en dépend pas.
+ */
+function rangsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: number): number[] {
+  return enfants.map((e, index) => (e.residenceAlternee ? index + 1 + nombrePersonnesInvalides : index + 1));
 }
 
 /**
@@ -51,11 +60,12 @@ function plafondPourParts(parts: number): number {
   return parts === 0.25 ? PLAFOND_QUART_PART_ALTERNEE : (parts / 0.5) * PLAFOND_DEMI_PART_STANDARD;
 }
 
-function majorationsEnfants(enfants: EnfantRang[]): MajorationDetail[] {
+function majorationsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: number): MajorationDetail[] {
   const majorations: MajorationDetail[] = [];
+  const rangs = rangsEnfants(enfants, nombrePersonnesInvalides);
 
   enfants.forEach((enfant, index) => {
-    const rang = index + 1;
+    const rang = rangs[index];
     const tauxPlein = rang <= 2 ? 0.5 : 1;
     const parts = enfant.residenceAlternee ? tauxPlein / 2 : tauxPlein;
     const suffixe = enfant.residenceAlternee ? ' (résidence alternée)' : '';
@@ -81,6 +91,102 @@ function majorationsEnfants(enfants: EnfantRang[]): MajorationDetail[] {
   });
 
   return majorations;
+}
+
+const MOTIF_NON_CUMUL_SEUL = 'une seule demi-part parmi les cases P, L, W et G pour une personne seule';
+
+function majorationPersonnelle(type: string, libelle: string, plafondComplementaire = true): MajorationDetail {
+  return {
+    type,
+    libelle,
+    parts: 0.5,
+    plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
+    ...(plafondComplementaire ? { plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD } : {}),
+  };
+}
+
+/**
+ * Demi-parts liées à la situation personnelle des déclarants (cases P, F, L, W, S, G), avec les
+ * règles de non-cumul de la brochure IR 2026 (p. 77-79) :
+ * - couple : P et F se cumulent ; S (ancien combattant +74 ans, l'un ou les deux) vaut une seule
+ *   demi-part pour le couple et ne se cumule pas avec P ou F ;
+ * - personne seule : une seule demi-part parmi P, L, W, G, la plus avantageuse retenue (P, W, G
+ *   plafonnées 1 807 € + 1 801 €, puis L à 1 079 €) ; W et G exclues avec un enfant à charge ou
+ *   rattaché ; L exclue avec toute personne à charge. Les cases du conjoint sont ignorées.
+ * Les cases cochées écartées sont restituées dans `nonRetenues` avec leur motif.
+ */
+function demiPartsPersonnelles(
+  input: FoyerFiscalInput,
+  estCouple: boolean,
+  nombreEnfants: number,
+): { retenues: MajorationDetail[]; nonRetenues: MajorationNonRetenue[] } {
+  const retenues: MajorationDetail[] = [];
+  const nonRetenues: MajorationNonRetenue[] = [];
+  const ecarter = (type: string, libelle: string, motif: string) => nonRetenues.push({ type, libelle, motif });
+
+  if (estCouple) {
+    if (input.invaliditeDeclarant1) retenues.push(majorationPersonnelle('invalidite_declarant1', 'Invalidité — déclarant 1 (case P)'));
+    if (input.invaliditeDeclarant2) retenues.push(majorationPersonnelle('invalidite_declarant2', 'Invalidité — déclarant 2 (case F)'));
+    if (input.ancienCombattantDeclarant1 || input.ancienCombattantDeclarant2) {
+      if (input.invaliditeDeclarant1 || input.invaliditeDeclarant2) {
+        ecarter('ancien_combattant_couple', 'Ancien combattant +74 ans (case S)', 'ne se cumule pas avec les cases P ou F');
+      } else {
+        retenues.push(majorationPersonnelle('ancien_combattant_couple', 'Ancien combattant +74 ans (case S)'));
+      }
+    }
+    for (const [coche, type, libelle] of [
+      [input.ancienParentIsole, 'ancien_parent_isole', 'Ancien parent isolé (case L)'],
+      [input.veufAncienCombattant, 'veuf_ancien_combattant', "Veuf/veuve d'ancien combattant (case W)"],
+      [input.veuveDeGuerre, 'veuve_de_guerre', 'Veuve de guerre (case G)'],
+    ] as const) {
+      if (coche) ecarter(type, libelle, 'réservée aux personnes seules');
+    }
+    return { retenues, nonRetenues };
+  }
+
+  const aPersonneACharge = nombreEnfants > 0 || input.personnesInvalidesCharge.length > 0;
+  // Ordre de préférence : demi-parts plafonnées 1 807 € + 1 801 € d'abord, puis L (1 079 €).
+  const candidates: { coche: boolean; majoration: MajorationDetail; exclusion?: string }[] = [
+    {
+      coche: input.invaliditeDeclarant1,
+      majoration: majorationPersonnelle('invalidite_declarant1', 'Invalidité (case P)'),
+    },
+    {
+      coche: input.ancienCombattantDeclarant1,
+      majoration: majorationPersonnelle('ancien_combattant_declarant1', 'Ancien combattant +74 ans (case W)'),
+      exclusion: nombreEnfants > 0 ? 'exclue avec un enfant à charge ou rattaché' : undefined,
+    },
+    {
+      coche: input.veufAncienCombattant,
+      majoration: majorationPersonnelle('veuf_ancien_combattant', "Veuf/veuve d'ancien combattant +74 ans (case W)"),
+      exclusion: nombreEnfants > 0 ? 'exclue avec un enfant à charge ou rattaché' : undefined,
+    },
+    {
+      coche: input.veuveDeGuerre,
+      majoration: majorationPersonnelle('veuve_de_guerre', 'Veuve de guerre (case G)'),
+      exclusion: nombreEnfants > 0 ? 'exclue avec un enfant à charge ou rattaché' : undefined,
+    },
+    {
+      coche: input.ancienParentIsole,
+      majoration: {
+        type: 'ancien_parent_isole',
+        libelle: 'Ancien parent isolé, 5 ans seul (case L)',
+        parts: 0.5,
+        plafondUnitaire: PLAFOND_ANCIEN_PARENT_ISOLE,
+      },
+      exclusion: aPersonneACharge ? 'suppose de vivre seul sans personne à charge' : undefined,
+    },
+  ];
+
+  for (const { coche, majoration, exclusion } of candidates) {
+    if (!coche) continue;
+    if (exclusion) ecarter(majoration.type, majoration.libelle, exclusion);
+    else if (retenues.length > 0) ecarter(majoration.type, majoration.libelle, MOTIF_NON_CUMUL_SEUL);
+    else retenues.push(majoration);
+  }
+  if (input.invaliditeDeclarant2) ecarter('invalidite_declarant2', 'Invalidité — conjoint (case F)', 'réservée aux couples mariés ou pacsés');
+  if (input.ancienCombattantDeclarant2) ecarter('ancien_combattant_declarant2', 'Ancien combattant — conjoint (case S)', 'réservée aux couples mariés ou pacsés');
+  return { retenues, nonRetenues };
 }
 
 /**
@@ -114,7 +220,8 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
   // Veuf avec enfant à charge ou rattaché : autant de parts qu'un couple, mais le plafonnement se
   // mesure par rapport à 1 part — la part de veuvage est une majoration plafonnée (2 demi-parts).
   const veufAvecEnfants = input.situationFamille === 'veuf' && nombreEnfants > 0;
-  const partsBase = COUPLE_IMPOSITION_COMMUNE.includes(input.situationFamille) ? 2 : 1;
+  const estCouple = COUPLE_IMPOSITION_COMMUNE.includes(input.situationFamille);
+  const partsBase = estCouple ? 2 : 1;
 
   const majorations: MajorationDetail[] = [];
   if (veufAvecEnfants) {
@@ -125,7 +232,7 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
       plafondUnitaire: plafondPourParts(1),
     });
   }
-  majorations.push(...majorationsEnfants(enfantsRang));
+  majorations.push(...majorationsEnfants(enfantsRang, input.personnesInvalidesCharge.length));
 
   input.personnesInvalidesCharge.forEach((_, index) => {
     const rang = index + 1;
@@ -156,79 +263,15 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
     });
   }
 
-  if (input.ancienParentIsole) {
-    majorations.push({
-      type: 'ancien_parent_isole',
-      libelle: 'Ancien parent isolé, 5 ans seul (case L)',
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_ANCIEN_PARENT_ISOLE,
-    });
-  }
-
-  if (input.invaliditeDeclarant1) {
-    majorations.push({
-      type: 'invalidite_declarant1',
-      libelle: 'Invalidité — déclarant 1',
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
-    });
-  }
-
-  if (input.invaliditeDeclarant2) {
-    majorations.push({
-      type: 'invalidite_declarant2',
-      libelle: 'Invalidité — déclarant 2',
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
-    });
-  }
-
-  if (input.ancienCombattantDeclarant1) {
-    majorations.push({
-      type: 'ancien_combattant_declarant1',
-      libelle: 'Ancien combattant +74 ans — déclarant 1',
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
-    });
-  }
-
-  if (input.ancienCombattantDeclarant2) {
-    majorations.push({
-      type: 'ancien_combattant_declarant2',
-      libelle: 'Ancien combattant +74 ans — déclarant 2',
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
-    });
-  }
-
-  if (input.veufAncienCombattant) {
-    majorations.push({
-      type: 'veuf_ancien_combattant',
-      libelle: "Veuf/veuve d'un ancien combattant +74 ans",
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-    });
-  }
-
-  if (input.veuveDeGuerre) {
-    majorations.push({
-      type: 'veuve_de_guerre',
-      libelle: 'Veuve de guerre (art. 195-1-c CGI)',
-      parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
-    });
-  }
+  const { retenues, nonRetenues } = demiPartsPersonnelles(input, estCouple, nombreEnfants);
+  majorations.push(...retenues);
 
   const nombreParts = partsBase + majorations.reduce((total, m) => total + m.parts, 0);
 
   return {
     partsBase,
     majorations,
+    majorationsNonRetenues: nonRetenues,
     nombreParts,
   };
 }

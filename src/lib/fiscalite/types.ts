@@ -32,9 +32,17 @@ export interface MajorationDetail {
   plafondComplementaire?: number;
 }
 
+export interface MajorationNonRetenue {
+  type: string;
+  libelle: string;
+  motif: string;
+}
+
 export interface PartsFiscalesResult {
   partsBase: number;
   majorations: MajorationDetail[];
+  /** Cases cochées qui n'ouvrent pas droit à majoration (non-cumul, condition non remplie), avec le motif. */
+  majorationsNonRetenues: MajorationNonRetenue[];
   nombreParts: number;
 }
 

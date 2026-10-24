@@ -143,7 +143,7 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
 | Fiscalité (page principale) | [FiscaliteSection.tsx](src/pages/fiscalite/FiscaliteSection.tsx) | Panneau de travail (comme Immobilier, Retraite) : en-tête à fil d'Ariane « Fiscalité / Vue d'ensemble », titre 24 px et rappel (revenus 2025, barème 2026, mention des valeurs par défaut tant que le foyer ou les revenus ne sont pas saisis), puis deux colonnes séparées par un filet : déclarations à gauche sur toute la hauteur, imposition totale puis taux marginal à droite — disposition historique conservée, cartes remplacées par des bandes bord à bord |
 | Déclarations fiscales | [FiscalDeclarationsCard.tsx](src/pages/fiscalite/components/FiscalDeclarationsCard.tsx) | Liste par impôt (code CERFA en pastille, libellé, statut sous le libellé, chevron) ; « 2042 » ouvre `Declaration2042Interface` (statut : IR net ou « Foyer à compléter »), « 2044 » `Declaration2044Interface` (revenu foncier imposable, déficit 4BC ou « Non ouverte »), « 2042-IFI » `DeclarationIFIInterface` (IFI net, « Non assujetti » ou « Non ouverte ») ; 2047, 2074 et 2086 « À venir » |
 | Déclaration 2042 (overlay) | [Declaration2042Interface.tsx](src/pages/fiscalite/components/Declaration2042Interface.tsx) → [Declaration2042Sidebar.tsx](src/pages/fiscalite/components/2042/Declaration2042Sidebar.tsx) | Panneau de travail plein écran comme la 2044 et la 2042-IFI : en-tête à fil d'Ariane (Fiscalité / 2042 / section active), recherche de case (⌘K), « Tout supprimer », Retour. Navigation taupe groupée par cadre du Cerfa (Foyer, Cadre 1, Cadre 2 — champ `groupe` de [declaration2042Sections.ts](src/pages/fiscalite/components/2042/declaration2042Sections.ts), config `{id, label, groupe, icon, component}`), avec en pied le résumé de l'impôt de la Vision générale (IR net, revenu net imposable, parts, TMI), rechargé à chaque changement de section. Chaque section dans un [Cadre2042.tsx](src/components/fiscalite/Cadre2042.tsx) : titre 20 px, rappel, lignes limitées à 980 px, barre « Enregistrer » collée en bas ; pas d'enregistrement global, chaque section garde sa propre sauvegarde |
-| Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Blocs en bandes taupe (situation du foyer, enfants à charge, autres personnes invalides, situations particulières avec la lettre de case T/L/P/F/W/S/G), une ligne par enfant ou personne ; synthèse du nombre de parts dans un encart taupe à droite (sticky), recalculée en direct pendant la saisie (avant même l'enregistrement) |
+| Ménage (section 2042) | [MenageSection.tsx](src/pages/fiscalite/components/2042/MenageSection.tsx) → `MenageForm.tsx` + `SyntheseFoyerFiscal.tsx` | Blocs en bandes taupe (situation du foyer, enfants à charge, autres personnes invalides, situations particulières avec la lettre de case T/L/P/F/W/S/G), une ligne par enfant ou personne ; synthèse du nombre de parts dans un encart taupe à droite (sticky), recalculée en direct pendant la saisie (avant même l'enregistrement), avec les cases cochées non retenues et leur motif ; en couple, une seule ligne S (cases « Vous » / « Conjoint(e) »), W pour une personne seule |
 | Lignes de saisie (sections 2042) | [DeclarationLigne.tsx](src/components/fiscalite/DeclarationLigne.tsx) | Une ligne par case séparée par un filet, libellé à gauche, colonnes « Déclarant 1 / Déclarant 2 » sous un en-tête unique ; code de la case dans le champ (pastille lagon), montants formatés avec séparateur de milliers hors saisie (`CaseMontant`), cases à cocher alignées à droite ; sous-groupes en bande taupe |
 | Traitements et salaires (section 2042) | [RevenusSalairesForm.tsx](src/components/fiscalite/RevenusSalairesForm.tsx) | 19 paires de champs déclarant 1/déclarant 2 (cadre 1 de la 2042, hors colonnes C/D et gains d'actionnariat), code officiel + libellé français côte à côte |
 | Salaires & pensions exonérés — taux effectif (section 2042) | [RevenusExoneresTauxEffectifForm.tsx](src/components/fiscalite/RevenusExoneresTauxEffectifForm.tsx) | 5 lignes (`1AC`/`1BC`, `1GE`/`1HE` case à cocher, `1AE`/`1BE`, `1AH`/`1BH`, `RSE`/`RSF` texte libre), encart CERFA distinct (2042-C pages 99/116) — alimente désormais le taux effectif dans le tableau de bord IR (Vision générale) |
@@ -223,18 +223,23 @@ fonciers (§4).
   enfant à charge ou rattaché a autant de parts qu'un couple via une majoration « maintien du quotient
   conjugal » de 1 part plafonnée à 3 614 €, de sorte que le plafonnement se mesure par rapport à 1 part),
   enfants dans une seule séquence de rang décomptée dans l'ordre de la brochure IR 2026 — à charge
-  exclusive, puis majeurs rattachés, puis résidence alternée, quel que soit l'ordre de saisie
+  exclusive, puis majeurs rattachés, puis résidence alternée, quel que soit l'ordre de saisie ; chaque
+  personne invalide recueillie occupe un rang avant les enfants alternés (sans décaler les autres)
   (progression 0,5 pour les 1er/2e, 1 part entière à partir du 3e ; plafond 1 807 € par demi-part, soit
   3 614 € pour une part entière, 904 € pour un quart de part), résidence alternée (moitié des droits, y
   compris pour la majoration invalidité elle-même — confirmé BOFiP BOI-IR-LIQ-10-20-20-20), personne
   invalide à charge hors enfant (+1 part entière, distincte de la majoration invalidité du foyer),
   parent isolé (case T, +0,5 part, plafond 2 455 € : l'enfant n°1 et la case T sont plafonnés ensemble à
   4 262 € ; avec uniquement des enfants en résidence alternée, la majoration réduite à 0,25 part pour
-  un seul enfant n'est pas modélisée),
-  ancien parent isolé (case L, +0,5), invalidité et ancien combattant déclarant 1/2 (deux lignes
-  toujours distinctes, jamais fusionnées même si identiques), veuf d'ancien combattant (art. 195-1-f,
-  plafond **sans** complément) et veuve de guerre (art. 195-1-c, disposition **distincte** du veuf
-  d'ancien combattant, plafond **avec** complément — à ne pas confondre). Chaque majoration est une
+  un seul enfant n'est pas modélisée, ni la case T ouverte par une personne invalide recueillie seule),
+  et demi-parts de situation personnelle avec leurs règles de non-cumul (brochure IR 2026 p. 77-79) :
+  en couple, P et F se cumulent, S (ancien combattant +74 ans, l'un ou les deux déclarants) vaut une
+  seule demi-part pour le couple et ne se cumule pas avec P ou F, L/W veuf/G sont écartées ; personne
+  seule, une seule demi-part parmi P, W, W veuf, G puis L (ordre de préférence), W et G exclues avec un
+  enfant à charge ou rattaché, L exclue avec toute personne à charge, cases F/S du conjoint ignorées.
+  P, F, S, W, W veuf et G : plafond 1 807 € + complément 1 801 € ; L : 1 079 €. Les cases cochées
+  écartées sont restituées dans `PartsFiscalesResult.majorationsNonRetenues` (libellé + motif) et
+  affichées sous le détail des parts par `SyntheseFoyerFiscal.tsx`. Chaque majoration est une
   ligne séparée de `PartsFiscalesResult.majorations[]`, dans l'ordre du formulaire, portant ses
   plafonds en € en simple métadonnée (`plafondUnitaire`/`plafondComplementaire`) — **non appliquée par
   cette fonction elle-même** : le plafonnement réel de l'avantage fiscal (art. 197 CGI) est calculé en
@@ -1476,7 +1481,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   - situation : Marié(e) → marié, Pacsé(e) → pacsé, Divorcé(e) → divorcé, Veuf/Veuve → veuf,
     Célibataire et **Concubinage → célibataire** (concubins imposés séparément) ; statut absent →
     célibataire, signalé ;
-  - enfants : membres « Enfant » vivants cochés « Fiscalement à charge » ; mineurs au 1er janvier N
+  - enfants : membres « Enfant » cochés « Fiscalement à charge », vivants ou décédés pendant N ou après
+    (décédé avant N exclu ; décédé sans date de décès exclu et signalé) ; mineurs au 1er janvier N
     (né à compter du 1er janvier N − 18, né pendant N compris) ou majeurs handicapés quel que soit
     leur âge → enfant à charge avec année de naissance et invalidité (« Personne handicapée ») ; majeur
     de moins de 21 ans au 1er janvier N → rattaché ; de 21 à 24 ans → rattaché avec note (études à

@@ -7,6 +7,7 @@ function makeParts(overrides: Partial<PartsFiscalesResult> = {}): PartsFiscalesR
   return {
     partsBase: 1,
     majorations: [],
+    majorationsNonRetenues: [],
     nombreParts: 1,
     ...overrides,
   };

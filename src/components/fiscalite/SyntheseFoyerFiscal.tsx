@@ -34,6 +34,15 @@ export const SyntheseFoyerFiscal = ({ foyer }: SyntheseFoyerFiscalProps) => {
       {result.majorations.length === 0 && (
         <p className="mt-3 text-[12.5px] text-muted-foreground">Aucune majoration applicable.</p>
       )}
+      {result.majorationsNonRetenues.length > 0 && (
+        <ul className="mt-3 space-y-1.5">
+          {result.majorationsNonRetenues.map(m => (
+            <li key={m.type} className="text-[12px] leading-5 text-muted-foreground">
+              <span className="text-foreground">{m.libelle}</span> non retenue : {m.motif}.
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="mt-4 text-[12px] leading-5 text-muted-foreground">Recalculé pendant la saisie, avant l'enregistrement.</p>
     </div>
   );

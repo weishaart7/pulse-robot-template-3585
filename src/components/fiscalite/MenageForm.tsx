@@ -261,7 +261,7 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
 
       <SousGroupe titre="Situations particulières">
         <CaseSituation code="T" id="parent-isole" checked={foyer.parentIsole} onCheckedChange={v => update('parentIsole', v)}
-          label="Je vis seul(e) avec au moins un enfant à ma charge" />
+          label="Je vis seul(e) avec au moins un enfant à ma charge ou une personne invalide recueillie" />
         <CaseSituation code="L" id="ancien-parent-isole" checked={foyer.ancienParentIsole} onCheckedChange={v => update('ancienParentIsole', v)}
           label="J'ai élevé seul(e) un enfant pendant au moins 5 ans, ce n'est plus le cas aujourd'hui" />
         <CaseSituation code="P" id="invalidite-declarant1" checked={foyer.invaliditeDeclarant1} onCheckedChange={v => update('invaliditeDeclarant1', v)}
@@ -270,14 +270,24 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
           <CaseSituation code="F" id="invalidite-declarant2" checked={foyer.invaliditeDeclarant2} onCheckedChange={v => update('invaliditeDeclarant2', v)}
             label="Votre conjoint(e) est en situation d'invalidité" />
         )}
-        <CaseSituation code="W" id="ancien-combattant-declarant1" checked={foyer.ancienCombattantDeclarant1} onCheckedChange={v => update('ancienCombattantDeclarant1', v)}
-          label="Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, âgé(e) de plus de 74 ans" />
-        {estCouple && (
-          <CaseSituation code="S" id="ancien-combattant-declarant2" checked={foyer.ancienCombattantDeclarant2} onCheckedChange={v => update('ancienCombattantDeclarant2', v)}
-            label="Votre conjoint(e) est dans cette situation" />
+        {estCouple ? (
+          // Case S : une seule demi-part pour le couple, que l'un ou les deux déclarants remplissent la condition.
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border/50 py-2.5">
+            <span className="text-[13px] leading-5 text-foreground">
+              Vous ou votre conjoint(e) êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, âgé(e) de plus de 74 ans
+            </span>
+            <span className="flex items-center gap-3">
+              <CaseACocher id="ancien-combattant-declarant1" checked={foyer.ancienCombattantDeclarant1} onCheckedChange={v => update('ancienCombattantDeclarant1', v)} label="Vous" />
+              <CaseACocher id="ancien-combattant-declarant2" checked={foyer.ancienCombattantDeclarant2} onCheckedChange={v => update('ancienCombattantDeclarant2', v)} label="Conjoint(e)" />
+              <span className="rounded-[2px] bg-lagon-soft px-1.5 text-[11px] font-medium text-lagon-ink">S</span>
+            </span>
+          </div>
+        ) : (
+          <CaseSituation code="W" id="ancien-combattant-declarant1" checked={foyer.ancienCombattantDeclarant1} onCheckedChange={v => update('ancienCombattantDeclarant1', v)}
+            label="Vous êtes ancien(ne) combattant(e) ou titulaire d'une pension militaire d'invalidité, âgé(e) de plus de 74 ans" />
         )}
         <CaseSituation code="W" id="veuf-ancien-combattant" checked={foyer.veufAncienCombattant} onCheckedChange={v => update('veufAncienCombattant', v)}
-          label="Vous êtes veuf/veuve d'un(e) ancien(ne) combattant(e) décédé(e) après 74 ans" />
+          label="Vous avez plus de 74 ans et votre conjoint(e) décédé(e) bénéficiait de cette demi-part ou était titulaire de la carte du combattant" />
         <CaseSituation code="G" id="veuve-de-guerre" checked={foyer.veuveDeGuerre} onCheckedChange={v => update('veuveDeGuerre', v)}
           label="Vous êtes titulaire d'une pension de veuve de guerre" />
       </SousGroupe>

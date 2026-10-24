@@ -30,14 +30,26 @@ describe('foyerDepuisFamille', () => {
     expect(r.notes).toEqual(["Test : né(e) en 2026, après l'année des revenus 2025 : non compté(e)."]);
   });
 
-  it('enfants non retenus : non fiscalement à charge, décédé, sans date (signalé)', () => {
+  it('enfants non retenus : non fiscalement à charge, décédé avant N, sans date (signalé)', () => {
     const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [
       enfant({ fiscalement_a_charge: false }),
-      enfant({ est_decede: true }),
+      enfant({ est_decede: true, date_deces: '2024-12-31' }),
       enfant({ prenom: 'Léa', date_naissance: null }),
     ], 2025);
     expect(r.valeurs.enfantsCharge).toEqual([]);
     expect(r.notes).toEqual(['Léa Test : date de naissance absente dans Famille, enfant non repris.']);
+  });
+
+  it('enfant décédé pendant N compté (y compris né et décédé pendant N) ; sans date de décès : exclu et signalé', () => {
+    const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [
+      enfant({ est_decede: true, date_deces: '2025-01-15' }),
+      enfant({ est_decede: true, date_naissance: '2025-03-01', date_deces: '2025-04-01' }),
+      enfant({ prenom: 'Max', est_decede: true, date_deces: null }),
+    ], 2025);
+    expect(r.valeurs.enfantsCharge.map((e) => e.anneeNaissance)).toEqual([2015, 2025]);
+    expect(r.notes).toEqual([
+      'Max Test : décédé(e), date de décès absente dans Famille : non compté(e), à vérifier (compté si décès en 2025 ou après).',
+    ]);
   });
 
   it('concubinage : célibataire, enfant commun et enfant du client comptés, enfant du partenaire seul exclu', () => {

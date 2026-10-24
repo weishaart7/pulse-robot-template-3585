@@ -262,100 +262,142 @@ describe('calculerPartsFiscales — ancien parent isolé (case L)', () => {
   });
 });
 
-describe('calculerPartsFiscales — invalidité déclarant 1 / déclarant 2', () => {
-  it('déclarant 1 seul : +0,5, plafond 1807€ + complément 1801€', () => {
-    const result = calculerPartsFiscales(makeInput({ invaliditeDeclarant1: true }));
-    expect(result.majorations).toEqual([
-      {
-        type: 'invalidite_declarant1',
-        libelle: 'Invalidité — déclarant 1',
-        parts: 0.5,
-        plafondUnitaire: 1807,
-        plafondComplementaire: 1801,
-      },
-    ]);
+describe('calculerPartsFiscales — couple : cases P, F et S', () => {
+  const couple = (o: Partial<FoyerFiscalInput>) => makeInput({ situationFamille: 'marie', ...o });
+
+  it('P seule : +0,5, plafond 1807€ + complément 1801€', () => {
+    const result = calculerPartsFiscales(couple({ invaliditeDeclarant1: true }));
+    expect(result.majorations).toEqual([{
+      type: 'invalidite_declarant1',
+      libelle: 'Invalidité — déclarant 1 (case P)',
+      parts: 0.5,
+      plafondUnitaire: 1807,
+      plafondComplementaire: 1801,
+    }]);
   });
 
-  it('déclarant 1 et déclarant 2 invalides : deux lignes distinctes jamais fusionnées, +1 part au total', () => {
-    const result = calculerPartsFiscales(makeInput({ invaliditeDeclarant1: true, invaliditeDeclarant2: true }));
+  it('P et F se cumulent : deux lignes, +1 part', () => {
+    const result = calculerPartsFiscales(couple({ invaliditeDeclarant1: true, invaliditeDeclarant2: true }));
     expect(result.majorations.map(m => m.type)).toEqual(['invalidite_declarant1', 'invalidite_declarant2']);
-    expect(result.majorations[0]).not.toBe(result.majorations[1]);
-    expect(result.nombreParts).toBe(2);
+    expect(result.nombreParts).toBe(3);
+  });
+
+  it('les deux anciens combattants : une seule demi-part S pour le couple', () => {
+    const result = calculerPartsFiscales(couple({ ancienCombattantDeclarant1: true, ancienCombattantDeclarant2: true }));
+    expect(result.majorations).toEqual([{
+      type: 'ancien_combattant_couple',
+      libelle: 'Ancien combattant +74 ans (case S)',
+      parts: 0.5,
+      plafondUnitaire: 1807,
+      plafondComplementaire: 1801,
+    }]);
+    expect(result.nombreParts).toBe(2.5);
+  });
+
+  it('S ne se cumule pas avec P ou F : écartée avec motif', () => {
+    const result = calculerPartsFiscales(couple({ ancienCombattantDeclarant2: true, invaliditeDeclarant1: true }));
+    expect(result.majorations.map(m => m.type)).toEqual(['invalidite_declarant1']);
+    expect(result.majorationsNonRetenues).toEqual([{
+      type: 'ancien_combattant_couple',
+      libelle: 'Ancien combattant +74 ans (case S)',
+      motif: 'ne se cumule pas avec les cases P ou F',
+    }]);
+  });
+
+  it('cases L, W veuf et G écartées en couple', () => {
+    const result = calculerPartsFiscales(couple({ ancienParentIsole: true, veufAncienCombattant: true, veuveDeGuerre: true }));
+    expect(result.majorations).toEqual([]);
+    expect(result.majorationsNonRetenues.map(m => m.motif)).toEqual(Array(3).fill('réservée aux personnes seules'));
   });
 });
 
-describe('calculerPartsFiscales — ancien combattant déclarant 1 / déclarant 2', () => {
-  it('les deux déclarants anciens combattants : deux lignes distinctes, +0,5 chacune', () => {
-    const result = calculerPartsFiscales(makeInput({
-      ancienCombattantDeclarant1: true,
-      ancienCombattantDeclarant2: true,
-    }));
-    expect(result.majorations.map(m => m.type)).toEqual([
-      'ancien_combattant_declarant1',
-      'ancien_combattant_declarant2',
-    ]);
-    expect(result.majorations.every(m => m.parts === 0.5 && m.plafondUnitaire === 1807 && m.plafondComplementaire === 1801)).toBe(true);
+describe('calculerPartsFiscales — personne seule : une seule demi-part P, L, W, G', () => {
+  it('W veuf : +0,5, plafond 1807€ + complément 1801€', () => {
+    const result = calculerPartsFiscales(makeInput({ situationFamille: 'veuf', veufAncienCombattant: true }));
+    expect(result.majorations).toEqual([{
+      type: 'veuf_ancien_combattant',
+      libelle: "Veuf/veuve d'ancien combattant +74 ans (case W)",
+      parts: 0.5,
+      plafondUnitaire: 1807,
+      plafondComplementaire: 1801,
+    }]);
   });
-});
 
-describe('calculerPartsFiscales — veuf/veuve d\'ancien combattant +74 ans', () => {
-  it('+0,5, plafond 1807€ SANS complément (à la différence de l\'ancien combattant lui-même)', () => {
-    const result = calculerPartsFiscales(makeInput({ veufAncienCombattant: true }));
-    expect(result.majorations).toEqual([
-      {
-        type: 'veuf_ancien_combattant',
-        libelle: "Veuf/veuve d'un ancien combattant +74 ans",
-        parts: 0.5,
-        plafondUnitaire: 1807,
-      },
-    ]);
-    expect(result.majorations[0].plafondComplementaire).toBeUndefined();
-  });
-});
-
-describe('calculerPartsFiscales — veuve de guerre (art. 195-1-c)', () => {
-  it('+0,5, plafond 1807€ + complément 1801€ (distinct du veuf ancien combattant)', () => {
+  it('G seule : +0,5, plafond 1807€ + complément 1801€', () => {
     const result = calculerPartsFiscales(makeInput({ veuveDeGuerre: true }));
-    expect(result.majorations).toEqual([
-      {
-        type: 'veuve_de_guerre',
-        libelle: 'Veuve de guerre (art. 195-1-c CGI)',
-        parts: 0.5,
-        plafondUnitaire: 1807,
-        plafondComplementaire: 1801,
-      },
-    ]);
+    expect(result.majorations).toEqual([{
+      type: 'veuve_de_guerre',
+      libelle: 'Veuve de guerre (case G)',
+      parts: 0.5,
+      plafondUnitaire: 1807,
+      plafondComplementaire: 1801,
+    }]);
   });
-});
 
-describe('calculerPartsFiscales — ordre du détail des majorations', () => {
-  it('respecte l\'ordre du formulaire : enfants, personnes invalides, parent isolé, ancien parent isolé, invalidité 1/2, ancien combattant 1/2, veuf ancien combattant, veuve de guerre', () => {
+  it('P et L : seule P retenue (plus avantageuse), L écartée pour non-cumul', () => {
+    const result = calculerPartsFiscales(makeInput({ invaliditeDeclarant1: true, ancienParentIsole: true }));
+    expect(result.majorations.map(m => m.type)).toEqual(['invalidite_declarant1']);
+    expect(result.majorationsNonRetenues).toEqual([{
+      type: 'ancien_parent_isole',
+      libelle: 'Ancien parent isolé, 5 ans seul (case L)',
+      motif: 'une seule demi-part parmi les cases P, L, W et G pour une personne seule',
+    }]);
+    expect(result.nombreParts).toBe(1.5);
+  });
+
+  it('W et G : seule W retenue', () => {
+    const result = calculerPartsFiscales(makeInput({ ancienCombattantDeclarant1: true, veuveDeGuerre: true }));
+    expect(result.majorations.map(m => m.type)).toEqual(['ancien_combattant_declarant1']);
+    expect(result.majorationsNonRetenues.map(m => m.type)).toEqual(['veuve_de_guerre']);
+  });
+
+  it('W et G exclues avec un enfant à charge ; P reste cumulable', () => {
     const result = calculerPartsFiscales(makeInput({
       enfantsCharge: [enfant()],
-      personnesInvalidesCharge: [{ anneeNaissance: 1950 }],
-      parentIsole: true,
-      ancienParentIsole: true,
-      invaliditeDeclarant1: true,
-      invaliditeDeclarant2: true,
       ancienCombattantDeclarant1: true,
-      ancienCombattantDeclarant2: true,
-      veufAncienCombattant: true,
       veuveDeGuerre: true,
+      invaliditeDeclarant1: true,
     }));
-
-    expect(result.majorations.map(m => m.type)).toEqual([
-      'enfant_rang_1',
-      'personne_invalide_charge_1',
-      'personne_invalide_charge_1_invalidite',
-      'parent_isole',
-      'ancien_parent_isole',
-      'invalidite_declarant1',
-      'invalidite_declarant2',
-      'ancien_combattant_declarant1',
-      'ancien_combattant_declarant2',
-      'veuf_ancien_combattant',
-      'veuve_de_guerre',
+    expect(result.majorations.map(m => m.type)).toEqual(['enfant_rang_1', 'invalidite_declarant1']);
+    expect(result.majorationsNonRetenues.map(m => m.motif)).toEqual([
+      'exclue avec un enfant à charge ou rattaché',
+      'exclue avec un enfant à charge ou rattaché',
     ]);
+  });
+
+  it('L exclue avec une personne invalide à charge', () => {
+    const result = calculerPartsFiscales(makeInput({ ancienParentIsole: true, personnesInvalidesCharge: [{ anneeNaissance: 1950 }] }));
+    expect(result.majorations.find(m => m.type === 'ancien_parent_isole')).toBeUndefined();
+    expect(result.majorationsNonRetenues[0].motif).toBe('suppose de vivre seul sans personne à charge');
+  });
+
+  it('cases F et S du conjoint ignorées hors couple', () => {
+    const result = calculerPartsFiscales(makeInput({ invaliditeDeclarant2: true, ancienCombattantDeclarant2: true }));
+    expect(result.majorations).toEqual([]);
+    expect(result.majorationsNonRetenues.map(m => m.motif)).toEqual(Array(2).fill('réservée aux couples mariés ou pacsés'));
+  });
+});
+
+describe('calculerPartsFiscales — rang des enfants alternés après les personnes invalides', () => {
+  it('1 enfant exclusif + 1 personne invalide + 1 enfant alterné : l\'alterné est au rang 3 (+0,5)', () => {
+    const result = calculerPartsFiscales(makeInput({
+      situationFamille: 'marie',
+      enfantsCharge: [enfant({ residenceAlternee: true }), enfant()],
+      personnesInvalidesCharge: [{ anneeNaissance: 1950 }],
+    }));
+    expect(result.majorations.find(m => m.libelle.includes('résidence alternée'))).toMatchObject({
+      type: 'enfant_rang_3', parts: 0.5, plafondUnitaire: 1807,
+    });
+    // base 2 + exclusif 0,5 + alterné rang 3 0,5 + personne invalide 1
+    expect(result.nombreParts).toBe(4);
+  });
+
+  it('le rang des enfants exclusifs ne dépend pas des personnes invalides', () => {
+    const result = calculerPartsFiscales(makeInput({
+      enfantsCharge: [enfant(), enfant()],
+      personnesInvalidesCharge: [{ anneeNaissance: 1950 }],
+    }));
+    expect(result.majorations.filter(m => m.type.startsWith('enfant_rang')).map(m => m.parts)).toEqual([0.5, 0.5]);
   });
 });
 

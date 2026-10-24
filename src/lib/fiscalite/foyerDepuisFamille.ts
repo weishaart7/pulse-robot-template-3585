@@ -39,12 +39,14 @@ const aMoinsDe = (age: number, dateNaissance: string, annee: number) => dateNais
 const nomMembre = (l: FamilyLink) => [l.prenom, l.nom].filter(Boolean).join(' ') || l.lien_familial;
 
 /**
- * Enfant compté dans la déclaration du client : à charge fiscalement, vivant, et rattaché au client.
+ * Enfant compté dans la déclaration du client : à charge fiscalement et rattaché au client. Un enfant
+ * décédé reste compté pour l'année N s'il est décédé pendant N ou après (charges appréciées au
+ * 1er janvier, ou enfant né et décédé pendant N) ; la date de décès est contrôlée par l'appelant.
  * En couple marié ou pacsé, les enfants des deux ; en concubinage ou seul, ceux du client et les
  * enfants communs (un enfant du seul partenaire relève de la déclaration de celui-ci).
  */
 function enfantDuFoyer(l: FamilyLink, enCouple: boolean): boolean {
-  if (l.lien_familial !== 'Enfant' || l.est_decede || !l.fiscalement_a_charge) return false;
+  if (l.lien_familial !== 'Enfant' || !l.fiscalement_a_charge) return false;
   return enCouple || l.enfant_de !== 'spouse';
 }
 
@@ -63,6 +65,14 @@ export function foyerDepuisFamille(
   const enfantsCharge: EnfantCharge[] = [];
   let enfantsMajeursRattaches = 0;
   for (const l of liens.filter((x) => enfantDuFoyer(x, enCouple))) {
+    if (l.est_decede) {
+      const anneeDeces = anneeDe(l.date_deces);
+      if (anneeDeces === null) {
+        notes.push(`${nomMembre(l)} : décédé(e), date de décès absente dans Famille : non compté(e), à vérifier (compté si décès en ${anneeRevenus} ou après).`);
+        continue;
+      }
+      if (anneeDeces < anneeRevenus) continue;
+    }
     if (!l.date_naissance) {
       notes.push(`${nomMembre(l)} : date de naissance absente dans Famille, enfant non repris.`);
       continue;
