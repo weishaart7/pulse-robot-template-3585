@@ -1174,16 +1174,19 @@ fonciers (§4).
   documentaire décrit apparemment le régime légal du rabais excédentaire sans que ce prélèvement transite
   par la liquidation de l'IR dans ce cas précis — la vérification empirique du total prévaut sur la
   lecture documentaire isolée d'une case unique, qui n'avait pas révélé l'incohérence. **Hors périmètre**
-  (`CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE`) : **1TP/1TZ/1AY/1MP** — aucune des quatre bases
-  déclarées (2 000 €/8 000 €/10 000 €/5 000 €), ni aucune combinaison entre elles, ne réapparaît dans une
-  quelconque base de prélèvement du détail officiel malgré des montants non nuls déclarés, et le total du
-  foyer se reconstitue exactement sans elles : ces gains sont vraisemblablement déjà prélevés à la source
-  par l'établissement teneur de compte ou l'employeur au moment de l'opération, indépendamment de la
-  liquidation de l'IR — non modélisé plutôt que deviné. **3VD/3VI/3VF/3VJ/3VK** (gains pré-28.9.2012) :
+  (`CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE`) : **1TP/1MP** — aucune base correspondante dans le
+  détail officiel et aucune source de la brochure, non modélisé plutôt que deviné. **1TZ/1UZ/1WZ/1VZ et
+  1AY/1BY soumis aux PS sur les revenus du patrimoine** (brochure DGFiP IR 2026 p.111 : gain 1TZ
+  « soumis aux prélèvements sociaux applicables aux revenus du patrimoine », 1UZ/1VZ/1WZ « abattement
+  soumis aux prélèvements sociaux » — assiette = gain avant abattements ; p.112 : 1AY/1BY « soumis aux
+  prélèvements sociaux dus au titre des revenus du patrimoine »), au taux provisoire de 18,6 %
+  (`TAUX_PS_PLUS_VALUES`, voir dette §3). **Écart assumé avec le simulateur officiel** : sur le compte réel
+  ci-dessus, aucune ligne PS pour 1TZ/1AY, total 7 175 € ; Pulse affiche désormais 7 175 € + 18 000 € ×
+  18,6 % = 10 523 €. La brochure prévaut ; un avis d'imposition réel départagerait. **3VD/3VI/3VF/3VJ/3VK** (gains pré-28.9.2012) :
   aucune source trouvée avec certitude sur leur régime PS, non testés empiriquement. Branché dans
   `useFiscalOverview.ts` (`prelevementsSociauxGainsActionnariat`) et affiché dans `FiscalOverviewCard.tsx`.
-  11 tests couvrent le rapprochement empirique exact du total du foyer (7 175 €), chacun des 4 mécanismes
-  isolément et cumulés, et l'exclusion des cases hors périmètre (dont 1TP).
+  Les tests couvrent le rapprochement avec le simulateur (7 175 € hors 1TZ/1AY), chaque mécanisme
+  isolément et cumulés, l'assiette 1TZ+abattements, 1AY/1BY et l'exclusion des cases hors périmètre.
 - **`FiscalOverviewCard.tsx` — le gros chiffre « Imposition totale » sommait uniquement l'IR, sans les
   PS désormais calculés (retour utilisateur après vérification sur le compte réel : PS invisibles du
   chiffre principal, seulement dans le détail).** Renommé « Imposition totale (IR + prélèvements
@@ -1193,7 +1196,8 @@ fonciers (§4).
   (IR seul, puis chaque catégorie de PS) reste affiché en dessous, désormais avec l'IR comme première
   ligne du détail (auparavant seulement implicite dans le gros chiffre). Vérifié sur le compte réel :
   22 874 € (IR) + 7 175 € (PS gains d'actionnariat, seule catégorie non nulle pour ce compte) =
-  **30 049 €**, identique au total du simulateur officiel.
+  **30 049 €**, identique au total du simulateur officiel avant l'ajout des PS sur 1TZ/1AY (écart
+  assumé de 3 348 €, voir ci-dessus).
 
 ### Plus-values et gains divers (cadre 3, phases 3.1 et 3.2)
 
@@ -1599,6 +1603,12 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Taux des PS « revenus du patrimoine » à vérifier case par case.** 18,6 % (CSG 10,6 % LFSS 2026)
+  est appliqué provisoirement à 1TZ/1UZ/1WZ/1VZ et 1AY/1BY, par cohérence avec les plus-values, capitaux
+  mobiliers et rentes viagères. La brochure IR 2026 (p.111) cite 17,2 % pour la fraction ≤ 300 000 € des
+  AGA (décision à compter du 31.12.2016). Vérifier pour chaque case le taux réellement liquidé (avis
+  d'imposition réel de préférence, le simulateur officiel n'affichant aucune ligne PS pour 1TZ/1AY).
+
 - **Quotient familial — case T hors enfant à charge exclusive.** Avec uniquement des enfants en
   résidence alternée, la case T vaut 0,25 part pour un seul enfant (0,5 à partir de deux), plafond
   4 262 € / 2 : le moteur accorde toujours 0,5 part. La case T ouverte par une seule personne invalide
@@ -1786,9 +1796,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   capital PER 1AI et capital retraite 1AT pour la Phase 2**
   — le taux de CSG/CRDS/CASA sur les pensions dépend d'un RFR N-2 non modélisé, une approximation par le
   revenu imposable courant s'étant révélée empiriquement fausse de plusieurs milliers d'euros sur un
-  compte réel ; 1TP/1TZ/1AY/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, confirmé par
-  l'absence de toute ligne PS correspondante dans la vérification empirique malgré des montants non nuls
-  déclarés). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS pour les trois phases :
+  compte réel ; 1TP/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, régime PS non
+  confirmé). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS pour les trois phases :
   déjà nets des cotisations salariales prélevées en paie, rien à recalculer côté IR.
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :

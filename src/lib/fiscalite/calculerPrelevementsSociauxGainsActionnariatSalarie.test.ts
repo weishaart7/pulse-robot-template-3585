@@ -25,7 +25,7 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociaux).toBe(0);
   });
 
-  it('reproduit à l\'euro près le total PS officiel du foyer sur le compte réel (1TP=2000, 1TT=15000, 1TZ=8000, 1NX=20000, 1AY=10000, 1MP=5000 -> total PS officiel 7175)', () => {
+  it('compte réel (1TP=2000, 1TT=15000, 1TZ=8000, 1NX=20000, 1AY=10000, 1MP=5000) : simulateur officiel 7175 hors 1TZ/1AY, écart assumé de 18 000 × 18,6 % (brochure IR 2026)', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
       case1tp: 2000, case1tt: 15000, case1tz: 8000, case1nx: 20000, case1ay: 10000, case1mp: 5000,
     }));
@@ -33,7 +33,11 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociauxCarriedInterestNonQualifiant).toBeCloseTo(2220 + 1500 + 2000, 6);
     // CSG 9,2 % + CRDS 0,5 % sur 1TT (1TP exclu) = 1380 + 75
     expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(1380 + 75, 6);
-    expect(result.prelevementsSociaux).toBeCloseTo(7175, 6);
+    // Total du simulateur officiel, qui n'affiche aucune ligne PS pour 1TZ/1AY.
+    expect(result.prelevementsSociaux - result.prelevementsSociauxGainsRevenusPatrimoine).toBeCloseTo(7175, 6);
+    // 1TZ + 1AY soumis aux PS sur les revenus du patrimoine (brochure p.111-112).
+    expect(result.prelevementsSociauxGainsRevenusPatrimoine).toBeCloseTo(18000 * 0.186, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(7175 + 3348, 6);
   });
 
   it('applique 9,7 % (CSG 9,2 % + CRDS 0,5 %) sur 1TT/1UT uniquement (1TP/1UP exclu)', () => {
@@ -62,11 +66,31 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.contributionSalariale3VN).toBeCloseTo(1000, 6);
   });
 
-  it('ignore 1TP/1TZ/1AY/1MP (déjà prélevés hors du calcul de l\'IR, confirmé empiriquement)', () => {
+  it('ignore 1TP/1MP (régime PS non modélisé)', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
-      case1tp: 2000, case1tz: 8000, case1ay: 10000, case1mp: 5000,
+      case1tp: 2000, case1up: 1000, case1mp: 5000, case1mq: 1000,
     }));
     expect(result.prelevementsSociaux).toBe(0);
+  });
+
+  it('soumet 1TZ aux PS sur les revenus du patrimoine (18,6 %)', () => {
+    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1tz: 8000 }));
+    expect(result.baseGainsRevenusPatrimoine).toBe(8000);
+    expect(result.prelevementsSociaux).toBeCloseTo(1488, 6);
+  });
+
+  it('assiette AGA = 1TZ + abattements 1UZ/1WZ/1VZ (gain avant abattements)', () => {
+    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
+      case1tz: 4000, case1uz: 1000, case1wz: 4000, case1vz: 1000,
+    }));
+    expect(result.baseGainsRevenusPatrimoine).toBe(10000);
+    expect(result.prelevementsSociauxGainsRevenusPatrimoine).toBeCloseTo(1860, 6);
+  });
+
+  it('soumet 1AY/1BY (BSPCE) aux PS sur les revenus du patrimoine', () => {
+    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1ay: 10000, case1by: 5000 }));
+    expect(result.baseGainsRevenusPatrimoine).toBe(15000);
+    expect(result.prelevementsSociaux).toBeCloseTo(2790, 6);
   });
 
   it('ignore les gains historiques 3VD/3VI/3VF/3VJ/3VK (régime PS non confirmé)', () => {
@@ -84,9 +108,10 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
   it('expose la liste des cases hors périmètre', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput());
     expect(result.casesHorsPerimetre).toContain('case1tp');
-    expect(result.casesHorsPerimetre).toContain('case1tz');
-    expect(result.casesHorsPerimetre).toContain('case1ay');
     expect(result.casesHorsPerimetre).toContain('case1mp');
+    expect(result.casesHorsPerimetre).not.toContain('case1tz');
+    expect(result.casesHorsPerimetre).not.toContain('case1uz');
+    expect(result.casesHorsPerimetre).not.toContain('case1ay');
     expect(result.casesHorsPerimetre).not.toContain('case1tt');
     expect(result.casesHorsPerimetre).not.toContain('case1nx');
     expect(result.casesHorsPerimetre).not.toContain('case1ny');
