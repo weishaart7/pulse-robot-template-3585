@@ -219,12 +219,18 @@ fonciers (§4).
   déplacement solidaire du `MenageForm` était nécessaire pour ne pas casser ce comportement existant.
 - **`src/lib/fiscalite/calculerPartsFiscales.ts` — moteur du quotient familial (Phase 1), désormais
   réellement branché à `MenageForm.tsx`/`SyntheseFoyerFiscal.tsx`.** Fonction pure couvrant l'art.
-  193-197 CGI (revenus 2025/impôt 2026) : parts de base (dont veuf avec enfant(s) à charge = 2 parts,
-  identique à un couple — corrigé par rapport à l'ancienne implémentation, voir ci-dessous), enfants à
-  charge et enfants majeurs rattachés dans une seule séquence de rang (progression 0,5 pour les 1er/2e,
-  1 part entière à partir du 3e), résidence alternée (moitié des droits, y compris pour la majoration
-  invalidité elle-même — confirmé BOFiP BOI-IR-LIQ-10-20-20-20), personne invalide à charge hors enfant
-  (+1 part entière, distincte de la majoration invalidité du foyer), parent isolé (case T, +1 part),
+  193-197 CGI (revenus 2025/impôt 2026) : parts de base (2 pour un couple, 1 sinon ; le veuf avec
+  enfant à charge ou rattaché a autant de parts qu'un couple via une majoration « maintien du quotient
+  conjugal » de 1 part plafonnée à 3 614 €, de sorte que le plafonnement se mesure par rapport à 1 part),
+  enfants dans une seule séquence de rang décomptée dans l'ordre de la brochure IR 2026 — à charge
+  exclusive, puis majeurs rattachés, puis résidence alternée, quel que soit l'ordre de saisie
+  (progression 0,5 pour les 1er/2e, 1 part entière à partir du 3e ; plafond 1 807 € par demi-part, soit
+  3 614 € pour une part entière, 904 € pour un quart de part), résidence alternée (moitié des droits, y
+  compris pour la majoration invalidité elle-même — confirmé BOFiP BOI-IR-LIQ-10-20-20-20), personne
+  invalide à charge hors enfant (+1 part entière, distincte de la majoration invalidité du foyer),
+  parent isolé (case T, +0,5 part, plafond 2 455 € : l'enfant n°1 et la case T sont plafonnés ensemble à
+  4 262 € ; avec uniquement des enfants en résidence alternée, la majoration réduite à 0,25 part pour
+  un seul enfant n'est pas modélisée),
   ancien parent isolé (case L, +0,5), invalidité et ancien combattant déclarant 1/2 (deux lignes
   toujours distinctes, jamais fusionnées même si identiques), veuf d'ancien combattant (art. 195-1-f,
   plafond **sans** complément) et veuve de guerre (art. 195-1-c, disposition **distincte** du veuf
@@ -417,8 +423,10 @@ fonciers (§4).
   quotient du **revenu mondial fictif** (revenu imposable en France + revenu exonéré retenu pour le taux
   effectif, paramètre optionnel `revenuExonereTauxEffectif`, 0 par défaut — comportement inchangé quand
   il est nul ou omis), puis plafonnement art. 197 CGI (compare l'avantage procuré par les majorations à
-  la somme de leurs `plafondUnitaire` — désormais chiffré pour toutes les majorations, y compris
-  « personne invalide à charge » depuis sa scission en 2 demi-parts, voir plus haut), puis
+  la somme de leurs `plafondUnitaire` — chiffré pour toutes les majorations, dont le 3e enfant et
+  suivants (3 614 €) et la part de veuvage ; avantage mesuré par rapport à `partsBase`, 1 part pour un
+  veuf ; les réductions complémentaires de 1 801 € / 2 011 € (`plafondComplementaire`) ne sont pas
+  appliquées), puis
   **proratisation** (méthode du taux effectif : `impôt sur le revenu mondial fictif × (revenu imposable
   en France / revenu mondial fictif)` — seule la part française paie, mais au taux moyen du revenu
   mondial ; sans revenu exonéré, ce ratio vaut 1 et n'a aucun effet), puis **réduction d'impôt outre-mer**
@@ -1469,8 +1477,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     Célibataire et **Concubinage → célibataire** (concubins imposés séparément) ; statut absent →
     célibataire, signalé ;
   - enfants : membres « Enfant » vivants cochés « Fiscalement à charge » ; mineurs au 1er janvier N
-    (né après le 1er janvier N − 18, né pendant N compris) → enfant à charge avec année de naissance et
-    invalidité (« Personne handicapée ») ; 18 ans ou plus → enfant majeur rattaché ; né après N ou sans
+    (né à compter du 1er janvier N − 18, né pendant N compris) ou majeurs handicapés quel que soit
+    leur âge → enfant à charge avec année de naissance et invalidité (« Personne handicapée ») ; majeur
+    de moins de 21 ans au 1er janvier N → rattaché ; de 21 à 24 ans → rattaché avec note (études à
+    vérifier, Famille ne le précise pas) ; 25 ans ou plus → non compté, signalé ; né après N ou sans
     date → non compté, signalé. En couple marié ou pacsé, les enfants des deux ; seul ou en
     concubinage, ceux du client et les enfants communs (`enfant_de` = `both_parents`, choix validé) —
     un enfant du seul partenaire est exclu et signalé ;
@@ -1479,7 +1489,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   - invalidité P / F : `personne_handicapee` du client et `personne_handicapee_conjoint` (F seulement
     en couple marié ou pacsé) ;
   - ancien combattant W / S : `ancien_combattant` du client et du conjoint, seulement à plus de 74 ans
-    au 31 décembre N (sinon non coché, signalé) ;
+    au 31 décembre N, soit né avant le 1er janvier N − 73 (sinon non coché, signalé) ;
   - notes : séparation de corps, résidence séparée ou imposition distincte (imposition séparée à
     vérifier) ; case T suggérée pour une personne seule non concubine avec enfant, jamais cochée.
 - **Mécanisme** (`MenageForm.tsx`) : un foyer enregistré fait foi ; sans foyer enregistré, le formulaire

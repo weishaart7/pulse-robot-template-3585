@@ -181,13 +181,14 @@ function calculerImpotApresQuotientFamilial(
  * forfaitaire (`impotForfaitaire`, hors barème — voir plus bas).
  *
  * Plafonnement : la somme des `plafondUnitaire` de chaque majoration
- * (`calculerPartsFiscales`) borne l'avantage. Une majoration sans
- * `plafondUnitaire` renseigné (ex. personne invalide à charge, art. 196 A bis
- * CGI — cas non encore chiffré dans `calculerPartsFiscales.ts`) désactive tout
- * plafonnement pour l'ensemble du foyer plutôt que de risquer une sous- ou
- * sur-estimation : simplification à lever quand ce cas sera modélisé. Le
- * `plafondComplementaire` (cumul de majorations sur une même personne) n'est
- * pas non plus appliqué pour l'instant.
+ * (`calculerPartsFiscales`) borne l'avantage, mesuré par rapport à `partsBase`
+ * (2 parts pour un couple, 1 part sinon — y compris pour un veuf avec personne
+ * à charge, dont la part de veuvage est elle-même une majoration plafonnée).
+ * Toutes les majorations produites par `calculerPartsFiscales` portent un
+ * plafond ; une majoration sans `plafondUnitaire` désactiverait par prudence
+ * tout plafonnement du foyer (garde-fou, plus atteint en pratique). Le
+ * `plafondComplementaire` (réductions complémentaires 1 801 € / 2 011 €) n'est
+ * pas encore appliqué.
  *
  * `revenuExonereTauxEffectif` (optionnel, 0 par défaut) : revenu exonéré net
  * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`),

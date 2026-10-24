@@ -18,10 +18,10 @@ describe('foyerDepuisFamille', () => {
     expect(r.notes).toEqual([]);
   });
 
-  it('minorité au 1er janvier : né le 1.1.2007 majeur, né le 2.1.2007 mineur, né pendant 2025 compté, après exclu', () => {
+  it('minorité au 1er janvier : né le 31.12.2006 majeur, né le 1.1.2007 mineur, né pendant 2025 compté, après exclu', () => {
     const r = foyerDepuisFamille({}, { statut_couple: 'Pacsé(e)' }, [
+      enfant({ date_naissance: '2006-12-31' }),
       enfant({ date_naissance: '2007-01-01' }),
-      enfant({ date_naissance: '2007-01-02' }),
       enfant({ date_naissance: '2025-11-30' }),
       enfant({ date_naissance: '2026-02-01' }),
     ], 2025);
@@ -72,12 +72,27 @@ describe('foyerDepuisFamille', () => {
     expect(r.valeurs.invaliditeDeclarant2).toBe(true);
   });
 
-  it('ancien combattant : demi-part au-delà de 74 ans au 31 décembre, sinon note', () => {
-    const plus = foyerDepuisFamille({ ancien_combattant: true, date_naissance: '1950-12-31' }, { statut_couple: 'Célibataire' }, [], 2025);
+  it('ancien combattant : demi-part si né avant le 1.1.1952 (revenus 2025), sinon note', () => {
+    const plus = foyerDepuisFamille({ ancien_combattant: true, date_naissance: '1951-12-31' }, { statut_couple: 'Célibataire' }, [], 2025);
     expect(plus.valeurs.ancienCombattantDeclarant1).toBe(true);
-    const moins = foyerDepuisFamille({ ancien_combattant: true, date_naissance: '1951-01-01' }, { statut_couple: 'Célibataire' }, [], 2025);
+    const moins = foyerDepuisFamille({ ancien_combattant: true, date_naissance: '1952-01-01' }, { statut_couple: 'Célibataire' }, [], 2025);
     expect(moins.valeurs.ancienCombattantDeclarant1).toBe(false);
     expect(moins.notes).toHaveLength(1);
+  });
+
+  it('enfants majeurs : handicapé à charge, moins de 21 ans rattaché, 21-24 ans rattaché avec note, 25 ans et plus exclu', () => {
+    const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [
+      enfant({ prenom: 'Handi', date_naissance: '1995-04-01', handicap: true }),
+      enfant({ prenom: 'Jeune', date_naissance: '2004-01-01' }),
+      enfant({ prenom: 'Etu', date_naissance: '2003-06-01' }),
+      enfant({ prenom: 'Vieux', date_naissance: '1999-12-31' }),
+    ], 2025);
+    expect(r.valeurs.enfantsCharge).toEqual([{ anneeNaissance: 1995, invalide: true, residenceAlternee: false }]);
+    expect(r.valeurs.enfantsMajeursRattaches).toBe(2);
+    expect(r.notes).toEqual([
+      "Etu Test : 21 ans ou plus au 1er janvier 2025, rattachement possible seulement s'il poursuit des études, à vérifier.",
+      'Vieux Test : 25 ans ou plus au 1er janvier 2025, non handicapé(e) : rattachement impossible, non compté(e).',
+    ]);
   });
 
   it('séparation de corps signalée, statut absent → célibataire', () => {

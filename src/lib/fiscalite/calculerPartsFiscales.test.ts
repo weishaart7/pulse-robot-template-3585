@@ -46,14 +46,22 @@ describe('calculerPartsFiscales — parts de base', () => {
     expect(calculerPartsFiscales(makeInput({ situationFamille: 'pacse' })).partsBase).toBe(2);
   });
 
-  it('veuf avec enfant à charge : 2 parts (identique couple)', () => {
+  it('veuf avec enfant à charge : 2,5 parts comme un couple, base 1 + part de veuvage plafonnée 3614€', () => {
     const result = calculerPartsFiscales(makeInput({ situationFamille: 'veuf', enfantsCharge: [enfant()] }));
-    expect(result.partsBase).toBe(2);
+    expect(result.partsBase).toBe(1);
+    expect(result.majorations[0]).toEqual({
+      type: 'veuf_quotient_conjugal',
+      libelle: 'Maintien du quotient conjugal (veuf avec personne à charge)',
+      parts: 1,
+      plafondUnitaire: 3614,
+    });
+    expect(result.nombreParts).toBe(2.5);
   });
 
-  it('veuf avec enfant majeur rattaché uniquement : 2 parts', () => {
+  it('veuf avec enfant majeur rattaché uniquement : part de veuvage accordée', () => {
     const result = calculerPartsFiscales(makeInput({ situationFamille: 'veuf', enfantsMajeursRattaches: 1 }));
-    expect(result.partsBase).toBe(2);
+    expect(result.partsBase).toBe(1);
+    expect(result.nombreParts).toBe(2.5);
   });
 });
 
@@ -76,7 +84,7 @@ describe('calculerPartsFiscales — enfants à charge (progression 0,5 / 1)', ()
   it('3 enfants : +0,5 / +0,5 / +1 (3e enfant à part entière)', () => {
     const result = calculerPartsFiscales(makeInput({ enfantsCharge: [enfant(), enfant(), enfant()] }));
     expect(result.majorations.map(m => m.parts)).toEqual([0.5, 0.5, 1]);
-    expect(result.majorations[2]).toMatchObject({ type: 'enfant_rang_3', plafondUnitaire: undefined });
+    expect(result.majorations[2]).toMatchObject({ type: 'enfant_rang_3', plafondUnitaire: 3614 });
     expect(result.nombreParts).toBe(3);
   });
 
@@ -124,6 +132,28 @@ describe('calculerPartsFiscales — résidence alternée', () => {
       enfantsCharge: [enfant(), enfant(), enfant({ residenceAlternee: true })],
     }));
     expect(result.majorations[2]).toMatchObject({ type: 'enfant_rang_3', parts: 0.5, plafondUnitaire: 1807 });
+  });
+
+  it('enfants alternés décomptés après les exclusifs, quel que soit l\'ordre de saisie : 1,5 part', () => {
+    const result = calculerPartsFiscales(makeInput({
+      enfantsCharge: [enfant({ residenceAlternee: true }), enfant(), enfant()],
+    }));
+    expect(result.majorations.map(m => m.parts)).toEqual([0.5, 0.5, 0.5]);
+    expect(result.majorations[2].libelle).toContain('résidence alternée');
+    expect(result.nombreParts).toBe(2.5);
+  });
+
+  it('enfants alternés décomptés après les majeurs rattachés', () => {
+    const result = calculerPartsFiscales(makeInput({
+      enfantsCharge: [enfant({ residenceAlternee: true })],
+      enfantsMajeursRattaches: 2,
+    }));
+    expect(result.majorations.map(m => m.libelle)).toEqual([
+      '1er enfant majeur rattaché',
+      '2e enfant majeur rattaché',
+      '3e enfant à charge (résidence alternée)',
+    ]);
+    expect(result.majorations.map(m => m.parts)).toEqual([0.5, 0.5, 0.5]);
   });
 });
 
@@ -202,14 +232,16 @@ describe('calculerPartsFiscales — personne invalide à charge (hors enfant)', 
 });
 
 describe('calculerPartsFiscales — parent isolé (case T)', () => {
-  it('parent isolé avec 1 enfant à charge : +1 part, plafond 4262€', () => {
+  it('parent isolé avec 1 enfant à charge : 2 parts, enfant n°1 + case T plafonnés ensemble à 4262€', () => {
     const result = calculerPartsFiscales(makeInput({ parentIsole: true, enfantsCharge: [enfant()] }));
     expect(result.majorations).toContainEqual({
       type: 'parent_isole',
       libelle: 'Parent isolé (case T)',
-      parts: 1,
-      plafondUnitaire: 4262,
+      parts: 0.5,
+      plafondUnitaire: 2455,
     });
+    expect(result.nombreParts).toBe(2);
+    expect(result.majorations.reduce((t, m) => t + (m.plafondUnitaire ?? 0), 0)).toBe(4262);
   });
 
   it('parent isolé sans aucun enfant à charge : pas de majoration', () => {
@@ -339,8 +371,9 @@ describe('calculerPartsFiscales — cas combiné complet', () => {
       invaliditeDeclarant1: true,
     }));
 
-    // base 2 + enfant1 0,5 + enfant2 0,25 + enfant2_invalidite 0,25 + enfant3 (rang3) 1 + invalidite_declarant1 0,5
+    // Exemple brochure (3,75 parts) + invalidité déclarant 1 : base 2 + 2 exclusifs 0,5 + 0,5, puis
+    // l'alterné décompté en dernier au rang 3 (0,5) + sa majoration invalidité 0,25 + 0,5
     expect(result.partsBase).toBe(2);
-    expect(result.nombreParts).toBe(2 + 0.5 + 0.25 + 0.25 + 1 + 0.5);
+    expect(result.nombreParts).toBe(2 + 0.5 + 0.5 + 0.5 + 0.25 + 0.5);
   });
 });

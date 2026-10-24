@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calculerImpot } from './calculerImpot';
-import { MajorationDetail, PartsFiscalesResult } from './types';
+import { calculerPartsFiscales } from './calculerPartsFiscales';
+import { FoyerFiscalInput, MajorationDetail, PartsFiscalesResult } from './types';
 
 function makeParts(overrides: Partial<PartsFiscalesResult> = {}): PartsFiscalesResult {
   return {
@@ -98,6 +99,39 @@ describe('calculerImpot — plafonnement du quotient familial (art. 197 CGI)', (
     expect(result.plafondQuotientFamilial).toBe(Infinity);
     expect(result.plafonnementApplique).toBe(false);
     expect(result.impotApresPlafonnement).toBeCloseTo(result.impotAvecMajorations, 6);
+  });
+});
+
+describe('calculerImpot — plafonnement avec les parts réelles (non-régression)', () => {
+  const foyer = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
+    situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
+    enfantsMajeursRattaches: 0, parentIsole: false, ancienParentIsole: false, invaliditeDeclarant1: false,
+    invaliditeDeclarant2: false, ancienCombattantDeclarant1: false, ancienCombattantDeclarant2: false,
+    veufAncienCombattant: false, veuveDeGuerre: false, ...overrides,
+  });
+  const enfant = { anneeNaissance: 2015, invalide: false, residenceAlternee: false };
+
+  it('couple avec 3 enfants à haut revenu : avantage plafonné à 4 × 1 807 € (le 3e enfant ne désactive plus le plafond)', () => {
+    const parts = calculerPartsFiscales(foyer({ enfantsCharge: [enfant, enfant, enfant] }));
+    const result = calculerImpot(300000, parts, 'marie');
+    expect(result.plafondQuotientFamilial).toBe(4 * 1807);
+    expect(result.plafonnementApplique).toBe(true);
+    expect(result.impotApresPlafonnement).toBeCloseTo(result.impotSansMajorations - 4 * 1807, 6);
+  });
+
+  it('veuf avec 1 enfant à haut revenu : comparé à 1 part, avantage plafonné à 3 614 + 1 807 €', () => {
+    const parts = calculerPartsFiscales(foyer({ situationFamille: 'veuf', enfantsCharge: [enfant] }));
+    const result = calculerImpot(300000, parts, 'veuf');
+    expect(result.plafondQuotientFamilial).toBe(3614 + 1807);
+    expect(result.plafonnementApplique).toBe(true);
+    expect(result.impotApresPlafonnement).toBeCloseTo(result.impotSansMajorations - (3614 + 1807), 6);
+  });
+
+  it('parent isolé avec 1 enfant à haut revenu : avantage plafonné à 4 262 €', () => {
+    const parts = calculerPartsFiscales(foyer({ situationFamille: 'celibataire', parentIsole: true, enfantsCharge: [enfant] }));
+    const result = calculerImpot(300000, parts, 'celibataire');
+    expect(result.plafondQuotientFamilial).toBe(4262);
+    expect(result.impotApresPlafonnement).toBeCloseTo(result.impotSansMajorations - 4262, 6);
   });
 });
 

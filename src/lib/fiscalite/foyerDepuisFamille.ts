@@ -33,8 +33,8 @@ const anneeDe = (date?: string | null): number | null => {
   return Number.isFinite(annee) && annee > 1800 ? annee : null;
 };
 
-/** Mineur au 1er janvier N : né après le 1er janvier N − 18 (enfant né pendant N compris). */
-const estMineurAu1erJanvier = (dateNaissance: string, annee: number) => dateNaissance.slice(0, 10) > `${annee - 18}-01-01`;
+/** Moins de `age` ans au 1er janvier N : né à compter du 1er janvier N − `age` (brochure : « nés du 1.1.2007 » pour 18 ans en 2025). */
+const aMoinsDe = (age: number, dateNaissance: string, annee: number) => dateNaissance.slice(0, 10) >= `${annee - age}-01-01`;
 
 const nomMembre = (l: FamilyLink) => [l.prenom, l.nom].filter(Boolean).join(' ') || l.lien_familial;
 
@@ -71,10 +71,18 @@ export function foyerDepuisFamille(
       notes.push(`${nomMembre(l)} : né(e) en ${anneeDe(l.date_naissance)}, après l'année des revenus ${anneeRevenus} : non compté(e).`);
       continue;
     }
-    if (estMineurAu1erJanvier(l.date_naissance, anneeRevenus)) {
+    // Mineur, ou majeur handicapé quel que soit son âge : enfant à charge (avec majoration invalidité).
+    // Autre majeur : rattachable s'il a moins de 21 ans, ou moins de 25 ans s'il poursuit des études
+    // (Famille ne le précise pas).
+    if (aMoinsDe(18, l.date_naissance, anneeRevenus) || l.handicap) {
       enfantsCharge.push({ anneeNaissance: anneeDe(l.date_naissance)!, invalide: !!l.handicap, residenceAlternee: false });
-    } else {
+    } else if (aMoinsDe(21, l.date_naissance, anneeRevenus)) {
       enfantsMajeursRattaches += 1;
+    } else if (aMoinsDe(25, l.date_naissance, anneeRevenus)) {
+      enfantsMajeursRattaches += 1;
+      notes.push(`${nomMembre(l)} : 21 ans ou plus au 1er janvier ${anneeRevenus}, rattachement possible seulement s'il poursuit des études, à vérifier.`);
+    } else {
+      notes.push(`${nomMembre(l)} : 25 ans ou plus au 1er janvier ${anneeRevenus}, non handicapé(e) : rattachement impossible, non compté(e).`);
     }
   }
   const enfantsDuPartenaire = liens.filter((l) => !enCouple && l.lien_familial === 'Enfant' && !l.est_decede
@@ -90,13 +98,13 @@ export function foyerDepuisFamille(
     else personnesInvalidesCharge.push({ anneeNaissance: annee });
   }
 
-  // Ancien combattant : case W / S seulement au-delà de 74 ans au 31 décembre de l'année des revenus.
+  // Ancien combattant : case W / S si plus de 74 ans au 31 décembre N, soit né avant le 1er janvier N − 73.
   const ancienCombattant = (estAncien: boolean | null | undefined, dateNaissance: string | null | undefined, qui: string) => {
     if (!estAncien) return false;
     const annee = anneeDe(dateNaissance);
     if (annee === null) { notes.push(`${qui} : ancien combattant, date de naissance absente : case non cochée.`); return false; }
-    if (anneeRevenus - annee > 74) return true;
-    notes.push(`${qui} : ancien combattant de 74 ans ou moins au 31 décembre ${anneeRevenus} : pas de demi-part.`);
+    if (annee <= anneeRevenus - 74) return true;
+    notes.push(`${qui} : ancien combattant né en ${annee}, après le 1er janvier ${anneeRevenus - 73} : pas de demi-part.`);
     return false;
   };
 

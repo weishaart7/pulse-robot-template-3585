@@ -5,7 +5,9 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
 const PLAFOND_DEMI_PART_STANDARD = 1807;
 const PLAFOND_QUART_PART_ALTERNEE = 904;
 const PLAFOND_COMPLEMENTAIRE_STANDARD = 1801;
-const PLAFOND_PARENT_ISOLE = 4262;
+// Plafond global des deux premières demi-parts au-delà de 1 part (enfant n°1 + case T), dont la
+// demi-part de l'enfant n°1 consomme déjà PLAFOND_DEMI_PART_STANDARD : reste pour la case T.
+const PLAFOND_PARENT_ISOLE = 4262 - PLAFOND_DEMI_PART_STANDARD;
 const PLAFOND_ANCIEN_PARENT_ISOLE = 1079;
 
 function rangLabel(rang: number): string {
@@ -23,18 +25,30 @@ interface EnfantRang {
   estMajeurRattache: boolean;
 }
 
+/**
+ * Ordre de décompte (brochure IR 2026) : enfants à charge exclusive ou principale, puis enfants
+ * majeurs rattachés, puis enfants en résidence alternée — le rang (0,5 part jusqu'au 2e, 1 part
+ * ensuite) suit cet ordre, pas celui de la saisie.
+ */
 function construireEnfantsRang(input: FoyerFiscalInput): EnfantRang[] {
-  const enfantsCharge: EnfantRang[] = input.enfantsCharge.map(e => ({
+  const versRang = (e: FoyerFiscalInput['enfantsCharge'][number]): EnfantRang => ({
     invalide: e.invalide,
     residenceAlternee: e.residenceAlternee,
     estMajeurRattache: false,
-  }));
+  });
+  const exclusifs = input.enfantsCharge.filter(e => !e.residenceAlternee).map(versRang);
+  const alternes = input.enfantsCharge.filter(e => e.residenceAlternee).map(versRang);
   const majeursRattaches: EnfantRang[] = Array.from({ length: input.enfantsMajeursRattaches }, () => ({
     invalide: false,
     residenceAlternee: false,
     estMajeurRattache: true,
   }));
-  return [...enfantsCharge, ...majeursRattaches];
+  return [...exclusifs, ...majeursRattaches, ...alternes];
+}
+
+/** 1 807 € par demi-part (un quart de part : 904 €, soit 1 807 € / 2 arrondi). */
+function plafondPourParts(parts: number): number {
+  return parts === 0.25 ? PLAFOND_QUART_PART_ALTERNEE : (parts / 0.5) * PLAFOND_DEMI_PART_STANDARD;
 }
 
 function majorationsEnfants(enfants: EnfantRang[]): MajorationDetail[] {
@@ -51,9 +65,7 @@ function majorationsEnfants(enfants: EnfantRang[]): MajorationDetail[] {
       type: `enfant_rang_${rang}`,
       libelle: `${rangLabel(rang)} ${nature}${suffixe}`,
       parts,
-      plafondUnitaire: parts === 0.25 ? PLAFOND_QUART_PART_ALTERNEE
-        : parts === 0.5 ? PLAFOND_DEMI_PART_STANDARD
-        : undefined,
+      plafondUnitaire: plafondPourParts(parts),
     });
 
     if (enfant.invalide) {
@@ -99,12 +111,21 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
   const enfantsRang = construireEnfantsRang(input);
   const nombreEnfants = enfantsRang.length;
 
+  // Veuf avec enfant à charge ou rattaché : autant de parts qu'un couple, mais le plafonnement se
+  // mesure par rapport à 1 part — la part de veuvage est une majoration plafonnée (2 demi-parts).
   const veufAvecEnfants = input.situationFamille === 'veuf' && nombreEnfants > 0;
-  const partsBase = COUPLE_IMPOSITION_COMMUNE.includes(input.situationFamille) || veufAvecEnfants ? 2 : 1;
+  const partsBase = COUPLE_IMPOSITION_COMMUNE.includes(input.situationFamille) ? 2 : 1;
 
-  const majorations: MajorationDetail[] = [
-    ...majorationsEnfants(enfantsRang),
-  ];
+  const majorations: MajorationDetail[] = [];
+  if (veufAvecEnfants) {
+    majorations.push({
+      type: 'veuf_quotient_conjugal',
+      libelle: 'Maintien du quotient conjugal (veuf avec personne à charge)',
+      parts: 1,
+      plafondUnitaire: plafondPourParts(1),
+    });
+  }
+  majorations.push(...majorationsEnfants(enfantsRang));
 
   input.personnesInvalidesCharge.forEach((_, index) => {
     const rang = index + 1;
@@ -130,7 +151,7 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
     majorations.push({
       type: 'parent_isole',
       libelle: 'Parent isolé (case T)',
-      parts: 1,
+      parts: 0.5,
       plafondUnitaire: PLAFOND_PARENT_ISOLE,
     });
   }
