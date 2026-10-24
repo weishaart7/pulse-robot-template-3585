@@ -245,19 +245,21 @@ describe('calculerRevenuCapitauxMobiliers — contrats de 8 ans et plus (Phase 2
     expect(avecOption.revenuExonereRetenuPourRFR).toBe(10000);
   });
 
-  it("l'abattement sur 2CH/2VV/2WW est réintégré dans revenuExonereRetenuPourRFR, quelle que soit l'option 2OP", () => {
+  it("l'abattement sur 2CH/2VV/2WW n'est pas réintégré au RFR (art. 1417 IV 1° a bis CGI)", () => {
     const sansOption = calculer(makeInput({ case2vv: 10000 })); // 4600 € d'abattement
-    expect(sansOption.revenuExonereRetenuPourRFR).toBe(4600 + 5400); // + base PFU nette à 7,5 %
+    expect(sansOption.revenuExonereRetenuPourRFR).toBe(5400); // base PFU nette à 7,5 % seulement
     const avecOption = calculer(makeInput({ case2op: true, case2vv: 10000 }));
-    expect(avecOption.revenuExonereRetenuPourRFR).toBe(4600);
+    expect(avecOption.revenuExonereRetenuPourRFR).toBe(0);
+    const couple = calculer(makeInput({ case2ch: 9200 }), 'marie');
+    expect(couple.revenuExonereRetenuPourRFR).toBe(0);
+    expect(couple.totalNetImposable).toBe(0);
   });
 
-  it("l'abattement 2CH/2VV/2WW et le montant brut de 2DH se cumulent dans revenuExonereRetenuPourRFR sans double compte", () => {
+  it('2DH compté au brut, sans réintégration des abattements 2CH/2VV/2WW', () => {
     const result = calculer(makeInput({ case2ch: 1000, case2dh: 1000, case2vv: 1000, case2ww: 10000 }));
     // Abattement 4600 : 1000 sur 2CH, 1000 sur 2DH, 1000 sur 2VV, 1600 restant sur 2WW
-    // RFR = 2DH brut (1000) + abattement 2CH (1000) + abattement 2VV (1000) + abattement 2WW (1600)
-    // + base PFU : 2WW net (8400) ; 2VV net nul ; 2CH au barème, déjà dans le revenu imposable
-    expect(result.revenuExonereRetenuPourRFR).toBe(1000 + 1000 + 1000 + 1600 + 8400);
+    // RFR = 2DH brut (1000) + base PFU : 2WW net (8400) ; 2VV net nul ; 2CH au barème, déjà dans le revenu imposable
+    expect(result.revenuExonereRetenuPourRFR).toBe(1000 + 8400);
   });
 });
 

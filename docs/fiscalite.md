@@ -549,12 +549,11 @@ fonciers (§4).
   `RevenuCapitauxMobiliersResult` (ni `totalNetImposable`, ni `impotForfaitaire` — seul
   `creditImpotAssuranceVie` en dérive, via `abattementSur2dh`), c'est le **montant brut complet** qui est
   retenu, indépendamment de 2OP — pas seulement sa fraction d'abattement. **Abattement de
-  4 600 €/9 200 € sur 2CH/2VV/2WW** (confiance moindre, source secondaire) : un exemple chiffré
-  (avenuedesinvestisseurs.fr, sans texte de loi cité) montre un gain de 9 200 € intégralement couvert par
-  l'abattement, PFU par défaut → *« votre RFR passera à 69 200 € (60 000 + 9 200 € de PV) »* — réintégré
-  même sous PFU, cohérent avec le mécanisme déjà confirmé pour l'abattement de 40 % sur les dividendes.
-  Réintégré quelle que soit la valeur de 2OP (`abattementSur2ch + abattementSur2vv + abattementSur2ww`,
-  sans double compte avec 2DH compté en brut séparément).
+  4 600 €/9 200 € sur 2CH/2VV/2WW : non réintégré** — l'art. 1417 IV 1° a bis CGI énumère
+  limitativement les abattements réintégrés (40 % sur dividendes, abattements de plus-values) sans
+  viser celui de l'art. 125-0 A ; ces produits entrent au RFR pour leur montant net retenu à l'IR
+  (barème ou PFU). Le 1° c vise en revanche au brut les revenus soumis à prélèvement libératoire
+  (2DH, 2XX, 2VM, 2EE).
   **Hors périmètre pour l'instant : les revenus imposés à taux forfaitaire hors barème** (gains
   d'actionnariat à taux historique, carried-interest, PFU/prélèvement forfaitaire libératoire sur
   capitaux mobiliers). Ces mécanismes n'exposent aujourd'hui que le montant d'impôt forfaitaire déjà
@@ -1622,12 +1621,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
-- **Réintégration au RFR de l'abattement 4 600 €/9 200 € (2CH/2VV/2WW) non confirmée.** Le code la
-  réintègre quelle que soit 2OP (exemple chiffré d'une source secondaire ; un amendement AN de 2013
-  décrit aussi le RFR « majoré de l'abattement »). Une autre source tierce soutient l'inverse sous
-  option barème (RFR net de l'abattement, réintégration totale seulement sous prélèvement
-  libératoire). Brochure IR 2026 muette, texte de l'art. 1417 IV non consulté. À trancher sur un avis
-  d'imposition réel ou le simulateur DGFiP avec 2CH/2VV sous l'abattement ; n'affecte que le RFR.
 - **Taux des PS « revenus du patrimoine » à vérifier case par case.** 18,6 % (CSG 10,6 % LFSS 2026)
   est appliqué provisoirement à 1TZ/1UZ/1WZ/1VZ et 1AY/1BY, par cohérence avec les plus-values, capitaux
   mobiliers et rentes viagères. La brochure IR 2026 (p.111) cite 17,2 % pour la fraction ≤ 300 000 € des

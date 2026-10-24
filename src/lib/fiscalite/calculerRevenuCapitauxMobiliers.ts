@@ -124,13 +124,11 @@ export interface RevenuCapitauxMobiliersResult {
    * — seul `creditImpotAssuranceVie` en dérive), c'est le montant brut
    * complet qui est retenu ici, indépendamment de 2OP.
    *
-   * **Abattement de 4 600 €/9 200 € sur 2CH/2VV/2WW** (contrats ≥ 8 ans, hors
-   * 2DH ci-dessus déjà compté en brut) : réintégré au RFR quelle que soit la
-   * modalité d'imposition (PFU ou barème) — confirmé par un exemple chiffré
-   * (avenuedesinvestisseurs.fr, source secondaire sans texte de loi cité,
-   * confiance moindre que les deux points ci-dessus) : gain de 9 200 €
-   * intégralement couvert par l'abattement, PFU par défaut → « votre RFR
-   * passera à 69 200 € (60 000 + 9 200 € de PV) » — réintégré même sous PFU.
+   * **Abattement de 4 600 €/9 200 € sur 2CH/2VV/2WW : NON réintégré.**
+   * L'art. 1417 IV 1° a bis CGI énumère limitativement les abattements
+   * réintégrés (dont le 40 % du 2° du 3 de l'art. 158) sans viser celui de
+   * l'art. 125-0 A : ces produits entrent au RFR pour leur montant net
+   * retenu à l'IR (barème ou PFU), après abattement.
    *
    * **2XX, 2VM, 2EE, montant brut** (revenus soumis à un prélèvement ou à
    * une retenue libératoire) : brochure DGFiP IR 2026 p.123-124 — « les
@@ -273,8 +271,8 @@ export function calculerRevenuCapitauxMobiliers(
 
   // 2XX/2VM/2EE : soumis à un prélèvement libératoire, sans effet sur l'IR mais retenus au RFR (brochure p.123-124, p.134).
   const revenusLiberatoiresRetenusPourRFR = (input.case2xx ?? 0) + (input.case2vm ?? 0) + (input.case2ee ?? 0);
-  const revenuExonereRetenuPourRFRContratsAssuranceVie = case2dh
-    + abattementSur2ch + abattementSur2vv + abattementSur2ww + revenusLiberatoiresRetenusPourRFR;
+  // Art. 1417 IV 1° c CGI : revenus soumis à prélèvement libératoire, au brut. L'abattement 125-0 A n'est pas réintégré (a bis).
+  const revenuExonereRetenuPourRFRContratsAssuranceVie = case2dh + revenusLiberatoiresRetenusPourRFR;
 
   if (input.case2op) {
     const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;
