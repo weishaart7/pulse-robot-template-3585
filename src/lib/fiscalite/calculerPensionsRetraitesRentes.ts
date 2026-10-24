@@ -1,5 +1,25 @@
-import { abattementPensionDeclarant, PENSION_ABATTEMENT_PLAFOND_FOYER } from './calculerRevenuExonereTauxEffectif';
-import { PensionsRetraitesRentesInput } from './types';
+import { PensionsRetraitesRentesInput, RevenusExoneresTauxEffectifInput } from './types';
+
+const PENSION_ABATTEMENT_TAUX = 0.10;
+const PENSION_ABATTEMENT_PLANCHER = 454;
+/** Plafond global par foyer de l'abattement de 10 % sur les pensions (art. 158-5-a CGI), commun à toutes les pensions du foyer y compris 1AH. */
+export const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
+
+/**
+ * Abattement de 10 % sur une pension (plancher 454 €, jamais supérieur à la
+ * pension elle-même). Le plafond de 4 439 € s'applique globalement à la somme
+ * des abattements du foyer, pas par pensionné — appliqué séparément sur le
+ * total par l'appelant (voir calculerPensionsRetraitesRentes ci-dessous).
+ */
+export function abattementPensionDeclarant(pension: number): number {
+  if (pension <= 0) return 0;
+  return Math.min(pension, Math.max(PENSION_ABATTEMENT_PLANCHER, pension * PENSION_ABATTEMENT_TAUX));
+}
+
+const PENSIONS_EXONEREES_VIDES: Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh'> = {
+  case1ah: null,
+  case1bh: null,
+};
 
 /** Option pour l'imposition forfaitaire des pensions de retraite en capital (1AT), art. 163 bis CGI. */
 const CAPITAL_RETRAITE_ABATTEMENT_TAUX = 0.10; // spécifique à 1AT, non plafonné (distinct de l'abattement pension classique)
@@ -50,6 +70,13 @@ export interface PensionsRetraitesRentesResult {
    * décote — hypothèse retenue, voir docs/fiscalite.md).
    */
   revenuCreditImpotEgalImpotFrancais: number;
+  /**
+   * Part nette de 1AH/1BH (pensions exonérées retenues pour le taux effectif),
+   * isolée proportionnellement au sein du pool d'abattement commun — reprise
+   * telle quelle par `calculerRevenuExonereTauxEffectif`. N'entre PAS dans
+   * `totalNetImposable`.
+   */
+  pensionsExonereesTauxEffectifNettes: number;
   casesExclues: readonly string[];
 }
 
@@ -97,10 +124,20 @@ export interface PensionsRetraitesRentesResult {
  * 1AF dans `calculerRevenuSalaires.ts`). N'entrent PAS dans
  * `totalNetImposable`.
  *
+ * 1AH/1BH (pensions exonérées retenues pour le taux effectif, saisies dans
+ * l'encart « revenus exonérés ») rejoignent aussi ce pool : l'abattement de
+ * l'art. 158-5-a CGI est unique pour toutes les pensions du foyer, les
+ * revenus retenus pour le taux effectif étant déterminés selon les règles de
+ * droit commun — un second plafond de 4 439 € pour 1AH surestimerait
+ * l'abattement. Leur part nette est isolée proportionnellement
+ * (`pensionsExonereesTauxEffectifNettes`) et n'entre PAS dans
+ * `totalNetImposable`.
+ *
  * Cases hors calcul : voir CASES_PENSIONS_EXCLUES_DU_CALCUL.
  */
 export function calculerPensionsRetraitesRentes(
   input: PensionsRetraitesRentesInput,
+  pensionsExonerees: Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh'> = PENSIONS_EXONEREES_VIDES,
 ): PensionsRetraitesRentesResult {
   const pensionDeclarant1 = (input.case1as ?? 0) + (input.case1az ?? 0) + (input.case1ao ?? 0) + (input.case1am ?? 0);
   const pensionDeclarant2 = (input.case1bs ?? 0) + (input.case1bz ?? 0) + (input.case1bo ?? 0) + (input.case1bm ?? 0);
@@ -108,8 +145,10 @@ export function calculerPensionsRetraitesRentes(
 
   const pensionEtrangere1 = input.case1al ?? 0;
   const pensionEtrangere2 = input.case1bl ?? 0;
-  const baseAbattement1 = pensionDeclarant1 + pensionEtrangere1;
-  const baseAbattement2 = pensionDeclarant2 + pensionEtrangere2;
+  const pensionExoneree1 = pensionsExonerees.case1ah ?? 0;
+  const pensionExoneree2 = pensionsExonerees.case1bh ?? 0;
+  const baseAbattement1 = pensionDeclarant1 + pensionEtrangere1 + pensionExoneree1;
+  const baseAbattement2 = pensionDeclarant2 + pensionEtrangere2 + pensionExoneree2;
   const abattementBrut1 = abattementPensionDeclarant(baseAbattement1);
   const abattementBrut2 = abattementPensionDeclarant(baseAbattement2);
   const abattementBrutTotal = abattementBrut1 + abattementBrut2;
@@ -120,10 +159,13 @@ export function calculerPensionsRetraitesRentes(
   const netDeclarant2 = baseAbattement2 - abattementBrut2 * facteurPlafond;
   const ratioEtranger1 = baseAbattement1 > 0 ? pensionEtrangere1 / baseAbattement1 : 0;
   const ratioEtranger2 = baseAbattement2 > 0 ? pensionEtrangere2 / baseAbattement2 : 0;
+  const ratioExonere1 = baseAbattement1 > 0 ? pensionExoneree1 / baseAbattement1 : 0;
+  const ratioExonere2 = baseAbattement2 > 0 ? pensionExoneree2 / baseAbattement2 : 0;
   const pensionEtrangereNette = netDeclarant1 * ratioEtranger1 + netDeclarant2 * ratioEtranger2;
+  const pensionsExonereesTauxEffectifNettes = netDeclarant1 * ratioExonere1 + netDeclarant2 * ratioExonere2;
 
-  const pensionsNettes = (netDeclarant1 - netDeclarant1 * ratioEtranger1)
-    + (netDeclarant2 - netDeclarant2 * ratioEtranger2);
+  const pensionsNettes = netDeclarant1 * (1 - ratioEtranger1 - ratioExonere1)
+    + netDeclarant2 * (1 - ratioEtranger2 - ratioExonere2);
   const abattementPension = pensionsBrutes - pensionsNettes;
 
   const capitalPER = (input.case1ai ?? 0) + (input.case1bi ?? 0);
@@ -154,6 +196,7 @@ export function calculerPensionsRetraitesRentes(
     totalNetImposable,
     impotForfaitaire,
     revenuCreditImpotEgalImpotFrancais,
+    pensionsExonereesTauxEffectifNettes,
     casesExclues: CASES_PENSIONS_EXCLUES_DU_CALCUL,
   };
 }

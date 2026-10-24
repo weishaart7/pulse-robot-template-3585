@@ -3,7 +3,15 @@ import { calculerRevenuSalaires } from './calculerRevenuSalaires';
 import { calculerRevenuExonereTauxEffectif } from './calculerRevenuExonereTauxEffectif';
 import { calculerPartsFiscales } from './calculerPartsFiscales';
 import { calculerImpot } from './calculerImpot';
-import { FoyerFiscalInput, RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
+import { calculerPensionsRetraitesRentes } from './calculerPensionsRetraitesRentes';
+import { FoyerFiscalInput, PensionsRetraitesRentesInput, RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
+
+const PENSIONS_VIDES: PensionsRetraitesRentesInput = {
+  case1as: null, case1bs: null, case1at: null, case1bt: null, case1ai: null, case1bi: null,
+  case1az: null, case1bz: null, case1ao: null, case1bo: null, case1al: null, case1bl: null,
+  case1am: null, case1bm: null, case1aw: null, case1bw: null, case1cw: null, case1dw: null,
+  case1ar: null, case1br: null, case1cr: null, case1dr: null, case1hk: false, case1hl: false,
+};
 
 /**
  * Cas réel signalé par un utilisateur : Aurevia donnait 10 314 € quand le
@@ -45,6 +53,7 @@ describe('régression : marié, 1AJ/1BJ + 1AC/1AE (frais réels) + 1AH', () => {
     const revenuExonere = calculerRevenuExonereTauxEffectif(
       exoneres,
       revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
+      calculerPensionsRetraitesRentes(PENSIONS_VIDES, exoneres).pensionsExonereesTauxEffectifNettes,
     );
     const parts = calculerPartsFiscales(foyer);
 
@@ -105,6 +114,7 @@ describe('régression : célibataire, 1AJ+1GB (frais réels 1AK) + 1AC/1AE (frai
     const revenuExonere = calculerRevenuExonereTauxEffectif(
       exoneres,
       revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
+      calculerPensionsRetraitesRentes(PENSIONS_VIDES, exoneres).pensionsExonereesTauxEffectifNettes,
     );
     const parts = calculerPartsFiscales(foyer);
 

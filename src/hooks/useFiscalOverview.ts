@@ -344,11 +344,13 @@ export function useFiscalOverview(): FiscalOverview {
     // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
     const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput);
     const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput, revenuSalaires.gainsActionnariatNetImposable);
+    // 1AH/1BH dans le pool d'abattement des pensions : plafond de 4 439 € unique pour le foyer.
+    const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput);
     const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
       exoneresInput,
       revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
+      pensionsRetraitesRentes.pensionsExonereesTauxEffectifNettes,
     );
-    const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput);
     const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
     const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
     // 2OP vaut pour le cadre 2 et pour les plus-values mobilières du cadre 3.

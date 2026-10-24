@@ -1,10 +1,5 @@
 import { RevenusExoneresTauxEffectifInput } from './types';
 
-const PENSION_ABATTEMENT_TAUX = 0.10;
-const PENSION_ABATTEMENT_PLANCHER = 454;
-/** Plafond global par foyer de l'abattement de 10 % sur les pensions (art. 158-5-a CGI), réutilisé par calculerPensionsRetraitesRentes.ts. */
-export const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
-
 /**
  * Cases purement informatives de cet encart, sans effet sur le calcul (voir
  * JSDoc de calculerRevenuExonereTauxEffectif) — pattern identique à
@@ -25,18 +20,6 @@ export interface RevenuExonereTauxEffectifResult {
 }
 
 /**
- * Abattement de 10 % sur une pension (plancher 454 €, jamais supérieur à la
- * pension elle-même). Le plafond de 4 439 € s'applique globalement à la somme
- * des abattements du foyer, pas par pensionné — appliqué séparément sur le
- * total par l'appelant (voir calculerRevenuExonereTauxEffectif ci-dessous et
- * calculerPensionsRetraitesRentes.ts, même calcul réutilisé).
- */
-export function abattementPensionDeclarant(pension: number): number {
-  if (pension <= 0) return 0;
-  return Math.min(pension, Math.max(PENSION_ABATTEMENT_PLANCHER, pension * PENSION_ABATTEMENT_TAUX));
-}
-
-/**
  * Revenus exonérés retenus pour le calcul du taux effectif (salaires et
  * pensions de source étrangère exonérés par convention fiscale, ou art. 81 A
  * CGI pour les détachés) : jamais imposés en France, mais utilisés en aval
@@ -50,10 +33,11 @@ export function abattementPensionDeclarant(pension: number): number {
  * soient imposables en France ou seulement retenus pour le taux effectif.
  * Cette fonction ne fait que reprendre ce montant déjà arbitré.
  *
- * Pensions étrangères (1AH/1BH) : abattement de 10 % (plancher 454 €/pensionné,
- * plafond global 4 439 € pour l'ensemble du foyer, revenus 2025/impôt 2026 —
- * même barème que les pensions françaises, la nature étrangère de la pension
- * n'y change rien pour le calcul du taux effectif).
+ * Pensions étrangères (1AH/1BH) : `pensionsNettesExonereesTauxEffectif` doit
+ * provenir de `calculerPensionsRetraitesRentes`, qui met 1AH/1BH dans le même
+ * pool d'abattement de 10 % que les pensions imposables — plafond de 4 439 €
+ * unique pour tout le foyer (art. 158-5-a CGI). Cette fonction ne fait que
+ * reprendre ce montant déjà arbitré.
  *
  * 1GE/1HE (case à cocher marins-pêcheurs) et RSE/RSF (pays de provenance,
  * texte libre) sont purement informatifs, sans effet sur ce calcul.
@@ -61,15 +45,13 @@ export function abattementPensionDeclarant(pension: number): number {
 export function calculerRevenuExonereTauxEffectif(
   input: RevenusExoneresTauxEffectifInput,
   salairesNetImposablesExoneresTauxEffectif: number,
+  pensionsNettesExonereesTauxEffectif: number,
 ): RevenuExonereTauxEffectifResult {
   const salairesNetImposables = salairesNetImposablesExoneresTauxEffectif;
 
   const pensionsBrutes = (input.case1ah ?? 0) + (input.case1bh ?? 0);
-  const abattementPension = Math.min(
-    PENSION_ABATTEMENT_PLAFOND_FOYER,
-    abattementPensionDeclarant(input.case1ah ?? 0) + abattementPensionDeclarant(input.case1bh ?? 0),
-  );
-  const pensionsNettes = Math.max(0, pensionsBrutes - abattementPension);
+  const pensionsNettes = pensionsNettesExonereesTauxEffectif;
+  const abattementPension = pensionsBrutes - pensionsNettes;
 
   return {
     salairesNetImposables,

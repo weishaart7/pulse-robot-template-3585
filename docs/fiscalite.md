@@ -408,10 +408,13 @@ fonciers (§4).
   (`salairesNetImposablesExoneresTauxEffectif`), calculé par `calculerRevenuSalaires.ts` en pool commun
   avec 1AJ/1AK du même déclarant (voir « Bug corrigé » ci-dessus — `useFiscalOverview.ts` appelle donc
   `calculerRevenuSalaires` avant `calculerRevenuExonereTauxEffectif` et chaîne le résultat). 1AH/1BH
-  (pensions de source étrangère) reçoivent l'abattement de 10 % standard applicable aux pensions
-  (revenus 2025/impôt 2026) : plancher 454 €/pensionné (jamais supérieur à la pension elle-même),
-  plafond **global** de 4 439 € pour l'ensemble du foyer (pas par pensionné — la somme des abattements
-  individuels est plafonnée une fois calculée). **Bug corrigé** : la première version ajoutait ces
+  (pensions de source étrangère) : la fonction reçoit aussi leur montant déjà net
+  (`pensionsNettesExonereesTauxEffectif`), calculé par `calculerPensionsRetraitesRentes.ts` dans le
+  **même pool** d'abattement de 10 % que les pensions imposables (1AS/1AZ/1AO/1AM/1AL) : plancher
+  454 €/pensionné, plafond de 4 439 € **unique pour tout le foyer** (art. 158-5-a CGI, revenus
+  exonérés retenus pour le taux effectif déterminés selon le droit commun) — plus de second plafond
+  propre à 1AH. `useFiscalOverview.ts` appelle donc `calculerPensionsRetraitesRentes` avant
+  `calculerRevenuExonereTauxEffectif`. **Bug corrigé** : la première version ajoutait ces
   pensions brutes, sans abattement, faute de module Pensions dans le repo pour calibrer un montant —
   l'abattement pension est en réalité un barème CGI autonome (indépendant de tout moteur de pensions
   françaises), pas une extension d'un module qui n'existe pas ; écart constaté par comparaison avec un
@@ -712,9 +715,11 @@ fonciers (§4).
   du cadre 1 « Pensions, retraites, rentes ».** Fonction pure couvrant trois mécanismes distincts,
   vérifiés sur la brochure DGFiP (2042-K, pages 115-120, texte intégral) et le BOFiP (BOI-RSA-PENS) :
   (1) **abattement de 10 % classique** (art. 158-5-a CGI) sur le total 1AS+1AZ+1AO+1AM **et 1AL**, par
-  déclarant puis somme — réutilise `abattementPensionDeclarant`/`PENSION_ABATTEMENT_PLAFOND_FOYER`,
-  exportés de `calculerRevenuExonereTauxEffectif.ts` (même calcul que pour 1AH, plancher 454 €/pensionné,
-  plafond global **4 439 € pour tout le foyer** — un seul plafond, pas un par pool) ; (2) **1AI** (capital
+  déclarant puis somme — `abattementPensionDeclarant`/`PENSION_ABATTEMENT_PLAFOND_FOYER` sont définis
+  ici (aussi utilisés par `src/lib/retraite/calculNetRetraite.ts`) : plancher 454 €/pensionné, plafond
+  global **4 439 € pour tout le foyer**. 1AH/1BH (second paramètre, encart taux effectif) entrent dans
+  ce même pool ; leur part nette est isolée au prorata (`pensionsExonereesTauxEffectifNettes`, hors
+  `totalNetImposable`), comme 1AL ; (2) **1AI** (capital
   des plans d'épargne retraite) imposable au barème **sans** abattement (texte explicite de la
   brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI) hors barème : abattement spécifique
   de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire` — même famille que
