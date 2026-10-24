@@ -1,21 +1,17 @@
-import { useState } from 'react';
 import { ArrowLeft, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PanelTitle, panelButtonClass, WorkspaceHeader } from '@/components/layout/workspace-panel';
 import { panelInsetClass } from '@/components/layout/panel-section';
 import { cn } from '@/lib/utils';
 import { useDeclaration2044 } from '@/hooks/useDeclaration2044';
+import { ANNEE_REVENUS } from '@/hooks/useFiscalOverview';
 import { formatEuros } from './2044/Grille2044';
 import { DeficitsAnterieursSection, ImmeublesSection, PartsSection, ResultatSection } from './2044/Sections2044';
 
 interface Declaration2044InterfaceProps {
   onClose: () => void;
 }
-
-/** Année de revenus déclarée par défaut : l'année écoulée (déclaration déposée au printemps suivant). */
-const anneeParDefaut = () => new Date().getFullYear() - 1;
 
 function CaseReport({ code, libelle, valeur }: { code: string; libelle: string; valeur: number }) {
   return (
@@ -28,10 +24,9 @@ function CaseReport({ code, libelle, valeur }: { code: string; libelle: string; 
 }
 
 const Declaration2044Interface = ({ onClose }: Declaration2044InterfaceProps) => {
-  const [annee, setAnnee] = useState(anneeParDefaut);
+  const annee = ANNEE_REVENUS;
   const etat = useDeclaration2044(annee);
   const r = etat.resultat;
-  const annees = [0, 1, 2].map((i) => anneeParDefaut() - i);
 
   return (
     <div className="workspace-panel fixed inset-0 z-50 flex flex-col bg-background">
@@ -39,20 +34,10 @@ const Declaration2044Interface = ({ onClose }: Declaration2044InterfaceProps) =>
         icon={<Home />}
         trail={['Fiscalité', '2044 — Revenus fonciers', `Revenus ${annee}`]}
         actions={(
-          <>
-            <Select value={String(annee)} onValueChange={(v) => setAnnee(Number(v))}>
-              <SelectTrigger className={cn(panelButtonClass, 'w-36')} aria-label="Année des revenus">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {annees.map((a) => <SelectItem key={a} value={String(a)}>Revenus {a}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="ghost" onClick={onClose} className={panelButtonClass}>
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              Retour
-            </Button>
-          </>
+          <Button variant="ghost" onClick={onClose} className={panelButtonClass}>
+            <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+            Retour
+          </Button>
         )}
       />
 
@@ -88,9 +73,7 @@ const Declaration2044Interface = ({ onClose }: Declaration2044InterfaceProps) =>
               </div>
             )}
             <p className="mt-4 text-[12px] leading-5 text-muted-foreground">
-              {annee === 2025
-                ? 'Reprises dans le calcul de l’impôt de la Vision générale (revenu foncier net ajouté, 4BC retranché, prélèvements sociaux à 17,2 %).'
-                : 'La Vision générale calcule l’impôt des revenus 2025 : cette année n’y est pas reprise.'}
+              Reprises dans le calcul de l’impôt de la Vision générale (revenu foncier net ajouté, 4BC retranché, prélèvements sociaux à 17,2 %).
             </p>
           </aside>
         </div>

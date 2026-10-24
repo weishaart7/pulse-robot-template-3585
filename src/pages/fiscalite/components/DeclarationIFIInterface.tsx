@@ -1,7 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { ArrowLeft, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PanelTitle, panelButtonClass, WorkspaceHeader } from '@/components/layout/workspace-panel';
 import { cn } from '@/lib/utils';
@@ -50,10 +49,10 @@ function LigneResume({ libelle, valeur, fort }: { libelle: string; valeur: numbe
 }
 
 const DeclarationIFIInterface = ({ onClose, plafonnement2042 }: DeclarationIFIInterfaceProps) => {
-  const [annee, setAnnee] = useState(ANNEE_IFI);
-  const etat = useDeclarationIFI(annee, annee === ANNEE_IFI ? plafonnement2042 : null);
+  // Seule l'IFI 2026 (revenus 2025) est traitée pour l'instant.
+  const annee = ANNEE_IFI;
+  const etat = useDeclarationIFI(annee, plafonnement2042);
   const r = etat.resultat;
-  const annees = [0, 1, 2].map((i) => ANNEE_IFI - i);
 
   return (
     <div className="workspace-panel fixed inset-0 z-50 flex flex-col bg-background">
@@ -61,20 +60,10 @@ const DeclarationIFIInterface = ({ onClose, plafonnement2042 }: DeclarationIFIIn
         icon={<Building2 />}
         trail={['Fiscalité', '2042-IFI — Fortune immobilière', `IFI ${annee}`]}
         actions={(
-          <>
-            <Select value={String(annee)} onValueChange={(v) => setAnnee(Number(v))}>
-              <SelectTrigger className={cn(panelButtonClass, 'w-32')} aria-label="Année d'imposition">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {annees.map((a) => <SelectItem key={a} value={String(a)}>IFI {a}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button variant="ghost" onClick={onClose} className={panelButtonClass}>
-              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-              Retour
-            </Button>
-          </>
+          <Button variant="ghost" onClick={onClose} className={panelButtonClass}>
+            <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+            Retour
+          </Button>
         )}
       />
 
@@ -130,9 +119,7 @@ const DeclarationIFIInterface = ({ onClose, plafonnement2042 }: DeclarationIFIIn
               </GroupeCases>
             </div>
             <p className="mt-6 text-[12px] leading-5 text-muted-foreground">
-              {annee === ANNEE_IFI
-                ? 'Reprise dans l’imposition totale de la Vision générale.'
-                : `La Vision générale reprend l’IFI ${ANNEE_IFI} : cette année n’y est pas reprise.`}
+              Reprise dans l’imposition totale de la Vision générale.
             </p>
           </aside>
         </div>

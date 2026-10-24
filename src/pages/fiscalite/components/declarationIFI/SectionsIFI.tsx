@@ -8,7 +8,6 @@ import { AideTooltip } from '@/components/fiscalite/DeclarationLigne';
 import { cn } from '@/lib/utils';
 import { SEUIL_EXONERATION_RURALE, type CategorieBienIFI, type DeclarationIFIResultat } from '@/lib/fiscalite/calculerDeclarationIFI';
 import type { useDeclarationIFI } from '@/hooks/useDeclarationIFI';
-import { ANNEE_IFI } from '@/hooks/useFiscalOverview';
 import { formatEuros, MontantCellule } from '../2044/Grille2044';
 
 // Sections de la 2042-IFI. L'actif est groupé par case du Cerfa (sous-total déclaré et imposable),
@@ -443,9 +442,7 @@ export function ReductionsSection({ etat, annee }: { etat: EtatIFI; annee: numbe
         <div className="mb-4 flex max-w-2xl items-start gap-2 rounded-[2px] bg-citron-soft px-3 py-2.5 text-[12.5px] text-citron-ink">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>
-            {annee === ANNEE_IFI
-              ? 'Foyer non renseigné dans la 2042 : 9PR et 9PX ne sont pas repris. Complétez la 2042 ou saisissez-les ; sans 9PX, le plafonnement n’est pas calculé.'
-              : `La Vision générale calcule l’impôt des revenus ${ANNEE_IFI - 1} : saisissez 9PR et 9PX pour calculer le plafonnement.`}
+            Foyer non renseigné dans la 2042 : 9PR et 9PX ne sont pas repris. Complétez la 2042 ou saisissez-les ; sans 9PX, le plafonnement n’est pas calculé.
           </span>
         </div>
       )}

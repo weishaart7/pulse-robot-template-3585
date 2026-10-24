@@ -52,13 +52,13 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
           <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
           <MontantEclateLigne
             label="Pension alimentaire versée à un enfant majeur"
-            aide="Plafond 6 855 € par enfant."
+            aide="Plafond 6 855 € par enfant, doublé si vous entretenez seul un enfant marié, pacsé ou chargé de famille (non calculé : saisir le montant déductible). Enfant hébergé sans ressources suffisantes : forfait de 4 075 € déclarable sans justificatif."
             items={[
               { label: '1er enfant', code: '6EL', value: ch.case6el, onChange: v => update('case6el', v) },
               { label: '2e enfant', code: '6EM', value: ch.case6em, onChange: v => update('case6em', v) },
             ]}
           />
-          <SingleMontantLigne label="Autres pensions alimentaires versées" extra="enfants mineurs, ascendants…" code="6GU" value={ch.case6gu} onChange={v => update('case6gu', v)} />
+          <SingleMontantLigne label="Autres pensions alimentaires versées" extra="enfants mineurs, ascendants…" aide="Ascendant dans le besoin hébergé : forfait de 4 075 € déclarable sans justificatif." code="6GU" value={ch.case6gu} onChange={v => update('case6gu', v)} />
           <MontantEclateLigne
             label="Décision de justice définitive avant 2006 : enfant majeur"
             items={[
