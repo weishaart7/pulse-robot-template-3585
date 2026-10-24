@@ -341,8 +341,9 @@ export function useFiscalOverview(): FiscalOverview {
     const pensionsInput = pensions ?? PENSIONS_RETRAITES_RENTES_PAR_DEFAUT;
     const capitauxMobiliersInput = capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT;
 
-    const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput);
-    const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput);
+    // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
+    const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput);
+    const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput, revenuSalaires.gainsActionnariatNetImposable);
     const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
       exoneresInput,
       revenuSalaires.salairesNetImposablesExoneresTauxEffectif,

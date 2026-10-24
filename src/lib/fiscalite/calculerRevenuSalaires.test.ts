@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calculerRevenuSalaires } from './calculerRevenuSalaires';
-import { RevenusSalairesInput } from './types';
+import { GainsActionnariatSalarieInput, RevenusSalairesInput } from './types';
 
 function makeInput(overrides: Partial<RevenusSalairesInput> = {}): RevenusSalairesInput {
   return {
@@ -354,5 +354,54 @@ describe('calculerRevenuSalaires — salaires exonérés retenus pour le taux ef
     );
     expect(result.declarant1.netImposable).toBe(45000);
     expect(result.salairesNetImposablesExoneresTauxEffectif).toBe(18000); // 20000 - 10 %
+  });
+});
+
+function makeGains(overrides: Partial<GainsActionnariatSalarieInput> = {}): GainsActionnariatSalarieInput {
+  return {
+    case1tp: null, case1up: null, case1tt: null, case1ut: null,
+    case1tz: null, case1uz: null, case1wz: null, case1vz: null,
+    case1nx: null, case1ox: null, case1ny: null, case1oy: null,
+    case1ay: null, case1by: null, case1mp: null, case1mq: null,
+    case3vd: null, case3vi: null, case3vf: null, case3vj: null, case3vk: null,
+    case3vn: null, case0xx: null,
+    ...overrides,
+  };
+}
+
+describe('calculerRevenuSalaires — gains d\'actionnariat dans le pool 10 %/frais réels', () => {
+  it('plafond de 14 555 € commun aux salaires et aux gains du même déclarant', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 200000 }), undefined, makeGains({ case1tt: 300000 }));
+    expect(result.declarant1.abattementForfaitaire).toBe(14555);
+    // net total 485 445, dont 3/5 aux gains
+    expect(result.gainsActionnariatNetImposable).toBeCloseTo(485445 * 0.6, 6);
+    expect(result.totalNetImposable).toBeCloseTo(485445 * 0.4, 6);
+  });
+
+  it('frais réels retenus : aucune déduction de 10 % en plus sur les gains', () => {
+    const result = calculerRevenuSalaires(
+      makeInput({ case1aj: 30000, case1ak: 8000 }), undefined, makeGains({ case1nx: 10000 }),
+    );
+    // 10 % de 40 000 = 4 000 < 8 000 → frais réels sur l'ensemble : net 32 000
+    expect(result.declarant1.deductionRetenue).toBe('frais_reels');
+    expect(result.totalNetImposable + result.gainsActionnariatNetImposable).toBeCloseTo(32000, 6);
+    expect(result.gainsActionnariatNetImposable).toBeCloseTo(8000, 6);
+  });
+
+  it('plancher de 509 € appliqué à un déclarant n\'ayant que des gains', () => {
+    const result = calculerRevenuSalaires(makeInput(), undefined, makeGains({ case1ut: 3000 }));
+    expect(result.declarant2.abattementForfaitaire).toBe(509);
+    expect(result.gainsActionnariatNetImposable).toBe(2491);
+    expect(result.totalNetImposable).toBe(0);
+  });
+
+  it('1TZ reste hors du pool', () => {
+    const result = calculerRevenuSalaires(makeInput({ case1aj: 10000 }), undefined, makeGains({ case1tz: 5000 }));
+    expect(result.declarant1.abattementForfaitaire).toBe(1000);
+    expect(result.gainsActionnariatNetImposable).toBe(0);
+  });
+
+  it('sans gains : part actionnariat nulle', () => {
+    expect(calculerRevenuSalaires(makeInput({ case1aj: 10000 })).gainsActionnariatNetImposable).toBe(0);
   });
 });

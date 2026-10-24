@@ -1,4 +1,5 @@
-import { RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
+import { basesGainsSalariaux } from './calculerGainsActionnariatSalarie';
+import { GainsActionnariatSalarieInput, RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
 
 /** Sous-ensemble de `RevenusExoneresTauxEffectifInput` utile au pool 1AJ/1AC par déclarant. */
 export type RevenusExoneresPourPoolSalaires = Pick<
@@ -88,6 +89,13 @@ export interface RevenuSalairesDeclarantDetail {
    * `calculerRevenuSalaires`.
    */
   netImposableExonereTauxEffectif: number;
+  /**
+   * Part de `netImposable` attribuable aux gains d'actionnariat du pool
+   * (1TP/1TT/1NX/1AY/1MP/3VJ — voir `basesGainsSalariaux`), isolée
+   * proportionnellement comme 1AF (dans le pool France pour 1AK). Exclue de
+   * `netImposable` : elle est restituée via `calculerGainsActionnariatSalarie`.
+   */
+  netImposableActionnariat: number;
 }
 
 export interface RevenuSalairesResult {
@@ -123,6 +131,14 @@ export interface RevenuSalairesResult {
    * pensions étrangères (1AH/1BH).
    */
   salairesNetImposablesExoneresTauxEffectif: number;
+  /**
+   * Part des gains d'actionnariat (1TP/1TT/1NX/1AY/1MP/3VJ et symétriques)
+   * dans le net imposable des pools salaires, après la déduction 10 %/frais
+   * réels commune. Imposable en France mais hors `totalNetImposable` (pour
+   * l'affichage par catégorie) : à transmettre à
+   * `calculerGainsActionnariatSalarie`, qui l'ajoute à son propre total.
+   */
+  gainsActionnariatNetImposable: number;
   /**
    * Revenus exonérés d'IR mais retenus pour le revenu fiscal de référence
    * (RFR, art. 1417 IV CGI) — n'entrent jamais dans le revenu imposable.
@@ -223,9 +239,11 @@ export function calculerDeclarant(
   remunerationsCreditImpot = 0,
   remunerationsExonereesTauxEffectif = 0,
   fraisReelsExonere: number | null = null,
+  remunerationsActionnariat = 0,
 ): RevenuSalairesDeclarantDetail {
   const baseApresAbattementSpecifique = remunerationsBrutes;
-  const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif;
+  const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif
+    + remunerationsActionnariat;
 
   const abattementForfaitaire = baseTotale <= 0
     ? 0
@@ -245,14 +263,17 @@ export function calculerDeclarant(
   let netTotal: number;
   let netImposableCreditImpot: number;
   let netImposableExonereTauxEffectif: number;
+  let netImposableActionnariat: number;
 
   if (utiliseFraisReels) {
-    const poolFranceEtCreditImpot = baseApresAbattementSpecifique + remunerationsCreditImpot;
+    const poolFranceEtCreditImpot = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsActionnariat;
     const netFranceEtCreditImpot = Math.max(0, poolFranceEtCreditImpot - Math.min(fraisReelsDomestique ?? 0, poolFranceEtCreditImpot));
     const netExonere = Math.max(0, remunerationsExonereesTauxEffectif - Math.min(fraisReelsExonere ?? 0, remunerationsExonereesTauxEffectif));
 
     const ratioCreditImpot = poolFranceEtCreditImpot > 0 ? remunerationsCreditImpot / poolFranceEtCreditImpot : 0;
     netImposableCreditImpot = netFranceEtCreditImpot * ratioCreditImpot;
+    const ratioActionnariat = poolFranceEtCreditImpot > 0 ? remunerationsActionnariat / poolFranceEtCreditImpot : 0;
+    netImposableActionnariat = netFranceEtCreditImpot * ratioActionnariat;
     netImposableExonereTauxEffectif = netExonere;
     netTotal = netFranceEtCreditImpot + netExonere;
   } else {
@@ -261,6 +282,8 @@ export function calculerDeclarant(
     netImposableCreditImpot = netTotal * ratioCreditImpot;
     const ratioExonereTauxEffectif = baseTotale > 0 ? remunerationsExonereesTauxEffectif / baseTotale : 0;
     netImposableExonereTauxEffectif = netTotal * ratioExonereTauxEffectif;
+    const ratioActionnariat = baseTotale > 0 ? remunerationsActionnariat / baseTotale : 0;
+    netImposableActionnariat = netTotal * ratioActionnariat;
   }
 
   return {
@@ -270,9 +293,10 @@ export function calculerDeclarant(
     fraisReels,
     abattementForfaitaire,
     deductionRetenue,
-    netImposable: netTotal - netImposableCreditImpot - netImposableExonereTauxEffectif,
+    netImposable: netTotal - netImposableCreditImpot - netImposableExonereTauxEffectif - netImposableActionnariat,
     netImposableCreditImpot,
     netImposableExonereTauxEffectif,
+    netImposableActionnariat,
   };
 }
 
@@ -311,6 +335,12 @@ export function calculerDeclarant(
  *
  * Cases hors calcul : voir CASES_SALAIRES_EXCLUES_DU_CALCUL.
  *
+ * `gains` (2042-C, cadre 1) : 1TP/1TT/1NX/1AY/1MP/3VJ et symétriques
+ * rejoignent le pool de leur déclarant (même déduction 10 %/frais réels,
+ * plancher/plafond communs — brochure DGFiP IR 2026 p.107) ; leur part nette
+ * est exposée dans `gainsActionnariatNetImposable`, hors `totalNetImposable`.
+ * 1TZ n'y entre pas (voir `basesGainsSalariaux`).
+ *
  * `exoneres` (1AC/1BC, 1AE/1BE) : salaires de source étrangère exonérés mais
  * retenus pour le calcul du taux effectif — rejoignent le pool 1AJ de leur
  * déclarant plutôt que de faire l'objet d'un choix 10 %/frais réels séparé
@@ -320,7 +350,9 @@ export function calculerDeclarant(
 export function calculerRevenuSalaires(
   input: RevenusSalairesInput,
   exoneres?: RevenusExoneresPourPoolSalaires,
+  gains?: GainsActionnariatSalarieInput,
 ): RevenuSalairesResult {
+  const basesGains = gains ? basesGainsSalariaux(gains) : { declarant1: 0, declarant2: 0 };
   const surplus1gh = Math.max(0, (input.case1gh ?? 0) - PLAFOND_EXONERATION_1GH);
   const surplus1hh = Math.max(0, (input.case1hh ?? 0) - PLAFOND_EXONERATION_1GH);
 
@@ -340,11 +372,11 @@ export function calculerRevenuSalaires(
 
   const declarant1 = calculerDeclarant(
     remunerations1, input.case1ga ?? 0, input.case1ak ?? null, input.case1af ?? 0, exoneres?.case1ac ?? 0,
-    exoneres?.case1ae ?? null,
+    exoneres?.case1ae ?? null, basesGains.declarant1,
   );
   const declarant2 = calculerDeclarant(
     remunerations2, input.case1ha ?? 0, input.case1bk ?? null, input.case1bf ?? 0, exoneres?.case1bc ?? 0,
-    exoneres?.case1be ?? null,
+    exoneres?.case1be ?? null, basesGains.declarant2,
   );
 
   const indemnitesPrejudiceMoral = (input.case1pm ?? 0) + (input.case1qm ?? 0);
@@ -368,6 +400,7 @@ export function calculerRevenuSalaires(
     totalNetImposable: declarant1.netImposable + declarant2.netImposable,
     revenuCreditImpotEgalImpotFrancais,
     salairesNetImposablesExoneresTauxEffectif,
+    gainsActionnariatNetImposable: declarant1.netImposableActionnariat + declarant2.netImposableActionnariat,
     revenuExonereRetenuPourRFR,
     casesExclues: CASES_SALAIRES_EXCLUES_DU_CALCUL,
   };

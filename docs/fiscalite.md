@@ -663,9 +663,8 @@ fonciers (§4).
   remplissant pas les conditions du régime de faveur — voir « Bug corrigé » ci-dessous), 1TZ (gain
   après abattement — case unique, pas de déclarant 2, déjà net des abattements 1UZ/1WZ/1VZ) et 3VJ/3VK
   (option barème pour les gains pré-28.9.2012, en lieu et place des taux forfaitaires 3VD/3VI/3VF).
-  **Abattement forfaitaire de 10 % désormais appliqué à 1TP/1TT/1NX/1AY/1MP/3VJ** (pas 1TZ, déjà net d'un
-  autre mécanisme, voir ci-dessous) — résolution de la réserve documentée en dette depuis la Phase 4
-  (§3 🟡), voir paragraphe dédié ci-dessous.
+  **1TP/1TT/1NX/1AY/1MP/3VJ (et symétriques) rejoignent le pool 10 %/frais réels des salaires de leur
+  déclarant** (`basesGainsSalariaux`, voir paragraphe dédié ci-dessous) ; 1TZ est ajouté tel quel.
   `impotForfaitaire` (impôt déjà calculé, pas un revenu — distinct de `totalNetImposable`, ne s'y ajoute
   jamais) : 3VD/3VI/3VF (gains pré-28.9.2012 à taux historique, respectivement **18 %/30 %/
   41 %** — le CERFA impose déjà au déclarant de ventiler son gain par tranche de taux dans la case
@@ -691,41 +690,24 @@ fonciers (§4).
   calcul retombe exactement sur 22 874 €. Corrigé en déplaçant 1NX/1OX du calcul `impotForfaitaire` vers
   `baseAbattementDeclarant1`/`baseAbattementDeclarant2`. Tests mis à jour dans
   `calculerGainsActionnariatSalarie.test.ts`.
-  **Résolu — abattement forfaitaire de 10 % appliqué à 1TP/1TT/1AY/1MP/3VJ, levant la réserve
-  documentée en dette depuis l'audit initial de la Phase 4 (§3 🟡).** Reprise de la recherche demandée
-  explicitement en session : la brochure DGFiP et le BOFiP consultés lors de l'audit initial
-  (BOI-RSA-ES-20-10-20-20, BOI-RSA-BASE-30-50-10, FAQ officielle) ne tranchaient ni dans un sens ni
-  dans l'autre pour ces cases précises. Nouvelle source trouvée et vérifiée verbatim (HTML brut de
-  bofip.impots.gouv.fr, pas un résumé) : **BOI-IR-DOMIC-10-20-20-30** (« Retenue applicable sur les
-  gains de source française provenant de dispositifs d'actionnariat salarié », retenue à la source des
-  non-résidents, art. 182 A ter CGI, mise à jour du 12.08.2025). Cette page définit l'assiette de la
-  retenue comme *identique* à l'avantage imposable ordinaire (art. 80 bis/80 quaterdecies CGI) et
-  précise, textuellement et à plusieurs reprises : « l'assiette [...] est diminuée de la déduction
-  forfaitaire pour frais professionnels de 10 %. Aucune déduction au titre des frais réels et justifiés
-  ne peut être pratiquée » — confirmé pour les options sur titres (§350, avant **et** après le
-  28.9.2012, y compris pour un bénéficiaire qui opte pour l'imposition selon les traitements et
-  salaires — cas de 3VJ), pour les BSPCE sur option barème depuis le 1.1.2025 (1AY, ajouté à cette
-  page BOFiP le 12.08.2025) et pour les « dispositifs innommés et plans non qualifiés » (§540 — la
-  catégorie doctrinale des management packages, 1MP). Raisonnement retenu : il serait incohérent
-  qu'un non-résident bénéficie d'un abattement refusé à un résident sur exactement le même avantage,
-  légalement défini comme la même assiette — la retenue à la source d'un non-résident est conçue pour
-  approximer l'impôt qu'un résident aurait payé sur le même gain, pas pour créer un régime plus
-  favorable. **1TZ n'est volontairement pas concerné** : le gain d'acquisition d'actions gratuites
-  bénéficie d'un mécanisme différent et exclusif (abattement pour durée de détention, 1UZ/1WZ/1VZ,
-  déjà déduit du montant net saisi en 1TZ) — confirmé par ailleurs par BOI-RSA-ES-20-20-20 §43, qui
-  précise explicitement pour un sous-régime d'actions gratuites que « la déduction forfaitaire de 10 %
-  pour frais professionnels ne s'applique pas au gain d'acquisition ». **Implémentation validée en
-  session : abattement autonome, sans plancher (509 €)/plafond (14 555 €) ni fusion avec le pool
-  1AJ/1AA/1GF/1GG/1AP/1AG/1GB/1AF de `calculerRevenuSalaires.ts`** — le texte BOFiP exclut
-  explicitement l'option frais réels pour ce gain, ce qui exclut le mécanisme de « choix unique par
-  déclarant entre forfaitaire et frais réels » qui aurait justifié une fusion de pool (technique déjà
-  utilisée pour 1GB/1AF/1AL). L'abattement de 10 % est calculé sur la somme de 1TP+1TT+1AY+1MP+3VJ par
-  déclarant (`baseAbattementDeclarant1`/`baseAbattementDeclarant2`), puis multiplié par 0,9. 3 tests
-  modifiés et 1 nouveau (24 au total pour le fichier) démontrent l'abattement par case, le pool commun
-  par déclarant (plusieurs cases du même déclarant partagent un seul calcul de 10 %, pas case par
-  case), et l'absence d'effet sur 1TZ. Vérifié en base et à l'écran sur le compte réel (couple marié,
-  TMI 30 %) : +10 000 € sur `1TT` → **+2 700 € d'IR** (9 000 € net après abattement 10 %, 30 % de
-  9 000 €), valeur nettoyée après vérification.
+  **Gains d'actionnariat dans le pool salaires (déduction 10 %/frais réels commune).** Brochure DGFiP
+  IR 2026 p.107 : « la déduction forfaitaire de 10 % ou la déduction des frais réels s'applique sur le
+  total des revenus déclarés dans la catégorie des traitements et salaires », choix unique par personne,
+  plancher 509 €/plafond 14 555 € par membre du foyer. 1TP/1TT/1NX/1AY/1MP/3VJ (et symétriques) sont
+  imposés dans cette catégorie : leurs montants bruts sont ajoutés au pool de `calculerDeclarant`
+  (`calculerRevenuSalaires(revenus, exoneres, gains)`), dans la base France pour l'imputation de 1AK.
+  Leur part du net est isolée au prorata (`netImposableActionnariat`, même technique que 1AF), exclue de
+  `totalNetImposable` des salaires et restituée par `calculerGainsActionnariatSalarie(input,
+  gainsActionnariatNetImposable)` pour garder la ligne « Gains d'actionnariat » distincte dans la carte.
+  **Bug corrigé** : l'ancien abattement autonome de 10 % (sans plancher/plafond, en plus des frais réels
+  éventuels) reposait sur BOI-IR-DOMIC-10-20-20-30, qui vise la retenue à la source des non-résidents.
+  Il ignorait le plafond commun (1AJ 200 k€ + 1TT 300 k€ : 44 555 € déduits au lieu de 14 555 €) et
+  doublait la déduction quand les frais réels l'emportaient. **1TZ reste hors pool** : BOFiP
+  BOI-RSA-ES-20-20-20 §43 (« la déduction forfaitaire de 10 % pour frais professionnels ne s'applique
+  pas au gain d'acquisition. Aucune déduction au titre des frais réels [...] »), régime repris par §44
+  pour la fraction ≤ 300 000 € ; la fraction > 300 000 € relève du droit commun des salaires (1TT). Le
+  cas réel 1NX = 20 000 € (22 874 € au simulateur officiel) n'a pas de test de régression automatisé :
+  à recontrôler à l'écran.
 - **`src/lib/fiscalite/calculerPensionsRetraitesRentes.ts` — revenu net imposable et impôt forfaitaire
   du cadre 1 « Pensions, retraites, rentes ».** Fonction pure couvrant trois mécanismes distincts,
   vérifiés sur la brochure DGFiP (2042-K, pages 115-120, texte intégral) et le BOFiP (BOI-RSA-PENS) :
@@ -1696,15 +1678,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   régime distinct — corrigé par l'audit case par case de ce cadre (voir §2). **1AF/1BF, 1AL/1BL et
   1AR/1BR/1CR/1DR (crédit d'impôt égal à l'impôt français) sont également couverts** (voir §2) — ce
   n'est plus une exclusion.
-- **Résolu — `calculerGainsActionnariatSalarie.ts` applique désormais l'abattement forfaitaire de
-  10 % à 1TP/1TT/1AY/1MP/3VJ.** Ancienne réserve (Phase 4, comportement conservé sans abattement faute
-  de confirmation explicite dans la brochure/BOI-RSA-ES-20-10-20-20/BOI-RSA-BASE-30-50-10/FAQ
-  officielle) levée par une recherche complémentaire ciblée : BOI-IR-DOMIC-10-20-20-30 (retenue à la
-  source des non-résidents, art. 182 A ter CGI, mise à jour du 12.08.2025) confirme explicitement et
-  textuellement le mécanisme pour ces 5 cases précisément, sur une assiette légalement définie comme
-  identique à l'avantage imposable ordinaire — voir §2 pour le détail des sources et la citation
-  exacte. 1TZ reste volontairement à l'écart (mécanisme différent et exclusif, abattement pour durée
-  de détention déjà déduit du montant saisi).
+- **Résolu — gains d'actionnariat 1TP/1TT/1NX/1AY/1MP/3VJ dans le pool 10 %/frais réels des salaires**
+  (brochure IR 2026 p.107), 1TZ hors déduction (BOI-RSA-ES-20-20-20 §43-44) — voir §2.
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
