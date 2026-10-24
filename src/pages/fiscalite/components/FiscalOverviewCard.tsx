@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -181,6 +181,25 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
           />
         </div>
       )}
+
+      {comparaisonOptionBareme && (() => {
+        const { optionActuelle, impotAvecOption, impotSansOption } = comparaisonOptionBareme;
+        const baremePlusFavorable = impotAvecOption < impotSansOption;
+        const choixOptimal = baremePlusFavorable === optionActuelle;
+        return (
+          <div className="mt-4 border-t border-border pt-3">
+            <p className="text-[11.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Option pour le barème (2OP)</p>
+            <LigneDetail label={`Impôt au barème (2OP cochée)${optionActuelle ? ' · option actuelle' : ''}`} valeur={formatEuros(impotAvecOption)} />
+            <LigneDetail label={`Impôt au prélèvement forfaitaire (2OP décochée)${optionActuelle ? '' : ' · option actuelle'}`} valeur={formatEuros(impotSansOption)} />
+            <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">
+              {choixOptimal
+                ? 'Le choix actuel est le plus favorable cette année.'
+                : `${baremePlusFavorable ? 'Cocher' : 'Décocher'} 2OP réduirait l'impôt de ${formatEuros(Math.abs(impotAvecOption - impotSansOption))}.`}
+              {' '}Option globale (capitaux mobiliers et plus-values) ; prélèvements sociaux inchangés ; CSG déductible des années suivantes non comptée.
+            </p>
+          </div>
+        );
+      })()}
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
         <div className="flex justify-center">

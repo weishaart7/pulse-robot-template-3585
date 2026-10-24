@@ -902,7 +902,14 @@ fonciers (§4).
   (brochure p.134 : reportable 6 ans, option barème seulement), informatif, affiché sous `2CA` dans le
   formulaire (« à reporter ligne 2AR l'an prochain ») ; les déficits antérieurs non absorbés ne
   recréent pas de déficit. `2TT` est saisi net des pertes imputées pour l'IR, alors que les PS restent
-  dus sur les intérêts bruts (p.128) : non reconstituable, signalé par une aide sous la case. `2OP`
+  dus sur les intérêts bruts (p.128) : non reconstituable, signalé par une aide sous la case.
+  **Comparatif 2OP** : `useFiscalOverview.ts` exécute tout le calcul une seconde fois avec 2OP inversé
+  (`simuler`) et expose `comparaisonOptionBareme` (impôt net avec/sans option, null si identique),
+  affiché dans `FiscalOverviewCard` avec le sens du choix le plus favorable. Limites : PS inchangés
+  par construction, CSG déductible de l'année suivante non comptée. **Contrôle de saisie** :
+  `calculerPrelevementsSociauxCapitauxMobiliers.ts::incoherencesSaisie` signale 2CG+2BH+2DF+2DG
+  supérieurs aux revenus déclarés, ou 2DI > 2DG ; avertissement dans le formulaire, sans effet sur le
+  calcul. `2OP`
   fait donc basculer la majorité du cadre entre deux régimes : coché → tout rejoint
   `totalNetImposable` (barème, après abattement/frais/déficits) ; non coché → tout est taxé au **PFU
   12,8 %** dans `impotForfaitaire`, sans aucun des trois mécanismes ci-dessus. **Phase 2a — contrats

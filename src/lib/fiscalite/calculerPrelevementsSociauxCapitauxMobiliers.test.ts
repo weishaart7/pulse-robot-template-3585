@@ -136,4 +136,11 @@ describe('calculerPrelevementsSociauxCapitauxMobiliers', () => {
     expect(result.baseImposable).toBe(0);
     expect(result.prelevementsSociaux).toBe(0);
   });
+  it('signale les saisies incohérentes sans modifier le calcul', () => {
+    expect(calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dc: 1000, case2bh: 1000 })).incoherencesSaisie).toEqual([]);
+    expect(calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dc: 1000, case2bh: 5000 })).incoherencesSaisie).toHaveLength(1);
+    const di = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2tr: 5000, case2dg: 1000, case2di: 2000 }));
+    expect(di.incoherencesSaisie).toEqual(['Le montant de 2DI doit être compris dans celui de 2DG.']);
+    expect(di.csgCrds2DI).toBeCloseTo(222, 6);
+  });
 });

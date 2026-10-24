@@ -95,6 +95,12 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
   csgCrds2DI: number;
   /** Total : `baseImposable` × 18,6 % + `csgCrds2DI`. */
   prelevementsSociaux: number;
+  /**
+   * Saisies incohérentes avec la brochure (p.132-133), sans effet sur le
+   * calcul : revenus « déjà soumis » (2CG/2BH/2DF/2DG) supérieurs aux
+   * revenus déclarés dont ils font partie, ou 2DI non compris dans 2DG.
+   */
+  incoherencesSaisie: string[];
   casesHorsPerimetre: readonly string[];
 }
 
@@ -146,12 +152,24 @@ export function calculerPrelevementsSociauxCapitauxMobiliers(
   const baseImposable = Math.max(0, assietteBrute - montantDejaSoumis);
   const csgCrds2DI = (input.case2di ?? 0) * TAUX_CSG_CRDS_2DI;
 
+  const incoherencesSaisie: string[] = [];
+  if (montantDejaSoumis > assietteBrute) {
+    incoherencesSaisie.push(
+      'Les revenus déjà soumis aux prélèvements sociaux (2CG, 2BH, 2DF, 2DG) dépassent les revenus déclarés : '
+      + 'ils doivent aussi figurer dans les lignes de revenus (2DC, 2TR, 2CH, 2VV…).',
+    );
+  }
+  if ((input.case2di ?? 0) > (input.case2dg ?? 0)) {
+    incoherencesSaisie.push('Le montant de 2DI doit être compris dans celui de 2DG.');
+  }
+
   return {
     baseImposable,
     assietteBrute,
     montantDejaSoumis,
     csgCrds2DI,
     prelevementsSociaux: baseImposable * TAUX_PS_CAPITAUX_MOBILIERS + csgCrds2DI,
+    incoherencesSaisie,
     casesHorsPerimetre: CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE,
   };
 }

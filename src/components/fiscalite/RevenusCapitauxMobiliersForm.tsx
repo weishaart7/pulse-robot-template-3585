@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { useRevenusCapitauxMobiliers } from '@/hooks/useRevenusCapitauxMobiliers';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { RevenusCapitauxMobiliers } from '@/services/revenusCapitauxMobiliersService';
 import { RevenusCapitauxMobiliersInput } from '@/lib/fiscalite';
 import { calculerRevenuCapitauxMobiliers } from '@/lib/fiscalite/calculerRevenuCapitauxMobiliers';
+import { calculerPrelevementsSociauxCapitauxMobiliers } from '@/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers';
 import { LectureLigne, MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -32,6 +34,7 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
   const { data: foyer } = useFoyerFiscal();
   const deficitReportable = calculerRevenuCapitauxMobiliers(revenus, foyer?.situationFamille ?? 'celibataire')
     .deficitReportableAnnee;
+  const incoherencesSaisie = calculerPrelevementsSociauxCapitauxMobiliers(revenus).incoherencesSaisie;
 
   useEffect(() => {
     if (data) {
@@ -113,6 +116,12 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
           <SingleMontantLigne label="Autres revenus déjà soumis aux prélèvements sociaux" extra="avec CSG déductible" code="2DF" value={revenus.case2df} onChange={v => update('case2df', v)} />
           <SingleMontantLigne label="Revenus déjà soumis au seul prélèvement de solidarité" extra="7,5 %" code="2DG" value={revenus.case2dg} onChange={v => update('case2dg', v)} />
           <SingleMontantLigne label="Revenus soumis au seul prélèvement de solidarité" extra="à soumettre à la CSG et à la CRDS" code="2DI" value={revenus.case2di} onChange={v => update('case2di', v)} />
+          {incoherencesSaisie.map(message => (
+            <p key={message} className="flex items-start gap-1.5 px-2 py-1 text-xs text-citron-ink">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{message} (brochure IR 2026 p. 132-133)</span>
+            </p>
+          ))}
           <SingleMontantLigne label="Frais et charges déductibles" extra="si option barème" code="2CA" value={revenus.case2ca} onChange={v => update('case2ca', v)} />
           {deficitReportable > 0 && (
             <LectureLigne

@@ -187,6 +187,19 @@ export const ANNEE_REVENUS = 2025;
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
 export const ANNEE_IFI = ANNEE_REVENUS + 1;
 
+/**
+ * Comparatif de l'option globale pour le barème (2OP) : impôt net du foyer
+ * recalculé avec 2OP coché et décoché, toutes autres saisies égales (cadre 2
+ * et plus-values du cadre 3). Les prélèvements sociaux ne dépendent pas de
+ * 2OP ; la CSG déductible (2BH) est comprise via calculerChargesDeductibles.
+ * Null quand les deux options donnent le même impôt.
+ */
+export interface ComparaisonOptionBareme {
+  optionActuelle: boolean;
+  impotAvecOption: number;
+  impotSansOption: number;
+}
+
 export interface FiscalOverview {
   loading: boolean;
   foyerRenseigne: boolean;
@@ -255,6 +268,8 @@ export interface FiscalOverview {
   plafonnementIFI: Plafonnement2042 | null;
   /** 2042-IFI de ANNEE_IFI ; null sans déclaration ouverte pour cette année. */
   ifi: DeclarationIFIResultat | null;
+  /** Impôt net avec et sans option 2OP ; null si l'option est sans effet. */
+  comparaisonOptionBareme: ComparaisonOptionBareme | null;
   /** Recharge les 9 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
   refetch: () => void;
 }
@@ -339,135 +354,150 @@ export function useFiscalOverview(): FiscalOverview {
     const gainsInput = gains ?? GAINS_ACTIONNARIAT_PAR_DEFAUT;
     const exoneresInput = exoneres ?? REVENUS_EXONERES_PAR_DEFAUT;
     const pensionsInput = pensions ?? PENSIONS_RETRAITES_RENTES_PAR_DEFAUT;
-    const capitauxMobiliersInput = capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT;
+    const capitauxMobiliersSaisis = capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT;
 
-    // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
-    const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput);
-    const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput, revenuSalaires.gainsActionnariatNetImposable);
-    // 1AH/1BH dans le pool d'abattement des pensions : plafond de 4 439 € unique pour le foyer.
-    const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput);
-    const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
-      exoneresInput,
-      revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
-      pensionsRetraitesRentes.pensionsExonereesTauxEffectifNettes,
-    );
-    const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
-    const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
-    // 2OP vaut pour le cadre 2 et pour les plus-values mobilières du cadre 3.
-    const plusValuesGainsDivers = calculerPlusValuesGainsDivers(plusValues ?? PLUS_VALUES_PAR_DEFAUT, capitauxMobiliersInput.case2op);
-    const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
-    const parts = calculerPartsFiscales(foyerInput);
-    const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
-    const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE);
-    const revenusFonciers2042 = calculerRevenusFonciers2042(
-      fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT,
-      revenusFonciers?.revenuFoncierNetImposable ?? null,
-    );
-    const revenuImposableAvantDeficitAgricole = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
-      + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable
-      + plusValuesGainsDivers.totalNetImposable
-      + (revenusFonciers?.incidenceRevenuImposable ?? 0)
-      + revenusFonciers2042.totalNetImposable - revenusFonciers2042.deductionReel4BL
-      + revenusNonSalaries.totalNetImposable;
-    // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
-    const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= SEUIL_DEFICIT_AGRICOLE ? revenusNonSalaries.deficitAgricole : 0;
-    const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
-    const chargesDeductibles = calculerChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput);
-    const revenuImposableTotal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
-    const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
-      + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
-      + revenusNonSalaries.impotForfaitaire;
-    const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
-    // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
-    // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
-    // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
-    const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
-    const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
-    const revenuExonereEtCreditImpot = revenuExonereTauxEffectif.totalRetenu
-      + revenuSalaires.revenuCreditImpotEgalImpotFrancais
-      + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
-      + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
-      + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais
-      + prelevementSourceDivers.revenuTauxEffectif;
-    const reductionsCreditsImpot = calculerReductionsCreditsImpot(
-      reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
-    );
-    // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
-    const calculer = (creditEtranger: number) => calculerImpot(
-      revenuImposableTotal,
-      parts,
-      foyerInput.situationFamille,
-      revenuExonereEtCreditImpot,
-      foyerInput.lieuResidence,
-      impotForfaitaireTotal,
-      gainsActionnariat.revenuExceptionnelQuotient,
-      revenuCapitauxMobiliers.creditImpotAssuranceVie,
-      revenuCapitauxMobiliers.creditImpotEtranger2AB,
-      revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
-      revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
-        + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
-        + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR,
-      reductionsCreditsImpot.totalReductions,
-      reductionsCreditsImpot.creditServicesPersonne,
-      creditEtranger,
-      prelevementSourceDivers.reprises,
-    );
-    const impotSansCreditEtranger = calculer(0);
-    const impot = calculer(creditImpotEgalImpotEtranger(
-      prelevementSourceInput,
-      impotSansCreditEtranger.impotApresDecote + impotSansCreditEtranger.impotForfaitaire - impotSansCreditEtranger.reductionsImpot,
-      revenuImposableTotal,
-    ));
-    const prelevementsSociauxBruts = prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
-      + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
-      + prelevementsSociauxGainsActionnariat.prelevementsSociaux
-      + plusValuesGainsDivers.prelevementsSociaux
-      + (revenusFonciers?.prelevementsSociaux ?? 0)
-      + revenusFonciers2042.prelevementsSociaux
-      + revenusNonSalaries.prelevementsSociaux;
-    // PS des gains d'actionnariat (régime salarial) exclus du plafond de l'exonération patrimoine.
-    const reductionPrelevementsSociaux = Math.min(
-      prelevementSourceDivers.reductionPrelevementsSociaux,
-      Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
-    );
-    const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux
-      + prelevementSourceDivers.contributionsSocialesRevenusActivite;
-    const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet, prelevementsSociauxTotal) : null;
+    // Calcul complet pour un jeu de capitaux mobiliers : appelé une seconde fois avec 2OP inversé pour le comparatif.
+    const simuler = (capitauxMobiliersInput: RevenusCapitauxMobiliersInput) => {
 
-    const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
-      impots: impot.impotApresDecote + impot.impotForfaitaire + prelevementsSociauxTotal,
-      revenus: impot.revenuFiscalReference,
+      // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
+      const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput);
+      const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput, revenuSalaires.gainsActionnariatNetImposable);
+      // 1AH/1BH dans le pool d'abattement des pensions : plafond de 4 439 € unique pour le foyer.
+      const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput);
+      const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
+        exoneresInput,
+        revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
+        pensionsRetraitesRentes.pensionsExonereesTauxEffectifNettes,
+      );
+      const revenuCapitauxMobiliers = calculerRevenuCapitauxMobiliers(capitauxMobiliersInput, foyerInput.situationFamille);
+      const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
+      // 2OP vaut pour le cadre 2 et pour les plus-values mobilières du cadre 3.
+      const plusValuesGainsDivers = calculerPlusValuesGainsDivers(plusValues ?? PLUS_VALUES_PAR_DEFAUT, capitauxMobiliersInput.case2op);
+      const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
+      const parts = calculerPartsFiscales(foyerInput);
+      const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
+      const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE);
+      const revenusFonciers2042 = calculerRevenusFonciers2042(
+        fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT,
+        revenusFonciers?.revenuFoncierNetImposable ?? null,
+      );
+      const revenuImposableAvantDeficitAgricole = revenuSalaires.totalNetImposable + gainsActionnariat.totalNetImposable
+        + pensionsRetraitesRentes.totalNetImposable + revenuCapitauxMobiliers.totalNetImposable
+        + plusValuesGainsDivers.totalNetImposable
+        + (revenusFonciers?.incidenceRevenuImposable ?? 0)
+        + revenusFonciers2042.totalNetImposable - revenusFonciers2042.deductionReel4BL
+        + revenusNonSalaries.totalNetImposable;
+      // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
+      const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= SEUIL_DEFICIT_AGRICOLE ? revenusNonSalaries.deficitAgricole : 0;
+      const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
+      const chargesDeductibles = calculerChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput);
+      const revenuImposableTotal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
+      const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
+        + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
+        + revenusNonSalaries.impotForfaitaire;
+      const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
+      // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
+      // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
+      // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
+      const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
+      const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
+      const revenuExonereEtCreditImpot = revenuExonereTauxEffectif.totalRetenu
+        + revenuSalaires.revenuCreditImpotEgalImpotFrancais
+        + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
+        + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
+        + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais
+        + prelevementSourceDivers.revenuTauxEffectif;
+      const reductionsCreditsImpot = calculerReductionsCreditsImpot(
+        reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
+      );
+      // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
+      const calculer = (creditEtranger: number) => calculerImpot(
+        revenuImposableTotal,
+        parts,
+        foyerInput.situationFamille,
+        revenuExonereEtCreditImpot,
+        foyerInput.lieuResidence,
+        impotForfaitaireTotal,
+        gainsActionnariat.revenuExceptionnelQuotient,
+        revenuCapitauxMobiliers.creditImpotAssuranceVie,
+        revenuCapitauxMobiliers.creditImpotEtranger2AB,
+        revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
+        revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
+          + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
+          + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR,
+        reductionsCreditsImpot.totalReductions,
+        reductionsCreditsImpot.creditServicesPersonne,
+        creditEtranger,
+        prelevementSourceDivers.reprises,
+      );
+      const impotSansCreditEtranger = calculer(0);
+      const impot = calculer(creditImpotEgalImpotEtranger(
+        prelevementSourceInput,
+        impotSansCreditEtranger.impotApresDecote + impotSansCreditEtranger.impotForfaitaire - impotSansCreditEtranger.reductionsImpot,
+        revenuImposableTotal,
+      ));
+      const prelevementsSociauxBruts = prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
+        + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
+        + prelevementsSociauxGainsActionnariat.prelevementsSociaux
+        + plusValuesGainsDivers.prelevementsSociaux
+        + (revenusFonciers?.prelevementsSociaux ?? 0)
+        + revenusFonciers2042.prelevementsSociaux
+        + revenusNonSalaries.prelevementsSociaux;
+      // PS des gains d'actionnariat (régime salarial) exclus du plafond de l'exonération patrimoine.
+      const reductionPrelevementsSociaux = Math.min(
+        prelevementSourceDivers.reductionPrelevementsSociaux,
+        Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
+      );
+      const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux
+        + prelevementSourceDivers.contributionsSocialesRevenusActivite;
+      const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet, prelevementsSociauxTotal) : null;
+
+      const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
+        impots: impot.impotApresDecote + impot.impotForfaitaire + prelevementsSociauxTotal,
+        revenus: impot.revenuFiscalReference,
+      };
+      const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
+
+      return {
+        loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions || loadingPrelevementSource,
+        foyerRenseigne: foyer !== null,
+        revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || reductions !== null || prelevementSource !== null || declaration2044 !== null,
+        revenuSalaires,
+        gainsActionnariat,
+        revenuExonereTauxEffectif,
+        pensionsRetraitesRentes,
+        revenuCapitauxMobiliers,
+        plusValuesGainsDivers,
+        prelevementsSociauxCapitauxMobiliers,
+        prelevementsSociauxPensionsRetraitesRentes,
+        prelevementsSociauxGainsActionnariat,
+        parts,
+        revenusFonciers,
+        revenusFonciers2042,
+        revenusNonSalaries,
+        deficitAgricoleImpute,
+        chargesDeductibles,
+        reductionsCreditsImpot,
+        prelevementSourceDivers,
+        reductionPrelevementsSociaux,
+        prelevementsSociauxTotal,
+        solde,
+        impot,
+        plafonnementIFI,
+        ifi,
+      };
     };
-    const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
 
-    return {
-      loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions || loadingPrelevementSource,
-      foyerRenseigne: foyer !== null,
-      revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || reductions !== null || prelevementSource !== null || declaration2044 !== null,
-      revenuSalaires,
-      gainsActionnariat,
-      revenuExonereTauxEffectif,
-      pensionsRetraitesRentes,
-      revenuCapitauxMobiliers,
-      plusValuesGainsDivers,
-      prelevementsSociauxCapitauxMobiliers,
-      prelevementsSociauxPensionsRetraitesRentes,
-      prelevementsSociauxGainsActionnariat,
-      parts,
-      revenusFonciers,
-      revenusFonciers2042,
-      revenusNonSalaries,
-      deficitAgricoleImpute,
-      chargesDeductibles,
-      reductionsCreditsImpot,
-      prelevementSourceDivers,
-      reductionPrelevementsSociaux,
-      prelevementsSociauxTotal,
-      solde,
-      impot,
-      plafonnementIFI,
-      ifi,
-    };
+    const resultat = simuler(capitauxMobiliersSaisis);
+    const alternative = simuler({ ...capitauxMobiliersSaisis, case2op: !capitauxMobiliersSaisis.case2op });
+    const [avecOption, sansOption] = capitauxMobiliersSaisis.case2op ? [resultat, alternative] : [alternative, resultat];
+    const impotAvecOption = avecOption.impot.impotNet;
+    const impotSansOption = sansOption.impot.impotNet;
+    const comparaisonOptionBareme: ComparaisonOptionBareme | null = Math.round(impotAvecOption) === Math.round(impotSansOption)
+      ? null
+      : { optionActuelle: capitauxMobiliersSaisis.case2op, impotAvecOption, impotSansOption };
+
+    return { ...resultat, comparaisonOptionBareme };
   }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   return { ...overview, refetch };
