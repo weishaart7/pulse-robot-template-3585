@@ -104,4 +104,36 @@ describe('calculerPrelevementsSociauxCapitauxMobiliers', () => {
     expect(result.baseImposable).toBe(13000);
     expect(result.prelevementsSociaux).toBeCloseTo(13000 * 0.186, 6);
   });
+  it('exclut de la base les revenus déjà soumis aux PS (2BH) — pas de double prélèvement', () => {
+    const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dc: 10000, case2bh: 10000 }));
+    expect(result.assietteBrute).toBe(10000);
+    expect(result.montantDejaSoumis).toBe(10000);
+    expect(result.baseImposable).toBe(0);
+    expect(result.prelevementsSociaux).toBe(0);
+  });
+
+  it('déduit 2CG/2BH/2DF/2DG de l\'assiette brute', () => {
+    const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({
+      case2dc: 10000, case2tr: 5000, case2ch: 5000,
+      case2cg: 1000, case2bh: 2000, case2df: 3000, case2dg: 4000,
+    }));
+    expect(result.montantDejaSoumis).toBe(10000);
+    expect(result.baseImposable).toBe(10000);
+    expect(result.prelevementsSociaux).toBeCloseTo(10000 * 0.186, 6);
+  });
+
+  it('applique la CSG/CRDS de 11,1 % sur 2DI, compris dans 2DG', () => {
+    const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({
+      case2tr: 5000, case2dg: 5000, case2di: 2000,
+    }));
+    expect(result.baseImposable).toBe(0);
+    expect(result.csgCrds2DI).toBeCloseTo(222, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(222, 6);
+  });
+
+  it('plancher à 0 si les revenus déjà soumis dépassent l\'assiette brute', () => {
+    const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dc: 1000, case2bh: 5000 }));
+    expect(result.baseImposable).toBe(0);
+    expect(result.prelevementsSociaux).toBe(0);
+  });
 });

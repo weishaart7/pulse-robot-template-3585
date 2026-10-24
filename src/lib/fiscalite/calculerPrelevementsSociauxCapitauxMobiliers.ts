@@ -21,6 +21,16 @@ import { RevenusCapitauxMobiliersInput } from './types';
 export const TAUX_PS_CAPITAUX_MOBILIERS = 0.186;
 
 /**
+ * CSG (10,6 %) + CRDS (0,5 %) dues sur 2DI : revenus ayant bénéficié à tort
+ * de l'exonération de CSG/CRDS réservée aux affiliés à un régime d'assurance
+ * maladie de l'EEE, du Royaume-Uni ou de la Suisse — brochure DGFiP IR 2026
+ * p.133 : « le montant des revenus inscrit ligne 2DI sera automatiquement
+ * soumis à la CSG et à la CRDS ». Le prélèvement de solidarité de 7,5 % a
+ * déjà été prélevé (2DI est inclus dans 2DG).
+ */
+export const TAUX_CSG_CRDS_2DI = 0.111;
+
+/**
  * Cases du cadre 2 volontairement exclues du calcul PS : uniquement celles
  * **explicitement libellées « soumis au prélèvement libératoire »** sur le
  * CERFA (2DH, 2XX, 2VM) — un mécanisme historique où le prélèvement, lors du
@@ -68,9 +78,22 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
    * les produits/gains de contrats d'assurance-vie non « soumis au
    * prélèvement libératoire » (2CH, 2VV, 2WW, 2YY, 2ZZ, 2VN, 2VO, 2VP) sur
    * leur montant BRUT, sans l'abattement 4 600 €/9 200 € — voir « Bug
-   * corrigé » ci-dessus.
+   * corrigé » ci-dessus. Diminuée de `montantDejaSoumis`, plancher à 0.
    */
   baseImposable: number;
+  /** Somme des cases ci-dessus, avant déduction des revenus déjà soumis aux PS. */
+  assietteBrute: number;
+  /**
+   * Revenus déjà soumis aux PS à la source, exclus de la base (brochure DGFiP
+   * IR 2026 p.132-133) : 2CG, 2BH, 2DF (PS complets déjà prélevés) et 2DG
+   * (seul prélèvement de solidarité dû, déjà prélevé). Ces montants sont
+   * aussi compris dans 2DC/2TR/2CH/2VV… : sans cette déduction, les PS
+   * seraient comptés deux fois.
+   */
+  montantDejaSoumis: number;
+  /** CSG/CRDS (11,1 %) sur 2DI, en plus des PS à 18,6 % sur `baseImposable`. */
+  csgCrds2DI: number;
+  /** Total : `baseImposable` × 18,6 % + `csgCrds2DI`. */
   prelevementsSociaux: number;
   casesHorsPerimetre: readonly string[];
 }
@@ -95,10 +118,14 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
  * Cases hors calcul : voir CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE (2DH/
  * 2XX/2VM, explicitement « soumis au prélèvement libératoire » — déjà réglé
  * à la source, IR et PS ensemble). 2AB/2CK (crédits d'impôt étrangers) et
- * 2CG/2BH/2DF/2DG/2DI/2EE (lignes PS/RFR déjà hors périmètre de l'IR) n'ont
- * pas leur place ici : les premiers sont des crédits d'IR, les seconds sont
- * déjà des montants de PS ou de RFR, pas une base sur laquelle appliquer un
- * taux.
+ * 2EE (RFR seul) n'ont pas leur place ici.
+ *
+ * **Bug corrigé — 2CG/2BH/2DF/2DG étaient ignorés** alors que la brochure
+ * (p.132-133) les exclut explicitement de la base PS : ce sont des revenus
+ * déjà compris dans 2DC/2TR/2CH/2VV… et dont les PS ont été prélevés à la
+ * source (cas courant des comptes-titres et fonds euros français). Ils sont
+ * désormais déduits de l'assiette ; 2DI (inclus dans 2DG) supporte en plus
+ * la CSG/CRDS à 11,1 %.
  */
 export function calculerPrelevementsSociauxCapitauxMobiliers(
   input: RevenusCapitauxMobiliersInput,
@@ -111,12 +138,20 @@ export function calculerPrelevementsSociauxCapitauxMobiliers(
     + (input.case2ww ?? 0) + (input.case2yy ?? 0) + (input.case2zz ?? 0)
     + (input.case2vn ?? 0) + (input.case2vo ?? 0) + (input.case2vp ?? 0);
 
-  const baseImposable = dividendesBrut + sansAbattement + revenusReputesDistribuesSansMajoration
+  const assietteBrute = dividendesBrut + sansAbattement + revenusReputesDistribuesSansMajoration
     + contratsNonLiberatoiresSansAbattement;
+  const montantDejaSoumis = (input.case2cg ?? 0) + (input.case2bh ?? 0) + (input.case2df ?? 0)
+    + (input.case2dg ?? 0);
+  // Plancher à 0 : des cases « déjà soumis » supérieures aux revenus déclarés relèvent d'une erreur de saisie, pas d'un crédit de PS.
+  const baseImposable = Math.max(0, assietteBrute - montantDejaSoumis);
+  const csgCrds2DI = (input.case2di ?? 0) * TAUX_CSG_CRDS_2DI;
 
   return {
     baseImposable,
-    prelevementsSociaux: baseImposable * TAUX_PS_CAPITAUX_MOBILIERS,
+    assietteBrute,
+    montantDejaSoumis,
+    csgCrds2DI,
+    prelevementsSociaux: baseImposable * TAUX_PS_CAPITAUX_MOBILIERS + csgCrds2DI,
     casesHorsPerimetre: CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE,
   };
 }

@@ -956,7 +956,8 @@ fonciers (§4).
   montant additionnel) ; `2VM` et `2VQ`-`2VU` (voir ci-dessus, gains déjà taxés à la
   source ou reliquat purement informatif) ; `2TU`-`2TY` (pertes
   non imputées, pur report sans effet sur l'année en cours) ; `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE`
-  (lignes exclusivement PS/revenu fiscal de référence, les deux hors périmètre du module —
+  (lignes sans effet sur l'IR : 2CG/2BH/2DF/2DG/2DI servent à l'assiette PS, déduites dans
+  `calculerPrelevementsSociauxCapitauxMobiliers.ts`, 2EE au seul RFR —
   **découverte notable** : `2DI` doit en outre être inclus dans `2DG` d'après la brochure, ce n'est pas
   un montant additif indépendant). Branché dans `useFiscalOverview.ts` (qui passe désormais
   `foyerInput.situationFamille` à la fonction) : `totalNetImposable` s'ajoute au revenu imposable
@@ -1057,7 +1058,12 @@ fonciers (§4).
   **brut**, l'abattement de 40 % étant réservé à l'IR, art. 158-3 CGI), intérêts/produits sans
   abattement (2TS/2TR/2TT/2TQ/2TZ), revenus réputés distribués (2GO), et tous les produits/gains de
   contrats d'assurance-vie/capitalisation non « soumis au prélèvement libératoire » (2CH, 2VV, 2WW,
-  2YY, 2ZZ, 2VN, 2VO, 2VP — voir « Bug corrigé » ci-dessous). **2GO retenu sans la majoration de 25 %**
+  2YY, 2ZZ, 2VN, 2VO, 2VP — voir « Bug corrigé » ci-dessous). **Cette assiette brute est diminuée
+  des revenus déjà soumis aux PS à la source** (brochure DGFiP IR 2026 p.132-133, plancher à 0) :
+  2CG/2BH/2DF (PS complets déjà prélevés, montants aussi compris dans 2DC/2TR/2CH/2VV… — cas courant
+  des comptes-titres et fonds euros français, qui étaient auparavant comptés deux fois) et 2DG (seul
+  prélèvement de solidarité dû, déjà prélevé). 2DI (inclus dans 2DG) supporte en plus la CSG/CRDS à
+  **11,1 %** (`TAUX_CSG_CRDS_2DI`). **2GO retenu sans la majoration de 25 %**
   qui s'applique pourtant côté IR (art. 158-7-2° CGI) : le Conseil constitutionnel (décision
   n° 2016-610 QPC) a jugé ce coefficient inapplicable à l'assiette PS — seule fonction du module à
   diverger explicitement de l'assiette IR de la même case. Indépendant de 2OP : les PS sont dus que le
@@ -1810,7 +1816,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     `2VM`/`2VQ`-`2VU` (gains de cession déjà taxés à la source ou reliquat de
     moins-value purement informatif — voir §2, `2VN`/`2VO`/`2VP` désormais
     couverts, Phase 2c), `2TU`-`2TY` (pertes non imputées, sans effet sur l'année en
-    cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (lignes PS/RFR, hors périmètre du module).
+    cours), `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE` (sans effet sur l'IR ; les cinq premières sont
+    traitées dans l'assiette PS, voir §2).
     `2AB`/`2CK` (crédits d'impôt sur valeurs étrangères) désormais couverts — voir §2. `2DM`
     (impatriés) et le bloc « précisions CDHR »
     (`2DK`/`2DL`/`2XY`/`2XZ`/`2XW`/`2VJ`/`2VK`/`2VL`/`2EF`/`2EG`/`2EH`/`8KD`-`8KG`/`8CD`) exclus même de
