@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { usePensionsRetraitesRentes } from '@/hooks/usePensionsRetraitesRentes';
 import { PensionsRetraitesRentes } from '@/services/pensionsRetraitesRentesService';
 import { PensionsRetraitesRentesInput } from '@/lib/fiscalite';
@@ -83,6 +84,12 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
           value1={pensions.case1at} value2={pensions.case1bt}
           onChange1={v => update('case1at', v)} onChange2={v => update('case1bt', v)}
         />
+        {((pensions.case1at ?? 0) > 0 || (pensions.case1bt ?? 0) > 0) && (
+          <p className="flex items-start gap-1.5 px-2 py-1 text-xs text-citron-ink">
+            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+            <span>Si ce capital est prérempli en 1AS/1BS, diminuez d'autant le montant de 1AS/1BS : sinon il est imposé deux fois (brochure IR 2026 p. 116).</span>
+          </p>
+        )}
         <MontantLigne
           label="Pensions en capital des plans d'épargne retraite"
           code1="1AI" code2="1BI"
