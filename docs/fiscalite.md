@@ -1311,6 +1311,8 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
 - **Épargne retraite** : min(`6NS + 6RS`, `6PS`) par déclarant ; avec `6QR`, plafonds additionnés.
   Montant effectivement imputé (réputé imputé en dernier) réintégré au RFR (art. 1417 IV 1° a CGI).
   `6QW`, `6OS`/`6OT`, `6QS`/`6QT` informatifs (plafond saisi tel que sur l'avis ou recalculé).
+- **CSG déductible de l'année** : 6,8 % de `2DF`, et de `2BH` si `2OP`, ajoutée d'office à `6DE`
+  (`csgDeductibleAutomatique`, arrondie à l'euro, soumise à la limite du revenu global).
 - **Autres** : `6DE`, `6DG`, `6DD` en totalité ; `6EU` plafonné à 4 075 € × `6EV`
   (`PLAFOND_ACCUEIL_PERSONNE_AGEE`, 1 personne si `6EV` vide) ; `6HP`+`6HQ`+`6HR` plafonnés à 25 000 €.
 - **À confirmer brochure IR 2026** : 6 855 € et 4 075 € sont dérivés des montants revenus 2024

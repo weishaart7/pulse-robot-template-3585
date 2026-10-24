@@ -12,6 +12,8 @@ export const PLAFOND_PENSION_ENFANT_MAJEUR = 6855;
 export const PLAFOND_ACCUEIL_PERSONNE_AGEE = 4075;
 /** Majoration des pensions fixées par une décision de justice définitive avant le 1.1.2006 (6GI, 6GJ, 6GP). */
 export const MAJORATION_PENSION_AVANT_2006 = 1.25;
+/** Fraction déductible de la CSG prélevée à la source sur 2BH/2DF (art. 154 quinquies II CGI). */
+export const TAUX_CSG_DEDUCTIBLE = 0.068;
 /** Grosses réparations des nus-propriétaires imputables sur le revenu global (art. 156 I 3° CGI). */
 export const PLAFOND_GROSSES_REPARATIONS = 25000;
 
@@ -20,6 +22,8 @@ const montant = (v: number | null) => Math.max(0, v ?? 0);
 export interface ChargesDeductiblesResult {
   /** 6GH : ajouté au revenu imposable avant toute imputation. */
   sommesAAjouter: number;
+  /** CSG déductible de l'année sur 2DF (et 2BH si 2OP), ajoutée d'office à 6DE ; comprise dans `chargesDeductibles`. */
+  csgDeductibleAutomatique: number;
   /** 6FA à 6FL imputés, les plus anciens d'abord, dans la limite du revenu global. */
   deficitsAnterieursImputes: number;
   /** Charges du cadre 6 après plafonds, avant limite du revenu global. */
@@ -44,12 +48,20 @@ export interface ChargesDeductiblesResult {
  * charge non imputée est perdue). 6QW, 6OS/6OT et 6QS/6QT sont informatives :
  * le plafond 6PS/6PT est saisi tel que figurant sur l'avis (ou recalculé
  * par l'utilisateur pour un nouveau résident).
+ *
+ * CSG déductible de l'année : 6,8 % de 2DF, et de 2BH si l'option barème
+ * 2OP est exercée, calculée d'office en plus de 6DE (à ne pas y reporter).
  */
 export function calculerChargesDeductibles(
   input: ChargesDeductiblesInput,
   revenuBrutGlobal: number,
+  capitauxMobiliers: { case2bh: number | null; case2df: number | null; case2op: boolean } | null = null,
 ): ChargesDeductiblesResult {
   const sommesAAjouter = montant(input.case6gh);
+  const csgDeductibleAutomatique = capitauxMobiliers
+    ? Math.round(TAUX_CSG_DEDUCTIBLE * (montant(capitauxMobiliers.case2df)
+      + (capitauxMobiliers.case2op ? montant(capitauxMobiliers.case2bh) : 0)))
+    : 0;
   let disponible = Math.max(0, revenuBrutGlobal + sommesAAjouter);
 
   const deficits = [input.case6fa, input.case6fb, input.case6fc, input.case6fd, input.case6fe, input.case6fl];
@@ -83,7 +95,7 @@ export function calculerChargesDeductibles(
     PLAFOND_GROSSES_REPARATIONS,
   );
 
-  const chargesDeductibles = montant(input.case6de) + pensions + epargneRetraiteDeduite
+  const chargesDeductibles = montant(input.case6de) + csgDeductibleAutomatique + pensions + epargneRetraiteDeduite
     + montant(input.case6dg) + montant(input.case6dd) + accueil + grossesReparations;
   const chargesImputees = Math.min(chargesDeductibles, disponible);
   // Les charges imputées en partie : l'épargne retraite est réputée imputée en dernier.
@@ -91,6 +103,7 @@ export function calculerChargesDeductibles(
 
   return {
     sommesAAjouter,
+    csgDeductibleAutomatique,
     deficitsAnterieursImputes,
     chargesDeductibles,
     chargesImputees,

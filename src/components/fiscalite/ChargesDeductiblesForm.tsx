@@ -49,7 +49,7 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
       description="Cadre 6 de la 2042 et de la 2042-C : charges retranchées du revenu global, plafonds appliqués ici."
       saving={saving} onSave={handleSubmit}>
         <SousGroupe titre="CSG et pensions alimentaires">
-          <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
+          <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" aide="Montant de l'avis. La CSG déductible sur 2DF (et 2BH avec l'option barème) est ajoutée automatiquement : ne pas la reporter ici." code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
           <MontantEclateLigne
             label="Pension alimentaire versée à un enfant majeur"
             aide="Plafond 6 855 € par enfant, doublé si vous entretenez seul un enfant marié, pacsé ou chargé de famille (non calculé : saisir le montant déductible). Enfant hébergé sans ressources suffisantes : forfait de 4 075 € déclarable sans justificatif."

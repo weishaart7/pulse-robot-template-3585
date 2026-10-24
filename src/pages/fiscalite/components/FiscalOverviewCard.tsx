@@ -208,6 +208,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
             {chargesDeductibles.chargesImputees > 0 && (
               <LigneDetail label="Charges déductibles (cadre 6)" valeur={`− ${formatEuros(chargesDeductibles.chargesImputees)}`} />
             )}
+            {chargesDeductibles.csgDeductibleAutomatique > 0 && (
+              <LigneDetail label="dont CSG déductible sur 2BH/2DF (calculée d'office)" valeur={formatEuros(chargesDeductibles.csgDeductibleAutomatique)} />
+            )}
             {revenuExonereTauxEffectif.totalRetenu > 0 && (
               <LigneDetail
                 label="Revenus exonérés retenus (taux effectif)"

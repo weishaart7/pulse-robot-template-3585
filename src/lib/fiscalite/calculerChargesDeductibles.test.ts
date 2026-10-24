@@ -27,6 +27,20 @@ describe('calculerChargesDeductibles', () => {
     expect(r.chargesImputees).toBe(5000 + 6855 + 12500);
   });
 
+  it('CSG déductible automatique : 6,8 % de 2DF, et de 2BH seulement avec 2OP', () => {
+    const cm = { case2bh: 10000, case2df: 5000, case2op: false };
+    expect(calculerChargesDeductibles(VIDE, 80000, cm).csgDeductibleAutomatique).toBe(340);
+    const r = calculerChargesDeductibles({ ...VIDE, case6de: 100 }, 80000, { ...cm, case2op: true });
+    expect(r.csgDeductibleAutomatique).toBe(1020);
+    expect(r.chargesImputees).toBe(1120);
+  });
+
+  it('CSG déductible automatique limitée au revenu global avec les autres charges', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6de: 500 }, 800, { case2bh: null, case2df: 10000, case2op: false });
+    expect(r.chargesDeductibles).toBe(1180);
+    expect(r.chargesImputees).toBe(800);
+  });
+
   it('PER : plafond par déclarant, mutualisé avec 6QR', () => {
     const base = { ...VIDE, case6ns: 8000, case6ps: 5000, case6nt: 1000, case6pt: 6000 };
     expect(calculerChargesDeductibles(base, 100000).epargneRetraiteDeduite).toBe(6000);
