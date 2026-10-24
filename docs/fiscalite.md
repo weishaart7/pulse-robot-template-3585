@@ -898,7 +898,12 @@ fonciers (§4).
   taxation, quelle que soit la modalité d'imposition (règle explicite de la brochure, découverte en
   session, absente de la documentation initiale du cadre) ; `2CA` (frais et charges) et `2AA`-`2AR`
   (déficits antérieurs, plancher à 0, pas de report au-delà) déduits de la base globale, **mais
-  seulement en cas d'option barème** (la brochure réserve ces deux mécanismes à cette option). `2OP`
+  seulement en cas d'option barème** (la brochure réserve ces deux mécanismes à cette option). Si
+  `2CA` excède les revenus imposés au barème, l'excédent est exposé en `deficitReportableAnnee`
+  (brochure p.134 : reportable 6 ans, option barème seulement), informatif, affiché sous `2CA` dans le
+  formulaire (« à reporter ligne 2AR l'an prochain ») ; les déficits antérieurs non absorbés ne
+  recréent pas de déficit. `2TT` est saisi net des pertes imputées pour l'IR, alors que les PS restent
+  dus sur les intérêts bruts (p.128) : non reconstituable, signalé par une aide sous la case. `2OP`
   fait donc basculer la majorité du cadre entre deux régimes : coché → tout rejoint
   `totalNetImposable` (barème, après abattement/frais/déficits) ; non coché → tout est taxé au **PFU
   12,8 %** dans `impotForfaitaire`, sans aucun des trois mécanismes ci-dessus. **Phase 2a — contrats
@@ -1617,6 +1622,12 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 ### 🟠 À surveiller (cas limite, peu probable)
 
+- **Réintégration au RFR de l'abattement 4 600 €/9 200 € (2CH/2VV/2WW) non confirmée.** Le code la
+  réintègre quelle que soit 2OP (exemple chiffré d'une source secondaire ; un amendement AN de 2013
+  décrit aussi le RFR « majoré de l'abattement »). Une autre source tierce soutient l'inverse sous
+  option barème (RFR net de l'abattement, réintégration totale seulement sous prélèvement
+  libératoire). Brochure IR 2026 muette, texte de l'art. 1417 IV non consulté. À trancher sur un avis
+  d'imposition réel ou le simulateur DGFiP avec 2CH/2VV sous l'abattement ; n'affecte que le RFR.
 - **Taux des PS « revenus du patrimoine » à vérifier case par case.** 18,6 % (CSG 10,6 % LFSS 2026)
   est appliqué provisoirement à 1TZ/1UZ/1WZ/1VZ et 1AY/1BY, par cohérence avec les plus-values, capitaux
   mobiliers et rentes viagères. La brochure IR 2026 (p.111) cite 17,2 % pour la fraction ≤ 300 000 € des

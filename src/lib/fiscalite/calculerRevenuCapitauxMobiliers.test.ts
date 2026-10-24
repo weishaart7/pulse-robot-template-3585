@@ -384,3 +384,27 @@ describe('calculerRevenuCapitauxMobiliers — revenus libératoires retenus au R
     expect(result.totalNetImposable).toBe(0);
   });
 });
+
+describe('calculerRevenuCapitauxMobiliers — déficit RCM reportable (2CA > revenus)', () => {
+  it("avec option barème, l'excédent de frais devient un déficit reportable", () => {
+    const result = calculer(makeInput({ case2tr: 1000, case2ca: 3000, case2op: true }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.deficitReportableAnnee).toBe(2000);
+  });
+
+  it('déficit nul si les frais sont inférieurs aux revenus', () => {
+    const result = calculer(makeInput({ case2tr: 5000, case2ca: 3000, case2op: true }));
+    expect(result.deficitReportableAnnee).toBe(0);
+  });
+
+  it('les déficits antérieurs ne recréent pas de déficit', () => {
+    const result = calculer(makeInput({ case2tr: 5000, case2ca: 3000, case2aa: 10000, case2op: true }));
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.deficitReportableAnnee).toBe(0);
+  });
+
+  it('déficit nul sans option barème (frais non déductibles)', () => {
+    const result = calculer(makeInput({ case2tr: 1000, case2ca: 3000 }));
+    expect(result.deficitReportableAnnee).toBe(0);
+  });
+});

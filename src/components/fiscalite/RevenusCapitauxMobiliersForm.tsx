@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useRevenusCapitauxMobiliers } from '@/hooks/useRevenusCapitauxMobiliers';
+import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { RevenusCapitauxMobiliers } from '@/services/revenusCapitauxMobiliersService';
 import { RevenusCapitauxMobiliersInput } from '@/lib/fiscalite';
-import { MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
+import { calculerRevenuCapitauxMobiliers } from '@/lib/fiscalite/calculerRevenuCapitauxMobiliers';
+import { LectureLigne, MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 const REVENUS_VIDE: RevenusCapitauxMobiliersInput = {
@@ -27,6 +29,9 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
   const { data, loading, saving, saveData } = useRevenusCapitauxMobiliers();
   const [revenus, setRevenus] = useState<RevenusCapitauxMobiliersInput>(REVENUS_VIDE);
   const [revenusId, setRevenusId] = useState<string | undefined>(undefined);
+  const { data: foyer } = useFoyerFiscal();
+  const deficitReportable = calculerRevenuCapitauxMobiliers(revenus, foyer?.situationFamille ?? 'celibataire')
+    .deficitReportableAnnee;
 
   useEffect(() => {
     if (data) {
@@ -77,7 +82,9 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
 
         <SousGroupe titre="Vos revenus des valeurs et capitaux mobiliers n'ouvrant pas droit à abattement">
           <SingleMontantLigne label="Intérêts et autres produits de placement à revenu fixe" code="2TR" value={revenus.case2tr} onChange={v => update('case2tr', v)} />
-          <SingleMontantLigne label="Intérêts des prêts participatifs et des minibons" code="2TT" value={revenus.case2tt} onChange={v => update('case2tt', v)} />
+          <SingleMontantLigne label="Intérêts des prêts participatifs et des minibons" code="2TT"
+            aide="Montant net des pertes imputées pour l'impôt sur le revenu. Les prélèvements sociaux restent dus sur la totalité des intérêts bruts perçus."
+            value={revenus.case2tt} onChange={v => update('case2tt', v)} />
           <SingleMontantLigne label="Intérêts imposables des obligations remboursables en actions" extra="PEA-PME" code="2TQ" value={revenus.case2tq} onChange={v => update('case2tq', v)} />
           <SingleMontantLigne label="Autres revenus distribués et assimilés" code="2TS" value={revenus.case2ts} onChange={v => update('case2ts', v)} />
           <SingleMontantLigne label="Produits des plans d'épargne retraite" extra="sortie en capital" code="2TZ" value={revenus.case2tz} onChange={v => update('case2tz', v)} />
@@ -107,6 +114,15 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
           <SingleMontantLigne label="Revenus déjà soumis au seul prélèvement de solidarité" extra="7,5 %" code="2DG" value={revenus.case2dg} onChange={v => update('case2dg', v)} />
           <SingleMontantLigne label="Revenus soumis au seul prélèvement de solidarité" extra="à soumettre à la CSG et à la CRDS" code="2DI" value={revenus.case2di} onChange={v => update('case2di', v)} />
           <SingleMontantLigne label="Frais et charges déductibles" extra="si option barème" code="2CA" value={revenus.case2ca} onChange={v => update('case2ca', v)} />
+          {deficitReportable > 0 && (
+            <LectureLigne
+              label="Déficit de l'année reportable sur 2026"
+              extra="frais supérieurs aux revenus imposés au barème"
+              aide="Imputable sur les revenus de capitaux mobiliers des 6 années suivantes, uniquement en cas d'option barème. À reporter ligne 2AR l'an prochain."
+              code="2AR"
+              value={deficitReportable}
+            />
+          )}
           <SingleMontantLigne label="Crédits d'impôt sur valeurs étrangères" code="2AB" value={revenus.case2ab} onChange={v => update('case2ab', v)} />
           <SingleMontantLigne label="Prélèvement forfaitaire non libératoire déjà versé" code="2CK" value={revenus.case2ck} onChange={v => update('case2ck', v)} />
           <SingleMontantLigne label="Autres revenus soumis à un prélèvement ou à une retenue libératoire" code="2EE" value={revenus.case2ee} onChange={v => update('case2ee', v)} />

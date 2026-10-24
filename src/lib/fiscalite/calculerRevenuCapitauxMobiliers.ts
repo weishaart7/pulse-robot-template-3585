@@ -143,6 +143,14 @@ export interface RevenuCapitauxMobiliersResult {
    * `revenuMondialFictif`.
    */
   revenuExonereRetenuPourRFR: number;
+  /**
+   * Déficit RCM de l'année, reportable sur les revenus de même nature des
+   * 6 années suivantes, uniquement en cas d'option barème (brochure DGFiP
+   * IR 2026 p.134, CGI art. 156-I-8°) : fraction des frais et charges (2CA)
+   * excédant les revenus imposés au barème. Informatif — sans effet sur
+   * l'impôt de l'année, à reporter en 2AR l'an prochain. Nul sans 2OP.
+   */
+  deficitReportableAnnee: number;
   casesExclues: readonly string[];
 }
 
@@ -282,6 +290,7 @@ export function calculerRevenuCapitauxMobiliers(
     return {
       totalNetImposable: Math.max(0, baseAvantDeficits - deficitsAnterieurs),
       impotForfaitaire: 0,
+      deficitReportableAnnee: Math.max(0, -baseAvantDeficits),
       creditImpotAssuranceVie,
       creditImpotEtranger2AB,
       creditImpotValeursEtrangeres2CK,
@@ -296,6 +305,7 @@ export function calculerRevenuCapitauxMobiliers(
 
   return {
     totalNetImposable: toujoursBareme,
+    deficitReportableAnnee: 0,
     impotForfaitaire: baseTaux128 * TAUX_PFU + baseTaux75 * TAUX_PFU_REDUIT_2VV,
     creditImpotAssuranceVie,
     creditImpotEtranger2AB,
