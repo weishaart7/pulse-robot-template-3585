@@ -29,7 +29,8 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
  *   montant additionnel.
  * - 2XX (contrats < 8 ans, prélevé à titre définitif à la source lors du
  *   versement, taux 15/25/35/45 % selon durée) : déjà taxé, aucun effet
- *   supplémentaire sur l'IR — informatif/RFR seulement, comme 2CG/2BH/2DF.
+ *   supplémentaire sur l'IR — retenu au RFR seulement (voir
+ *   `revenuExonereRetenuPourRFR`), comme 2VM et 2EE.
  * - 2VM (gains de cession de bons/contrats attachés à des primes versées
  *   avant le 27.9.2017, déjà soumis au prélèvement libératoire lors du
  *   versement) : même mécanisme que 2XX, déjà taxé à titre définitif, sans
@@ -44,8 +45,9 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
  *   famille que 2TU-2TY, aucun effet sur l'année en cours.
  * - 2TU/2TV/2TW/2TX/2TY (pertes prêts participatifs non imputées) : pur
  *   report sur les années suivantes, aucun effet sur l'année en cours.
- * - 2CG/2BH/2DF/2DG/2DI/2EE : lignes exclusivement PS/revenu fiscal de
- *   référence (les deux hors périmètre du module) — sans effet sur l'IR.
+ * - 2CG/2BH/2DF/2DG/2DI : lignes servant à l'assiette PS
+ *   (`calculerPrelevementsSociauxCapitauxMobiliers.ts`) — sans effet sur l'IR.
+ * - 2EE : retenu au seul RFR (voir `revenuExonereRetenuPourRFR`).
  */
 export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
   'case2uu',
@@ -129,6 +131,12 @@ export interface RevenuCapitauxMobiliersResult {
    * confiance moindre que les deux points ci-dessus) : gain de 9 200 €
    * intégralement couvert par l'abattement, PFU par défaut → « votre RFR
    * passera à 69 200 € (60 000 + 9 200 € de PV) » — réintégré même sous PFU.
+   *
+   * **2XX, 2VM, 2EE, montant brut** (revenus soumis à un prélèvement ou à
+   * une retenue libératoire) : brochure DGFiP IR 2026 p.123-124 — « les
+   * revenus soumis au prélèvement libératoire sont retenus pour le calcul
+   * du revenu fiscal de référence » ; p.134 pour 2EE, « retenus uniquement
+   * pour la détermination du RFR ». Indépendant de 2OP.
    *
    * Transmis tel quel à `calculerImpot.ts` pour construire
    * `revenuFiscalReference` sans polluer `totalNetImposable`/
@@ -255,8 +263,10 @@ export function calculerRevenuCapitauxMobiliers(
   const creditImpotEtranger2AB = input.case2ab ?? 0;
   const creditImpotValeursEtrangeres2CK = input.case2ck ?? 0;
 
+  // 2XX/2VM/2EE : soumis à un prélèvement libératoire, sans effet sur l'IR mais retenus au RFR (brochure p.123-124, p.134).
+  const revenusLiberatoiresRetenusPourRFR = (input.case2xx ?? 0) + (input.case2vm ?? 0) + (input.case2ee ?? 0);
   const revenuExonereRetenuPourRFRContratsAssuranceVie = case2dh
-    + abattementSur2ch + abattementSur2vv + abattementSur2ww;
+    + abattementSur2ch + abattementSur2vv + abattementSur2ww + revenusLiberatoiresRetenusPourRFR;
 
   if (input.case2op) {
     const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;

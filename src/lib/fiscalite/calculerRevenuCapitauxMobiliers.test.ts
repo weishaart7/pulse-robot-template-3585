@@ -368,3 +368,19 @@ describe('calculerRevenuCapitauxMobiliers — cases exclues du calcul', () => {
     expect(result.casesExclues).not.toContain('case2ck');
   });
 });
+
+describe('calculerRevenuCapitauxMobiliers — revenus libératoires retenus au RFR (2XX/2VM/2EE)', () => {
+  it('retient 2XX, 2VM et 2EE au RFR pour leur montant brut, sans effet sur l\'IR', () => {
+    const input = makeInput({ case2xx: 1000, case2vm: 2000, case2ee: 3000 });
+    const result = calculer(input);
+    expect(result.revenuExonereRetenuPourRFR).toBe(6000);
+    expect(result.totalNetImposable).toBe(0);
+    expect(result.impotForfaitaire).toBe(0);
+  });
+
+  it('indépendant de l\'option barème', () => {
+    const result = calculer(makeInput({ case2xx: 1000, case2vm: 2000, case2ee: 3000, case2op: true }));
+    expect(result.revenuExonereRetenuPourRFR).toBe(6000);
+    expect(result.totalNetImposable).toBe(0);
+  });
+});

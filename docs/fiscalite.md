@@ -957,7 +957,10 @@ fonciers (§4).
   source ou reliquat purement informatif) ; `2TU`-`2TY` (pertes
   non imputées, pur report sans effet sur l'année en cours) ; `2CG`/`2BH`/`2DF`/`2DG`/`2DI`/`2EE`
   (lignes sans effet sur l'IR : 2CG/2BH/2DF/2DG/2DI servent à l'assiette PS, déduites dans
-  `calculerPrelevementsSociauxCapitauxMobiliers.ts`, 2EE au seul RFR —
+  `calculerPrelevementsSociauxCapitauxMobiliers.ts`, 2EE au seul RFR ; **2XX, 2VM et 2EE sont
+  retenus au RFR pour leur montant brut** via `revenuExonereRetenuPourRFR`, indépendamment de 2OP —
+  brochure p.123-124 et p.134, « les revenus soumis au prélèvement libératoire sont retenus pour le
+  calcul du revenu fiscal de référence » —
   **découverte notable** : `2DI` doit en outre être inclus dans `2DG` d'après la brochure, ce n'est pas
   un montant additif indépendant). Branché dans `useFiscalOverview.ts` (qui passe désormais
   `foyerInput.situationFamille` à la fonction) : `totalNetImposable` s'ajoute au revenu imposable
