@@ -1604,10 +1604,40 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
+- **Quotient familial — réductions d'impôt complémentaires non appliquées.** Les plafonds
+  `plafondComplementaire` (1 801 € par demi-part P/F/S/W/G et invalidité d'une personne ou d'un enfant à
+  charge ; 2 011 € pour le veuf quand les deux premières demi-parts sont plafonnées) sont portés par
+  `calculerPartsFiscales.ts` mais ignorés par `calculerImpot.ts` : impôt surestimé pour les foyers
+  plafonnés concernés (brochure IR 2026 p. 79, 81, 84-85).
+- **Quotient familial — veuf avec seulement une personne invalide à charge.** Le maintien du quotient
+  conjugal (1 part de veuvage) n'est accordé qu'avec un enfant à charge ou rattaché : il manque 1 part
+  dans ce cas (brochure IR 2026 p. 85).
 - **Parts de sociétés comptées à 100 % en 9CA.** La fraction représentative d'immeubles n'est pas
   calculée (trésorerie, actifs non immobiliers, holdings) : signalé sous l'actif, à corriger par saisie.
 
 ### 🟠 À surveiller (cas limite, peu probable)
+
+- **Quotient familial — case T hors enfant à charge exclusive.** Avec uniquement des enfants en
+  résidence alternée, la case T vaut 0,25 part pour un seul enfant (0,5 à partir de deux), plafond
+  4 262 € / 2 : le moteur accorde toujours 0,5 part. La case T ouverte par une seule personne invalide
+  recueillie (sans enfant) n'est pas calculée, bien que le libellé du formulaire la mentionne
+  (brochure IR 2026 p. 79-80, 85).
+- **Situation du foyer — changements en cours d'année non modélisés.** Mariage ou Pacs (option pour
+  l'imposition distincte, cas du Pacs antérieur suivi d'un mariage), divorce ou rupture (condition de
+  vivre seul appréciée au 31 décembre pour T et L), décès (deux déclarations, maintien pour l'année du
+  décès de la demi-part d'invalidité du conjoint décédé) : le Ménage ne connaît qu'une situation
+  annuelle unique (brochure IR 2026 p. 75-77).
+- **Quotient familial — rattachements ouvrant un abattement.** Les enfants majeurs mariés, pacsés ou
+  chargés de famille rattachés donnent un abattement de 6 855 € par personne (6 855 € / 2 par
+  petit-enfant en résidence alternée), pas une demi-part : `enfantsMajeursRattaches` est un simple
+  compteur traité comme des enfants célibataires (brochure IR 2026 p. 83).
+- **Abattement personnes âgées de plus de 65 ans ou invalides (art. 157 bis CGI) absent** du calcul
+  (brochure IR 2026 p. 79 et 370).
+- **Rang des personnes invalides recueillies** : elles ne décalent que les enfants en résidence
+  alternée (seule règle explicite de la brochure p. 81) ; leur effet éventuel sur le rang des enfants à
+  charge exclusive reste à confirmer au BOFiP (BOI-IR-LIQ-10-10-10-30).
+- **Reprise depuis Famille** : une personne invalide à charge décédée est exclue quelle que soit la date
+  de décès (seuls les enfants décédés pendant N sont comptés).
 
 - **Cadre 6 — plafond 25 000 € sur `6HP`/`6HQ`/`6HR`** : la brochure IR 2026 cite la limite annuelle
   de 25 000 € pour le régime optionnel des grosses réparations des nus-propriétaires (dépenses 2009-2016),
