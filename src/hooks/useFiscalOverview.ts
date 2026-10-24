@@ -174,6 +174,7 @@ const CHARGES_DEDUCTIBLES_PAR_DEFAUT: ChargesDeductiblesInput = {
   case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
+  entretienSeul6el: false, entretienSeul6em: false,
 };
 
 const REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT: ReductionsCreditsImpotInput = {

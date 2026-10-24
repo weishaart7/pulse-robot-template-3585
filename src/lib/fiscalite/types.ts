@@ -627,6 +627,10 @@ export interface ChargesDeductiblesInput {
   case6fe: number | null;
   /** Déficit global 2024 non encore déduit */
   case6fl: number | null;
+  /** Hors CERFA : 6EL, enfant entretenu seul (marié/pacsé ou chargé de famille), plafond doublé */
+  entretienSeul6el: boolean;
+  /** Hors CERFA : 6EM, enfant entretenu seul (marié/pacsé ou chargé de famille), plafond doublé */
+  entretienSeul6em: boolean;
 }
 
 /** Réductions et crédits d'impôt du cadre 7 de la 2042 (phase 7.1, 2042-RICI hors périmètre). */

@@ -867,6 +867,8 @@ export type Database = {
           case_6qs: number | null
           case_6qt: number | null
           case_6qw: boolean | null
+          entretien_seul_6el: boolean | null
+          entretien_seul_6em: boolean | null
           case_6rs: number | null
           case_6rt: number | null
           created_at: string
@@ -906,6 +908,8 @@ export type Database = {
           case_6qs?: number | null
           case_6qt?: number | null
           case_6qw?: boolean | null
+          entretien_seul_6el?: boolean | null
+          entretien_seul_6em?: boolean | null
           case_6rs?: number | null
           case_6rt?: number | null
           created_at?: string
@@ -945,6 +949,8 @@ export type Database = {
           case_6qs?: number | null
           case_6qt?: number | null
           case_6qw?: boolean | null
+          entretien_seul_6el?: boolean | null
+          entretien_seul_6em?: boolean | null
           case_6rs?: number | null
           case_6rt?: number | null
           created_at?: string

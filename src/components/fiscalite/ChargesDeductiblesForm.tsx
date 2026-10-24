@@ -11,6 +11,7 @@ const CHARGES_VIDE: ChargesDeductiblesInput = {
   case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
+  entretienSeul6el: false, entretienSeul6em: false,
 };
 
 interface ChargesDeductiblesFormProps {
@@ -52,12 +53,14 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
           <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" aide="Montant de l'avis. La CSG déductible sur 2DF (et 2BH avec l'option barème) est ajoutée automatiquement : ne pas la reporter ici." code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
           <MontantEclateLigne
             label="Pension alimentaire versée à un enfant majeur"
-            aide="Plafond 6 855 € par enfant, doublé si vous entretenez seul un enfant marié, pacsé ou chargé de famille (non calculé : saisir le montant déductible). Enfant hébergé sans ressources suffisantes : forfait de 4 075 € déclarable sans justificatif."
+            aide="Plafond 6 855 € par enfant, doublé (13 710 €) si vous entretenez seul un enfant marié, pacsé ou chargé de famille : cochez la ligne suivante. Enfant hébergé sans ressources suffisantes : forfait de 4 075 € déclarable sans justificatif."
             items={[
               { label: '1er enfant', code: '6EL', value: ch.case6el, onChange: v => update('case6el', v) },
               { label: '2e enfant', code: '6EM', value: ch.case6em, onChange: v => update('case6em', v) },
             ]}
           />
+          <SingleCaseLigne label="Enfant entretenu seul : 1er enfant" extra="hors formulaire, plafond doublé" code="6EL" checked={ch.entretienSeul6el} onChange={v => update('entretienSeul6el', v)} />
+          <SingleCaseLigne label="Enfant entretenu seul : 2e enfant" extra="hors formulaire, plafond doublé" code="6EM" checked={ch.entretienSeul6em} onChange={v => update('entretienSeul6em', v)} />
           <SingleMontantLigne label="Autres pensions alimentaires versées" extra="enfants mineurs, ascendants…" aide="Ascendant dans le besoin hébergé : forfait de 4 075 € déclarable sans justificatif." code="6GU" value={ch.case6gu} onChange={v => update('case6gu', v)} />
           <MontantEclateLigne
             label="Décision de justice définitive avant 2006 : enfant majeur"

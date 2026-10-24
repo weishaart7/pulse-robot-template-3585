@@ -16,7 +16,7 @@ const colonne = (cle: string) => cle.replace(/^case/, 'case_');
  * Les colonnes `numeric` sont sérialisées en chaîne par PostgREST : coercées en
  * `number` ici (même défaut que `revenusCapitauxMobiliersService.ts`).
  */
-type ChargesDeductiblesRow = { id: string; user_id: string; case_6qr: boolean | null; case_6qw: boolean | null } & Record<string, unknown>;
+type ChargesDeductiblesRow = { id: string; user_id: string; case_6qr: boolean | null; case_6qw: boolean | null; entretien_seul_6el: boolean | null; entretien_seul_6em: boolean | null } & Record<string, unknown>;
 
 function toNumberOrNull(value: unknown): number | null {
   if (value === null || value === undefined) return null;
@@ -24,13 +24,15 @@ function toNumberOrNull(value: unknown): number | null {
 }
 
 function rowToChargesDeductibles(row: ChargesDeductiblesRow): ChargesDeductibles {
-  const result = { id: row.id, case6qr: row.case_6qr ?? false, case6qw: row.case_6qw ?? false } as ChargesDeductibles;
+  const result = { id: row.id, case6qr: row.case_6qr ?? false, case6qw: row.case_6qw ?? false,
+    entretienSeul6el: row.entretien_seul_6el ?? false, entretienSeul6em: row.entretien_seul_6em ?? false } as ChargesDeductibles;
   for (const cle of CASES_NUMERIQUES) result[cle] = toNumberOrNull(row[colonne(cle)]);
   return result;
 }
 
 function chargesDeductiblesToRow(rf: ChargesDeductibles, userId: string) {
-  const row: Record<string, unknown> = { user_id: userId, case_6qr: rf.case6qr, case_6qw: rf.case6qw };
+  const row: Record<string, unknown> = { user_id: userId, case_6qr: rf.case6qr, case_6qw: rf.case6qw,
+    entretien_seul_6el: rf.entretienSeul6el, entretien_seul_6em: rf.entretienSeul6em };
   for (const cle of CASES_NUMERIQUES) row[colonne(cle)] = rf[cle];
   return row;
 }

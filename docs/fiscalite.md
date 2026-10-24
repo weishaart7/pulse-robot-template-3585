@@ -1307,7 +1307,8 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
 - **Ordre (art. 156 CGI)** : 6GH ajouté, puis déficits globaux antérieurs `6FA`…`6FL` (les plus
   anciens d'abord), puis les charges ; le revenu ne descend jamais sous 0, le reliquat de charges est perdu.
 - **Pensions alimentaires** : `6EL`/`6EM` plafonnés à 6 855 € par enfant
-  (`PLAFOND_PENSION_ENFANT_MAJEUR`) ; `6GI`/`6GJ` × 1,25 puis même plafond ; `6GU` en totalité, `6GP` × 1,25.
+  (`PLAFOND_PENSION_ENFANT_MAJEUR`), doublé à 13 710 € si la case hors CERFA « enfant entretenu seul »
+  est cochée (`entretienSeul6el`/`entretienSeul6em` : enfant marié/pacsé ou chargé de famille) ; `6GI`/`6GJ` × 1,25 puis même plafond ; `6GU` en totalité, `6GP` × 1,25.
 - **Épargne retraite** : min(`6NS + 6RS`, `6PS`) par déclarant ; avec `6QR`, plafonds additionnés.
   Montant effectivement imputé (réputé imputé en dernier) réintégré au RFR (art. 1417 IV 1° a CGI).
   `6QW`, `6OS`/`6OT`, `6QS`/`6QT` informatifs (plafond saisi tel que sur l'avis ou recalculé).
@@ -1315,8 +1316,7 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
   (`csgDeductibleAutomatique`, arrondie à l'euro, soumise à la limite du revenu global).
 - **Autres** : `6DE`, `6DG`, `6DD` en totalité ; `6EU` plafonné à 4 075 € × `6EV`
   (`PLAFOND_ACCUEIL_PERSONNE_AGEE`, 1 personne si `6EV` vide) ; `6HP`+`6HQ`+`6HR` plafonnés à 25 000 €.
-- **À confirmer brochure IR 2026** : 6 855 € et 4 075 € sont dérivés des montants revenus 2024
-  (6 794 € et 4 039 €, brochure IR 2025) revalorisés de 0,9 % (LF 2026, comme le barème).
+- **Vérifié brochure IR 2026** : 6 855 €, 13 710 €, 4 075 €, × 1,25 (6GI/6GJ/6GP), CSG 6,8 % sur 2BH/2DF.
 - **Hors périmètre (acté)** : colonne personne à charge (`6NU`, `6RU`, `6PU`, `6OU`, `6QU`), comme au cadre 5 ;
   déficit global de l'année reportable non calculé.
 
@@ -1592,6 +1592,13 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   calculée (trésorerie, actifs non immobiliers, holdings) : signalé sous l'actif, à corriger par saisie.
 
 ### 🟠 À surveiller (cas limite, peu probable)
+
+- **Cadre 6 — plafond 25 000 € sur `6HP`/`6HQ`/`6HR`** : la brochure IR 2026 cite la limite annuelle
+  de 25 000 € pour le régime optionnel des grosses réparations des nus-propriétaires (dépenses 2009-2016),
+  sans dire clairement si elle borne aussi l'imputation des reports. Plafond conservé, à relire p. 235.
+- **Cadre 6 — colonne personne à charge (`6NU`, `6RU`, `6PU`)** : hors périmètre acté, mais la brochure
+  IR 2026 la prévoit (cotisations d'épargne retraite des personnes à charge, plafond propre). Non saisie :
+  déduction sous-estimée pour un foyer concerné.
 
 - **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3SB` imposé au barème, `3PI` à 50 %
   suivant `2OP`, `3PI`/`3SB` sans prélèvements sociaux, `3VW` retenu au RFR, PS 18,6 % sur `3PC`/`3PE`,

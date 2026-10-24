@@ -2,12 +2,12 @@ import { ChargesDeductiblesInput } from './types';
 
 /**
  * Plafond de la pension alimentaire à un enfant majeur, par enfant (art. 156 II 2° CGI) :
- * 6 794 € pour les revenus 2024 revalorisé de 0,9 % (LF 2026). À confirmer brochure IR 2026.
+ * brochure IR 2026. Doublé si le parent entretient seul un enfant marié/pacsé ou chargé de famille.
  */
 export const PLAFOND_PENSION_ENFANT_MAJEUR = 6855;
 /**
  * Déduction forfaitaire par personne de plus de 75 ans accueillie (art. 156 II 2° ter CGI) :
- * 4 039 € pour les revenus 2024 (brochure IR 2025) revalorisé de 0,9 %. À confirmer brochure IR 2026.
+ * brochure IR 2026.
  */
 export const PLAFOND_ACCUEIL_PERSONNE_AGEE = 4075;
 /** Majoration des pensions fixées par une décision de justice définitive avant le 1.1.2006 (6GI, 6GJ, 6GP). */
@@ -72,10 +72,11 @@ export function calculerChargesDeductibles(
     disponible -= impute;
   }
 
-  const pensionEnfantMajeur = (v: number | null) => Math.min(montant(v), PLAFOND_PENSION_ENFANT_MAJEUR);
+  const pensionEnfantMajeur = (v: number | null, entretienSeul = false) =>
+    Math.min(montant(v), PLAFOND_PENSION_ENFANT_MAJEUR * (entretienSeul ? 2 : 1));
   // 6GI/6GJ majorés avant plafonnement par enfant ; 6GP majoré sans plafond.
   const majoree = (v: number | null) => montant(v) * MAJORATION_PENSION_AVANT_2006;
-  const pensions = pensionEnfantMajeur(input.case6el) + pensionEnfantMajeur(input.case6em)
+  const pensions = pensionEnfantMajeur(input.case6el, input.entretienSeul6el) + pensionEnfantMajeur(input.case6em, input.entretienSeul6em)
     + pensionEnfantMajeur(majoree(input.case6gi)) + pensionEnfantMajeur(majoree(input.case6gj))
     + montant(input.case6gu) + majoree(input.case6gp);
 

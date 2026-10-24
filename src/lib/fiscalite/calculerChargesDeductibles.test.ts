@@ -8,6 +8,7 @@ const VIDE: ChargesDeductiblesInput = {
   case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
+  entretienSeul6el: false, entretienSeul6em: false,
 };
 
 describe('calculerChargesDeductibles', () => {
@@ -20,6 +21,11 @@ describe('calculerChargesDeductibles', () => {
   it('pensions aux enfants majeurs plafonnées par enfant, 6GU en totalité', () => {
     const r = calculerChargesDeductibles({ ...VIDE, case6el: 9000, case6em: 3000, case6gu: 5000 }, 80000);
     expect(r.chargesImputees).toBe(6855 + 3000 + 5000);
+  });
+
+  it('enfant entretenu seul : plafond doublé à 13 710 € pour l\'enfant concerné seulement', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6el: 15000, case6em: 9000, entretienSeul6el: true }, 80000);
+    expect(r.chargesImputees).toBe(13710 + 6855);
   });
 
   it('décision de justice avant 2006 : 6GI/6GJ × 1,25 puis plafond par enfant, 6GP × 1,25 sans plafond', () => {
