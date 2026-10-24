@@ -85,7 +85,7 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
           <SingleMontantLigne label="Autres déductions" extra="art. 156 II et 156 bis CGI" code="6DD" value={ch.case6dd} onChange={v => update('case6dd', v)} />
           <MontantEclateLigne
             label="Personnes de plus de 75 ans accueillies sous votre toit"
-            aide="Frais d'accueil plafonnés à 4 003 € par personne."
+            aide="Frais d'accueil plafonnés à 4 075 € par personne."
             items={[
               { label: 'Nombre', code: '6EV', value: ch.case6ev, onChange: v => update('case6ev', v) },
               { label: "Frais d'accueil", code: '6EU', value: ch.case6eu, onChange: v => update('case6eu', v) },

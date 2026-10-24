@@ -7,9 +7,11 @@ import { ChargesDeductiblesInput } from './types';
 export const PLAFOND_PENSION_ENFANT_MAJEUR = 6855;
 /**
  * Déduction forfaitaire par personne de plus de 75 ans accueillie (art. 156 II 2° ter CGI) :
- * 3 968 € pour les revenus 2024 revalorisé de 0,9 %. À confirmer brochure IR 2026.
+ * 4 039 € pour les revenus 2024 (brochure IR 2025) revalorisé de 0,9 %. À confirmer brochure IR 2026.
  */
-export const PLAFOND_ACCUEIL_PERSONNE_AGEE = 4003;
+export const PLAFOND_ACCUEIL_PERSONNE_AGEE = 4075;
+/** Majoration des pensions fixées par une décision de justice définitive avant le 1.1.2006 (6GI, 6GJ, 6GP). */
+export const MAJORATION_PENSION_AVANT_2006 = 1.25;
 /** Grosses réparations des nus-propriétaires imputables sur le revenu global (art. 156 I 3° CGI). */
 export const PLAFOND_GROSSES_REPARATIONS = 25000;
 
@@ -59,9 +61,11 @@ export function calculerChargesDeductibles(
   }
 
   const pensionEnfantMajeur = (v: number | null) => Math.min(montant(v), PLAFOND_PENSION_ENFANT_MAJEUR);
+  // 6GI/6GJ majorés avant plafonnement par enfant ; 6GP majoré sans plafond.
+  const majoree = (v: number | null) => montant(v) * MAJORATION_PENSION_AVANT_2006;
   const pensions = pensionEnfantMajeur(input.case6el) + pensionEnfantMajeur(input.case6em)
-    + pensionEnfantMajeur(input.case6gi) + pensionEnfantMajeur(input.case6gj)
-    + montant(input.case6gu) + montant(input.case6gp);
+    + pensionEnfantMajeur(majoree(input.case6gi)) + pensionEnfantMajeur(majoree(input.case6gj))
+    + montant(input.case6gu) + majoree(input.case6gp);
 
   const cotisations1 = montant(input.case6ns) + montant(input.case6rs);
   const cotisations2 = montant(input.case6nt) + montant(input.case6rt);

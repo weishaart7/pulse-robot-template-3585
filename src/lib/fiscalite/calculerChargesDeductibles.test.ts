@@ -22,6 +22,11 @@ describe('calculerChargesDeductibles', () => {
     expect(r.chargesImputees).toBe(6855 + 3000 + 5000);
   });
 
+  it('décision de justice avant 2006 : 6GI/6GJ × 1,25 puis plafond par enfant, 6GP × 1,25 sans plafond', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6gi: 4000, case6gj: 6000, case6gp: 10000 }, 80000);
+    expect(r.chargesImputees).toBe(5000 + 6855 + 12500);
+  });
+
   it('PER : plafond par déclarant, mutualisé avec 6QR', () => {
     const base = { ...VIDE, case6ns: 8000, case6ps: 5000, case6nt: 1000, case6pt: 6000 };
     expect(calculerChargesDeductibles(base, 100000).epargneRetraiteDeduite).toBe(6000);
@@ -35,8 +40,8 @@ describe('calculerChargesDeductibles', () => {
   });
 
   it('accueil plafonné par personne ; grosses réparations plafonnées à 25 000 €', () => {
-    expect(calculerChargesDeductibles({ ...VIDE, case6eu: 10000, case6ev: 2 }, 90000).chargesImputees).toBe(8006);
-    expect(calculerChargesDeductibles({ ...VIDE, case6eu: 10000 }, 90000).chargesImputees).toBe(4003);
+    expect(calculerChargesDeductibles({ ...VIDE, case6eu: 10000, case6ev: 2 }, 90000).chargesImputees).toBe(8150);
+    expect(calculerChargesDeductibles({ ...VIDE, case6eu: 10000 }, 90000).chargesImputees).toBe(4075);
     expect(calculerChargesDeductibles({ ...VIDE, case6hp: 20000, case6hr: 10000 }, 90000).chargesImputees).toBe(25000);
   });
 
