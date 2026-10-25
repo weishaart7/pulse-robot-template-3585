@@ -45,8 +45,14 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(r.prelevementsSociaux).toBe(0);
   });
 
-  it('3PI : moitié imposable', () => {
-    expect(calculerPlusValuesGainsDivers({ ...VIDE, case3pi: 4000 }, true).totalNetImposable).toBe(2000);
+  it('3PI : taxé à 50 % quelle que soit 2OP, au RFR, hors PS', () => {
+    for (const option of [false, true]) {
+      const r = calculerPlusValuesGainsDivers({ ...VIDE, case3pi: 4000 }, option);
+      expect(r.totalNetImposable).toBe(0);
+      expect(r.impotForfaitaire).toBeCloseTo(2000);
+      expect(r.revenuExonereRetenuPourRFR).toBe(4000);
+      expect(r.prelevementsSociaux).toBe(0);
+    }
   });
 
   it('3AN suit 3CN, indépendamment de 2OP', () => {
@@ -54,23 +60,26 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(calculerPlusValuesGainsDivers({ ...VIDE, case3an: 1000, case3cn: true }, false).totalNetImposable).toBe(1000);
   });
 
-  it('3VZ/3VW : RFR seulement ; 3VH/3BN sans effet', () => {
+  it('3VZ au RFR, 3VW hors RFR ; 3VH/3BN sans effet', () => {
     const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vz: 30000, case3vw: 20000, case3vh: 5000, case3bn: 800 }, false);
     expect(r.totalNetImposable).toBe(0);
     expect(r.impotForfaitaire).toBe(0);
     expect(r.prelevementsSociaux).toBe(0);
-    expect(r.revenuExonereRetenuPourRFR).toBe(50000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(30000);
   });
 
-  it('BSPCE ≥ 3 ans : 3SJ, 3TJ − 3TK, 3TL − 3TM, 3PC au PFU ; abattements fixes au RFR ; PS sur le brut', () => {
+  it('BSPCE ≥ 3 ans : 3TJ − 3TK, 3TL − 3TM et 3PC à 12,8 %, 3SJ à 19 % ; abattements fixes au RFR ; PS sur le brut', () => {
     const r = calculerPlusValuesGainsDivers({ ...VIDE, case3sj: 1000, case3tj: 3000, case3tk: 1000, case3tl: 2000, case3tm: 500, case3pc: 1500 }, false);
-    expect(r.impotForfaitaire).toBeCloseTo(6000 * 0.128);
+    expect(r.impotForfaitaire).toBeCloseTo(5000 * 0.128 + 1000 * 0.19);
     expect(r.revenuExonereRetenuPourRFR).toBe(6000 + 1500);
     expect(r.basePrelevementsSociaux).toBe(7500);
   });
 
-  it('BSPCE ≥ 3 ans au barème sur option 2OP', () => {
-    expect(calculerPlusValuesGainsDivers({ ...VIDE, case3sj: 1000, case3pc: 500 }, true).totalNetImposable).toBe(1500);
+  it('option 2OP : 3TJ − 3TK au barème, mais 3SJ (19 %) et 3PC (12,8 %) restent à taux fixe', () => {
+    const r = calculerPlusValuesGainsDivers({ ...VIDE, case3tj: 2000, case3tk: 500, case3sj: 1000, case3pc: 500 }, true);
+    expect(r.totalNetImposable).toBe(1500);
+    expect(r.impotForfaitaire).toBeCloseTo(1000 * 0.19 + 500 * 0.128);
+    expect(r.revenuExonereRetenuPourRFR).toBe(500 + 1000 + 500);
   });
 
   it('BSPCE < 3 ans (3SK, 3PE) : 30 % même sur option 2OP, au RFR et aux PS', () => {
@@ -81,10 +90,10 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(r.prelevementsSociaux).toBeCloseTo(2000 * 0.186);
   });
 
-  it('3VQ et 3VC au RFR ; 3VC seul soumis aux PS ; 3VR et 3EX sans effet', () => {
+  it('3VQ, 3VC et 3EX au RFR ; 3VQ seul soumis aux PS (3VC déjà prélevé à la source) ; 3VR sans effet', () => {
     const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vq: 4000, case3vc: 1000, case3vr: 700, case3ex: 300 }, false);
     expect(r.impotForfaitaire).toBe(0);
-    expect(r.revenuExonereRetenuPourRFR).toBe(5000);
-    expect(r.basePrelevementsSociaux).toBe(1000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(5300);
+    expect(r.basePrelevementsSociaux).toBe(4000);
   });
 });

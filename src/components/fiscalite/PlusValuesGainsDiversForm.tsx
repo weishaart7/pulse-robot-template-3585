@@ -69,7 +69,7 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
         </SousGroupe>
 
         <SousGroupe titre="BSPCE — bons de souscription de parts de créateur d'entreprise">
-          <SingleMontantLigne label="Gains de cession, BSPCE attribués avant le 1.1.2018" extra="activité depuis au moins 3 ans" code="3SJ" value={pv.case3sj} onChange={v => update('case3sj', v)} />
+          <SingleMontantLigne label="Gains de cession, BSPCE attribués avant le 1.1.2018, taxés à 19 %" extra="activité depuis au moins 3 ans" code="3SJ" value={pv.case3sj} onChange={v => update('case3sj', v)} />
           <SingleMontantLigne label="Gains de cession, BSPCE du 1.1.2018 au 31.12.2024 — gain avant abattement" extra="activité depuis au moins 3 ans" code="3TJ" value={pv.case3tj} onChange={v => update('case3tj', v)} />
           <SingleMontantLigne label="Abattement fixe sur 3TJ" extra="départ à la retraite d'un dirigeant de PME" code="3TK" value={pv.case3tk} onChange={v => update('case3tk', v)} />
           <SingleMontantLigne label="Gains de cession, BSPCE jusqu'au 31.12.2024 taxables à 30 %" extra="activité depuis moins de 3 ans" code="3SK" value={pv.case3sk} onChange={v => update('case3sk', v)} />

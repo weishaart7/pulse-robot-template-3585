@@ -209,7 +209,7 @@ export interface FiscalOverview {
   revenuExonereTauxEffectif: RevenuExonereTauxEffectifResult;
   pensionsRetraitesRentes: PensionsRetraitesRentesResult;
   revenuCapitauxMobiliers: RevenuCapitauxMobiliersResult;
-  /** Cadre 3 (phase 3.1) : barème, PFU 12,8 %, RFR et prélèvements sociaux à 18,6 % — voir calculerPlusValuesGainsDivers.ts. */
+  /** Cadre 3 : barème, impôt forfaitaire (12,8 %, 19 %, 30 %, 50 %), RFR et prélèvements sociaux à 18,6 % — voir calculerPlusValuesGainsDivers.ts. */
   plusValuesGainsDivers: PlusValuesGainsDiversResult;
   /**
    * Prélèvements sociaux (17,2 %) — périmètre partiel : seuls les capitaux
