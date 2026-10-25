@@ -2472,6 +2472,7 @@ export type Database = {
           case_3pe: number | null
           case_3pi: number | null
           case_3sb: number | null
+          case_3sz: number | null
           case_3sg: number | null
           case_3sj: number | null
           case_3sk: number | null
@@ -2505,6 +2506,7 @@ export type Database = {
           case_3pe?: number | null
           case_3pi?: number | null
           case_3sb?: number | null
+          case_3sz?: number | null
           case_3sg?: number | null
           case_3sj?: number | null
           case_3sk?: number | null
@@ -2538,6 +2540,7 @@ export type Database = {
           case_3pe?: number | null
           case_3pi?: number | null
           case_3sb?: number | null
+          case_3sz?: number | null
           case_3sg?: number | null
           case_3sj?: number | null
           case_3sk?: number | null

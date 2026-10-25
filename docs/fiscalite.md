@@ -1234,13 +1234,16 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
 - **Option barème** : la case `2OP` du cadre 2 vaut pour les capitaux mobiliers ET les plus-values
   mobilières (option globale, art. 200 A CGI) ; elle n'est pas dupliquée au cadre 3. `3AN` suit sa
   propre option `3CN` (art. 150 VH bis CGI).
-- **PFU (défaut)** : `3VG + 3WE`, `3UA − 3VA` et `3VT` taxés à 12,8 % ; les
+- **PFU (défaut)** : `3VG + 3WE`, `3UA − 3VA`, `3VT`, `3SB` et `3SZ` taxés à 12,8 % ; les
   abattements pour durée de détention `3SG`/`3SL` ne s'appliquent pas, l'abattement fixe `3VA` si.
 - **Barème (2OP)** : les mêmes montants, nets de `3SG`/`3SL`/`3VA`, rejoignent le revenu imposable.
 - **`3PI`** : profits sur instruments financiers à terme (teneur de compte en ETNC) taxés à 50 %
   (art. 150 ter CGI), quelle que soit `2OP`, retenus au RFR, hors PS.
 - **RFR** : bases imposées à taux forfaitaire, abattements `3SG`/`3SL`/`3VA` réintégrés, `3VZ` ;
   `3VW` exclu (brochure IR 2026 p. 155).
+- **Reports expirés** (`3SB`, art. 150-0 D bis ; `3SZ`, OPC monétaires, art. 150-0 B quater) :
+  imposés au taux applicable à l'expiration du report (brochure IR 2026 p. 145), donc selon `2OP`
+  comme `3VG` ; retenus au RFR et aux PS 18,6 % sur le montant déclaré.
 - **Prélèvements sociaux 18,6 %** (CSG 10,6 % LFSS 2026 + CRDS 0,5 % + solidarité 7,5 %, applicable
   aux revenus du patrimoine 2025 ; revenus fonciers, plus-values immobilières et assurance-vie restent
   à 17,2 %) sur `3VG + 3UA + 3WE + 3AN`, avant tout abattement. `3VT` exclu (PS prélevés à la source
@@ -1252,11 +1255,16 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   `3SK`, `3PE` à 30 % sans option, retenus au RFR. PS 18,6 % sur l'ensemble avant abattement.
 - **Autres régimes** (brochure IR 2026 p. 143, 149) : `3VQ` (moitié exonérée des impatriés,
   art. 155 B CGI) au RFR et aux PS 18,6 % ; `3VC` (capital-risque, PS prélevés à la source) et `3EX`
-  (gain PEAC exonéré) au RFR seulement.
+  (gain PEAC exonéré) au RFR seulement. `3VR` (moins-value non imputable des impatriés) diminue la
+  base des PS et le RFR du cadre 3, sans les rendre négatifs.
+- **Contrôles de saisie** (`controlerSaisiePlusValues`, sans effet sur le calcul) : non-cumul
+  `3VA`/`3SL`, `3VA` > `3UA`, `3VA + 3TK + 3TM` > 500 000 € (600 000 € pour une cession à de jeunes
+  agriculteurs).
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
-  saisie de `3VG`/`3AN`, reliquat reportable seulement), `3VR` (non imputable).
-- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3SB` toujours au barème ;
-  `3PI`/`3SB` hors PS ; contribution salariale
+  saisie de `3VG`/`3AN`, reliquat reportable seulement).
+- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3PI` hors PS ; base PS
+  de `3SB` = montant après abattement (la base légale avant abattement n'est pas saisie) ; régime de
+  `3SZ` non détaillé par la brochure, aligné sur `3VG` ; contribution salariale
   spécifique de 10 % évoquée par une source pour certains gains cédés du 16.2.2025 au 31.12.2027, non
   modélisée.
 - **Hors périmètre (acté)** : exit tax (`3WM`…`3YA`) et report 150-0 B ter (`3WH`…`3WT`), rares et
@@ -1668,8 +1676,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   IR 2026 la prévoit (cotisations d'épargne retraite des personnes à charge, plafond propre). Non saisie :
   déduction sous-estimée pour un foyer concerné.
 
-- **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3SB` imposé au barème,
-  `3PI`/`3SB` sans prélèvements sociaux, contribution de 10 % non modélisée (voir §2, « Plus-values
+- **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3PI` sans prélèvements sociaux,
+  base PS de `3SB` après abattement, `3SZ` aligné sur `3VG`, contribution de 10 % non modélisée (voir §2, « Plus-values
   et gains divers »).
 - **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
   que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.

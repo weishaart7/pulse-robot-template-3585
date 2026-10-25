@@ -6,7 +6,7 @@ export interface PlusValuesGainsDivers extends PlusValuesGainsDiversInput {
 }
 
 const CASES_NUMERIQUES = [
-  'case3vg', 'case3sg', 'case3vh', 'case3ua', 'case3sl', 'case3va', 'case3vt', 'case3pi', 'case3sb', 'case3we',
+  'case3vg', 'case3sg', 'case3vh', 'case3ua', 'case3sl', 'case3va', 'case3vt', 'case3pi', 'case3sb', 'case3sz', 'case3we',
   'case3an', 'case3bn', 'case3vz', 'case3vw',
   'case3sj', 'case3tj', 'case3tk', 'case3sk', 'case3tl', 'case3tm', 'case3pc', 'case3pe', 'case3vq', 'case3vr', 'case3vc', 'case3ex',
 ] as const;

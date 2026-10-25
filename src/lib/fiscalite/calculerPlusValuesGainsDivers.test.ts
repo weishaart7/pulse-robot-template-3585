@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { calculerPlusValuesGainsDivers } from './calculerPlusValuesGainsDivers';
+import { calculerPlusValuesGainsDivers, controlerSaisiePlusValues } from './calculerPlusValuesGainsDivers';
 import { PlusValuesGainsDiversInput } from './types';
 
 const VIDE: PlusValuesGainsDiversInput = {
   case3vg: null, case3sg: null, case3vh: null, case3ua: null, case3sl: null, case3va: null,
-  case3vt: null, case3pi: null, case3sb: null, case3we: null,
+  case3vt: null, case3pi: null, case3sb: null, case3sz: null, case3we: null,
   case3an: null, case3bn: null, case3cn: false,
   case3vz: null, case3vw: null,
   case3sj: null, case3tj: null, case3tk: null, case3sk: null, case3tl: null, case3tm: null, case3pc: null, case3pe: null,
@@ -90,10 +90,47 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(r.prelevementsSociaux).toBeCloseTo(2000 * 0.186);
   });
 
-  it('3VQ, 3VC et 3EX au RFR ; 3VQ seul soumis aux PS (3VC déjà prélevé à la source) ; 3VR sans effet', () => {
+  it('3VQ, 3VC et 3EX au RFR ; 3VQ seul soumis aux PS (3VC déjà prélevé à la source) ; 3VR déduit des deux', () => {
     const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vq: 4000, case3vc: 1000, case3vr: 700, case3ex: 300 }, false);
     expect(r.impotForfaitaire).toBe(0);
-    expect(r.revenuExonereRetenuPourRFR).toBe(5300);
-    expect(r.basePrelevementsSociaux).toBe(4000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(4600);
+    expect(r.basePrelevementsSociaux).toBe(3300);
+  });
+
+  it('3SB et 3SZ suivent 2OP comme 3VG, au RFR et aux PS', () => {
+    const pfu = calculerPlusValuesGainsDivers({ ...VIDE, case3sb: 1000, case3sz: 500 }, false);
+    expect(pfu.totalNetImposable).toBe(0);
+    expect(pfu.impotForfaitaire).toBeCloseTo(1500 * 0.128);
+    expect(pfu.revenuExonereRetenuPourRFR).toBe(1500);
+    expect(pfu.basePrelevementsSociaux).toBe(1500);
+
+    const bareme = calculerPlusValuesGainsDivers({ ...VIDE, case3sb: 1000, case3sz: 500 }, true);
+    expect(bareme.totalNetImposable).toBe(1500);
+    expect(bareme.impotForfaitaire).toBe(0);
+    expect(bareme.revenuExonereRetenuPourRFR).toBe(0);
+  });
+
+  it('3VR ne rend ni la base des PS ni le RFR négatifs', () => {
+    const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vg: 500, case3vr: 2000 }, false);
+    expect(r.basePrelevementsSociaux).toBe(0);
+    expect(r.revenuExonereRetenuPourRFR).toBe(0);
+  });
+});
+
+describe('controlerSaisiePlusValues', () => {
+  it('aucune alerte sur une saisie cohérente', () => {
+    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 600000, case3va: 500000 })).toEqual([]);
+  });
+
+  it('non-cumul 3VA / 3SL', () => {
+    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 100000, case3va: 50000, case3sl: 10000 })).toHaveLength(1);
+  });
+
+  it('3VA supérieur à 3UA', () => {
+    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 1000, case3va: 2000 })).toHaveLength(1);
+  });
+
+  it('plafond 500 000 € sur 3VA + 3TK + 3TM', () => {
+    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 400000, case3va: 400000, case3tk: 150000 })).toHaveLength(1);
   });
 });

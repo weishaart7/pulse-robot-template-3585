@@ -184,6 +184,7 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '3VT', label: 'Gain sur retrait ou rachat du PEA avant 5 ans', sectionId: 'plus-values', elementId: 'case-3VT' },
   { code: '3PI', label: 'Profits sur instruments financiers taxables à 50 %', sectionId: 'plus-values', elementId: 'case-3PI' },
   { code: '3SB', label: 'Plus-values en report dont le report a expiré en 2025', sectionId: 'plus-values', elementId: 'case-3SB' },
+  { code: '3SZ', label: "Plus-values d'OPC monétaires dont le report a expiré en 2025", sectionId: 'plus-values', elementId: 'case-3SZ' },
   { code: '3WE', label: 'Complément de prix perçu en 2025', sectionId: 'plus-values', elementId: 'case-3WE' },
   { code: '3AN', label: 'Plus-value de cession d\'actifs numériques', sectionId: 'plus-values', elementId: 'case-3AN' },
   { code: '3BN', label: 'Moins-value de cession d\'actifs numériques', sectionId: 'plus-values', elementId: 'case-3BN' },

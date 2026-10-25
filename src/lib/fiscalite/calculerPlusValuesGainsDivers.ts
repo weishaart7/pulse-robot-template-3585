@@ -29,18 +29,20 @@ const TAUX_BSPCE_AVANT_2018 = 0.19;
  */
 const TAUX_3PI = 0.50;
 
+/** Plafond de l'abattement fixe des dirigeants de PME partant à la retraite (art. 150-0 D ter CGI), 600 000 € au profit de jeunes agriculteurs. */
+const PLAFOND_ABATTEMENT_FIXE_DIRIGEANT = 500_000;
+
 /**
  * Cases du cadre 3 saisies mais sans effet sur l'impôt de l'année :
  * - 3VH (moins-value 2025) et 3BN (moins-value d'actifs numériques) : le
  *   déclarant les a déjà imputées lui-même avant de remplir 3VG/3AN (montants
  *   CERFA jamais recalculés, comme 2VQ-2VU au cadre 2) ; reliquat reportable
  *   seulement. 3BN ne s'impute jamais sur les plus-values de valeurs mobilières.
- * - 3VR (moins-values non imputables des impatriés) : non imputables par nature.
  */
-export const CASES_PLUS_VALUES_EXCLUES_DU_CALCUL = ['case3vh', 'case3bn', 'case3vr'] as const;
+export const CASES_PLUS_VALUES_EXCLUES_DU_CALCUL = ['case3vh', 'case3bn'] as const;
 
 export interface PlusValuesGainsDiversResult {
-  /** Part imposée au barème (option 2OP, option 3CN pour 3AN, et 3SB toujours). */
+  /** Part imposée au barème (option 2OP, option 3CN pour 3AN). */
   totalNetImposable: number;
   /** Impôt à 12,8 % (et à 50 % pour 3PI, 30 % pour 3SK/3PE, 19 % pour 3SJ, 12,8 % pour 3PC) déjà calculé, ajouté après la décote par `calculerImpot.ts`. */
   impotForfaitaire: number;
@@ -50,10 +52,11 @@ export interface PlusValuesGainsDiversResult {
    * (3SG/3SL) et abattement fixe (3VA) réintégrés (art. 1417 IV 1° CGI),
    * plus-values immobilières 3VZ (3VW exclu, brochure IR 2026 p. 155) ; bases
    * imposées à taux fixe (3PI, 3SJ, 3PC, 3SK, 3PE), abattements fixes 3TK/3TM,
-   * fraction exonérée des impatriés 3VQ, capital-risque 3VC et gain PEAC 3EX.
+   * fraction exonérée des impatriés 3VQ, capital-risque 3VC et gain PEAC 3EX,
+   * diminués de la moins-value non imputable des impatriés 3VR (plancher 0).
    */
   revenuExonereRetenuPourRFR: number;
-  /** Base soumise aux PS à 18,6 % : 3VG, 3UA, 3WE, 3AN, gains BSPCE et 3VQ, avant tout abattement. */
+  /** Base soumise aux PS à 18,6 % : 3VG, 3UA, 3WE, 3SB, 3SZ, 3AN, gains BSPCE et 3VQ, avant tout abattement, moins 3VR (plancher 0). */
   basePrelevementsSociaux: number;
   prelevementsSociaux: number;
   casesExclues: readonly string[];
@@ -65,17 +68,20 @@ export interface PlusValuesGainsDiversResult {
  *
  * `optionBareme` est la case 2OP du cadre 2 : l'option est globale à
  * l'ensemble des revenus de capitaux mobiliers ET des plus-values mobilières.
- * - non cochée (PFU) : 3VG + 3WE, 3UA − 3VA et 3VT sont taxés à 12,8 % ; les abattements pour durée de détention (3SG, 3SL) ne
+ * - non cochée (PFU) : 3VG + 3WE, 3UA − 3VA, 3VT, 3SB et 3SZ sont taxés à 12,8 % ; les abattements pour durée de détention (3SG, 3SL) ne
  *   s'appliquent pas, seul l'abattement fixe 3VA s'applique ;
  * - cochée : ces mêmes montants, nets de 3SG/3SL/3VA, rejoignent le barème.
  * 3AN suit sa propre option 3CN (art. 150 VH bis CGI), indépendante de 2OP.
- * 3SB (plus-value 150-0 D bis en report expiré, déjà après abattement) est
- * toujours au barème — hypothèse à confirmer, voir docs/fiscalite.md.
+ * 3SB (plus-value 150-0 D bis en report expiré, déjà après abattement) et 3SZ
+ * (OPC monétaires, art. 150-0 B quater) sont imposés au taux applicable à
+ * l'expiration du report (brochure IR 2026 p. 145), donc suivent 2OP comme 3VG.
  *
  * 3PI est toujours taxé à 50 % (art. 150 ter CGI), indépendamment de 2OP.
  *
  * Prélèvements sociaux : 3VT exclu (prélevés à la source par l'établissement
- * gestionnaire du PEA), 3PI et 3SB exclus en attendant vérification.
+ * gestionnaire du PEA), 3PI exclu en attendant vérification ; 3SB et 3SZ
+ * soumis à 18,6 % sur le montant déclaré (pour 3SB, approximation : la base
+ * légale est la plus-value avant abattement, non saisie).
  *
  * **BSPCE (phase 3.2, art. 163 bis G CGI, LF 2025)** : activité ≥ 3 ans,
  * 3TJ − 3TK et 3TL − 3TM (gain de cession des bons depuis 2025, régime des
@@ -88,7 +94,9 @@ export interface PlusValuesGainsDiversResult {
  * **Autres régimes** (brochure IR 2026 p. 143, 149, 155) : 3VQ (moitié exonérée
  * des plus-values des impatriés, art. 155 B CGI) retenu au RFR et soumis aux PS ;
  * 3VC (capital-risque, exonéré d'IR, PS prélevés à la source) et 3EX (gain PEAC
- * exonéré) retenus au RFR seulement ; 3VW (remploi) hors RFR.
+ * exonéré) retenus au RFR seulement ; 3VW (remploi) hors RFR. 3VR (fraction
+ * non imputable des moins-values des impatriés) diminue la base des PS et le
+ * RFR du cadre 3, sans les rendre négatifs.
  */
 export function calculerPlusValuesGainsDivers(
   input: PlusValuesGainsDiversInput,
@@ -102,7 +110,8 @@ export function calculerPlusValuesGainsDivers(
   const abattementRenforce = Math.min(input.case3sl ?? 0, renforceApresFixe);
   const pea = input.case3vt ?? 0;
   const instrumentsFinanciers = input.case3pi ?? 0;
-  const reportExpire = input.case3sb ?? 0;
+  const reportExpire = (input.case3sb ?? 0) + (input.case3sz ?? 0);
+  const moinsValueImpatries = input.case3vr ?? 0;
   const actifsNumeriques = input.case3an ?? 0;
   const plusValuesImmobilieres = input.case3vz ?? 0;
   const bspceAncien = input.case3tj ?? 0;
@@ -116,7 +125,7 @@ export function calculerPlusValuesGainsDivers(
   const bspceMoinsDeTroisAns = (input.case3sk ?? 0) + (input.case3pe ?? 0);
   const capitalRisque = input.case3vc ?? 0;
 
-  let bareme = reportExpire;
+  let bareme = 0;
   let basePFU = 0;
   let rfrHorsBareme = plusValuesImmobilieres + abattementFixe
     + abattementBspceAncien + abattementBspceCession2025 + (input.case3vq ?? 0) + capitalRisque
@@ -124,27 +133,51 @@ export function calculerPlusValuesGainsDivers(
 
   if (optionBareme) {
     bareme += droitCommun - abattementDroitCommun + renforceApresFixe - abattementRenforce
-      + pea + bspceTroisAns;
+      + pea + bspceTroisAns + reportExpire;
     rfrHorsBareme += abattementDroitCommun + abattementRenforce;
   } else {
-    basePFU += droitCommun + renforceApresFixe + pea + bspceTroisAns;
+    basePFU += droitCommun + renforceApresFixe + pea + bspceTroisAns + reportExpire;
   }
   basePFU += gainExerciceBspce;
 
   if (input.case3cn) bareme += actifsNumeriques;
   else basePFU += actifsNumeriques;
 
-  const basePrelevementsSociaux = droitCommun + renforce + actifsNumeriques
+  const basePrelevementsSociaux = Math.max(0, droitCommun + renforce + actifsNumeriques + reportExpire
     + bspceAvant2018 + bspceAncien + bspceCession2025 + gainExerciceBspce
-    + bspceMoinsDeTroisAns + (input.case3vq ?? 0);
+    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) - moinsValueImpatries);
 
   return {
     totalNetImposable: bareme,
     impotForfaitaire: basePFU * TAUX_PFU + bspceMoinsDeTroisAns * TAUX_BSPCE_MOINS_DE_3_ANS
       + bspceAvant2018 * TAUX_BSPCE_AVANT_2018 + instrumentsFinanciers * TAUX_3PI,
-    revenuExonereRetenuPourRFR: rfrHorsBareme + basePFU,
+    revenuExonereRetenuPourRFR: Math.max(0, rfrHorsBareme + basePFU - moinsValueImpatries),
     basePrelevementsSociaux,
     prelevementsSociaux: basePrelevementsSociaux * TAUX_PS_PLUS_VALUES,
     casesExclues: CASES_PLUS_VALUES_EXCLUES_DU_CALCUL,
   };
+}
+
+/**
+ * Contrôles de saisie du cadre 3 (brochure IR 2026 p. 140-141 et 154), sans
+ * effet sur le calcul :
+ * - l'abattement fixe 3VA ne se cumule pas avec l'abattement renforcé 3SL ;
+ * - 3VA ne peut dépasser la plus-value 3UA ;
+ * - l'abattement fixe (3VA, 3TK, 3TM) est plafonné à 500 000 € par cédant,
+ *   600 000 € en cas de cession à de jeunes agriculteurs.
+ */
+export function controlerSaisiePlusValues(input: PlusValuesGainsDiversInput): string[] {
+  const alertes: string[] = [];
+  const abattementFixe = input.case3va ?? 0;
+  if (abattementFixe > 0 && (input.case3sl ?? 0) > 0) {
+    alertes.push("L'abattement fixe 3VA ne se cumule pas avec l'abattement renforcé 3SL");
+  }
+  if (abattementFixe > (input.case3ua ?? 0)) {
+    alertes.push("L'abattement fixe 3VA dépasse la plus-value 3UA");
+  }
+  const totalAbattementsFixes = abattementFixe + (input.case3tk ?? 0) + (input.case3tm ?? 0);
+  if (totalAbattementsFixes > PLAFOND_ABATTEMENT_FIXE_DIRIGEANT) {
+    alertes.push('Abattements fixes 3VA + 3TK + 3TM supérieurs à 500 000 € (600 000 € seulement pour une cession à de jeunes agriculteurs)');
+  }
+  return alertes;
 }

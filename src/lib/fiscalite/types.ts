@@ -237,6 +237,7 @@ export interface PlusValuesGainsDiversInput {
   case3vt: number | null;
   case3pi: number | null;
   case3sb: number | null;
+  case3sz: number | null;
   case3we: number | null;
   // Actifs numériques
   case3an: number | null;

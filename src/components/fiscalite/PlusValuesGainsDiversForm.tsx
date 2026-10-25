@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { usePlusValuesGainsDivers } from '@/hooks/usePlusValuesGainsDivers';
 import { PlusValuesGainsDivers } from '@/services/plusValuesGainsDiversService';
-import { PlusValuesGainsDiversInput } from '@/lib/fiscalite';
+import { PlusValuesGainsDiversInput, controlerSaisiePlusValues } from '@/lib/fiscalite';
 import { SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 const PLUS_VALUES_VIDE: PlusValuesGainsDiversInput = {
   case3vg: null, case3sg: null, case3vh: null, case3ua: null, case3sl: null, case3va: null,
-  case3vt: null, case3pi: null, case3sb: null, case3we: null,
+  case3vt: null, case3pi: null, case3sb: null, case3sz: null, case3we: null,
   case3an: null, case3bn: null, case3cn: false,
   case3vz: null, case3vw: null,
   case3sj: null, case3tj: null, case3tk: null, case3sk: null, case3tl: null, case3tm: null, case3pc: null, case3pe: null,
@@ -59,12 +60,19 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
           <SingleMontantLigne label="Plus-value avant abattement" code="3UA" value={pv.case3ua} onChange={v => update('case3ua', v)} />
           <SingleMontantLigne label="Abattement pour durée de détention renforcé" extra="appliqué sur option barème" code="3SL" value={pv.case3sl} onChange={v => update('case3sl', v)} />
           <SingleMontantLigne label="Abattement fixe" extra="départ à la retraite d'un dirigeant de PME" code="3VA" value={pv.case3va} onChange={v => update('case3va', v)} />
+          {controlerSaisiePlusValues(pv).map(message => (
+            <p key={message} className="flex items-start gap-1.5 px-2 py-1 text-xs text-citron-ink">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{message} (brochure IR 2026 p. 140-141, 154)</span>
+            </p>
+          ))}
         </SousGroupe>
 
         <SousGroupe titre="Autres gains">
           <SingleMontantLigne label="Gain sur retrait ou rachat du PEA ou du PEA-PME" extra="avant expiration de la 5e année" code="3VT" value={pv.case3vt} onChange={v => update('case3vt', v)} />
           <SingleMontantLigne label="Profits sur instruments financiers taxables à 50 %" code="3PI" value={pv.case3pi} onChange={v => update('case3pi', v)} />
           <SingleMontantLigne label="Plus-values en report dont le report a expiré en 2025" extra="art. 150-0 D bis, plus-values imposables" code="3SB" value={pv.case3sb} onChange={v => update('case3sb', v)} />
+          <SingleMontantLigne label="Plus-values de cession de titres d'OPC monétaires dont le report a expiré en 2025" extra="art. 150-0 B quater" code="3SZ" value={pv.case3sz} onChange={v => update('case3sz', v)} />
           <SingleMontantLigne label="Complément de prix perçu en 2025" code="3WE" value={pv.case3we} onChange={v => update('case3we', v)} />
         </SousGroupe>
 

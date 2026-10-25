@@ -156,7 +156,7 @@ const REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT: RevenusCapitauxMobiliersInput = {
 
 const PLUS_VALUES_PAR_DEFAUT: PlusValuesGainsDiversInput = {
   case3vg: null, case3sg: null, case3vh: null, case3ua: null, case3sl: null, case3va: null,
-  case3vt: null, case3pi: null, case3sb: null, case3we: null,
+  case3vt: null, case3pi: null, case3sb: null, case3sz: null, case3we: null,
   case3an: null, case3bn: null, case3cn: false,
   case3vz: null, case3vw: null,
   case3sj: null, case3tj: null, case3tk: null, case3sk: null, case3tl: null, case3tm: null, case3pc: null, case3pe: null,
