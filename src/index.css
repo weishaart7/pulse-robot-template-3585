@@ -536,3 +536,8 @@
 @media (prefers-reduced-motion: reduce) {
   .champ-invalide, .champ-invalide input, .champ-invalide textarea { animation: none; }
 }
+
+::selection {
+  background-color: #6f4e37;
+  color: #fff;
+}
