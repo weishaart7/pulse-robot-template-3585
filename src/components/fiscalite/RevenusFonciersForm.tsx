@@ -12,13 +12,16 @@ import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 const ANNEE_REVENUS_2044 = 2025;
 
 const FONCIERS_VIDE: RevenusFonciers2042Input = {
-  case4be: null, case4bk: null, case4bl: null, case4bn: false, case4bz: false,
+  case4ba: null, case4bd: null, case4be: null, case4bk: null, case4bl: null, case4bn: false, case4bz: false,
   case4by: null, case4ea: null, case4eb: null,
 };
 
 const TEXTE_ALERTE = {
   micro_et_reel: "Une 2044 (régime réel) est ouverte pour 2025 : le micro-foncier ne peut pas s'y ajouter, sauf exception.",
   micro_au_dela_du_seuil: 'Au-delà de 15 000 € de recettes brutes, le régime réel (2044) est obligatoire.',
+  micro_et_parts_sci: "4BA direct est réservé aux seuls revenus de parts de sociétés immobilières : avec une location en direct, ces revenus vont en 4BE (micro) ou dans une 2044.",
+  '4ba_ignore_2044': 'Une 2044 est ouverte pour 2025 : le 4BA saisi est ignoré, celui de la 2044 est retenu.',
+  '4bd_ignore_2044': 'Une 2044 est ouverte pour 2025 : les déficits antérieurs saisis sont ignorés, la 2044 les impute.',
 } as const;
 
 interface RevenusFonciersFormProps {
@@ -76,12 +79,18 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
           ))}
         </SousGroupe>
 
-        <SousGroupe titre="Régime réel" aide="Report du résultat de la 2044 de 2025 : à modifier dans la 2044.">
-          <LectureLigne label="Revenus fonciers imposables" code="4BA" value={declaration2044?.case4BA ?? null} />
+        <SousGroupe titre="Régime réel" aide={declaration2044
+          ? 'Report du résultat de la 2044 de 2025 : à modifier dans la 2044.'
+          : 'Sans 2044 : 4BA seulement pour des revenus de parts de sociétés immobilières (hors SCPI Robien/Borloo), intérêts d\'emprunt personnels déduits ; 4BD = déficits fonciers antérieurs non encore imputés, déduits du foncier net.'}>
+          {declaration2044
+            ? <LectureLigne label="Revenus fonciers imposables" code="4BA" value={declaration2044.case4BA} />
+            : <SingleMontantLigne label="Revenus fonciers imposables" extra="parts de sociétés immobilières seulement" code="4BA" value={rf.case4ba} onChange={v => update('case4ba', v)} />}
           <SingleMontantLigne label="Dont revenus de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" code="4BL" value={rf.case4bl} onChange={v => update('case4bl', v)} />
           <LectureLigne label="Déficit imputable sur les revenus fonciers" code="4BB" value={declaration2044?.case4BB ?? null} />
           <LectureLigne label="Déficit imputable sur le revenu global" code="4BC" value={declaration2044?.case4BC ?? null} />
-          <LectureLigne label="Déficits antérieurs non encore imputés" code="4BD" value={declaration2044?.case4BD ?? null} />
+          {declaration2044
+            ? <LectureLigne label="Déficits antérieurs non encore imputés" code="4BD" value={declaration2044.case4BD} />
+            : <SingleMontantLigne label="Déficits antérieurs non encore imputés" code="4BD" value={rf.case4bd} onChange={v => update('case4bd', v)} />}
           <SingleMontantLigne label="Amortissement Robien ou Borloo neuf déduit des revenus fonciers 2025" extra="investissements réalisés en 2009" code="4BY" value={rf.case4by} onChange={v => update('case4by', v)} />
         </SousGroupe>
 

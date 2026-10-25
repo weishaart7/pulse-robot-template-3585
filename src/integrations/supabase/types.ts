@@ -3377,6 +3377,8 @@ export type Database = {
       }
       revenus_fonciers_2042: {
         Row: {
+          case_4ba: number | null
+          case_4bd: number | null
           case_4be: number | null
           case_4bk: number | null
           case_4bl: number | null
@@ -3391,6 +3393,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_4ba?: number | null
+          case_4bd?: number | null
           case_4be?: number | null
           case_4bk?: number | null
           case_4bl?: number | null
@@ -3405,6 +3409,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_4ba?: number | null
+          case_4bd?: number | null
           case_4be?: number | null
           case_4bk?: number | null
           case_4bl?: number | null

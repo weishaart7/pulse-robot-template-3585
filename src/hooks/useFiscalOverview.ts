@@ -164,7 +164,7 @@ const PLUS_VALUES_PAR_DEFAUT: PlusValuesGainsDiversInput = {
 };
 
 const REVENUS_FONCIERS_2042_PAR_DEFAUT: RevenusFonciers2042Input = {
-  case4be: null, case4bk: null, case4bl: null, case4bn: false, case4bz: false,
+  case4ba: null, case4bd: null, case4be: null, case4bk: null, case4bl: null, case4bn: false, case4bz: false,
   case4by: null, case4ea: null, case4eb: null,
 };
 

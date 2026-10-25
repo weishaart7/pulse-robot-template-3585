@@ -5,7 +5,7 @@ export interface RevenusFonciers2042 extends RevenusFonciers2042Input {
   id?: string;
 }
 
-const CASES_NUMERIQUES = ['case4be', 'case4bk', 'case4bl', 'case4by', 'case4ea', 'case4eb'] as const;
+const CASES_NUMERIQUES = ['case4ba', 'case4bd', 'case4be', 'case4bk', 'case4bl', 'case4by', 'case4ea', 'case4eb'] as const;
 
 /** case4be → case_4be (colonne Supabase). */
 const colonne = (cle: string) => cle.replace(/^case/, 'case_');

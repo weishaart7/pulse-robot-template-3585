@@ -91,7 +91,8 @@ eux**, malgré une UI qui les présente les uns au-dessus/à côté des autres :
      `RevenusFonciersForm.tsx`, adossé à la table Supabase dédiée `revenus_fonciers_2042` (un montant
      par foyer, `user_id → auth.users(id) ON DELETE CASCADE`, RLS 4 policies). Saisie de `4BE`/`4BK`
      (micro-foncier), `4BL`, `4BY`, `4EA`/`4EB`, `4BN`/`4BZ` ; les cases `4BA` à `4BD` du régime réel y
-     sont affichées en lecture seule depuis la 2044 de 2025 (composant `LectureLigne`). Calcul en aval
+     sont affichées en lecture seule depuis la 2044 de 2025 (composant `LectureLigne`). Sans 2044 ouverte,
+     `4BA` (parts de sociétés immobilières seulement) et `4BD` deviennent saisissables. Calcul en aval
      par `calculerRevenusFonciers2042.ts` (voir §2, « Revenus fonciers saisis dans la 2042 »).
 
    - **Revenus des professions non salariées — cadre 5, 2042-C-PRO (phases 5.1 et 5.2,
@@ -1285,6 +1286,15 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
   revenu imposable et ajoutées au revenu retenu pour le taux effectif, comme 1AF/1AL.
 - **4EA / 4EB** : 4EA et 70 % de 4EB ajoutés aux revenus exonérés retenus pour le taux effectif, sans PS.
 - **4BY** (amortissement Robien/Borloo neuf déduit) : réintégré au RFR seulement.
+- **4BA saisi sans 2044** (brochure IR 2026 p. 157 : revenus de seules parts de sociétés immobilières
+  non IS, déclarés directement) : au barème hors fraction 4BL, PS 17,2 %. Ignoré (alerte) si une 2044
+  est ouverte ; alerte s'il coexiste avec 4BE (micro exclu dans ce cas).
+- **4BD saisi sans 2044** (CGI art. 32, brochure p. 158 : déficits antérieurs déductibles du net
+  micro-foncier) : imputé sur le foncier net hors 2044 (micro et 4BA direct), part au barème d'abord puis
+  fractions 4BK/4BL, sans le rendre négatif ; PS calculés après imputation. Ignoré (alerte) avec une 2044,
+  qui impute elle-même ces déficits.
+- **À reprendre** : 4BD est saisi à la main. Le reprendre de `deficits_fonciers_reportes` serait plus
+  fiable mais suppose de suivre la consommation des déficits par année d'origine (10 ans) côté micro.
 - **4BN / 4BZ** : informatives.
 - **Hypothèse à confronter au simulateur** : 4BK soumis aux PS comme le reste de 4BE.
 
