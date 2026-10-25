@@ -1276,7 +1276,7 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
 Moteur pur `calculerRevenusFonciers2042(input, revenuFoncierReel)`, où `revenuFoncierReel` est le
 revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Branché dans
 `useFiscalOverview.ts`, `FiscalOverviewCard.tsx` (ligne « Revenus fonciers » réel + micro, ligne
-« Prélèvements sociaux (micro-foncier) ») et `Dashboard.tsx`.
+« Prélèvements sociaux (fonciers hors 2044) ») et `Dashboard.tsx`.
 
 - **4BE (micro-foncier)** : abattement de 30 % (art. 32 CGI), 70 % au barème ; PS 17,2 % sur ce net
   (revenus fonciers non concernés par la hausse de CSG de la LFSS 2026). Avertissement non bloquant si
@@ -1292,9 +1292,12 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 - **4BD saisi sans 2044** (CGI art. 32, brochure p. 158 : déficits antérieurs déductibles du net
   micro-foncier) : imputé sur le foncier net hors 2044 (micro et 4BA direct), part au barème d'abord puis
   fractions 4BK/4BL, sans le rendre négatif ; PS calculés après imputation. Ignoré (alerte) avec une 2044,
-  qui impute elle-même ces déficits.
+  qui impute elle-même ces déficits. Seuls comptent les déficits non imputés au 1er janvier de la première
+  année au micro-foncier (rappelé dans l'aide de la case).
 - **À reprendre** : 4BD est saisi à la main. Le reprendre de `deficits_fonciers_reportes` serait plus
   fiable mais suppose de suivre la consommation des déficits par année d'origine (10 ans) côté micro.
+- **Contrôles de saisie** (non bloquants) : 4BK au-delà de 4BE, 4BL sans 4BA ou au-delà de 4BA
+  (excédent écarté). 4BA/4BD saisis puis masqués par une 2044 : effaçables depuis l'alerte.
 - **4BN / 4BZ** : informatives.
 - **Hypothèse à confronter au simulateur** : 4BK soumis aux PS comme le reste de 4BE.
 

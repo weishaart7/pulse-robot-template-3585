@@ -12,7 +12,10 @@ export type AlerteRevenusFonciers2042 =
   | 'micro_au_dela_du_seuil'
   | 'micro_et_parts_sci'
   | '4ba_ignore_2044'
-  | '4bd_ignore_2044';
+  | '4bd_ignore_2044'
+  | '4bk_superieur_4be'
+  | '4bl_sans_reel'
+  | '4bl_superieur_4ba';
 
 export interface RevenusFonciers2042Result {
   /**
@@ -77,6 +80,11 @@ export function calculerRevenusFonciers2042(
   if (recettesMicro > 0 && reelSaisi > 0) alertes.push('micro_et_parts_sci');
   if (avec2044 && (input.case4ba ?? 0) > 0) alertes.push('4ba_ignore_2044');
   if (avec2044 && (input.case4bd ?? 0) > 0) alertes.push('4bd_ignore_2044');
+  // 4BK/4BL sont des fractions : au-delà de leur case mère, l'excédent est écarté.
+  if ((input.case4bk ?? 0) > recettesMicro) alertes.push('4bk_superieur_4be');
+  const baseReel = avec2044 ? Math.max(0, revenuFoncierReel) : reelSaisi;
+  if ((input.case4bl ?? 0) > 0 && baseReel === 0) alertes.push('4bl_sans_reel');
+  else if ((input.case4bl ?? 0) > baseReel) alertes.push('4bl_superieur_4ba');
 
   return {
     totalNetImposable: brutBareme - imputeBareme,

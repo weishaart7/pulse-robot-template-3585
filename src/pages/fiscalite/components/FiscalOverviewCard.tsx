@@ -92,7 +92,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     revenusFonciers
       ? { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: revenusFonciers.prelevementsSociaux }
       : { label: 'Prélèvements sociaux (revenus fonciers, 2044)', valeur: null, texte: 'Pas de 2044' },
-    { label: 'Prélèvements sociaux (micro-foncier)', valeur: revenusFonciers2042.prelevementsSociaux },
+    { label: 'Prélèvements sociaux (fonciers hors 2044)', valeur: revenusFonciers2042.prelevementsSociaux },
     { label: 'Prélèvements sociaux (locations meublées et non salariés)', valeur: revenusNonSalaries.prelevementsSociaux },
     { label: "Contributions sociales (revenus d'activité étrangers)", valeur: prelevementSourceDivers.contributionsSocialesRevenusActivite },
     { label: 'Exonération de CSG et CRDS (8RF à 8RM)', valeur: reductionPrelevementsSociaux === 0 ? 0 : -reductionPrelevementsSociaux },

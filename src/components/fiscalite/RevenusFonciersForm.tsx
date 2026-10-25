@@ -22,7 +22,21 @@ const TEXTE_ALERTE = {
   micro_et_parts_sci: "4BA direct est réservé aux seuls revenus de parts de sociétés immobilières : avec une location en direct, ces revenus vont en 4BE (micro) ou dans une 2044.",
   '4ba_ignore_2044': 'Une 2044 est ouverte pour 2025 : le 4BA saisi est ignoré, celui de la 2044 est retenu.',
   '4bd_ignore_2044': 'Une 2044 est ouverte pour 2025 : les déficits antérieurs saisis sont ignorés, la 2044 les impute.',
+  '4bk_superieur_4be': '4BK est une fraction de 4BE : le montant excédant 4BE est ignoré.',
+  '4bl_sans_reel': 'Sans revenu foncier au régime réel (4BA), 4BL est ignoré.',
+  '4bl_superieur_4ba': '4BL est une fraction de 4BA : le montant excédant 4BA est ignoré.',
 } as const;
+
+type Alerte = keyof typeof TEXTE_ALERTE;
+
+/** Alertes affichées sous le micro-foncier ; les autres le sont sous le régime réel. */
+const ALERTES_MICRO: readonly Alerte[] = ['micro_et_reel', 'micro_au_dela_du_seuil', 'micro_et_parts_sci', '4bk_superieur_4be'];
+
+/** Saisie masquée par la 2044 : effaçable depuis l'alerte. */
+const CASE_IGNOREE: Partial<Record<Alerte, 'case4ba' | 'case4bd'>> = {
+  '4ba_ignore_2044': 'case4ba',
+  '4bd_ignore_2044': 'case4bd',
+};
 
 interface RevenusFonciersFormProps {
   onSaved?: (rf: RevenusFonciers2042) => void;
@@ -67,6 +81,20 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
 
   const { alertes } = calculerRevenusFonciers2042(rf, declaration2044 ? declaration2044.case4BA : null);
 
+  const renderAlertes = (liste: Alerte[]) => liste.map(a => {
+    const cle = CASE_IGNOREE[a];
+    return (
+      <p key={a} className="py-2 text-[13px] text-muted-foreground">
+        {TEXTE_ALERTE[a]}
+        {cle && (
+          <button type="button" className="ml-2 underline underline-offset-2 hover:text-foreground" onClick={() => update(cle, null)}>
+            Effacer la saisie
+          </button>
+        )}
+      </p>
+    );
+  });
+
   return (
     <Cadre2042 titre="Revenus fonciers"
       description="Cadre 4 de la 2042 : locations non meublées. Le régime réel se remplit dans la 2044 et se reprend ici."
@@ -74,9 +102,7 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
         <SousGroupe titre="Micro-foncier">
           <SingleMontantLigne label="Recettes brutes sans abattement" extra="n'excédant pas 15 000 €" code="4BE" value={rf.case4be} onChange={v => update('case4be', v)} />
           <SingleMontantLigne label="Dont recettes de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" code="4BK" value={rf.case4bk} onChange={v => update('case4bk', v)} />
-          {alertes.map(a => (
-            <p key={a} className="py-2 text-[13px] text-muted-foreground">{TEXTE_ALERTE[a]}</p>
-          ))}
+          {renderAlertes(alertes.filter(a => ALERTES_MICRO.includes(a)))}
         </SousGroupe>
 
         <SousGroupe titre="Régime réel" aide={declaration2044
@@ -90,7 +116,8 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
           <LectureLigne label="Déficit imputable sur le revenu global" code="4BC" value={declaration2044?.case4BC ?? null} />
           {declaration2044
             ? <LectureLigne label="Déficits antérieurs non encore imputés" code="4BD" value={declaration2044.case4BD} />
-            : <SingleMontantLigne label="Déficits antérieurs non encore imputés" code="4BD" value={rf.case4bd} onChange={v => update('case4bd', v)} />}
+            : <SingleMontantLigne label="Déficits antérieurs non encore imputés" extra="existants au 1er janvier de la première année au micro-foncier" code="4BD" value={rf.case4bd} onChange={v => update('case4bd', v)} />}
+          {renderAlertes(alertes.filter(a => !ALERTES_MICRO.includes(a)))}
           <SingleMontantLigne label="Amortissement Robien ou Borloo neuf déduit des revenus fonciers 2025" extra="investissements réalisés en 2009" code="4BY" value={rf.case4by} onChange={v => update('case4by', v)} />
         </SousGroupe>
 

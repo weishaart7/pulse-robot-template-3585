@@ -75,4 +75,12 @@ describe('calculerRevenusFonciers2042', () => {
     expect(calculerRevenusFonciers2042({ ...VIDE, case4be: 5000, case4ba: 2000 }, null).alertes)
       .toEqual(['micro_et_parts_sci']);
   });
+
+  it('alertes : 4BK au-delà de 4BE, 4BL sans réel ou au-delà de 4BA', () => {
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4be: 1000, case4bk: 2000 }, null).alertes).toEqual(['4bk_superieur_4be']);
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 1000 }, null).alertes).toEqual(['4bl_sans_reel']);
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 1000 }, 0).alertes).toEqual(['4bl_sans_reel']);
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 3000 }, 2000).alertes).toEqual(['4bl_superieur_4ba']);
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4ba: 2000, case4bl: 2000 }, null).alertes).toEqual([]);
+  });
 });
