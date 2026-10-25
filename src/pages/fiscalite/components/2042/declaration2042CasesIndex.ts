@@ -156,6 +156,7 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '2AB', label: 'Crédits d\'impôt sur valeurs étrangères', sectionId: 'capitaux-mobiliers', elementId: 'case-2AB' },
   { code: '2CK', label: 'Prélèvement forfaitaire non libératoire déjà versé', sectionId: 'capitaux-mobiliers', elementId: 'case-2CK' },
   { code: '2EE', label: 'Autres revenus soumis à un prélèvement ou une retenue libératoire', sectionId: 'capitaux-mobiliers', elementId: 'case-2EE' },
+  { code: '2DM', label: 'Revenus exonérés des impatriés', sectionId: 'capitaux-mobiliers', elementId: 'case-2DM' },
   { code: '2AA', label: 'Déficits années antérieures non déduits, provenant de 2019', sectionId: 'capitaux-mobiliers', elementId: 'case-2AA' },
   { code: '2AL', label: 'Déficits années antérieures non déduits, provenant de 2020', sectionId: 'capitaux-mobiliers', elementId: 'case-2AL' },
   { code: '2AM', label: 'Déficits années antérieures non déduits, provenant de 2021', sectionId: 'capitaux-mobiliers', elementId: 'case-2AM' },

@@ -25,7 +25,7 @@ describe('régression : célibataire, 2GO=4000/2CH=6000, 2OP décoché', () => {
       case2ca: null, case2ab: null, case2ck: null, case2ee: null,
       case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
       case2vm: null, case2vn: null, case2vo: null, case2vp: null,
-      case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null,
+      case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
       case2op: false,
     };
     const foyer: FoyerFiscalInput = {
@@ -77,7 +77,7 @@ describe('régression : célibataire, 2VV=5000 seul, 2OP décoché', () => {
       case2ca: null, case2ab: null, case2ck: null, case2ee: null,
       case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
       case2vm: null, case2vn: null, case2vo: null, case2vp: null,
-      case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null,
+      case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
       case2op: false,
     };
     const foyer: FoyerFiscalInput = {

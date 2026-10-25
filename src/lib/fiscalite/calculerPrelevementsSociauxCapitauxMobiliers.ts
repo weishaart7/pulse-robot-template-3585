@@ -144,8 +144,9 @@ export function calculerPrelevementsSociauxCapitauxMobiliers(
     + (input.case2ww ?? 0) + (input.case2yy ?? 0) + (input.case2zz ?? 0)
     + (input.case2vn ?? 0) + (input.case2vo ?? 0) + (input.case2vp ?? 0);
 
+  // 2DM : fraction exonérée d'IR des impatriés, retenue pour les PS (brochure p.135).
   const assietteBrute = dividendesBrut + sansAbattement + revenusReputesDistribuesSansMajoration
-    + contratsNonLiberatoiresSansAbattement;
+    + contratsNonLiberatoiresSansAbattement + (input.case2dm ?? 0);
   const montantDejaSoumis = (input.case2cg ?? 0) + (input.case2bh ?? 0) + (input.case2df ?? 0)
     + (input.case2dg ?? 0);
   // Plancher à 0 : des cases « déjà soumis » supérieures aux revenus déclarés relèvent d'une erreur de saisie, pas d'un crédit de PS.

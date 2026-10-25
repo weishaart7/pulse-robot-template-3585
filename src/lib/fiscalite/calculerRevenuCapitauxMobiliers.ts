@@ -47,7 +47,8 @@ const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['mari
  *   report sur les années suivantes, aucun effet sur l'année en cours.
  * - 2CG/2BH/2DF/2DG/2DI : lignes servant à l'assiette PS
  *   (`calculerPrelevementsSociauxCapitauxMobiliers.ts`) — sans effet sur l'IR.
- * - 2EE : retenu au seul RFR (voir `revenuExonereRetenuPourRFR`).
+ * - 2EE et 2DM : retenus au seul RFR (voir `revenuExonereRetenuPourRFR`) ;
+ *   2DM entre aussi dans l'assiette PS.
  */
 export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
   'case2uu',
@@ -55,7 +56,7 @@ export const CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL = [
   'case2vm',
   'case2vq', 'case2vr', 'case2vs', 'case2vt', 'case2vu',
   'case2tu', 'case2tv', 'case2tw', 'case2tx', 'case2ty',
-  'case2cg', 'case2bh', 'case2df', 'case2dg', 'case2di', 'case2ee',
+  'case2cg', 'case2bh', 'case2df', 'case2dg', 'case2di', 'case2ee', 'case2dm',
 ] as const;
 
 export interface RevenuCapitauxMobiliersResult {
@@ -135,6 +136,10 @@ export interface RevenuCapitauxMobiliersResult {
    * revenus soumis au prélèvement libératoire sont retenus pour le calcul
    * du revenu fiscal de référence » ; p.134 pour 2EE, « retenus uniquement
    * pour la détermination du RFR ». Indépendant de 2OP.
+   *
+   * **2DM** (fraction exonérée des RCM des impatriés, CGI art. 155 B) :
+   * « retenu pour le calcul du revenu fiscal de référence et des
+   * prélèvements sociaux » (brochure p.135 ; art. 1417 IV 1° c).
    *
    * Transmis tel quel à `calculerImpot.ts` pour construire
    * `revenuFiscalReference` sans polluer `totalNetImposable`/
@@ -270,7 +275,9 @@ export function calculerRevenuCapitauxMobiliers(
   const creditImpotValeursEtrangeres2CK = input.case2ck ?? 0;
 
   // 2XX/2VM/2EE : soumis à un prélèvement libératoire, sans effet sur l'IR mais retenus au RFR (brochure p.123-124, p.134).
-  const revenusLiberatoiresRetenusPourRFR = (input.case2xx ?? 0) + (input.case2vm ?? 0) + (input.case2ee ?? 0);
+  // 2DM : fraction exonérée des impatriés, retenue au RFR (art. 1417 IV 1° c « 155 B », brochure p.135).
+  const revenusLiberatoiresRetenusPourRFR = (input.case2xx ?? 0) + (input.case2vm ?? 0) + (input.case2ee ?? 0)
+    + (input.case2dm ?? 0);
   // Art. 1417 IV 1° c CGI : revenus soumis à prélèvement libératoire, au brut. L'abattement 125-0 A n'est pas réintégré (a bis).
   const revenuExonereRetenuPourRFRContratsAssuranceVie = case2dh + revenusLiberatoiresRetenusPourRFR;
 

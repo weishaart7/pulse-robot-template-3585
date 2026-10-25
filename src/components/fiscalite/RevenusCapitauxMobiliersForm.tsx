@@ -19,7 +19,7 @@ const REVENUS_VIDE: RevenusCapitauxMobiliersInput = {
   case2ca: null, case2ab: null, case2ck: null, case2ee: null,
   case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
   case2vm: null, case2vn: null, case2vo: null, case2vp: null,
-  case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null,
+  case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
   case2op: false,
 };
 
@@ -135,6 +135,14 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
           <SingleMontantLigne label="Crédits d'impôt sur valeurs étrangères" code="2AB" value={revenus.case2ab} onChange={v => update('case2ab', v)} />
           <SingleMontantLigne label="Prélèvement forfaitaire non libératoire déjà versé" code="2CK" value={revenus.case2ck} onChange={v => update('case2ck', v)} />
           <SingleMontantLigne label="Autres revenus soumis à un prélèvement ou à une retenue libératoire" code="2EE" value={revenus.case2ee} onChange={v => update('case2ee', v)} />
+          <SingleMontantLigne
+            label="Revenus exonérés des impatriés"
+            extra="fraction exonérée de 50 %"
+            aide="Sans effet sur l'impôt sur le revenu, mais retenue pour le revenu fiscal de référence et les prélèvements sociaux (brochure IR 2026 p.135). La fraction imposable se déclare lignes 2DC à 2ZZ selon sa nature."
+            code="2DM"
+            value={revenus.case2dm}
+            onChange={v => update('case2dm', v)}
+          />
           <MontantEclateLigne
             label="Déficits des années antérieures non encore déduits"
             items={[

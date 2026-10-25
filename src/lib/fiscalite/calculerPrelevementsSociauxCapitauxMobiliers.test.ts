@@ -13,7 +13,7 @@ function makeInput(overrides: Partial<RevenusCapitauxMobiliersInput> = {}): Reve
     case2ca: null, case2ab: null, case2ck: null, case2ee: null,
     case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
     case2vm: null, case2vn: null, case2vo: null, case2vp: null,
-    case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null,
+    case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
     case2op: false,
     ...overrides,
   };
@@ -142,5 +142,11 @@ describe('calculerPrelevementsSociauxCapitauxMobiliers', () => {
     const di = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2tr: 5000, case2dg: 1000, case2di: 2000 }));
     expect(di.incoherencesSaisie).toEqual(['Le montant de 2DI doit être compris dans celui de 2DG.']);
     expect(di.csgCrds2DI).toBeCloseTo(222, 6);
+  });
+  it('inclut 2DM (fraction exonérée des impatriés) dans l\'assiette PS', () => {
+    const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dc: 4000, case2dm: 4000, case2bh: 4000 }));
+    expect(result.assietteBrute).toBe(8000);
+    expect(result.baseImposable).toBe(4000);
+    expect(result.prelevementsSociaux).toBeCloseTo(4000 * 0.186, 6);
   });
 });

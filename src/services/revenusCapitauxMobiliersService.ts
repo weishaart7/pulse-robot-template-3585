@@ -60,6 +60,7 @@ interface RevenusCapitauxMobiliersRow {
   case_2vs: number | string | null;
   case_2vt: number | string | null;
   case_2vu: number | string | null;
+  case_2dm: number | string | null;
   case_2op: boolean | null;
 }
 
@@ -116,6 +117,7 @@ function rowToRevenusCapitauxMobiliers(row: RevenusCapitauxMobiliersRow): Revenu
     case2vs: toNumberOrNull(row.case_2vs),
     case2vt: toNumberOrNull(row.case_2vt),
     case2vu: toNumberOrNull(row.case_2vu),
+    case2dm: toNumberOrNull(row.case_2dm),
     case2op: row.case_2op ?? false,
   };
 }
@@ -168,6 +170,7 @@ function revenusCapitauxMobiliersToRow(revenus: RevenusCapitauxMobiliers, userId
     case_2vs: revenus.case2vs,
     case_2vt: revenus.case2vt,
     case_2vu: revenus.case2vu,
+    case_2dm: revenus.case2dm,
     case_2op: revenus.case2op,
   };
 }

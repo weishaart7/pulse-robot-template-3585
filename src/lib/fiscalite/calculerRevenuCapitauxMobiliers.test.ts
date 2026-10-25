@@ -20,7 +20,7 @@ function makeInput(overrides: Partial<RevenusCapitauxMobiliersInput> = {}): Reve
     case2ca: null, case2ab: null, case2ck: null, case2ee: null,
     case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
     case2vm: null, case2vn: null, case2vo: null, case2vp: null,
-    case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null,
+    case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
     case2op: false,
     ...overrides,
   };
@@ -408,5 +408,16 @@ describe('calculerRevenuCapitauxMobiliers — déficit RCM reportable (2CA > rev
   it('déficit nul sans option barème (frais non déductibles)', () => {
     const result = calculer(makeInput({ case2tr: 1000, case2ca: 3000 }));
     expect(result.deficitReportableAnnee).toBe(0);
+  });
+});
+
+describe('calculerRevenuCapitauxMobiliers — impatriés (2DM)', () => {
+  it('retient 2DM au RFR sans effet sur l\'IR, avec ou sans option', () => {
+    for (const case2op of [false, true]) {
+      const result = calculer(makeInput({ case2dm: 4000, case2op }));
+      expect(result.revenuExonereRetenuPourRFR).toBe(4000);
+      expect(result.totalNetImposable).toBe(0);
+      expect(result.impotForfaitaire).toBe(0);
+    }
   });
 });
