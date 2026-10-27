@@ -45,8 +45,9 @@ export interface ImpotResult {
   revenuMondialFictif: number;
   /**
    * Revenu fiscal de référence (art. 1417 IV CGI), périmètre partiel :
-   * `revenuMondialFictif` (revenu net imposable + revenu exonéré retenu pour
-   * le taux effectif + revenus exceptionnels soumis au système du quotient)
+   * revenu net imposable + revenu exonéré retenu pour le taux effectif +
+   * revenus exceptionnels soumis au quotient **divisés par 4** (art. 1417 IV,
+   * brochure IR 2026 p. 334-335)
    * + `revenuExonereRetenuPourRFR` (paramètre optionnel, 0 par défaut — la
    * somme de `calculerRevenuSalaires.ts::revenuExonereRetenuPourRFR` — 1GH/
    * 1HH, 1AD/1BD, 1AQ/1BQ, 1DY/1EY, 1SM/1DN, 1PB/1PC, voir sa JSDoc — et de
@@ -340,7 +341,8 @@ export function calculerImpot(
     revenuImposable: revenu,
     revenuExonereTauxEffectif: revenuExonere,
     revenuMondialFictif,
-    revenuFiscalReference: revenuMondialFictif + Math.max(0, revenuExonereRetenuPourRFR),
+    revenuFiscalReference: revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL
+      + Math.max(0, revenuExonereRetenuPourRFR),
     nombreParts: parts.nombreParts,
     quotientFamilial: parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0,
     impotSansMajorations,

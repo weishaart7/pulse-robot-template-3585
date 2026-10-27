@@ -169,7 +169,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           />
         </SousGroupe>
 
-        <SousGroupe titre="Revenus du patrimoine exonérés de CSG et de CRDS" aide="Affiliés à un régime d'assurance maladie de l'EEE, du Royaume-Uni ou de la Suisse : seuls les montants saisis réduisent les prélèvements sociaux (le prélèvement de solidarité reste dû).">
+        <SousGroupe titre="Revenus du patrimoine exonérés de CSG et de CRDS" aide="Affiliés à un régime d'assurance maladie de l'EEE, du Royaume-Uni ou de la Suisse : personne seule (8SH) ou couple dont les deux conjoints sont cochés, tous les revenus du patrimoine sont exonérés ; si un seul conjoint l'est, saisir ses montants. Le prélèvement de solidarité reste dû.">
           <CaseLigne label="Affiliation hors régime français" code1="8SH" code2="8SI" checked1={ps.case8sh} checked2={ps.case8si} onChange1={v => update('case8sh', v)} onChange2={v => update('case8si', v)} />
           <SingleMontantLigne label="Revenus fonciers" extra="après abattement si régime micro" code="8RF" value={ps.case8rf} onChange={v => update('case8rf', v)} />
           <SingleMontantLigne label="Rentes viagères à titre onéreux" extra="montant net après abattement" code="8RV" value={ps.case8rv} onChange={v => update('case8rv', v)} />

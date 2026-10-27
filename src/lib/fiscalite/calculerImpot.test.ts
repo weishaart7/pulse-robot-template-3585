@@ -441,7 +441,7 @@ describe('calculerImpot — système du quotient (revenus exceptionnels, 0XX)', 
     expect(result.revenuExceptionnelQuotient).toBe(200000);
   });
 
-  it('revenuFiscalReference = revenu imposable + revenu exonéré (taux effectif) + revenu exceptionnel, périmètre partiel (hors bases forfaitaires)', () => {
+  it('revenuFiscalReference = revenu imposable + revenu exonéré (taux effectif) + revenu exceptionnel / 4, périmètre partiel (hors bases forfaitaires)', () => {
     const sansExonereNiExceptionnel = calculerImpot(50000, makeParts(), 'celibataire');
     expect(sansExonereNiExceptionnel.revenuFiscalReference).toBe(50000);
 
@@ -449,7 +449,7 @@ describe('calculerImpot — système du quotient (revenus exceptionnels, 0XX)', 
     expect(avecExonere.revenuFiscalReference).toBe(70000);
 
     const avecExceptionnel = calculerImpot(70000, makeParts(), 'celibataire', 0, 'metropole', 0, 200000);
-    expect(avecExceptionnel.revenuFiscalReference).toBe(270000);
+    expect(avecExceptionnel.revenuFiscalReference).toBe(120000);
   });
 
   it('revenuFiscalReference réintègre revenuExonereRetenuPourRFR (1GH/1HH) sans l\'ajouter à revenuMondialFictif ni à l\'assiette imposée', () => {

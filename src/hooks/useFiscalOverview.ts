@@ -36,6 +36,9 @@ import {
   calculerReductionsCreditsImpot,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
+  TAUX_CSG_CRDS_FONCIER,
+  TAUX_CSG_CRDS_PATRIMOINE,
+  exonerationTotaleCsgCrds,
   calculerSoldeImpot,
   creditImpotEgalImpotEtranger,
   FoyerFiscalInput,
@@ -186,6 +189,8 @@ const REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT: ReductionsCreditsImpotInput = {
 };
 
 /** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
+const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
+
 export const ANNEE_REVENUS = 2025;
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
 export const ANNEE_IFI = ANNEE_REVENUS + 1;
@@ -456,13 +461,25 @@ export function useFiscalOverview(): FiscalOverview {
         + revenusFonciers2042.prelevementsSociaux
         + revenusNonSalaries.prelevementsSociaux;
       // PS des gains d'actionnariat (régime salarial) exclus du plafond de l'exonération patrimoine.
-      const reductionPrelevementsSociaux = Math.min(
-        prelevementSourceDivers.reductionPrelevementsSociaux,
-        Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
-      );
+      // 8SH (personne seule) ou 8SH + 8SI (couple) : exonération de CSG-CRDS de tous les revenus du
+      // patrimoine — fonciers à 9,7/17,2, 2DI (CSG-CRDS seule) en totalité, le reste à 11,1/18,6.
+      const prelevementsSociauxFonciers = (revenusFonciers?.prelevementsSociaux ?? 0) + revenusFonciers2042.prelevementsSociaux;
+      const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
+      const reductionPrelevementsSociaux = exonerationTotale
+        ? Math.round(
+          prelevementsSociauxFonciers * (TAUX_CSG_CRDS_FONCIER / 0.172)
+          + prelevementsSociauxCapitauxMobiliers.csgCrds2DI
+          + (prelevementsSociauxCapitauxMobiliers.prelevementsSociaux - prelevementsSociauxCapitauxMobiliers.csgCrds2DI
+            + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux + plusValuesGainsDivers.prelevementsSociaux
+            + revenusNonSalaries.prelevementsSociaux) * (TAUX_CSG_CRDS_PATRIMOINE / 0.186),
+        )
+        : Math.min(
+          prelevementSourceDivers.reductionPrelevementsSociaux,
+          Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
+        );
       const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
-      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille);
+      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient);
       const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;
 
       const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {

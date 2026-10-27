@@ -17,6 +17,11 @@ describe('calculerCEHR', () => {
     expect(calculerCEHR(1_500_000, 'marie')).toBe(15_000 + 20_000);
   });
 
+  it('revenus au quotient retenus pour leur montant total (RFR à 1/4)', () => {
+    // RFR 300 000 dont 100 000 de 0XX (400 000 au total) → base 600 000.
+    expect(calculerCEHR(300_000, 'celibataire', 400_000)).toBe(7_500 + 4_000);
+  });
+
   it('seuil de personne seule hors mariés et pacsés', () => {
     expect(calculerCEHR(600_000, 'divorce')).toBe(7_500 + 4_000);
     expect(calculerCEHR(600_000, 'veuf')).toBe(7_500 + 4_000);

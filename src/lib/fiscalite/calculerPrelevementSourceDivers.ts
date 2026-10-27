@@ -5,6 +5,17 @@ export const TAUX_CSG_CRDS_PATRIMOINE = 0.111;
 /** CSG + CRDS dont est exonéré 8RF (revenus fonciers restés à 17,2 % : CSG 9,2 % + CRDS 0,5 %). */
 export const TAUX_CSG_CRDS_FONCIER = 0.097;
 
+/**
+ * 8SH/8SI : personne seule (8SH) ou couple dont les deux conjoints (8SH et 8SI)
+ * sont affiliés à un régime d'assurance maladie EEE, Royaume-Uni ou Suisse —
+ * tous les revenus du patrimoine sont exonérés de CSG-CRDS, sans saisie de
+ * montants (brochure IR 2026 p. 330). Les montants 8RF…8RM ne servent que si
+ * un seul des conjoints remplit la condition.
+ */
+export function exonerationTotaleCsgCrds(input: PrelevementSourceDiversInput, coupleImpositionCommune: boolean): boolean {
+  return coupleImpositionCommune ? input.case8sh && input.case8si : input.case8sh;
+}
+
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
   case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,
@@ -53,7 +64,7 @@ export interface PrelevementSourceDiversResult {
  * Cadre 8 de la 2042 et de la 2042-C (revenus 2025/impôt 2026), hors crédit
  * égal à l'impôt étranger (voir `creditImpotEgalImpotEtranger`, qui dépend
  * de l'impôt calculé). Informatives : 8HR/8HS (CDHR non calculée), 8TA,
- * 8UT, 8TT, 8UU, 8FV, 8SH/8SI (seuls les montants 8RF…8RM ont un effet).
+ * 8UT, 8TT, 8UU, 8FV. 8SH/8SI : voir `exonerationTotaleCsgCrds`.
  * Contributions 8TQ…8SB : montants saisis tels que déclarés, la base déclarée
  * étant déjà après déduction de 1,75 % sur salaires et chômage (brochure p. 328).
  */

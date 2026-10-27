@@ -460,8 +460,8 @@ fonciers (§4).
   et l'arrondi.
   **`revenuFiscalReference` (RFR, art. 1417 IV CGI), périmètre partiel.** Exposé dans `ImpotResult` et
   affiché en permanence (`FiscalOverviewCard.tsx`, `TaxRateCard.tsx`) — jusqu'ici le RFR n'était calculé
-  nulle part dans le module. Base : `revenuMondialFictif` (revenu net imposable + revenu exonéré retenu
-  pour le taux effectif + revenus exceptionnels soumis au système du quotient) + paramètre optionnel
+  nulle part dans le module. Base : revenu net imposable + revenu exonéré retenu pour le taux effectif +
+  revenus exceptionnels soumis au quotient **divisés par 4** (brochure p. 334-335) + paramètre optionnel
   `revenuExonereRetenuPourRFR` (0 par défaut). **Bug corrigé — le RFR était initialement identique à
   `revenuMondialFictif`, sans réintégrer 1GH/1HH (heures supplémentaires/RTT) ni 1AD/1BD (prime de
   partage de la valeur), tous deux exonérés d'IR mais retenus pour le RFR.** Pour 1GH/1HH : art. 1417
@@ -1458,9 +1458,12 @@ cadre 8 est enregistré).
   sur le revenu de la catégorie après abattements.
 - **8TF** : ajouté à l'impôt net.
 - **Exonération CSG-CRDS** (`8RF` à 9,7 %, `8RV`/`8RC`/`8RM` à 11,1 %), plafonnée aux PS du patrimoine
-  calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. `8SH`/`8SI` sont
-  informatifs : sans montants saisis, aucune exonération n'est calculée.
-- **CEHR** (`calculerCEHR.ts`, art. 223 sexies) : 3 % puis 4 % du RFR au-delà de 250 k€/500 k€
+  calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. **Exonération
+  totale** (`exonerationTotaleCsgCrds`) si `8SH` seule (personne seule) ou `8SH` + `8SI` (couple) : les
+  montants 8RF…8RM sont ignorés, CSG-CRDS retranchée de tous les PS du patrimoine (fonciers × 9,7/17,2,
+  2DI en totalité, autres × 11,1/18,6 ; hors gains d'actionnariat).
+- **CEHR** (`calculerCEHR.ts`, art. 223 sexies) : 3 % puis 4 % du RFR, revenus au quotient repris pour leur
+  montant total (et non 1/4), au-delà de 250 k€/500 k€
   (personne seule) ou 500 k€/1 M€ (marié ou pacsé), sans lissage (`8TD` hors périmètre). Exposée à part
   (`cehr`), hors `impot.impotNet` (taux moyen, PAS) ; ajoutée au solde, au total des impositions de la
   carte et du Dashboard, et au plafonnement IFI.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRELEVEMENT_SOURCE_DIVERS_VIDE, calculerPrelevementSourceDivers, calculerSoldeImpot, creditImpotEgalImpotEtranger } from './calculerPrelevementSourceDivers';
+import { PRELEVEMENT_SOURCE_DIVERS_VIDE, calculerPrelevementSourceDivers, calculerSoldeImpot, creditImpotEgalImpotEtranger, exonerationTotaleCsgCrds } from './calculerPrelevementSourceDivers';
 import { calculerImpot } from './calculerImpot';
 import { calculerPartsFiscales } from './calculerPartsFiscales';
 import { FoyerFiscalInput, PrelevementSourceDiversInput } from './types';
@@ -25,6 +25,13 @@ describe('calculerPrelevementSourceDivers', () => {
     expect(r.revenuTauxEffectif).toBe(1000);
     expect(r.revenuCreditImpotEgalImpotFrancais).toBe(2000);
     expect(r.reprises).toBe(150);
+  });
+
+  it('exonération totale : 8SH seule pour une personne seule, 8SH et 8SI pour un couple', () => {
+    expect(exonerationTotaleCsgCrds({ ...VIDE, case8sh: true }, false)).toBe(true);
+    expect(exonerationTotaleCsgCrds({ ...VIDE, case8sh: true }, true)).toBe(false);
+    expect(exonerationTotaleCsgCrds({ ...VIDE, case8sh: true, case8si: true }, true)).toBe(true);
+    expect(exonerationTotaleCsgCrds({ ...VIDE, case8si: true }, false)).toBe(false);
   });
 
   it('exonération de CSG-CRDS : 9,7 % sur 8RF, 11,1 % sur les autres', () => {
