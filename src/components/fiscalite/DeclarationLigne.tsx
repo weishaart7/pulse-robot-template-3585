@@ -63,11 +63,13 @@ const champClass = cn(
 );
 
 /** Champ montant d'une case : code à gauche, séparateur de milliers hors saisie, vide = NULL. */
-export const CaseMontant = ({ code, value, onChange, ariaLabel }: {
+export const CaseMontant = ({ code, value, onChange, ariaLabel, unite = '€' }: {
   code: string;
   value: number | null;
   onChange: (value: number | null) => void;
   ariaLabel?: string;
+  /** Unité affichée à droite ; `null` pour un nombre (ex. 6EV). */
+  unite?: string | null;
 }) => {
   const [focus, setFocus] = useState(false);
   const [brouillon, setBrouillon] = useState(value === null ? '' : String(value));
@@ -88,7 +90,7 @@ export const CaseMontant = ({ code, value, onChange, ariaLabel }: {
         onBlur={() => setFocus(false)}
         className={cn(champClass, value !== null && value !== 0 && 'font-medium')}
       />
-      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">€</span>
+      {unite && <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground">{unite}</span>}
     </div>
   );
 };
@@ -217,14 +219,14 @@ interface MontantParTrancheAgeLigneProps {
 }
 
 /** Grille de sous-cases sous un libellé (tranches d'âge, années d'origine…). */
-const LigneEclatee = ({ label, aide, items }: { label: string; aide?: string; items: { label: string; code: string; value: number | null; onChange: (v: number | null) => void }[] }) => (
+const LigneEclatee = ({ label, aide, items }: { label: string; aide?: string; items: { label: string; code: string; value: number | null; onChange: (v: number | null) => void; unite?: string | null }[] }) => (
   <div className="space-y-2.5 border-b border-border/50 py-3">
     <LigneLabel label={label} aide={aide} />
     <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
       {items.map((item) => (
         <div key={item.code} className="space-y-1">
           <span className="block text-[11.5px] text-muted-foreground">{item.label}</span>
-          <CaseMontant code={item.code} value={item.value} onChange={item.onChange} ariaLabel={`${label} — ${item.label} (${item.code})`} />
+          <CaseMontant code={item.code} value={item.value} onChange={item.onChange} ariaLabel={`${label} — ${item.label} (${item.code})`} unite={item.unite} />
         </div>
       ))}
     </div>
@@ -244,6 +246,8 @@ export interface MontantEclateItem {
   code: string;
   value: number | null;
   onChange: (value: number | null) => void;
+  /** Unité de la sous-case, € par défaut ; `null` pour un nombre. */
+  unite?: string | null;
 }
 
 interface MontantEclateLigneProps {

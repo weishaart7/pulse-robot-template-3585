@@ -101,7 +101,7 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
             label="Personnes de plus de 75 ans accueillies sous votre toit, autres qu'ascendants"
             aide="Frais d'accueil plafonnés à 4 075 € par personne. Personne née avant le 1.1.1951, vivant en permanence sous votre toit, sans droit à pension alimentaire, revenu imposable au plus 12 411,44 € (19 268,80 € pour un couple)."
             items={[
-              { label: 'Nombre', code: '6EV', value: ch.case6ev, onChange: v => update('case6ev', v) },
+              { label: 'Nombre', code: '6EV', value: ch.case6ev, onChange: v => update('case6ev', v), unite: null },
               { label: "Frais d'accueil", code: '6EU', value: ch.case6eu, onChange: v => update('case6eu', v) },
             ]}
           />

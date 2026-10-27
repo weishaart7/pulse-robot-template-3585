@@ -38,17 +38,19 @@ export const CalculMonumentsHistoriques = ({ onReporter }: { onReporter: (montan
       {lignes.map((ligne, i) => {
         const avecSubvention = SITUATIONS_MONUMENT_HISTORIQUE.find(s => s.value === ligne.situation)?.avecSubvention ?? false;
         return (
-          <div key={i} className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[minmax(0,1fr)_8rem_8rem_6rem_1.5rem]">
-            <Select value={ligne.situation} onValueChange={v => modifier(i, { situation: v as SituationMonumentHistorique })}>
-              <SelectTrigger className="h-9 rounded-[2px] text-[12.5px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {SITUATIONS_MONUMENT_HISTORIQUE.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div key={i} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_5rem_1.5rem] items-center gap-2 border-b border-border/40 pb-2 sm:grid-cols-[9rem_9rem_minmax(0,1fr)_1.5rem]">
+            <div className="col-span-4">
+              <Select value={ligne.situation} onValueChange={v => modifier(i, { situation: v as SituationMonumentHistorique })}>
+                <SelectTrigger className="h-9 rounded-[2px] text-left text-[12.5px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {SITUATIONS_MONUMENT_HISTORIQUE.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <CaseMontant code={`MH${i + 1}`} value={ligne.montant} onChange={v => modifier(i, { montant: v })} ariaLabel={`Montant, ligne ${i + 1}`} />
             {avecSubvention
               ? <CaseMontant code={`SUB${i + 1}`} value={ligne.subvention} onChange={v => modifier(i, { subvention: v })} ariaLabel={`Subvention, ligne ${i + 1}`} />
-              : <span className="hidden sm:block" />}
+              : <span />}
             <span className="text-right text-[13px] tabular-nums">{formatEuros(montantDeductibleLigneMonumentHistorique(ligne))}</span>
             <button type="button" aria-label="Supprimer la ligne" onClick={() => setLignes(prev => prev.filter((_, j) => j !== i))}
               className="text-muted-foreground hover:text-foreground disabled:opacity-30" disabled={lignes.length === 1}>
