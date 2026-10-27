@@ -588,6 +588,22 @@ export interface RevenusNonSalariesInput {
   case5hd: number | null;
   /** BA : revenu forfaitaire des coupes de bois — Déclarant 2 */
   case5id: number | null;
+  /** BIC non pro réel : brevets et assimilés taxables à 10 % — Déclarant 1 */
+  case5tf: number | null;
+  /** BIC non pro réel : brevets taxables à 10 % — Déclarant 2 */
+  case5uf: number | null;
+  /** BNC pro : jeunes créateurs, abattement de 50 % déjà déduit de 5QC (RFR) — Déclarant 1 */
+  case5ql: number | null;
+  /** BNC pro : jeunes créateurs, abattement de 50 % — Déclarant 2 */
+  case5rl: number | null;
+  /** BNC non pro : jeunes créateurs, abattement de 50 % déjà déduit de 5JG (RFR) — Déclarant 1 */
+  case5sv: number | null;
+  /** BNC non pro : jeunes créateurs, abattement de 50 % — Déclarant 2 */
+  case5sw: number | null;
+  /** Agents généraux d'assurances : montant brut de l'indemnité de cessation (taxe art. 719) — Déclarant 1 */
+  case5qm: number | null;
+  /** Agents généraux d'assurances : indemnité de cessation — Déclarant 2 */
+  case5rm: number | null;
 }
 
 /**

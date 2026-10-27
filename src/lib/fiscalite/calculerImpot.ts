@@ -91,6 +91,8 @@ export interface ImpotResult {
   tmi: number;
   /** Impôt sur le bénéfice agricole excédant la moyenne triennale (5XT/5XU) : `tmi` × montant, ajouté après la décote. */
   impotTauxMarginal: number;
+  /** Taxes annexes dues avec l'IR (agents généraux, 5QM/5RM), hors réductions et crédits d'impôt. */
+  taxesAnnexes: number;
   revenuExceptionnelQuotient: number;
   impotSupplementaireQuotientExceptionnel: number;
 }
@@ -250,6 +252,8 @@ function calculerImpotApresQuotientFamilial(
  * `revenuTauxMarginal` (5XT/5XU, art. 75-0 B CGI) : hors revenu imposable,
  * imposé au TMI du revenu global « compte tenu de la moyenne » (donc sans
  * lui), sans décote ni plafonnement ; ajouté comme l'impôt forfaitaire.
+ * `taxesAnnexes` (taxe sur l'indemnité des agents généraux, art. 719) : taxe
+ * distincte mise en recouvrement avec l'IR, ajoutée à l'impôt net hors réductions.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -268,6 +272,7 @@ export function calculerImpot(
   creditImpotEtrangerCadre8 = 0,
   reprisesImpot = 0,
   revenuTauxMarginal = 0,
+  taxesAnnexes = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -328,7 +333,8 @@ export function calculerImpot(
     - creditImpotValeursEtrangeres2CKApplique
     - creditsImpotCadre7Appliques
     - creditImpotEtrangerCadre8Applique
-    + Math.max(0, reprisesImpot);
+    + Math.max(0, reprisesImpot)
+    + Math.max(0, taxesAnnexes);
 
   return {
     revenuImposable: revenu,
@@ -360,6 +366,7 @@ export function calculerImpot(
     impotNet,
     tmi,
     impotTauxMarginal,
+    taxesAnnexes: Math.max(0, taxesAnnexes),
     revenuExceptionnelQuotient: revenuExceptionnel,
     impotSupplementaireQuotientExceptionnel,
   };

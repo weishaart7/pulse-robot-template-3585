@@ -34,6 +34,29 @@ const TAUX_PLUS_VALUES_LONG_TERME = 0.128;
 /** Produits de la cession ou concession de brevets : 10 % (art. 238 CGI), sans PS. */
 const TAUX_BREVETS = 0.10;
 
+/**
+ * Taxe sur l'indemnité de cessation des agents généraux d'assurances (art. 151 septies A V
+ * et 719 CGI, brochure IR 2026 p. 179) : barème des cessions de fonds de commerce, par personne.
+ */
+const TRANCHES_TAXE_AGENTS_GENERAUX = [
+  { seuil: 23_000, taux: 0 },
+  { seuil: 107_000, taux: 0.02 },
+  { seuil: 200_000, taux: 0.006 },
+  { seuil: Infinity, taux: 0.026 },
+] as const;
+
+/** Taxe due sur une indemnité brute, tranche par tranche. */
+export function taxeAgentGeneral(indemnite: number): number {
+  let taxe = 0;
+  let seuilPrecedent = 0;
+  for (const tranche of TRANCHES_TAXE_AGENTS_GENERAUX) {
+    if (indemnite <= seuilPrecedent) break;
+    taxe += (Math.min(indemnite, tranche.seuil) - seuilPrecedent) * tranche.taux;
+    seuilPrecedent = tranche.seuil;
+  }
+  return Math.round(taxe);
+}
+
 export const REVENUS_NON_SALARIES_VIDE: RevenusNonSalariesInput = {
   case5ta: null, case5ua: null, case5tb: null, case5ub: null, case5te: null, case5ue: null, case5ko: null, case5lo: null,
   case5kp: null, case5lp: null, case5no: null, case5oo: null, case5np: null, case5op: null, case5ng: null, case5og: null,
@@ -58,7 +81,8 @@ export const REVENUS_NON_SALARIES_VIDE: RevenusNonSalariesInput = {
   case5rr: null, case5rw: null, case5ga: null, case5gb: null, case5gc: null, case5gd: null, case5ge: null, case5gf: null,
   case5gg: null, case5gh: null, case5gi: null, case5gj: null, case5ht: null, case5it: null, case5jt: null, case5kt: null,
   case5lt: null, case5mt: null, case5hg: null, case5ig: null, case5qj: null, case5rj: null, case5tc: null, case5uc: null,
-  case5xt: null, case5xu: null, case5hd: null, case5id: null,
+  case5xt: null, case5xu: null, case5hd: null, case5id: null, case5tf: null, case5uf: null, case5ql: null, case5rl: null,
+  case5sv: null, case5sw: null, case5qm: null, case5rm: null,
 };
 
 type Cle = keyof RevenusNonSalariesInput;
@@ -125,9 +149,11 @@ export interface RevenusNonSalariesResult {
    * art. 75-0 B CGI) : hors barème, imposé au taux marginal du revenu global par `calculerImpot`.
    */
   revenuImposableTauxMarginal: number;
+  /** Taxe sur les indemnités des agents généraux (5QM/5RM) : due en sus de l'IR, hors réductions d'impôt. */
+  taxeAgentsGeneraux: number;
   /** Revenus de source étrangère avec crédit d'impôt égal à l'impôt français, retenus pour le taux effectif (comme 1AF). */
   revenuCreditImpotEgalImpotFrancais: number;
-  /** RFR hors barème : plus-values à long terme (y compris exonérées départ à la retraite), brevets, revenus exonérés zonés, excédent au taux marginal. */
+  /** RFR hors barème : plus-values à long terme (y compris exonérées départ à la retraite), brevets, revenus exonérés zonés, excédent au taux marginal, abattements jeunes créateurs. */
   revenuExonereRetenuPourRFR: number;
   /**
    * Revenus nets des micro-entrepreneurs au versement libératoire (5TA/5TB/5TE) :
@@ -174,6 +200,10 @@ const somme = (input: RevenusNonSalariesInput, cles: Cle[]) => cles.reduce((s, c
  * 10 % : 5QJ/5RJ avec PS, 5TC/5UC sans PS. Plus-values exonérées départ à la
  * retraite 5HG/5IG : PS seuls, retenues au RFR. Excédent de moyenne triennale
  * 5XT/5XU : hors barème, imposé au taux marginal par `calculerImpot`, retenu au RFR.
+ *
+ * **Lot 2.** Brevets BIC non professionnels 5TF/5UF à 10 %. Abattements jeunes
+ * créateurs 5QL/5RL et 5SV/5SW (déjà déduits du bénéfice déclaré) : RFR seul.
+ * Indemnités des agents généraux 5QM/5RM : taxe par personne (art. 719), hors IR.
  */
 export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): RevenusNonSalariesResult {
   const v = (c: Cle) => input[c] ?? 0;
@@ -223,7 +253,7 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
   const plusValuesLongTerme = somme(input, ['case5hx', 'case5ix', 'case5he', 'case5ie', 'case5kq', 'case5lq', 'case5ke', 'case5le',
     'case5nq', 'case5oq', 'case5ne', 'case5oe', 'case5hr', 'case5ir', 'case5qd', 'case5rd', 'case5kv', 'case5lv', 'case5so', 'case5nt']);
   const inventeursAvecPS = somme(input, ['case5qj', 'case5rj']);
-  const brevets = somme(input, ['case5ha', 'case5ia', 'case5ui', 'case5vi', 'case5qa', 'case5ra', 'case5tc', 'case5uc'])
+  const brevets = somme(input, ['case5ha', 'case5ia', 'case5ui', 'case5vi', 'case5qa', 'case5ra', 'case5tc', 'case5uc', 'case5tf', 'case5uf'])
     + inventeursAvecPS;
   const plusValuesRetraite = somme(input, ['case5hg', 'case5ig']);
   const revenuImposableTauxMarginal = somme(input, ['case5xt', 'case5xu']);
@@ -249,9 +279,11 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
     deficitAgricole: somme(input, ['case5hf', 'case5if']),
     impotForfaitaire: plusValuesLongTerme * TAUX_PLUS_VALUES_LONG_TERME + brevets * TAUX_BREVETS,
     revenuImposableTauxMarginal,
+    taxeAgentsGeneraux: taxeAgentGeneral(v('case5qm')) + taxeAgentGeneral(v('case5rm')),
     revenuCreditImpotEgalImpotFrancais: somme(input, ['case5ak', 'case5bk', 'case5df', 'case5ef', 'case5ur', 'case5vr',
       'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys']),
-    revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + plusValuesRetraite + revenuImposableTauxMarginal,
+    revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + plusValuesRetraite + revenuImposableTauxMarginal
+      + somme(input, ['case5ql', 'case5rl', 'case5sv', 'case5sw']),
     revenuExonereTauxEffectif,
     basePrelevementsSociaux,
     prelevementsSociaux: Math.round(basePrelevementsSociaux * TAUX_PS_NON_SALARIES),

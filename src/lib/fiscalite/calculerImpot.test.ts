@@ -493,3 +493,12 @@ describe('calculerImpot — excédent de moyenne triennale au taux marginal (5XT
     expect(r.impotNet).toBe(0);
   });
 });
+
+describe('calculerImpot — taxes annexes (agents généraux, 5QM/5RM)', () => {
+  it('ajoutées à l\'impôt net, hors réductions d\'impôt', () => {
+    const r = calculerImpot(0, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0, 0, 5000, 0, 0, 0, 0, 1680);
+    expect(r.reductionsImpot).toBe(0);
+    expect(r.taxesAnnexes).toBe(1680);
+    expect(r.impotNet).toBe(1680);
+  });
+});

@@ -1301,7 +1301,7 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 - **4BN / 4BZ** : informatives.
 - **Hypothèse à confronter au simulateur** : 4BK soumis aux PS comme le reste de 4BE.
 
-### Revenus des professions non salariées (cadre 5, phases 5.1, 5.2 et lot 1)
+### Revenus des professions non salariées (cadre 5, phases 5.1, 5.2, lots 1 et 2)
 
 Moteur pur `calculerRevenusNonSalaries(input)`, branché dans `useFiscalOverview.ts`,
 `FiscalOverviewCard.tsx` (ligne « Revenus non salariés (BIC, BNC, BA) », ligne de PS « locations
@@ -1336,7 +1336,7 @@ meublées et non salariés ») et `Dashboard.tsx`.
     (`SEUIL_DEFICIT_AGRICOLE`, art. 156 I 1° CGI, brochure IR 2026 p. 165).
 - **Plus-values à long terme** (micro et réel, 10 paires de cases) : 12,8 %, RFR, PS 18,6 % calculés
   d'office (brochure p. 182) ; moins-values à long terme reportables, sans effet.
-- **Brevets** (`5HA`, `5UI`, `5QA`) : 10 % (art. 238 CGI), RFR, sans PS.
+- **Brevets** (`5HA`, `5UI`, `5QA`, `5TF` BIC non professionnels) : 10 % (art. 238 CGI), RFR, sans PS.
 - **Inventeurs et auteurs de logiciels non professionnels** (art. 93 quater, brochure p. 181) : `5QJ`/`5RJ`
   à 10 % avec PS 18,6 % ; `5TC`/`5UC` (soumis aux cotisations sociales) à 10 % sans PS ; RFR.
 - **Plus-values exonérées départ à la retraite** (`5HG`/`5IG`, art. 151 septies A, y compris l'indemnité
@@ -1346,13 +1346,19 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Excédent de moyenne triennale** (`5XT`/`5XU`, art. 75-0 B, brochure p. 165) : hors revenu au barème,
   imposé dans `calculerImpot` au TMI du quotient calculé sans lui (`revenuTauxMarginal` →
   `impotTauxMarginal`), ajouté après la décote comme l'impôt forfaitaire ; RFR ; sans PS.
+- **Jeunes créateurs** (`5QL`/`5RL` BNC pro, `5SV`/`5SW` BNC non pro) : abattement de 50 % déjà déduit du
+  bénéfice déclaré (`5QC`, `5JG`) ; retenu au seul RFR.
+- **Agents généraux d'assurances** (`5QM`/`5RM`, art. 151 septies A V et 719) : taxe sur l'indemnité brute,
+  par personne (0 % jusqu'à 23 000 €, 2 % jusqu'à 107 000 €, 0,6 % jusqu'à 200 000 €, 2,6 % au-delà).
+  Taxe distincte de l'IR : `calculerImpot(…, taxesAnnexes)` l'ajoute à l'impôt net, hors réductions et
+  crédits d'impôt. La plus-value elle-même se déclare en `5HG` (PS seuls).
 - **Revenus exonérés zonés** (`5XA`, `5HB`, `5KN`, `5KB`, `5NN`, `5NB`, `5HP`, `5QB`, `5TH`, `5HK`) : RFR.
 - **Source étrangère avec crédit d'impôt égal à l'impôt français** (`5AK`, `5DF`, `5UR`, `5EY`, `5XJ`,
   `5XS`) : hors barème, retenus pour le taux effectif (comme 1AF).
-- **Hors périmètre (acté)** : brevets BIC non professionnels (`5TF`), jeunes créateurs (`5QL`, `5SV`) et
-  jeunes agriculteurs (`5HM`), paiement fractionné (`5EA`, `5FA`), taxe sur l'indemnité des agents
-  généraux (`5QM`), durée d'exercice et cessation, ECF, cases « dont » du réel (prélèvement à la source),
-  colonne personne à charge, réductions et crédits d'impôt de la 2042-C-PRO.
+- **Hors périmètre (acté)** : abattement jeunes agriculteurs (`5HM`, sans effet : plafond épargne retraite
+  saisi depuis l'avis), paiement fractionné (`5EA`, `5FA`), durée d'exercice et cessation, ECF, cases
+  « dont » du réel (prélèvement à la source), colonne personne à charge, moyenne triennale du micro-BA
+  (approchée sur l'année, signalée à l'écran), réductions et crédits d'impôt de la 2042-C-PRO.
 - **Approximation** : les « revenus nets d'autres sources » du seuil agricole sont approchés par le
   revenu imposable du foyer hors déficit agricole.
 

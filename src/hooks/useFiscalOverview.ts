@@ -430,6 +430,7 @@ export function useFiscalOverview(): FiscalOverview {
         creditEtranger,
         prelevementSourceDivers.reprises,
         revenusNonSalaries.revenuImposableTauxMarginal,
+        revenusNonSalaries.taxeAgentsGeneraux,
       );
       const impotSansCreditEtranger = calculer(0);
       const impot = calculer(creditImpotEgalImpotEtranger(

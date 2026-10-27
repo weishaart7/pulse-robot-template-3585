@@ -3566,6 +3566,8 @@ export type Database = {
           case_5qf: number | null
           case_5qg: number | null
           case_5qj: number | null
+          case_5ql: number | null
+          case_5qm: number | null
           case_5qn: number | null
           case_5qo: number | null
           case_5qp: number | null
@@ -3578,6 +3580,8 @@ export type Database = {
           case_5rf: number | null
           case_5rg: number | null
           case_5rj: number | null
+          case_5rl: number | null
+          case_5rm: number | null
           case_5rn: number | null
           case_5ro: number | null
           case_5rp: number | null
@@ -3586,15 +3590,19 @@ export type Database = {
           case_5rw: number | null
           case_5rz: number | null
           case_5so: number | null
+          case_5sv: number | null
+          case_5sw: number | null
           case_5ta: number | null
           case_5tb: number | null
           case_5tc: number | null
           case_5te: number | null
+          case_5tf: number | null
           case_5th: number | null
           case_5ua: number | null
           case_5ub: number | null
           case_5uc: number | null
           case_5ue: number | null
+          case_5uf: number | null
           case_5uh: number | null
           case_5ui: number | null
           case_5ur: number | null
@@ -3760,6 +3768,8 @@ export type Database = {
           case_5qf?: number | null
           case_5qg?: number | null
           case_5qj?: number | null
+          case_5ql?: number | null
+          case_5qm?: number | null
           case_5qn?: number | null
           case_5qo?: number | null
           case_5qp?: number | null
@@ -3772,6 +3782,8 @@ export type Database = {
           case_5rf?: number | null
           case_5rg?: number | null
           case_5rj?: number | null
+          case_5rl?: number | null
+          case_5rm?: number | null
           case_5rn?: number | null
           case_5ro?: number | null
           case_5rp?: number | null
@@ -3780,15 +3792,19 @@ export type Database = {
           case_5rw?: number | null
           case_5rz?: number | null
           case_5so?: number | null
+          case_5sv?: number | null
+          case_5sw?: number | null
           case_5ta?: number | null
           case_5tb?: number | null
           case_5tc?: number | null
           case_5te?: number | null
+          case_5tf?: number | null
           case_5th?: number | null
           case_5ua?: number | null
           case_5ub?: number | null
           case_5uc?: number | null
           case_5ue?: number | null
+          case_5uf?: number | null
           case_5uh?: number | null
           case_5ui?: number | null
           case_5ur?: number | null
@@ -3954,6 +3970,8 @@ export type Database = {
           case_5qf?: number | null
           case_5qg?: number | null
           case_5qj?: number | null
+          case_5ql?: number | null
+          case_5qm?: number | null
           case_5qn?: number | null
           case_5qo?: number | null
           case_5qp?: number | null
@@ -3966,6 +3984,8 @@ export type Database = {
           case_5rf?: number | null
           case_5rg?: number | null
           case_5rj?: number | null
+          case_5rl?: number | null
+          case_5rm?: number | null
           case_5rn?: number | null
           case_5ro?: number | null
           case_5rp?: number | null
@@ -3974,15 +3994,19 @@ export type Database = {
           case_5rw?: number | null
           case_5rz?: number | null
           case_5so?: number | null
+          case_5sv?: number | null
+          case_5sw?: number | null
           case_5ta?: number | null
           case_5tb?: number | null
           case_5tc?: number | null
           case_5te?: number | null
+          case_5tf?: number | null
           case_5th?: number | null
           case_5ua?: number | null
           case_5ub?: number | null
           case_5uc?: number | null
           case_5ue?: number | null
+          case_5uf?: number | null
           case_5uh?: number | null
           case_5ui?: number | null
           case_5ur?: number | null

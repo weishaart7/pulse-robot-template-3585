@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculerRevenusNonSalaries, netMicro, REVENUS_NON_SALARIES_VIDE } from './calculerRevenusNonSalaries';
+import { calculerRevenusNonSalaries, netMicro, REVENUS_NON_SALARIES_VIDE, taxeAgentGeneral } from './calculerRevenusNonSalaries';
 
 const VIDE = REVENUS_NON_SALARIES_VIDE;
 
@@ -51,6 +51,30 @@ describe('calculerRevenusNonSalaries', () => {
     expect(r.revenuImposableTauxMarginal).toBe(25000);
     expect(r.revenuExonereRetenuPourRFR).toBe(25000);
     expect(r.basePrelevementsSociaux).toBe(0);
+  });
+
+  it('brevets BIC non professionnels 5TF/5UF : 10 %, sans PS, RFR', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5tf: 8000, case5uf: 2000 });
+    expect(r.impotForfaitaire).toBeCloseTo(1000);
+    expect(r.basePrelevementsSociaux).toBe(0);
+    expect(r.revenuExonereRetenuPourRFR).toBe(10000);
+  });
+
+  it('jeunes créateurs 5QL/5RL/5SV/5SW : RFR seul, sans effet sur le revenu imposable', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5qc: 20000, case5ql: 20000, case5sv: 3000, case5sw: 1000 });
+    expect(r.totalNetImposable).toBe(20000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(24000);
+    expect(r.impotForfaitaire).toBe(0);
+  });
+
+  it('taxe agents généraux 5QM/5RM : barème art. 719 par personne', () => {
+    expect(taxeAgentGeneral(23000)).toBe(0);
+    expect(taxeAgentGeneral(107000)).toBe(1680);
+    expect(taxeAgentGeneral(250000)).toBe(Math.round(1680 + 93000 * 0.006 + 50000 * 0.026));
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5qm: 107000, case5rm: 50000 });
+    expect(r.taxeAgentsGeneraux).toBe(1680 + 540);
+    expect(r.totalNetImposable).toBe(0);
+    expect(r.impotForfaitaire).toBe(0);
   });
 
   it('versement libératoire : hors barème, net retenu pour le taux effectif', () => {
