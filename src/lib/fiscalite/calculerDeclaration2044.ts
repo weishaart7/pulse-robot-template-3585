@@ -11,6 +11,18 @@ import { PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE } from '@/lib/immobilier
 /** Forfait de la ligne 222 « Autres frais de gestion », par local (au moins un local par immeuble). */
 export const FORFAIT_FRAIS_GESTION_PAR_LOCAL = 20;
 
+/** Taux admis pour la déduction spécifique de la ligne 228 (brochure IR 2026, tableau 4) ; tout autre taux vaut 0. */
+export const TAUX_DEDUCTION_SPECIFIQUE_2044 = [15, 26, 30, 40, 45, 50, 60, 70, 85] as const;
+
+/**
+ * Le relèvement du plafond de déficit par la rénovation énergétique (224bis, 112bis) ne vaut que pour les
+ * dépenses payées du 1.1.2023 au 31.12.2025 : hors de ces années, la ligne 434 est nulle.
+ */
+export const ANNEES_RENOVATION_ENERGETIQUE = { debut: 2023, fin: 2025 } as const;
+
+export const renovationEnergetiqueApplicable = (annee: number) =>
+  annee >= ANNEES_RENOVATION_ENERGETIQUE.debut && annee <= ANNEES_RENOVATION_ENERGETIQUE.fin;
+
 /** Durée de report des déficits fonciers antérieurs sur les revenus fonciers (rubrique 450). */
 export const DUREE_REPORT_DEFICIT_FONCIER = 10;
 
@@ -47,7 +59,7 @@ export interface Immeuble2044Input {
   tauxDeductionSpecifique?: number;
   /** 229 Provisions pour charges de copropriété payées dans l'année. */
   provisionsCharges?: number;
-  /** 230 Régularisation des provisions déduites au titre de l'année précédente. */
+  /** 230 Régularisation des provisions déduites au titre de l'année précédente ; négative si les charges réelles ont dépassé les provisions (supplément de charges). */
   regularisationProvisions?: number;
   /** 250 Intérêts d'emprunt (et assurance emprunteur). */
   interetsEmprunt?: number;
@@ -199,7 +211,9 @@ function calculerImmeuble(i: Immeuble2044Input): Immeuble2044Result {
   const ligne225 = euros(i.chargesNonRecuperees);
   const ligne226 = euros(i.indemnitesEviction);
   const ligne227 = euros(i.taxesFoncieres);
-  const ligne228 = euros((ligne215 * (i.tauxDeductionSpecifique || 0)) / 100);
+  const taux = (TAUX_DEDUCTION_SPECIFIQUE_2044 as readonly number[]).includes(i.tauxDeductionSpecifique ?? 0)
+    ? i.tauxDeductionSpecifique ?? 0 : 0;
+  const ligne228 = euros((ligne215 * taux) / 100);
   const ligne229 = euros(i.provisionsCharges);
   const ligne230 = euros(i.regularisationProvisions);
   const ligne240 = ligne221 + ligne222 + ligne223 + ligne224 + ligne224bis + ligne225 + ligne226
@@ -260,7 +274,7 @@ export function calculerDeclaration2044(input: Declaration2044Input): Declaratio
   const ligne431 = deficit ? caseA + caseE + caseH : 0;
   const ligne432 = deficit ? caseC + caseG : 0;
   const ligne433 = deficit ? caseB + caseF : 0;
-  const ligne434 = deficit ? caseJ + caseK : 0;
+  const ligne434 = deficit && renovationEnergetiqueApplicable(input.annee) ? caseJ + caseK : 0;
   const plafondImputation = Math.min(
     PLAFOND_DEFICIT_FONCIER + ligne434,
     PLAFOND_DEFICIT_FONCIER_RENOVATION_ENERGETIQUE,

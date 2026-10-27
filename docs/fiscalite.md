@@ -1494,7 +1494,14 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   réintégrations 262 comprises) — charges hors intérêts imputables en 436, excédent en 437, intérêts
   non couverts en 438 ; sinon cas 440 — 441 = déficit dans la limite du plafond, 442 = excédent.
   Plafond = **10 700 € + dépenses de rénovation énergétique (ligne 434 = 112bis + 224bis), au plus
-  21 400 €** (formule du Cerfa, et non un plafond forfaitaire de 21 400 €).
+  21 400 €** (formule du Cerfa, et non un plafond forfaitaire de 21 400 €). Majoration limitée aux
+  revenus 2023 à 2025 (dépenses payées du 1.1.2023 au 31.12.2025, `renovationEnergetiqueApplicable`) :
+  au-delà, 434 = 0 et la ligne 224bis est masquée.
+- **Ligne 228** : seuls les taux du tableau 4 de la brochure (15, 26, 30, 40, 45, 50, 60, 70, 85 %,
+  `TAUX_DEDUCTION_SPECIFIQUE_2044`) sont retenus, tout autre taux vaut 0 ; choix par liste à l'écran.
+  Loc'Avantages (réduction d'impôt) n'y figure pas.
+- **Ligne 230** : peut être négative (charges réelles supérieures aux provisions déduites l'an dernier :
+  supplément de charges ; migration `20261027180000` lève la contrainte `>= 0`).
 - **Déficits antérieurs (450)** : seuls les déficits des 10 années précédentes figurent (2015 à 2024
   pour les revenus 2025) ; imputés du plus ancien au plus récent sur le bénéfice de la ligne 420,
   colonnes « imputé » et « restant au 31/12 ». Ligne 451 = total non imputé au 31/12 de l'année
@@ -1527,9 +1534,11 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   régime des revenus fonciers (SCPI, groupements) côté sociétés. Un actif retiré n'est pas recréé mais
   sa colonne reste. Montants à la part du foyer (`computeQuotePart`) :
   - 211 = loyers annualisés d'Immobilier ;
-  - charges classées par mots-clés du libellé (`classerCharge` : taxe(s) foncière(s) → 227, assurance /
-    PNO → 223, copropriété / syndic → 229, gestion / agence / honoraires → 221, travaux / entretien /
-    réparation → 224 ; sinon 221 avec mention « classement à vérifier » sous la grille) — le champ
+  - charges classées par mots-clés du libellé (`classerCharge`) : d'abord écartées — ordures / TEOM /
+    enlèvement (non déductible) et emprunteur / prêt (déjà en 250), listées sous la grille ; puis taxe(s)
+    foncière(s) → 227, « taxe » seule → 227 à vérifier, assurance / PNO → 223, copropriété / syndic → 229,
+    gestion / agence / honoraires → 221, travaux / entretien / réparation → 224 ; sinon 221 ; les charges
+    à vérifier sont listées sous la grille avec leur ligne ; mêmes exclusions pour la ligne 112 des parts de SCI louées nu — le champ
     `type_charge` n'est pas utilisé (mal renseigné en base). Charge récurrente annualisée ; ponctuelle
     retenue seulement si datée dans l'année ;
   - 250 = intérêts + assurance des échéances de janvier à décembre de N : tableau d'amortissement du
@@ -1557,7 +1566,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   droit « Report sur la 2042 » : 4BA à 4BD, plus le net imposable informatif quand 4BA et 4BD coexistent.
   Hook [useDeclaration2044.ts](src/hooks/useDeclaration2044.ts) : chaque champ s'enregistre à la sortie
   (champ vidé = NULL), mise à jour optimiste, recalcul immédiat. Ligne 222 saisie en nombre de locaux (1 affiché par défaut, minimum 1),
-  ligne 228 en taux (%), le montant calculé est affiché sous le champ. Ouvrir la 2044 d'une année crée
+  ligne 228 en taux choisi dans une liste, le montant calculé est affiché sous le champ. Ouvrir la 2044 d'une année crée
   sa ligne `declarations_2044` et les colonnes des actifs éligibles. Suppression d'un immeuble ou d'une
   société sans confirmation. Colonne reliée à un actif : pastille lagon dans l'en-tête ; valeur
   préremplie en clair (placeholder), saisie en gras avec un bouton de retour à la valeur préremplie ;

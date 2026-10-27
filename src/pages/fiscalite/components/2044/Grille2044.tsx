@@ -19,7 +19,7 @@ export function MontantCellule({ value, prerempli, onCommit, step, suffixe, aria
   /** Valeur reprise affichée en retrait (valeur par défaut rarement modifiée, ex. 100 %). */
   discret?: boolean;
   prerempli?: number;
-  /** Valeur minimale acceptée (1 pour le nombre de locaux). */
+  /** Valeur minimale acceptée (1 pour le nombre de locaux, -Infinity pour la ligne 230). */
   min?: number;
   onCommit: (v: number | null) => void;
   step?: number;

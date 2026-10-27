@@ -3,7 +3,7 @@ import { PanelCard, PanelCardDescription, PanelCardHeader, PanelCardTitle, panel
 import { AideTooltip } from '@/components/fiscalite/DeclarationLigne';
 import { cn } from '@/lib/utils';
 import type { Declaration2044Result, Immeuble2044Result } from '@/lib/fiscalite/calculerDeclaration2044';
-import { FORFAIT_FRAIS_GESTION_PAR_LOCAL } from '@/lib/fiscalite/calculerDeclaration2044';
+import { FORFAIT_FRAIS_GESTION_PAR_LOCAL, renovationEnergetiqueApplicable, TAUX_DEDUCTION_SPECIFIQUE_2044 } from '@/lib/fiscalite/calculerDeclaration2044';
 import { COLONNES_IMMEUBLE_2044, COLONNES_PART_2044, type Declaration2044ImmeubleRecord, type Declaration2044PartRecord } from '@/services/declaration2044Service';
 import type { useDeclaration2044 } from '@/hooks/useDeclaration2044';
 import { formatEuros, Grille2044, LigneCalculee, LigneGroupe, LigneSaisie, MontantCellule } from './Grille2044';
@@ -39,22 +39,25 @@ const FRAIS: LigneImmeuble[] = [
   { code: '222', libelle: `Autres frais de gestion (${FORFAIT_FRAIS_GESTION_PAR_LOCAL} € par local)`, colonne: 'nombre_locaux', resultat: 'ligne222', unite: 'locaux', aide: 'Forfait de 20 € par local, toujours déductible : 1 local par défaut, saisissez le nombre de locaux de l’immeuble s’il y en a plusieurs.' },
   { code: '223', libelle: 'Primes d’assurance', colonne: 'primes_assurance', resultat: 'ligne223' },
   { code: '224', libelle: 'Dépenses de réparation, d’entretien et d’amélioration', colonne: 'travaux', resultat: 'ligne224' },
-  { code: '224bis', libelle: 'Travaux de rénovation énergétique (sortie des classes E, F, G)', colonne: 'travaux_renovation_energetique', resultat: 'ligne224bis', aide: 'Travaux faisant passer le bien d’une classe E, F ou G à A, B, C ou D. Ils relèvent le plafond du déficit imputable sur le revenu global (au plus 21 400 €).' },
+  { code: '224bis', libelle: 'Travaux de rénovation énergétique (sortie des classes E, F, G)', colonne: 'travaux_renovation_energetique', resultat: 'ligne224bis', aide: 'Travaux faisant passer le bien d’une classe E, F ou G à A, B, C ou D. Dépenses payées de 2023 à 2025 : elles relèvent le plafond du déficit imputable sur le revenu global (au plus 21 400 €).' },
   { code: '225', libelle: 'Charges récupérables non récupérées au départ du locataire', colonne: 'charges_non_recuperees', resultat: 'ligne225' },
   { code: '226', libelle: 'Indemnités d’éviction, frais de relogement', colonne: 'indemnites_eviction', resultat: 'ligne226' },
   { code: '227', libelle: 'Taxes foncières, taxes annexes', colonne: 'taxes_foncieres', resultat: 'ligne227', aide: 'Hors taxe d’enlèvement des ordures ménagères, récupérable sur le locataire.' },
-  { code: '228', libelle: 'Déductions spécifiques (taux appliqué à la ligne 215)', colonne: 'taux_deduction_specifique', resultat: 'ligne228', unite: '%', aide: 'Conventionnement Anah (Cosse, Loc’Avantages…) : 15 % à 85 % selon la convention.' },
+  { code: '228', libelle: 'Déductions spécifiques (taux appliqué à la ligne 215)', colonne: 'taux_deduction_specifique', resultat: 'ligne228', unite: '%', aide: 'Conventionnement Anah — Borloo ancien : 30 % (intermédiaire), 45 % ou 60 % (social), 70 % (intermédié) ; Cosse : 15 % ou 30 % (intermédiaire), 50 % ou 70 % (social), 85 % (intermédié) ; carrières : 40 %. Loc’Avantages est une réduction d’impôt : rien à porter ici.' },
   { code: '229', libelle: 'Provisions pour charges de copropriété payées', colonne: 'provisions_charges', resultat: 'ligne229' },
-  { code: '230', libelle: 'Régularisation des provisions déduites l’an dernier', colonne: 'regularisation_provisions', resultat: 'ligne230', aide: 'Part non déductible des provisions déduites l’année précédente (à retrancher).' },
+  { code: '230', libelle: 'Régularisation des provisions déduites l’an dernier', colonne: 'regularisation_provisions', resultat: 'ligne230', aide: 'Part non déductible des provisions déduites l’année précédente (à retrancher). Montant négatif si les charges réelles ont dépassé les provisions : supplément de charges.' },
 ];
 
 export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: number }) {
   const { immeubles, resultat, modifierImmeuble, supprimerImmeuble, ajouterImmeuble, prerempliImmeubles } = etat;
   const chargesAVerifier = immeubles.flatMap((i) => (prerempliImmeubles[i.id]?.chargesAVerifier ?? [])
     .map((libelle) => `${i.denomination ?? prerempliImmeubles[i.id]?.valeurs.denomination ?? ''} : ${libelle}`));
+  const chargesEcartees = immeubles.flatMap((i) => prerempliImmeubles[i.id]?.chargesEcartees ?? []);
   const lignes = resultat.immeubles;
   const nbColonnes = immeubles.length + 3;
   const somme = (cle: keyof Immeuble2044Result) => lignes.reduce((s, l) => s + (l[cle] as number), 0);
+
+  const frais = FRAIS.filter((l) => l.code !== '224bis' || renovationEnergetiqueApplicable(annee));
 
   const saisie = (l: LigneImmeuble) => (
     <LigneSaisie
@@ -63,17 +66,33 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
       libelle={<span className="inline-flex items-center gap-1.5">{l.libelle}{l.aide && <AideTooltip texte={l.aide} />}</span>}
       cellules={immeubles.map((i, idx) => (
         <div key={i.id} className="space-y-0.5">
+          {l.unite === '%' ? (
+            <select
+              aria-label={`Ligne ${l.code} — ${i.denomination ?? ''}`}
+              value={i[l.colonne] === null ? '' : String(Number(i[l.colonne]))}
+              onChange={(e) => modifierImmeuble(i.id, { [l.colonne]: e.target.value === '' ? null : Number(e.target.value) })}
+              className={cn(
+                'h-7 w-full rounded-[2px] border border-transparent bg-transparent px-2 text-right text-[13px] tabular-nums',
+                'hover:border-border focus:border-lagon focus:bg-background focus:outline-none',
+                i[l.colonne] !== null ? 'font-medium text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              <option value="">Aucune</option>
+              {TAUX_DEDUCTION_SPECIFIQUE_2044.map((t) => <option key={t} value={t}>{t} %</option>)}
+            </select>
+          ) : (
           <MontantCellule
             ariaLabel={`Ligne ${l.code} — ${i.denomination ?? ''}`}
             value={i[l.colonne] === null ? null : Number(i[l.colonne])}
             prerempli={l.colonne === 'nombre_locaux'
               ? 1
               : prerempliImmeubles[i.id]?.valeurs[COLONNES_IMMEUBLE_2044[l.colonne]] as number | undefined}
-            min={l.colonne === 'nombre_locaux' ? 1 : 0}
+            min={l.colonne === 'nombre_locaux' ? 1 : l.colonne === 'regularisation_provisions' ? -Infinity : 0}
             step={l.unite === 'locaux' ? 1 : undefined}
-            suffixe={l.unite === 'locaux' ? '×' : l.unite === '%' ? '%' : '€'}
-            onCommit={(v) => modifierImmeuble(i.id, { [l.colonne]: l.unite === '%' && v !== null ? Math.min(100, v) : v })}
+            suffixe={l.unite === 'locaux' ? '×' : '€'}
+            onCommit={(v) => modifierImmeuble(i.id, { [l.colonne]: v })}
           />
+          )}
           {l.unite && (lignes[idx][l.resultat] as number) > 0 && (
             <div className="pr-2 text-right text-[11px] tabular-nums text-muted-foreground">= {formatEuros(lignes[idx][l.resultat] as number)}</div>
           )}
@@ -108,7 +127,7 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
           <LigneCalculee code="215" libelle="Total des recettes" valeurs={lignes.map((l) => l.ligne215)} total={resultat.caseE} fort />
 
           <LigneGroupe colSpan={nbColonnes}>Frais et charges</LigneGroupe>
-          {FRAIS.map(saisie)}
+          {frais.map(saisie)}
           <LigneCalculee code="240" libelle="Total des frais et charges (221 à 229 − 230)" valeurs={lignes.map((l) => l.ligne240)} total={resultat.caseF} fort />
 
           <LigneGroupe colSpan={nbColonnes}>Intérêts et résultat</LigneGroupe>
@@ -129,8 +148,14 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
       )}
       {chargesAVerifier.length > 0 && (
         <p className={cn(panelInsetClass, 'mt-4 text-[12.5px] text-muted-foreground')}>
-          Classement à vérifier : ces charges n’ont pas été reconnues et sont rangées par défaut en ligne 221
-          ({chargesAVerifier.join(' ; ')}).
+          Classement à vérifier : ces charges n’ont pas été reconnues avec certitude et sont rangées par défaut
+          sur la ligne indiquée ({chargesAVerifier.join(' ; ')}).
+        </p>
+      )}
+      {chargesEcartees.length > 0 && (
+        <p className={cn(panelInsetClass, 'mt-4 text-[12.5px] text-muted-foreground')}>
+          Charges écartées : taxe d’enlèvement des ordures ménagères (non déductible, récupérable sur le locataire)
+          et assurance emprunteur (déjà comprise ligne 250) — {chargesEcartees.join(' ; ')}.
         </p>
       )}
     </PanelCard>

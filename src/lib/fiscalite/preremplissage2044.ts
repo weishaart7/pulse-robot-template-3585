@@ -16,20 +16,39 @@ export type LigneCharge2044 = 'fraisAdministrationGestion' | 'primesAssurance' |
 
 const sansAccents = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
+/** Ligne du Cerfa de chaque destination, pour les messages de classement. */
+export const CODE_LIGNE_CHARGE_2044: Record<LigneCharge2044, string> = {
+  fraisAdministrationGestion: '221', primesAssurance: '223', travaux: '224', taxesFoncieres: '227', provisionsCharges: '229',
+};
+
+/**
+ * Charges écartées de la 2044 : taxe d'enlèvement des ordures ménagères, non déductible (récupérable sur le
+ * locataire, brochure IR 2026 p. 350) ; assurance emprunteur, déjà comprise dans la ligne 250 (tableau
+ * d'amortissement). Testées avant les règles de classement.
+ */
+const MOTS_CLES_ECARTES = ['ordures', 'teom', 'enlevement', 'emprunteur', 'pret'];
+
 /** Règles de classement par mots-clés du libellé, dans l'ordre (la première qui correspond gagne). */
-const REGLES_CLASSEMENT: { motsCles: string[]; ligne: LigneCharge2044 }[] = [
-  { motsCles: ['taxe fonciere', 'taxes foncieres', 'taxe', 'taxes'], ligne: 'taxesFoncieres' },
+const REGLES_CLASSEMENT: { motsCles: string[]; ligne: LigneCharge2044; aVerifier?: boolean }[] = [
+  { motsCles: ['taxe fonciere', 'taxes foncieres'], ligne: 'taxesFoncieres' },
+  { motsCles: ['taxe', 'taxes'], ligne: 'taxesFoncieres', aVerifier: true },
   { motsCles: ['assurance', 'pno'], ligne: 'primesAssurance' },
   { motsCles: ['copropriete', 'copro', 'syndic'], ligne: 'provisionsCharges' },
   { motsCles: ['gestion', 'agence', 'honoraire'], ligne: 'fraisAdministrationGestion' },
   { motsCles: ['travaux', 'entretien', 'reparation'], ligne: 'travaux' },
 ];
 
-/** Classe une charge d'après son libellé ; `aVerifier` quand aucun mot-clé ne correspond (rangée en 221). */
-export function classerCharge(denomination: string): { ligne: LigneCharge2044; aVerifier: boolean } {
+const contientMot = (libelle: string, mots: string[]) => mots.some((m) => new RegExp(`\\b${m}\\b`).test(libelle));
+
+/**
+ * Classe une charge d'après son libellé. `ligne` null : charge écartée (non déductible ou déjà en 250).
+ * `aVerifier` : libellé non reconnu (rangé en 221) ou trop vague (« taxe » seule, rangée en 227).
+ */
+export function classerCharge(denomination: string): { ligne: LigneCharge2044 | null; aVerifier: boolean } {
   const libelle = sansAccents(denomination || '');
-  const regle = REGLES_CLASSEMENT.find((r) => r.motsCles.some((m) => new RegExp(`\\b${m}\\b`).test(libelle)));
-  return regle ? { ligne: regle.ligne, aVerifier: false } : { ligne: 'fraisAdministrationGestion', aVerifier: true };
+  if (contientMot(libelle, MOTS_CLES_ECARTES)) return { ligne: null, aVerifier: false };
+  const regle = REGLES_CLASSEMENT.find((r) => contientMot(libelle, r.motsCles));
+  return regle ? { ligne: regle.ligne, aVerifier: !!regle.aVerifier } : { ligne: 'fraisAdministrationGestion', aVerifier: true };
 }
 
 /** Montant d'une charge retenu pour l'année N : annualisé si récurrente, sa date dans N si ponctuelle. */
@@ -82,8 +101,10 @@ export function interetsEmpruntAnnee(asset: Asset, emprunts: Emprunt[], annee: n
 
 export interface PreremplissageImmeuble {
   valeurs: Partial<Immeuble2044Input>;
-  /** Libellés des charges classées par défaut en ligne 221, faute de mot-clé reconnu. */
+  /** Charges classées par défaut, avec leur ligne (« Divers → 221 »). */
   chargesAVerifier: string[];
+  /** Libellés des charges écartées (ordures ménagères, assurance emprunteur). */
+  chargesEcartees: string[];
   /** Intérêts estimés sur les 12 prochains mois faute de contrat d'emprunt complet. */
   interetsApproximatifs: boolean;
 }
@@ -103,14 +124,16 @@ export function preremplirImmeuble(
     interetsEmprunt: interets.montant,
   };
   const chargesAVerifier: string[] = [];
+  const chargesEcartees: string[] = [];
   for (const c of charges) {
     const montant = montantChargeAnnee(c, annee) * qp;
     if (montant <= 0) continue;
     const { ligne, aVerifier } = classerCharge(c.denomination);
+    if (!ligne) { chargesEcartees.push(c.denomination); continue; }
     valeurs[ligne] = (valeurs[ligne] || 0) + montant;
-    if (aVerifier) chargesAVerifier.push(c.denomination);
+    if (aVerifier) chargesAVerifier.push(`${c.denomination} → ${CODE_LIGNE_CHARGE_2044[ligne]}`);
   }
-  return { valeurs, chargesAVerifier, interetsApproximatifs: interets.approximatif };
+  return { valeurs, chargesAVerifier, chargesEcartees, interetsApproximatifs: interets.approximatif };
 }
 
 /**
@@ -131,7 +154,9 @@ export function preremplirPart(
   return {
     denomination: asset.denomination || asset.nature,
     revenusBruts: computeLoyersAnnuels(revenus) * qp,
-    fraisEtCharges: charges.reduce((s, c) => s + montantChargeAnnee(c, annee), 0) * qp,
+    fraisEtCharges: charges
+      .filter((c) => classerCharge(c.denomination).ligne !== null)
+      .reduce((s, c) => s + montantChargeAnnee(c, annee), 0) * qp,
     interetsEmprunt: interetsEmpruntAnnee(asset, emprunts, annee).montant,
   };
 }

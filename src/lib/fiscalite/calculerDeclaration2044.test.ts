@@ -38,6 +38,18 @@ describe('calculerDeclaration2044 — lignes par immeuble', () => {
     expect(i.ligne263).toBe(6_530);
   });
 
+  it('228 : un taux hors du tableau 4 vaut 0 ; 230 négative = supplément de charges', () => {
+    const r = calculerDeclaration2044(decl({
+      immeubles: [
+        { loyersBruts: 10_000, tauxDeductionSpecifique: 35 },
+        { loyersBruts: 10_000, tauxDeductionSpecifique: 85, provisionsCharges: 1_000, regularisationProvisions: -200 },
+      ],
+    }));
+    expect(r.immeubles[0].ligne228).toBe(0);
+    expect(r.immeubles[1].ligne228).toBe(8_500);
+    expect(r.immeubles[1].ligne240).toBe(20 + 8_500 + 1_000 + 200);
+  });
+
   it('forfait 222 : 20 € par local, au moins un local par immeuble même sans saisie', () => {
     const r = calculerDeclaration2044(decl({ immeubles: [{ loyersBruts: 1_000 }, { loyersBruts: 1_000, nombreLocaux: 3 }, { loyersBruts: 1_000, nombreLocaux: 0 }] }));
     expect(r.immeubles.map((i) => i.ligne222)).toEqual([20, 60, 20]);
@@ -118,6 +130,15 @@ describe('calculerDeclaration2044 — répartition du déficit (rubrique 430)', 
     expect(plafonne.ligne434).toBe(16_000);
     expect(plafonne.plafondImputation).toBe(21_400);
     expect(plafonne.case4BC).toBe(21_400);
+  });
+
+  it('rénovation énergétique sans effet hors des revenus 2023 à 2025 : plafond de 10 700 €', () => {
+    const r = calculerDeclaration2044(decl({
+      annee: 2026,
+      immeubles: [{ loyersBruts: 5_000, travaux: 20_000, travauxRenovationEnergetique: 3_000 }],
+    }));
+    expect(r.ligne434).toBe(0);
+    expect(r.plafondImputation).toBe(10_700);
   });
 });
 

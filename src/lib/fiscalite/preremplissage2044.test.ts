@@ -21,6 +21,15 @@ describe('classerCharge', () => {
     expect(classerCharge(libelle)).toEqual({ ligne, aVerifier: false });
   });
 
+  it.each(['Taxe d’enlèvement des ordures ménagères', 'TEOM', 'Assurance emprunteur', 'Assurance prêt'])(
+    '%s : écartée de la 2044', (libelle) => {
+      expect(classerCharge(libelle)).toEqual({ ligne: null, aVerifier: false });
+    });
+
+  it('« taxe » seule : ligne 227, à vérifier', () => {
+    expect(classerCharge('Taxe')).toEqual({ ligne: 'taxesFoncieres', aVerifier: true });
+  });
+
   it('libellé non reconnu : ligne 221, à vérifier', () => {
     expect(classerCharge('Divers')).toEqual({ ligne: 'fraisAdministrationGestion', aVerifier: true });
   });
@@ -45,7 +54,7 @@ describe('preremplirImmeuble', () => {
       [], 2025,
     );
     expect(r.valeurs).toMatchObject({ denomination: 'Lyon', loyersBruts: 6_000, taxesFoncieres: 600, primesAssurance: 100, fraisAdministrationGestion: 50, interetsEmprunt: 0 });
-    expect(r.chargesAVerifier).toEqual(['Divers']);
+    expect(r.chargesAVerifier).toEqual(['Divers → 221']);
     expect(r.interetsApproximatifs).toBe(false);
   });
 });
