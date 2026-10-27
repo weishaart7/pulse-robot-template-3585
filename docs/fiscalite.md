@@ -1698,6 +1698,15 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 - **Parts de sociétés comptées à 100 % en 9CA.** La fraction représentative d'immeubles n'est pas
   calculée (trésorerie, actifs non immobiliers, holdings) : signalé sous l'actif, à corriger par saisie.
 
+- **Cadre 7 — base de la limite de 20 % des dons sans les revenus au quotient.** Le revenu imposable
+  retenu doit être majoré des revenus taxés au barème selon le système du quotient, avant quotient
+  (brochure IR 2026 p. 243, note 1) : `useFiscalOverview.ts` passe `revenuImposableTotal` sans
+  `revenuExceptionnelQuotient` (0XX). Réduction 66 % sous-estimée, excédent reportable surestimé.
+  À trancher : 5XT/5XU (taux marginal) proposés hors base.
+- **Cadre 7 — avance immédiate 7HB non saisie.** L'avance de crédit services à la personne perçue en
+  2025 (CESU+, prestataire) doit être ajoutée au solde comme 8EA (brochure IR 2026 p. 238) : crédit
+  compté deux fois, solde sous-estimé. Le solde n'est aujourd'hui calculé que si le cadre 8 existe.
+
 ### 🟠 À surveiller (cas limite, peu probable)
 
 - **Taux des PS « revenus du patrimoine » à vérifier case par case.** 18,6 % (CSG 10,6 % LFSS 2026)
@@ -1787,6 +1796,14 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 - **Résolu — gains d'actionnariat 1TP/1TT/1NX/1AY/1MP/3VJ dans le pool 10 %/frais réels des salaires**
   (brochure IR 2026 p.107), 1TZ hors déduction (BOI-RSA-ES-20-20-20 §43-44) — voir §2.
 
+- **Cadre 7 — reports de dons 7XS à 7XY (2042-RICI) non saisis.** Imputés avant les dons de l'année,
+  les plus anciens d'abord (brochure IR 2026 p. 244) ; fréquents chez les gros donateurs.
+- **Cadre 7 — sous-plafonds services à la personne non appliqués.** 500 € petit bricolage, 3 000 €
+  assistance informatique, 5 000 € jardinage (art. D 7233-5 C. trav.) : seul 7DB global est saisi,
+  crédit surestimé si une catégorie dépasse.
+- **Cadre 7 — 7DL et pension alimentaire au même ascendant.** Non cumulables (brochure IR 2026 p. 241) :
+  pas d'alerte croisant 7DL et 6GU.
+
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
 - **`declaration2042CasesIndex.ts` (barre de recherche des cases) tenu à jour manuellement, sans
@@ -1809,6 +1826,12 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   `foyerFiscalService.ts`/`foyerFiscalToRow`, par exemple en castant `as unknown as Json` au point de
   sérialisation ou en élargissant `EnfantCharge`/`PersonneInvalideCharge` avec un index signature.
   chiffres différents dans le même fichier) ne peut plus se reproduire.
+
+- **Cadre 7 — libellés.** 7UD/7UQ : ajouter les organismes d'aide aux victimes de violence domestique
+  (7UD à partir du 15.2.2025). 7DG : ajouter pension d'invalidité 3e catégorie, complément AEEH, et
+  « cocher même si la CMI demandée avant le 1.1.2026 n'est pas attribuée » ; suggestion depuis le
+  handicap du Ménage. 7DQ : plafond majoré réservé à l'emploi direct, applicable même après un avantage
+  antérieur via un organisme. `donsExcedentaires` à présenter comme « à reporter en 7XS ».
 
 ## 4. Périmètre V1 / différé
 
