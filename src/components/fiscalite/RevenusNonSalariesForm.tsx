@@ -7,8 +7,11 @@ import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
 
 const TEXTE_ALERTE = {
-  ventes_au_dela_du_seuil: 'Ventes au-delà de 188 700 € pour un déclarant : régime micro perdu si le seuil est aussi dépassé l\'année suivante (deux années consécutives).',
-  services_au_dela_du_seuil: 'Prestations de services et BNC au-delà de 77 700 € pour un déclarant : régime micro perdu si le seuil est aussi dépassé l\'année suivante (deux années consécutives).',
+  ventes_au_dela_du_seuil: 'Chiffre d\'affaires BIC (ventes et services) au-delà de 188 700 € pour un déclarant : régime micro perdu si le seuil est aussi dépassé l\'année suivante (deux années consécutives).',
+  services_au_dela_du_seuil: 'Prestations de services BIC au-delà de 77 700 € pour un déclarant : régime micro perdu si le seuil est aussi dépassé l\'année suivante (deux années consécutives).',
+  bnc_au_dela_du_seuil: 'Recettes BNC au-delà de 77 700 € pour un déclarant : régime micro perdu si le seuil est aussi dépassé l\'année suivante (deux années consécutives).',
+  jeunes_createurs_au_dela_du_plafond: 'Abattement jeunes créateurs au-delà de 50 000 € : plafond annuel par déclarant dépassé.',
+  meubles_cotisations_a_verifier: 'Locations meublées de courte durée au-delà de 23 000 € de recettes ou chambres d\'hôtes au-delà de 6 123 € de revenu : revenus probablement soumis aux cotisations sociales, à déclarer en 5NJ/5NK (micro) ou 5NM (réel), sans prélèvements sociaux.',
   meubles_au_dela_du_seuil: 'Locations meublées non professionnelles au-delà de 77 700 € pour le foyer : régime réel obligatoire si le seuil est dépassé deux années consécutives.',
   meubles_non_classes_au_dela_du_seuil: 'Meublés de tourisme non classés au-delà de 15 000 € pour le foyer : régime réel obligatoire si le seuil est dépassé deux années consécutives.',
   ba_micro_au_dela_du_seuil: 'Recettes agricoles 2025 au-delà de 120 000 € pour un déclarant : le micro-BA s\'apprécie sur la moyenne des trois années précédentes, à vérifier.',
@@ -56,7 +59,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           <p key={a} className="py-2 text-[13px] text-muted-foreground">{TEXTE_ALERTE[a]}</p>
         ))}
 
-        <SousGroupe titre="Micro-entrepreneur ayant opté pour le versement libératoire" aide="Impôt déjà payé : ces revenus ne sont retenus que pour le taux effectif et le revenu fiscal de référence.">
+        <SousGroupe titre="Micro-entrepreneur ayant opté pour le versement libératoire" aide="Impôt déjà payé : ces revenus ne sont retenus que pour le taux effectif et le revenu fiscal de référence. Option réservée à un RFR 2023 d'au plus 28 797 € par part (+50 % par demi-part) ; sinon, versements à reporter en 8UY et revenus au barème.">
           <MontantLigne label="Ventes de marchandises et assimilées" extra="chiffre d'affaires 2025, abattement 71 %" code1="5TA" code2="5UA" value1={rns.case5ta} value2={rns.case5ua} onChange1={v => update('case5ta', v)} onChange2={v => update('case5ua', v)} />
           <MontantLigne label="Prestations de services et locations meublées" extra="chiffre d'affaires 2025, abattement 50 %" code1="5TB" code2="5UB" value1={rns.case5tb} value2={rns.case5ub} onChange1={v => update('case5tb', v)} onChange2={v => update('case5ub', v)} />
           <MontantLigne label="Revenus non commerciaux" extra="recettes 2025, abattement 34 %" code1="5TE" code2="5UE" value1={rns.case5te} value2={rns.case5ue} onChange1={v => update('case5te', v)} onChange2={v => update('case5ue', v)} />

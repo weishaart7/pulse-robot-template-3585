@@ -1317,10 +1317,13 @@ meublées et non salariés ») et `Dashboard.tsx`.
   `5NG`/`5NH`/`5NI`, calculés d'office par la DGFiP, et `5HY`/`5IY` saisis tels quels. Aucun PS sur les
   revenus professionnels ni sur `5NJ`/`5NK`/`5NL` (cotisations sociales) ; les BIC/BNC non
   professionnels hors meublés n'en supportent que via `5HY`/`5IY` (brochure p. 182).
-- **Seuils** (alertes non bloquantes, confirmés brochure IR 2026 p. 168-170) : 188 700 € ventes et
-  77 700 € services + BNC, par déclarant ; 77 700 € toutes locations meublées non professionnelles et
-  15 000 € meublés non classés, par foyer ; 120 000 € micro-BA par déclarant (moyenne triennale,
-  appréciée ici sur l'année).
+- **Seuils** (alertes non bloquantes, brochure IR 2026 p. 168 et 177), par déclarant et par catégorie :
+  BIC, chiffre d'affaires global (ventes + services) ≤ 188 700 € et services ≤ 77 700 € ; BNC ≤ 77 700 €
+  séparément ; 77 700 € toutes locations meublées non professionnelles et 15 000 € meublés non classés,
+  par foyer ; 120 000 € micro-BA par déclarant (moyenne triennale, appréciée ici sur l'année).
+- **Autres alertes** : abattement jeunes créateurs > 50 000 € ; LMNP probablement soumises aux
+  cotisations sociales (recettes 5NG + 5NH > 23 000 € ou net 5NG > 6 123 €, brochure p. 173), à déclarer
+  en 5NJ/5NK/5NM. Plafond de RFR du versement libératoire rappelé à l'écran (RFR 2023 inconnu).
 - **Régime réel** (phase 5.2) : bénéfice ou déficit saisi tel que calculé par la comptabilité ; les
   cases « dont plus-values / moins-values à court terme » du réel, déjà comprises dans le bénéfice, ne
   sont pas saisies.
@@ -1331,7 +1334,8 @@ meublées et non salariés ») et `Dashboard.tsx`.
   - LMNP au réel (`5NA`, `5NM` soumis aux cotisations) : déficits `5NY`/`5WE` et antérieurs
     (`5GA`…`5GJ`, 2015-2024) sur les seuls revenus LMNP ; PS 18,6 % sur le net hors cotisations.
   - Bénéfices agricoles : micro-BA à 87 % (minimum 305 €), réel `5HC` ; déficits antérieurs
-    (`5QF`…`5QQ`) sur les seuls BA ; déficit de l'année (`5HF`/`5IF`) retranché du revenu global dans
+    (`5QF`…`5QQ`) sur les seuls BA positifs (un BA négatif dû aux moins-values à court terme `5XO` reste
+    imputé sur le revenu global) ; déficit de l'année (`5HF`/`5IF`) retranché du revenu global dans
     `useFiscalOverview.ts` seulement si les autres revenus nets du foyer n'excèdent pas 128 826 €
     (`SEUIL_DEFICIT_AGRICOLE`, art. 156 I 1° CGI, brochure IR 2026 p. 165).
 - **Plus-values à long terme** (micro et réel, 10 paires de cases) : 12,8 %, RFR, PS 18,6 % calculés

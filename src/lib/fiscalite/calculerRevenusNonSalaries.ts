@@ -26,6 +26,14 @@ export const SEUIL_MICRO_BA = 120_000;
  * brochure IR 2026 p. 165) ; sinon reportable sur les BA des six années suivantes.
  */
 export const SEUIL_DEFICIT_AGRICOLE = 128_826;
+/** Plafond annuel de l'abattement jeunes créateurs (art. 93-9 CGI, brochure p. 178). */
+export const PLAFOND_ABATTEMENT_JEUNES_CREATEURS = 50_000;
+/**
+ * Locations meublées soumises aux cotisations sociales (CSS art. L. 611-1, brochure p. 173) :
+ * courte durée au-delà de 23 000 € de recettes, chambres d'hôtes au-delà de 6 123 € de revenu imposable.
+ */
+export const SEUIL_COTISATIONS_MEUBLES_COURTE_DUREE = 23_000;
+export const SEUIL_COTISATIONS_CHAMBRES_HOTES = 6_123;
 
 /** Abattement du micro-BA (art. 64 bis CGI), minimum 305 €. */
 const ABATTEMENT_MICRO_BA = 0.87;
@@ -125,6 +133,9 @@ export function netMicro(recettes: number, taux: number): number {
 export type AlerteRevenusNonSalaries =
   | 'ventes_au_dela_du_seuil'
   | 'services_au_dela_du_seuil'
+  | 'bnc_au_dela_du_seuil'
+  | 'jeunes_createurs_au_dela_du_plafond'
+  | 'meubles_cotisations_a_verifier'
   | 'meubles_au_dela_du_seuil'
   | 'meubles_non_classes_au_dela_du_seuil'
   | 'ba_micro_au_dela_du_seuil';
@@ -181,8 +192,9 @@ const somme = (input: RevenusNonSalariesInput, cles: Cle[]) => cles.reduce((s, c
  * soumis aux PS que via 5HY/5IY (brochure p. 182 : la DGFiP ne les calcule
  * pas d'office, contrairement aux LMNP 5NG/5NH/5NI).
  *
- * Seuils : signalés, jamais bloquants. Activités appréciées par déclarant
- * (ventes et prestations, services BIC et BNC cumulés), meublés au niveau du foyer.
+ * Seuils : signalés, jamais bloquants. Appréciés par déclarant et par catégorie :
+ * BIC, chiffre d'affaires global (ventes + services) ≤ 188 700 € et services ≤ 77 700 € ;
+ * BNC ≤ 77 700 € séparément ; meublés au niveau du foyer.
  *
  * **Phase 5.2.** Réel : bénéfice ou déficit saisi tel que calculé par la
  * comptabilité ; les cases « dont plus-values / moins-values à court terme » du
@@ -248,7 +260,10 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
   const baBenefice = netMicro(v('case5xb'), ABATTEMENT_MICRO_BA) + netMicro(v('case5yb'), ABATTEMENT_MICRO_BA)
     + somme(input, ['case5hw', 'case5iw', 'case5hc', 'case5ic', 'case5hd', 'case5id'])
     - somme(input, ['case5xo', 'case5yo']);
-  const ba = Math.max(0, baBenefice - somme(input, ['case5qf', 'case5qg', 'case5qn', 'case5qo', 'case5qp', 'case5qq']));
+  // Les moins-values à court terme du micro-BA (5XO/5YO) s'imputent sur le revenu global : un BA négatif est conservé.
+  const ba = baBenefice > 0
+    ? Math.max(0, baBenefice - somme(input, ['case5qf', 'case5qg', 'case5qn', 'case5qo', 'case5qp', 'case5qq']))
+    : baBenefice;
 
   const plusValuesLongTerme = somme(input, ['case5hx', 'case5ix', 'case5he', 'case5ie', 'case5kq', 'case5lq', 'case5ke', 'case5le',
     'case5nq', 'case5oq', 'case5ne', 'case5oe', 'case5hr', 'case5ir', 'case5qd', 'case5rd', 'case5kv', 'case5lv', 'case5so', 'case5nt']);
@@ -264,10 +279,21 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
     + somme(input, ['case5hy', 'case5iy']);
 
   const alertes: AlerteRevenusNonSalaries[] = [];
-  const ventes = (d: 0 | 1) => somme(input, ([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo']] as Cle[][])[d]);
-  const services = (d: 0 | 1) => somme(input, ([['case5tb', 'case5te', 'case5kp', 'case5np', 'case5hq', 'case5ku'], ['case5ub', 'case5ue', 'case5lp', 'case5op', 'case5iq', 'case5lu']] as Cle[][])[d]);
-  if (ventes(0) > SEUIL_MICRO_VENTES || ventes(1) > SEUIL_MICRO_VENTES) alertes.push('ventes_au_dela_du_seuil');
-  if (services(0) > SEUIL_MICRO_SERVICES || services(1) > SEUIL_MICRO_SERVICES) alertes.push('services_au_dela_du_seuil');
+  const parDeclarant = (cles: [Cle[], Cle[]]) => [somme(input, cles[0]), somme(input, cles[1])];
+  const ventes = parDeclarant([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo']]);
+  const services = parDeclarant([['case5tb', 'case5kp', 'case5np'], ['case5ub', 'case5lp', 'case5op']]);
+  const bnc = parDeclarant([['case5te', 'case5hq', 'case5ku'], ['case5ue', 'case5iq', 'case5lu']]);
+  if (ventes.some((x, d) => x + services[d] > SEUIL_MICRO_VENTES)) alertes.push('ventes_au_dela_du_seuil');
+  if (services.some(x => x > SEUIL_MICRO_SERVICES)) alertes.push('services_au_dela_du_seuil');
+  if (bnc.some(x => x > SEUIL_MICRO_SERVICES)) alertes.push('bnc_au_dela_du_seuil');
+  if ((['case5ql', 'case5rl', 'case5sv', 'case5sw'] as Cle[]).some(c => v(c) > PLAFOND_ABATTEMENT_JEUNES_CREATEURS)) {
+    alertes.push('jeunes_createurs_au_dela_du_plafond');
+  }
+  const courteDuree = parDeclarant([['case5ng', 'case5nh'], ['case5og', 'case5oh']]);
+  if (courteDuree.some(x => x > SEUIL_COTISATIONS_MEUBLES_COURTE_DUREE)
+    || (['case5ng', 'case5og'] as Cle[]).some(c => (netParCle.get(c) ?? 0) > SEUIL_COTISATIONS_CHAMBRES_HOTES)) {
+    alertes.push('meubles_cotisations_a_verifier');
+  }
   const meublesNonClasses = somme(input, ['case5nh', 'case5oh', 'case5nk', 'case5ok']);
   const meubles = meublesNonClasses + somme(input, ['case5ng', 'case5og', 'case5ni', 'case5oi', 'case5nj', 'case5oj', 'case5nl', 'case5ol']);
   if (meubles > SEUIL_MICRO_MEUBLES) alertes.push('meubles_au_dela_du_seuil');

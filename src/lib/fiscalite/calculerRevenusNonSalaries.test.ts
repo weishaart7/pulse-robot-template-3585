@@ -77,6 +77,25 @@ describe('calculerRevenusNonSalaries', () => {
     expect(r.impotForfaitaire).toBe(0);
   });
 
+  it('seuils micro par catégorie : BIC global 188 700 €, services BIC 77 700 €, BNC 77 700 € séparément', () => {
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5kp: 50000, case5hq: 40000 }).alertes).toEqual([]);
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5ko: 150000, case5kp: 60000 }).alertes).toEqual(['ventes_au_dela_du_seuil']);
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5hq: 80000 }).alertes).toEqual(['bnc_au_dela_du_seuil']);
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5np: 80000 }).alertes).toEqual(['services_au_dela_du_seuil']);
+  });
+
+  it('micro-BA : moins-values à court terme imputées sur le revenu global, déficits antérieurs sans effet', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5xb: 10000, case5xo: 5000, case5qq: 2000 });
+    expect(r.totalNetImposable).toBe(1300 - 5000);
+  });
+
+  it('alertes : plafond jeunes créateurs, LMNP probablement soumises aux cotisations', () => {
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5sv: 60000 }).alertes).toEqual(['jeunes_createurs_au_dela_du_plafond']);
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5nh: 24000 }).alertes).toContain('meubles_cotisations_a_verifier');
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5ng: 13000 }).alertes).toContain('meubles_cotisations_a_verifier');
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5ni: 30000 }).alertes).toEqual([]);
+  });
+
   it('versement libératoire : hors barème, net retenu pour le taux effectif', () => {
     const r = calculerRevenusNonSalaries({ ...VIDE, case5ta: 10000, case5ub: 10000, case5te: 10000 });
     expect(r.totalNetImposable).toBe(0);
@@ -85,7 +104,7 @@ describe('calculerRevenusNonSalaries', () => {
 
   it('alertes de seuil : activités par déclarant, meublés au niveau du foyer', () => {
     expect(calculerRevenusNonSalaries({ ...VIDE, case5kp: 40000, case5lp: 40000 }).alertes).toEqual([]);
-    expect(calculerRevenusNonSalaries({ ...VIDE, case5kp: 40000, case5hq: 40000 }).alertes).toEqual(['services_au_dela_du_seuil']);
+    expect(calculerRevenusNonSalaries({ ...VIDE, case5kp: 40000, case5np: 40000 }).alertes).toEqual(['services_au_dela_du_seuil']);
     expect(calculerRevenusNonSalaries({ ...VIDE, case5nh: 8000, case5oh: 8000 }).alertes).toEqual(['meubles_non_classes_au_dela_du_seuil']);
     expect(calculerRevenusNonSalaries({ ...VIDE, case5ko: 190000 }).alertes).toEqual(['ventes_au_dela_du_seuil']);
   });
