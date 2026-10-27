@@ -53,7 +53,7 @@ const Declaration2044Interface = ({ onClose }: Declaration2044InterfaceProps) =>
               </p>
             </div>
             <ImmeublesSection etat={etat} annee={annee} />
-            <PartsSection etat={etat} />
+            <PartsSection etat={etat} annee={annee} />
             <ResultatSection resultat={r} />
             <DeficitsAnterieursSection resultat={r} annee={annee} />
           </main>

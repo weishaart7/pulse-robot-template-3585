@@ -3,6 +3,7 @@ import { PanelCard, PanelCardDescription, PanelCardHeader, PanelCardTitle, panel
 import { AideTooltip } from '@/components/fiscalite/DeclarationLigne';
 import { cn } from '@/lib/utils';
 import type { Declaration2044Result, Immeuble2044Result } from '@/lib/fiscalite/calculerDeclaration2044';
+import { SEUIL_MICRO_FONCIER } from '@/lib/immobilier/foncierFoyer';
 import { FORFAIT_FRAIS_GESTION_PAR_LOCAL, renovationEnergetiqueApplicable, TAUX_DEDUCTION_SPECIFIQUE_2044 } from '@/lib/fiscalite/calculerDeclaration2044';
 import { COLONNES_IMMEUBLE_2044, COLONNES_PART_2044, type Declaration2044ImmeubleRecord, type Declaration2044PartRecord } from '@/services/declaration2044Service';
 import type { useDeclaration2044 } from '@/hooks/useDeclaration2044';
@@ -39,7 +40,7 @@ const FRAIS: LigneImmeuble[] = [
   { code: '222', libelle: `Autres frais de gestion (${FORFAIT_FRAIS_GESTION_PAR_LOCAL} € par local)`, colonne: 'nombre_locaux', resultat: 'ligne222', unite: 'locaux', aide: 'Forfait de 20 € par local, toujours déductible : 1 local par défaut, saisissez le nombre de locaux de l’immeuble s’il y en a plusieurs.' },
   { code: '223', libelle: 'Primes d’assurance', colonne: 'primes_assurance', resultat: 'ligne223' },
   { code: '224', libelle: 'Dépenses de réparation, d’entretien et d’amélioration', colonne: 'travaux', resultat: 'ligne224' },
-  { code: '224bis', libelle: 'Travaux de rénovation énergétique (sortie des classes E, F, G)', colonne: 'travaux_renovation_energetique', resultat: 'ligne224bis', aide: 'Travaux faisant passer le bien d’une classe E, F ou G à A, B, C ou D. Dépenses payées de 2023 à 2025 : elles relèvent le plafond du déficit imputable sur le revenu global (au plus 21 400 €).' },
+  { code: '224bis', libelle: 'Travaux de rénovation énergétique (sortie des classes E, F, G)', colonne: 'travaux_renovation_energetique', resultat: 'ligne224bis', aide: 'Travaux faisant passer le bien d’une classe E, F ou G à A, B, C ou D. Dépenses payées de 2023 à 2025, par des professionnels : elles relèvent le plafond du déficit imputable sur le revenu global (au plus 21 400 €). À justifier par deux DPE : classe E, F ou G avant travaux, A à D après, au plus tard le 31.12.2025 ; à défaut, le revenu est recalculé sans majoration.' },
   { code: '225', libelle: 'Charges récupérables non récupérées au départ du locataire', colonne: 'charges_non_recuperees', resultat: 'ligne225' },
   { code: '226', libelle: 'Indemnités d’éviction, frais de relogement', colonne: 'indemnites_eviction', resultat: 'ligne226' },
   { code: '227', libelle: 'Taxes foncières, taxes annexes', colonne: 'taxes_foncieres', resultat: 'ligne227', aide: 'Hors taxe d’enlèvement des ordures ménagères, récupérable sur le locataire.' },
@@ -154,8 +155,9 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
       )}
       {chargesEcartees.length > 0 && (
         <p className={cn(panelInsetClass, 'mt-4 text-[12.5px] text-muted-foreground')}>
-          Charges écartées : taxe d’enlèvement des ordures ménagères (non déductible, récupérable sur le locataire)
-          et assurance emprunteur (déjà comprise ligne 250) — {chargesEcartees.join(' ; ')}.
+          Charges écartées : ordures ménagères et charges locatives (récupérables sur le locataire ; celles non
+          récupérées à son départ vont ligne 225), taxe sur les bureaux d’Île-de-France (non déductible), assurance
+          emprunteur (déjà comprise ligne 250) — {chargesEcartees.join(' ; ')}.
         </p>
       )}
     </PanelCard>
@@ -171,7 +173,7 @@ const LIGNES_PARTS: { code: string; libelle: string; colonne: ColonnePart; aide?
   { code: '113', libelle: 'Intérêts d’emprunt', colonne: 'interets_emprunt', aide: 'Intérêts de l’emprunt personnel contracté pour acquérir les parts.' },
 ];
 
-export function PartsSection({ etat }: { etat: Etat2044 }) {
+export function PartsSection({ etat, annee }: { etat: Etat2044; annee: number }) {
   const { parts, resultat, modifierPart, supprimerPart, ajouterPart, prerempliParts } = etat;
   const totaux: Record<ColonnePart, number> = {
     revenus_bruts: resultat.caseA, frais_et_charges: resultat.caseB,
@@ -198,7 +200,7 @@ export function PartsSection({ etat }: { etat: Etat2044 }) {
           onRenommer={(id, denomination) => modifierPart(id, { denomination })}
           onSupprimer={supprimerPart}
         >
-          {LIGNES_PARTS.map((l) => (
+          {LIGNES_PARTS.filter((l) => l.code !== '112bis' || renovationEnergetiqueApplicable(annee)).map((l) => (
             <LigneSaisie
               key={l.code}
               code={l.code}
@@ -243,6 +245,13 @@ export function ResultatSection({ resultat: r }: { resultat: Declaration2044Resu
       </PanelCardHeader>
 
       <LigneResultat code="420" libelle="Bénéfice ou déficit total (case D + case I)" valeur={r.ligne420} report={r.ligne420 > 0 ? '4BA' : undefined} fort />
+
+      {r.caseA + r.caseE > 0 && r.caseA + r.caseE <= SEUIL_MICRO_FONCIER && (
+        <p className={cn(panelInsetClass, 'mt-4 text-[12.5px] text-muted-foreground')}>
+          Recettes de {formatEuros(r.caseA + r.caseE)}, sous le seuil du micro-foncier ({formatEuros(SEUIL_MICRO_FONCIER)}) :
+          sauf exclusion du micro-foncier, déposer cette 2044 vaut option pour le régime réel, irrévocable pendant 3 ans.
+        </p>
+      )}
 
       {r.casRepartition === null ? (
         <p className={cn(panelInsetClass, 'mt-4 text-[13px] text-muted-foreground')}>

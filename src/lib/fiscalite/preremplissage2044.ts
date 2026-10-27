@@ -22,11 +22,17 @@ export const CODE_LIGNE_CHARGE_2044: Record<LigneCharge2044, string> = {
 };
 
 /**
- * Charges écartées de la 2044 : taxe d'enlèvement des ordures ménagères, non déductible (récupérable sur le
- * locataire, brochure IR 2026 p. 350) ; assurance emprunteur, déjà comprise dans la ligne 250 (tableau
+ * Charges écartées de la 2044 (brochure IR 2026 p. 343 et 350) : taxe d'enlèvement des ordures ménagères et
+ * charges locatives (eau, électricité, chauffage, ascenseur), récupérables sur le locataire — celles non
+ * récupérées à son départ se saisissent en ligne 225 ; taxe sur les bureaux et locaux commerciaux
+ * d'Île-de-France, non déductible ; assurance emprunteur, déjà comprise dans la ligne 250 (tableau
  * d'amortissement). Testées avant les règles de classement.
  */
-const MOTS_CLES_ECARTES = ['ordures', 'teom', 'enlevement', 'emprunteur', 'pret'];
+const MOTS_CLES_ECARTES = [
+  'ordures', 'teom', 'enlevement', 'emprunteur', 'pret',
+  'charges locatives', 'eau', 'electricite', 'chauffage', 'ascenseur',
+  'bureaux', 'locaux commerciaux',
+];
 
 /** Règles de classement par mots-clés du libellé, dans l'ordre (la première qui correspond gagne). */
 const REGLES_CLASSEMENT: { motsCles: string[]; ligne: LigneCharge2044; aVerifier?: boolean }[] = [

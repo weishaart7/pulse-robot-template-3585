@@ -21,7 +21,7 @@ describe('classerCharge', () => {
     expect(classerCharge(libelle)).toEqual({ ligne, aVerifier: false });
   });
 
-  it.each(['Taxe d’enlèvement des ordures ménagères', 'TEOM', 'Assurance emprunteur', 'Assurance prêt'])(
+  it.each(['Taxe d’enlèvement des ordures ménagères', 'TEOM', 'Assurance emprunteur', 'Assurance prêt', 'Eau', 'Électricité parties communes', 'Chauffage collectif', 'Charges locatives', 'Taxe sur les bureaux'])(
     '%s : écartée de la 2044', (libelle) => {
       expect(classerCharge(libelle)).toEqual({ ligne: null, aVerifier: false });
     });

@@ -1496,7 +1496,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   Plafond = **10 700 € + dépenses de rénovation énergétique (ligne 434 = 112bis + 224bis), au plus
   21 400 €** (formule du Cerfa, et non un plafond forfaitaire de 21 400 €). Majoration limitée aux
   revenus 2023 à 2025 (dépenses payées du 1.1.2023 au 31.12.2025, `renovationEnergetiqueApplicable`) :
-  au-delà, 434 = 0 et la ligne 224bis est masquée.
+  au-delà, 434 = 0 et les lignes 224bis et 112bis sont masquées. L'aide de 224bis rappelle les deux DPE
+  exigés (E/F/G avant, A à D après, au plus tard le 31.12.2025).
+- **Option pour le réel** : si les recettes (cases A + E) ne dépassent pas 15 000 €, la section Résultat
+  rappelle que déposer la 2044 vaut option pour le réel, irrévocable 3 ans (sauf exclusion du micro-foncier).
 - **Ligne 228** : seuls les taux du tableau 4 de la brochure (15, 26, 30, 40, 45, 50, 60, 70, 85 %,
   `TAUX_DEDUCTION_SPECIFIQUE_2044`) sont retenus, tout autre taux vaut 0 ; choix par liste à l'écran.
   Loc'Avantages (réduction d'impôt) n'y figure pas.
@@ -1535,7 +1538,9 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   sa colonne reste. Montants à la part du foyer (`computeQuotePart`) :
   - 211 = loyers annualisés d'Immobilier ;
   - charges classées par mots-clés du libellé (`classerCharge`) : d'abord écartées — ordures / TEOM /
-    enlèvement (non déductible) et emprunteur / prêt (déjà en 250), listées sous la grille ; puis taxe(s)
+    enlèvement et charges locatives (eau, électricité, chauffage, ascenseur : récupérables, les non
+    récupérées se saisissent en 225), bureaux / locaux commerciaux (taxe Île-de-France non déductible),
+    emprunteur / prêt (déjà en 250), listées sous la grille ; puis taxe(s)
     foncière(s) → 227, « taxe » seule → 227 à vérifier, assurance / PNO → 223, copropriété / syndic → 229,
     gestion / agence / honoraires → 221, travaux / entretien / réparation → 224 ; sinon 221 ; les charges
     à vérifier sont listées sous la grille avec leur ligne ; mêmes exclusions pour la ligne 112 des parts de SCI louées nu — le champ
