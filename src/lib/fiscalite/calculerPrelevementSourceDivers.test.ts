@@ -39,9 +39,25 @@ describe('calculerPrelevementSourceDivers', () => {
   });
 
   it('crédit égal à l\'impôt étranger : moindre de l\'impôt étranger et de l\'impôt français correspondant', () => {
-    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pl: 10000, case8vl: 3000 }, 5000, 50000)).toBe(1000);
-    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pm: 10000, case8vm: 400, case8wm: 100 }, 5000, 50000)).toBe(500);
-    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pl: 10000, case8vl: 3000 }, 0, 50000)).toBe(0);
+    const ctx = { impotBareme: 5000, revenuImposable: 50000, optionBareme: true, exonerationCsgCrds: false };
+    // 2OP : IR 5 000 × 10 000 / 50 000 = 1 000, puis PS 18,6 % = 1 860 ; plafond 2 860 > 2 000 payés.
+    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pl: 10000, case8vl: 2000 }, ctx)).toEqual({ creditImpot: 1000, creditPrelevementsSociaux: 1000 });
+    // 8PM : IR seul, 400 + 100 ≤ 1 000.
+    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pm: 10000, case8vm: 400, case8wm: 100 }, ctx)).toEqual({ creditImpot: 500, creditPrelevementsSociaux: 0 });
+    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pm: 10000, case8vm: 3000 }, ctx)).toEqual({ creditImpot: 1000, creditPrelevementsSociaux: 0 });
+  });
+
+  it('8PL au PFU : 12,8 % sans prorata du barème, même avec un revenu imposable nul', () => {
+    const ctx = { impotBareme: 0, revenuImposable: 0, optionBareme: false, exonerationCsgCrds: false };
+    // IR 1 280 + PS 1 860 = 3 140 > 1 500 payés.
+    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pl: 10000, case8vl: 1500 }, ctx)).toEqual({ creditImpot: 1280, creditPrelevementsSociaux: 220 });
+    // Impôt étranger supérieur au plafond : 3 140, excédent perdu.
+    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pl: 10000, case8vl: 5000 }, ctx)).toEqual({ creditImpot: 1280, creditPrelevementsSociaux: 1860 });
+  });
+
+  it('8SH/8SI : seul le prélèvement de solidarité de 7,5 % entre dans le plafond PS', () => {
+    const ctx = { impotBareme: 0, revenuImposable: 0, optionBareme: false, exonerationCsgCrds: true };
+    expect(creditImpotEgalImpotEtranger({ ...VIDE, case8pl: 10000, case8vl: 5000 }, ctx)).toEqual({ creditImpot: 1280, creditPrelevementsSociaux: 750 });
   });
 });
 

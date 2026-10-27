@@ -107,7 +107,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" aide="Montant avant impôt étranger, également déclaré dans sa catégorie : l'impôt français correspondant est annulé." value={ps.case8tk} onChange={v => update('case8tk', v)} />
           <MontantEclateLigne
             label="Revenus de capitaux mobiliers et plus-values étrangers, crédit d'impôt égal à l'impôt étranger"
-            aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant."
+            aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant (IR puis prélèvements sociaux). Impôt étranger à saisir dans la limite du taux prévu par la convention."
             items={[
               { label: 'Revenus', code: '8PL', value: ps.case8pl, onChange: v => update('case8pl', v) },
               { label: 'Impôt payé à l\'étranger', code: '8VL', value: ps.case8vl, onChange: v => update('case8vl', v) },

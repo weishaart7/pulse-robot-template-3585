@@ -1452,10 +1452,20 @@ cadre 8 est enregistré).
   catégorie, brochure p. 323) est retiré de la base imposée en France et ajouté au revenu retenu pour le
   taux effectif, comme 1AF : équivaut au crédit impôt × 8TK / revenu imposable ; RFR inchangé.
 - **Crédit égal à l'impôt étranger** (`8PL`/`8VL`, `8PM`/`8VM`+`8WM`+`8UM`), non restituable, imputé
-  avec 2AB : par catégorie, min(impôt étranger, impôt français × revenus / revenu imposable), l'impôt
-  français étant pris après décote, impôt forfaitaire et réductions. Calcul en deux passes de
-  `calculerImpot` (le crédit dépend de l'impôt). Approximation : prorata sur le revenu imposable, et non
-  sur le revenu de la catégorie après abattements.
+  avec 2AB : par catégorie, min(impôt étranger, impôt français correspondant), l'impôt français
+  s'entendant de l'IR augmenté des PS (brochure IR 2026 p. 366). Imputé d'abord sur l'IR, le reliquat
+  sur les PS dus au titre de ces revenus (notice 2047 2025, BOI-RSA-GEO-40-10-30-20 n° 260), plafonné
+  aux PS dus. Calcul en deux passes de `calculerImpot` (le crédit dépend de l'impôt).
+  - `8PL` : IR correspondant = 12,8 % × 8PL sans option 2OP ; avec 2OP, impôt au barème (après décote
+    et réductions, **hors impôt forfaitaire**) × 8PL / revenu imposable au barème. PS correspondants
+    = 18,6 % × 8PL, ou 7,5 % (prélèvement de solidarité seul) si exonération totale 8SH/8SI.
+  - `8PM` : **IR seul**, au prorata du barème (même base). La nature des revenus déclarés en 8PM
+    (salaires, foncier, BIC…) n'étant pas connue, leur taux de PS ne l'est pas : aucun reliquat imputé
+    sur les PS — choix volontaire, sous-estime le crédit si l'impôt étranger dépasse l'IR correspondant.
+  - Non modélisé : taux limites conventionnels (l'impôt étranger saisi est supposé déjà plafonné,
+    rappel dans le formulaire) ; conventions excluant la CSG-CRDS (Royaume-Uni, Inde, Bahreïn…).
+  - Approximation : prorata sur le revenu imposable, et non sur le revenu de la catégorie après
+    abattements.
 - **8TF** : ajouté à l'impôt net.
 - **Exonération CSG-CRDS** (`8RF` à 9,7 %, `8RV`/`8RC`/`8RM` à 11,1 %), plafonnée aux PS du patrimoine
   calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. **Exonération

@@ -448,11 +448,14 @@ export function useFiscalOverview(): FiscalOverview {
         revenusNonSalaries.taxeAgentsGeneraux,
       );
       const impotSansCreditEtranger = calculer(0);
-      const impot = calculer(creditImpotEgalImpotEtranger(
-        prelevementSourceInput,
-        impotSansCreditEtranger.impotApresDecote + impotSansCreditEtranger.impotForfaitaire - impotSansCreditEtranger.reductionsImpot,
-        revenuImposableTotal,
-      ));
+      const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
+      const creditEtranger = creditImpotEgalImpotEtranger(prelevementSourceInput, {
+        impotBareme: impotSansCreditEtranger.impotApresDecote - impotSansCreditEtranger.reductionsImpot,
+        revenuImposable: revenuImposableTotal - revenuCredit8TK,
+        optionBareme: capitauxMobiliersInput.case2op,
+        exonerationCsgCrds: exonerationTotale,
+      });
+      const impot = calculer(creditEtranger.creditImpot);
       const prelevementsSociauxBruts = prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
         + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
         + prelevementsSociauxGainsActionnariat.prelevementsSociaux
@@ -464,7 +467,6 @@ export function useFiscalOverview(): FiscalOverview {
       // 8SH (personne seule) ou 8SH + 8SI (couple) : exonération de CSG-CRDS de tous les revenus du
       // patrimoine — fonciers à 9,7/17,2, 2DI (CSG-CRDS seule) en totalité, le reste à 11,1/18,6.
       const prelevementsSociauxFonciers = (revenusFonciers?.prelevementsSociaux ?? 0) + revenusFonciers2042.prelevementsSociaux;
-      const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
       const reductionPrelevementsSociaux = exonerationTotale
         ? Math.round(
           prelevementsSociauxFonciers * (TAUX_CSG_CRDS_FONCIER / 0.172)
@@ -477,7 +479,12 @@ export function useFiscalOverview(): FiscalOverview {
           prelevementSourceDivers.reductionPrelevementsSociaux,
           Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
         );
-      const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux
+      // Reliquat du crédit 8VL imputé sur les PS dus au titre de 8PL, sans excéder les PS dus.
+      const creditEtrangerPrelevementsSociaux = Math.min(
+        creditEtranger.creditPrelevementsSociaux,
+        Math.max(0, prelevementsSociauxBruts - reductionPrelevementsSociaux),
+      );
+      const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux - creditEtrangerPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
       const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient);
       const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;

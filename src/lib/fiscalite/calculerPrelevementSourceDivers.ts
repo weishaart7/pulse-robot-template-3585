@@ -94,23 +94,65 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
   };
 }
 
+/** PFU, part impôt sur le revenu (art. 200 A CGI), applicable à 8PL sans option 2OP. */
+export const TAUX_PFU_IR = 0.128;
+/** Prélèvements sociaux des revenus du patrimoine (CSG 10,6 % + CRDS 0,5 % + solidarité 7,5 %). */
+export const TAUX_PS_PATRIMOINE = 0.186;
+/** Prélèvement de solidarité seul, resté dû par les affiliés EEE, Royaume-Uni, Suisse (8SH/8SI). */
+export const TAUX_PRELEVEMENT_SOLIDARITE = 0.075;
+
+export interface CreditImpotEtrangerContexte {
+  /** Impôt au barème après décote et réductions, hors impôt forfaitaire. */
+  impotBareme: number;
+  /** Revenu imposable au barème. */
+  revenuImposable: number;
+  /** 2OP : option pour le barème des revenus de capitaux mobiliers. */
+  optionBareme: boolean;
+  /** 8SH/8SI : exonération totale de CSG-CRDS (voir `exonerationTotaleCsgCrds`). */
+  exonerationCsgCrds: boolean;
+}
+
+export interface CreditImpotEtrangerResult {
+  /** Part imputée sur l'impôt sur le revenu (encore plafonnée par `calculerImpot`). */
+  creditImpot: number;
+  /** Reliquat imputé sur les prélèvements sociaux dus au titre de 8PL. */
+  creditPrelevementsSociaux: number;
+}
+
 /**
  * Crédit égal à l'impôt étranger (8PL/8VL, 8PM/8VM…8UM), non restituable :
  * pour chaque catégorie, le moindre de l'impôt payé à l'étranger et de
- * l'impôt français correspondant, approché par `impotFrancais` (impôt après
- * décote, impôt forfaitaire et réductions) × revenus étrangers / revenu
- * imposable. Les revenus restent déclarés dans leur catégorie.
+ * l'impôt français correspondant, IR augmenté des PS (notice 2047, brochure
+ * IR 2026 p. 366). Imputé d'abord sur l'IR, le reliquat sur les PS dus au
+ * titre de ces revenus (notice 2047 2025, BOI-RSA-GEO-40-10-30-20 n° 260).
+ * - 8PL : IR correspondant = 12,8 % sans 2OP, prorata du barème avec 2OP ;
+ *   PS correspondants = 18,6 % (7,5 % si 8SH/8SI).
+ * - 8PM : IR seul, au prorata du barème — la nature des revenus (donc le taux
+ *   de PS) n'est pas connue.
+ * Les revenus restent déclarés dans leur catégorie.
  */
 export function creditImpotEgalImpotEtranger(
   input: PrelevementSourceDiversInput,
-  impotFrancais: number,
-  revenuImposable: number,
-): number {
-  if (impotFrancais <= 0 || revenuImposable <= 0) return 0;
-  const impotCorrespondant = (revenu: number) => impotFrancais * Math.min(1, revenu / revenuImposable);
-  const credit = Math.min(montant(input.case8vl), impotCorrespondant(montant(input.case8pl)))
-    + Math.min(somme(input.case8vm, input.case8wm, input.case8um), impotCorrespondant(montant(input.case8pm)));
-  return Math.round(Math.min(credit, impotFrancais));
+  contexte: CreditImpotEtrangerContexte,
+): CreditImpotEtrangerResult {
+  const impotBareme = Math.max(0, contexte.impotBareme);
+  const proratoBareme = (revenu: number) => contexte.revenuImposable > 0
+    ? impotBareme * Math.min(1, revenu / contexte.revenuImposable)
+    : 0;
+
+  const revenu8PL = montant(input.case8pl);
+  const credit8PL = Math.min(
+    montant(input.case8vl),
+    (contexte.optionBareme ? proratoBareme(revenu8PL) : revenu8PL * TAUX_PFU_IR)
+      + revenu8PL * (contexte.exonerationCsgCrds ? TAUX_PRELEVEMENT_SOLIDARITE : TAUX_PS_PATRIMOINE),
+  );
+  const ir8PL = Math.min(credit8PL, contexte.optionBareme ? proratoBareme(revenu8PL) : revenu8PL * TAUX_PFU_IR);
+  const credit8PM = Math.min(somme(input.case8vm, input.case8wm, input.case8um), proratoBareme(montant(input.case8pm)));
+
+  return {
+    creditImpot: Math.round(ir8PL + credit8PM),
+    creditPrelevementsSociaux: Math.round(credit8PL - ir8PL),
+  };
 }
 
 export interface SoldeImpotResult {
