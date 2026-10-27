@@ -89,6 +89,8 @@ export interface ImpotResult {
   reprisesImpot: number;
   impotNet: number;
   tmi: number;
+  /** Impôt sur le bénéfice agricole excédant la moyenne triennale (5XT/5XU) : `tmi` × montant, ajouté après la décote. */
+  impotTauxMarginal: number;
   revenuExceptionnelQuotient: number;
   impotSupplementaireQuotientExceptionnel: number;
 }
@@ -245,6 +247,9 @@ function calculerImpotApresQuotientFamilial(
  * `creditsImpotCadre7` (services à la personne) sont restituables, sans plancher.
  * `creditImpotEtrangerCadre8` (8VL, 8VM…8UM) est non restituable, imputé avec 2AB ;
  * `reprisesImpot` (8TF) s'ajoute à l'impôt net.
+ * `revenuTauxMarginal` (5XT/5XU, art. 75-0 B CGI) : hors revenu imposable,
+ * imposé au TMI du revenu global « compte tenu de la moyenne » (donc sans
+ * lui), sans décote ni plafonnement ; ajouté comme l'impôt forfaitaire.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -262,6 +267,7 @@ export function calculerImpot(
   creditsImpotCadre7 = 0,
   creditImpotEtrangerCadre8 = 0,
   reprisesImpot = 0,
+  revenuTauxMarginal = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
@@ -303,7 +309,9 @@ export function calculerImpot(
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
-  const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire);
+  const tmi = tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0);
+  const impotTauxMarginal = Math.round(Math.max(0, revenuTauxMarginal) * tmi);
+  const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;
   const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotAvantReductions));
   const impotAvantCreditsFinaux = impotAvantReductions - reductionsImpotAppliquees;
 
@@ -350,7 +358,8 @@ export function calculerImpot(
     creditImpotEtrangerCadre8: creditImpotEtrangerCadre8Applique,
     reprisesImpot: Math.max(0, reprisesImpot),
     impotNet,
-    tmi: tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0),
+    tmi,
+    impotTauxMarginal,
     revenuExceptionnelQuotient: revenuExceptionnel,
     impotSupplementaireQuotientExceptionnel,
   };

@@ -23,6 +23,36 @@ describe('calculerRevenusNonSalaries', () => {
     expect(calculerRevenusNonSalaries({ ...VIDE, case5hy: 5000, case5iy: 1000 }).basePrelevementsSociaux).toBe(6000);
   });
 
+  it('forfait forestier 5HD/5ID : ajouté au BA, avant les déficits agricoles antérieurs, sans PS', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5hd: 3000, case5id: 1000, case5qq: 1500 });
+    expect(r.totalNetImposable).toBe(2500);
+    expect(r.basePrelevementsSociaux).toBe(0);
+  });
+
+  it('inventeurs non professionnels : 10 % avec PS (5QJ/5RJ), 10 % sans PS (5TC/5UC), retenus au RFR', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5qj: 10000, case5rj: 2000, case5tc: 5000, case5uc: 1000 });
+    expect(r.totalNetImposable).toBe(0);
+    expect(r.impotForfaitaire).toBeCloseTo(1800);
+    expect(r.basePrelevementsSociaux).toBe(12000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(18000);
+  });
+
+  it('5HG/5IG : prélèvements sociaux seuls, retenus au RFR, sans impôt', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5hg: 40000, case5ig: 10000 });
+    expect(r.totalNetImposable).toBe(0);
+    expect(r.impotForfaitaire).toBe(0);
+    expect(r.prelevementsSociaux).toBe(Math.round(50000 * 0.186));
+    expect(r.revenuExonereRetenuPourRFR).toBe(50000);
+  });
+
+  it('5XT/5XU : hors barème, transmis pour le taux marginal et retenu au RFR', () => {
+    const r = calculerRevenusNonSalaries({ ...VIDE, case5hc: 30000, case5xt: 20000, case5xu: 5000 });
+    expect(r.totalNetImposable).toBe(30000);
+    expect(r.revenuImposableTauxMarginal).toBe(25000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(25000);
+    expect(r.basePrelevementsSociaux).toBe(0);
+  });
+
   it('versement libératoire : hors barème, net retenu pour le taux effectif', () => {
     const r = calculerRevenusNonSalaries({ ...VIDE, case5ta: 10000, case5ub: 10000, case5te: 10000 });
     expect(r.totalNetImposable).toBe(0);

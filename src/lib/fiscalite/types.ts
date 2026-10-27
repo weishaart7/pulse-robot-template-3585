@@ -568,6 +568,26 @@ export interface RevenusNonSalariesInput {
   case5lt: number | null;
   /** BNC non pro : déficits antérieurs, 2024 */
   case5mt: number | null;
+  /** Plus-values à long terme exonérées départ à la retraite (art. 151 septies A), soumises aux seuls PS — Déclarant 1 */
+  case5hg: number | null;
+  /** Plus-values à long terme exonérées départ à la retraite — Déclarant 2 */
+  case5ig: number | null;
+  /** BNC non pro : inventeurs et auteurs de logiciels, produits taxables à 10 % (PS en sus) — Déclarant 1 */
+  case5qj: number | null;
+  /** BNC non pro : inventeurs, produits taxables à 10 % — Déclarant 2 */
+  case5rj: number | null;
+  /** BNC non pro : inventeurs, produits à 10 % soumis aux cotisations sociales (sans PS) — Déclarant 1 */
+  case5tc: number | null;
+  /** BNC non pro : inventeurs, produits à 10 % soumis aux cotisations sociales — Déclarant 2 */
+  case5uc: number | null;
+  /** BA réel : fraction du bénéfice excédant la moyenne triennale, imposée au taux marginal — Déclarant 1 */
+  case5xt: number | null;
+  /** BA réel : fraction excédant la moyenne triennale — Déclarant 2 */
+  case5xu: number | null;
+  /** BA : revenu forfaitaire provenant des coupes de bois (revenu cadastral) — Déclarant 1 */
+  case5hd: number | null;
+  /** BA : revenu forfaitaire des coupes de bois — Déclarant 2 */
+  case5id: number | null;
 }
 
 /**

@@ -28,7 +28,8 @@ const CASES_NUMERIQUES = [
   'case5qn', 'case5qo', 'case5qp', 'case5qq', 'case5rn', 'case5ro', 'case5rp', 'case5rq',
   'case5rr', 'case5rw', 'case5ga', 'case5gb', 'case5gc', 'case5gd', 'case5ge', 'case5gf',
   'case5gg', 'case5gh', 'case5gi', 'case5gj', 'case5ht', 'case5it', 'case5jt', 'case5kt',
-  'case5lt', 'case5mt',
+  'case5lt', 'case5mt', 'case5hg', 'case5ig', 'case5qj', 'case5rj', 'case5tc', 'case5uc',
+  'case5xt', 'case5xu', 'case5hd', 'case5id',
 ] as const;
 
 /** case5ko → case_5ko (colonne Supabase). */

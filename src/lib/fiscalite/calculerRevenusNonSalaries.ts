@@ -57,7 +57,8 @@ export const REVENUS_NON_SALARIES_VIDE: RevenusNonSalariesInput = {
   case5qn: null, case5qo: null, case5qp: null, case5qq: null, case5rn: null, case5ro: null, case5rp: null, case5rq: null,
   case5rr: null, case5rw: null, case5ga: null, case5gb: null, case5gc: null, case5gd: null, case5ge: null, case5gf: null,
   case5gg: null, case5gh: null, case5gi: null, case5gj: null, case5ht: null, case5it: null, case5jt: null, case5kt: null,
-  case5lt: null, case5mt: null,
+  case5lt: null, case5mt: null, case5hg: null, case5ig: null, case5qj: null, case5rj: null, case5tc: null, case5uc: null,
+  case5xt: null, case5xu: null, case5hd: null, case5id: null,
 };
 
 type Cle = keyof RevenusNonSalariesInput;
@@ -119,9 +120,14 @@ export interface RevenusNonSalariesResult {
   deficitAgricole: number;
   /** Plus-values professionnelles à long terme (12,8 %) et brevets (10 %), ajoutés après la décote. */
   impotForfaitaire: number;
+  /**
+   * Excédent du bénéfice agricole sur la moyenne triennale l'année de la cession (5XT/5XU,
+   * art. 75-0 B CGI) : hors barème, imposé au taux marginal du revenu global par `calculerImpot`.
+   */
+  revenuImposableTauxMarginal: number;
   /** Revenus de source étrangère avec crédit d'impôt égal à l'impôt français, retenus pour le taux effectif (comme 1AF). */
   revenuCreditImpotEgalImpotFrancais: number;
-  /** RFR hors barème : plus-values à long terme, brevets, revenus exonérés zonés. */
+  /** RFR hors barème : plus-values à long terme (y compris exonérées départ à la retraite), brevets, revenus exonérés zonés, excédent au taux marginal. */
   revenuExonereRetenuPourRFR: number;
   /**
    * Revenus nets des micro-entrepreneurs au versement libératoire (5TA/5TB/5TE) :
@@ -129,7 +135,7 @@ export interface RevenusNonSalariesResult {
    * (art. 197 C CGI) et donc pour le RFR.
    */
   revenuExonereTauxEffectif: number;
-  /** Base à 18,6 % : LMNP non soumises aux cotisations (micro et réel, nettes des déficits), plus-values à long terme, 5HY/5IY. */
+  /** Base à 18,6 % : LMNP non soumises aux cotisations (micro et réel, nettes des déficits), plus-values à long terme, inventeurs 5QJ/5RJ, 5HY/5IY, 5HG/5IG. */
   basePrelevementsSociaux: number;
   prelevementsSociaux: number;
   alertes: AlerteRevenusNonSalaries[];
@@ -162,6 +168,12 @@ const somme = (input: RevenusNonSalariesInput, cles: Cle[]) => cles.reduce((s, c
  * d'office (brochure p. 182) ; brevets à 10 % sans PS ; moins-values à long
  * terme reportables, sans effet. Revenus exonérés zonés et taxations
  * proportionnelles retenus au RFR.
+ *
+ * **Lot 1 (brochure p. 164-182).** Forfait forestier 5HD/5ID ajouté au BA, sans
+ * PS (hypothèse validée : bénéfice agricole). Inventeurs non professionnels à
+ * 10 % : 5QJ/5RJ avec PS, 5TC/5UC sans PS. Plus-values exonérées départ à la
+ * retraite 5HG/5IG : PS seuls, retenues au RFR. Excédent de moyenne triennale
+ * 5XT/5XU : hors barème, imposé au taux marginal par `calculerImpot`, retenu au RFR.
  */
 export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): RevenusNonSalariesResult {
   const v = (c: Cle) => input[c] ?? 0;
@@ -204,17 +216,22 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
 
   // Bénéfices agricoles : déficits antérieurs sur les seuls BA ; déficit de l'année traité par l'appelant.
   const baBenefice = netMicro(v('case5xb'), ABATTEMENT_MICRO_BA) + netMicro(v('case5yb'), ABATTEMENT_MICRO_BA)
-    + somme(input, ['case5hw', 'case5iw', 'case5hc', 'case5ic'])
+    + somme(input, ['case5hw', 'case5iw', 'case5hc', 'case5ic', 'case5hd', 'case5id'])
     - somme(input, ['case5xo', 'case5yo']);
   const ba = Math.max(0, baBenefice - somme(input, ['case5qf', 'case5qg', 'case5qn', 'case5qo', 'case5qp', 'case5qq']));
 
   const plusValuesLongTerme = somme(input, ['case5hx', 'case5ix', 'case5he', 'case5ie', 'case5kq', 'case5lq', 'case5ke', 'case5le',
     'case5nq', 'case5oq', 'case5ne', 'case5oe', 'case5hr', 'case5ir', 'case5qd', 'case5rd', 'case5kv', 'case5lv', 'case5so', 'case5nt']);
-  const brevets = somme(input, ['case5ha', 'case5ia', 'case5ui', 'case5vi', 'case5qa', 'case5ra']);
+  const inventeursAvecPS = somme(input, ['case5qj', 'case5rj']);
+  const brevets = somme(input, ['case5ha', 'case5ia', 'case5ui', 'case5vi', 'case5qa', 'case5ra', 'case5tc', 'case5uc'])
+    + inventeursAvecPS;
+  const plusValuesRetraite = somme(input, ['case5hg', 'case5ig']);
+  const revenuImposableTauxMarginal = somme(input, ['case5xt', 'case5xu']);
   const exoneresZones = somme(input, ['case5xa', 'case5ya', 'case5hb', 'case5ib', 'case5kn', 'case5ln', 'case5kb', 'case5lb',
     'case5nn', 'case5on', 'case5nb', 'case5ob', 'case5hp', 'case5ip', 'case5qb', 'case5rb', 'case5th', 'case5uh', 'case5hk', 'case5jk']);
 
-  const basePrelevementsSociaux = lmnpSansCotisationsNet + plusValuesLongTerme + somme(input, ['case5hy', 'case5iy']);
+  const basePrelevementsSociaux = lmnpSansCotisationsNet + plusValuesLongTerme + inventeursAvecPS + plusValuesRetraite
+    + somme(input, ['case5hy', 'case5iy']);
 
   const alertes: AlerteRevenusNonSalaries[] = [];
   const ventes = (d: 0 | 1) => somme(input, ([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo']] as Cle[][])[d]);
@@ -231,9 +248,10 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
     totalNetImposable: bicPro + bncPro + bicNonPro + bncNonPro + lmnp + ba,
     deficitAgricole: somme(input, ['case5hf', 'case5if']),
     impotForfaitaire: plusValuesLongTerme * TAUX_PLUS_VALUES_LONG_TERME + brevets * TAUX_BREVETS,
+    revenuImposableTauxMarginal,
     revenuCreditImpotEgalImpotFrancais: somme(input, ['case5ak', 'case5bk', 'case5df', 'case5ef', 'case5ur', 'case5vr',
       'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys']),
-    revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones,
+    revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + plusValuesRetraite + revenuImposableTauxMarginal,
     revenuExonereTauxEffectif,
     basePrelevementsSociaux,
     prelevementsSociaux: Math.round(basePrelevementsSociaux * TAUX_PS_NON_SALARIES),

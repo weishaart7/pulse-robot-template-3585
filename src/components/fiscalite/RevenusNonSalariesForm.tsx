@@ -182,6 +182,8 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           <MontantLigne label="Revenus imposables" code1="5JG" code2="5RF" value1={rns.case5jg} value2={rns.case5rf} onChange1={v => update('case5jg', v)} onChange2={v => update('case5rf', v)} />
           <MontantLigne label="Déficits" code1="5JJ" code2="5RG" value1={rns.case5jj} value2={rns.case5rg} onChange1={v => update('case5jj', v)} onChange2={v => update('case5rg', v)} />
           <MontantLigne label="Plus-values nettes à long terme" code1="5SO" code2="5NT" value1={rns.case5so} value2={rns.case5nt} onChange1={v => update('case5so', v)} onChange2={v => update('case5nt', v)} />
+          <MontantLigne label="Inventeurs, auteurs de logiciels : produits taxables à 10 %" code1="5QJ" code2="5RJ" value1={rns.case5qj} value2={rns.case5rj} onChange1={v => update('case5qj', v)} onChange2={v => update('case5rj', v)} />
+          <MontantLigne label="Inventeurs : produits à 10 % soumis aux cotisations sociales (sans PS)" code1="5TC" code2="5UC" value1={rns.case5tc} value2={rns.case5uc} onChange1={v => update('case5tc', v)} onChange2={v => update('case5uc', v)} />
           <MontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code1="5XS" code2="5YS" value1={rns.case5xs} value2={rns.case5ys} onChange1={v => update('case5xs', v)} onChange2={v => update('case5ys', v)} />
           <MontantLigne label="Revenus exonérés (régimes zonés)" code1="5HK" code2="5JK" value1={rns.case5hk} value2={rns.case5jk} onChange1={v => update('case5hk', v)} onChange2={v => update('case5jk', v)} />
           <MontantEclateLigne
@@ -204,10 +206,12 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           <MontantLigne label="Plus-values nettes à long terme" code1="5HX" code2="5IX" value1={rns.case5hx} value2={rns.case5ix} onChange1={v => update('case5hx', v)} onChange2={v => update('case5ix', v)} />
           <MontantLigne label="Moins-values nettes à long terme" code1="5XN" code2="5YN" value1={rns.case5xn} value2={rns.case5yn} onChange1={v => update('case5xn', v)} onChange2={v => update('case5yn', v)} />
           <MontantLigne label="Revenus nets exonérés (régimes zonés)" code1="5XA" code2="5YA" value1={rns.case5xa} value2={rns.case5ya} onChange1={v => update('case5xa', v)} onChange2={v => update('case5ya', v)} />
+          <MontantLigne label="Revenu forfaitaire provenant des coupes de bois" code1="5HD" code2="5ID" value1={rns.case5hd} value2={rns.case5id} onChange1={v => update('case5hd', v)} onChange2={v => update('case5id', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Bénéfices agricoles — régime du bénéfice réel" aide="Le déficit de l'année ne s'impute sur le revenu global que si les autres revenus nets du foyer n'excèdent pas 128 826 €.">
           <MontantLigne label="Revenus imposables" code1="5HC" code2="5IC" value1={rns.case5hc} value2={rns.case5ic} onChange1={v => update('case5hc', v)} onChange2={v => update('case5ic', v)} />
+          <MontantLigne label="Fraction excédant la moyenne triennale, imposée au taux marginal" code1="5XT" code2="5XU" value1={rns.case5xt} value2={rns.case5xu} onChange1={v => update('case5xt', v)} onChange2={v => update('case5xu', v)} />
           <MontantLigne label="Déficits" code1="5HF" code2="5IF" value1={rns.case5hf} value2={rns.case5if} onChange1={v => update('case5hf', v)} onChange2={v => update('case5if', v)} />
           <MontantLigne label="Plus-values nettes à long terme" code1="5HE" code2="5IE" value1={rns.case5he} value2={rns.case5ie} onChange1={v => update('case5he', v)} onChange2={v => update('case5ie', v)} />
           <MontantLigne label="Produits de brevets taxables à 10 %" code1="5HA" code2="5IA" value1={rns.case5ha} value2={rns.case5ia} onChange1={v => update('case5ha', v)} onChange2={v => update('case5ia', v)} />
@@ -226,8 +230,9 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           />
         </SousGroupe>
 
-        <SousGroupe titre="BA, BIC, BNC à imposer aux prélèvements sociaux" aide="Revenus non professionnels non soumis aux cotisations sociales, hors locations meublées : montant net après abattement (micro-BIC 71 % ou 50 %, micro-BNC 34 %).">
+        <SousGroupe titre="BA, BIC, BNC à imposer aux prélèvements sociaux" aide="Revenus non soumis aux cotisations sociales, hors locations meublées et plus-values à long terme : montant net après abattement (micro-BIC 71 % ou 50 %, micro-BNC 34 %, micro-BA 87 %). Plus-values exonérées départ à la retraite : prélèvements sociaux seuls.">
           <MontantLigne label="Revenus nets" code1="5HY" code2="5IY" value1={rns.case5hy} value2={rns.case5iy} onChange1={v => update('case5hy', v)} onChange2={v => update('case5iy', v)} />
+          <MontantLigne label="Plus-values à long terme exonérées départ à la retraite" code1="5HG" code2="5IG" value1={rns.case5hg} value2={rns.case5ig} onChange1={v => update('case5hg', v)} onChange2={v => update('case5ig', v)} />
         </SousGroupe>
     </Cadre2042>
   );

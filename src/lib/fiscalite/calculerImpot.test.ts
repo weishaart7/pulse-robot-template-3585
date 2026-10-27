@@ -472,3 +472,24 @@ describe('calculerImpot — système du quotient (revenus exceptionnels, 0XX)', 
     expect(avecForfaitaire.impotNet).toBe(sansForfaitaire.impotNet + 3000);
   });
 });
+
+describe('calculerImpot — excédent de moyenne triennale au taux marginal (5XT/5XU)', () => {
+  const avecTauxMarginal = (revenu: number, excedent: number) => calculerImpot(
+    revenu, makeParts(), 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, excedent,
+  );
+
+  it('TMI 30 % calculé sans l\'excédent, ajouté après la décote', () => {
+    const sans = avecTauxMarginal(50000, 0);
+    const avec = avecTauxMarginal(50000, 100000);
+    expect(avec.tmi).toBe(0.30);
+    expect(avec.impotTauxMarginal).toBe(30000);
+    expect(avec.impotNet).toBe(sans.impotNet + 30000);
+    expect(avec.revenuImposable).toBe(50000);
+  });
+
+  it('TMI 0 % : aucun impôt sur l\'excédent', () => {
+    const r = avecTauxMarginal(10000, 50000);
+    expect(r.impotTauxMarginal).toBe(0);
+    expect(r.impotNet).toBe(0);
+  });
+});
