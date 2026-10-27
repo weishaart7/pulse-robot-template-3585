@@ -70,11 +70,11 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi, comparaisonOptionBareme,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
-  const impositionRevenus = impot.impotNet + prelevementsSociauxTotal;
+  const impositionRevenus = impot.impotNet + cehr + prelevementsSociauxTotal;
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
   const noteImpot = [
@@ -85,6 +85,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
 
   const impots: Ligne[] = [
     { label: 'Impôt sur le revenu (IR)', valeur: impot.impotNet },
+    { label: 'Contribution exceptionnelle sur les hauts revenus', valeur: cehr },
     { label: 'Prélèvements sociaux (capitaux mobiliers)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
     { label: 'Prélèvements sociaux (pensions, retraites, rentes)', valeur: prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux },
     { label: "Prélèvements sociaux (gains d'actionnariat salarié)", valeur: prelevementsSociauxGainsActionnariat.prelevementsSociaux },
@@ -284,7 +285,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
                 <LigneDetail key={r.label} label={r.label} valeur={formatEuros(r.valeur)} couleur={r.couleur} muted />
               ))}
               <LigneDetail label="Revenus exceptionnels (quotient)" valeur="Non calculé" muted />
-              <LigneDetail label="Contributions sur les hauts revenus" valeur="Non calculé" muted />
+              <LigneDetail label="Contribution différentielle sur les hauts revenus" valeur="Non calculé" muted />
             </LignesRepliees>
           </div>
           <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">

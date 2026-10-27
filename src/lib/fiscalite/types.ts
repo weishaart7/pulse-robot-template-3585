@@ -804,7 +804,7 @@ export interface PrelevementSourceDiversInput {
   /** Même situation, déclarant 2 */
   case8si: boolean;
   /** Revenus exonérés non retenus pour le taux effectif */
-  case8vf: boolean;
+  case8fv: boolean;
   /** Revenus non salariaux de source étrangère, CSG 9,2 % (phase 8.2) */
   case8tq: number | null;
   /** Salaires de source étrangère, CSG 9,2 % (phase 8.2) */

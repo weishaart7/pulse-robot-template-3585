@@ -16,6 +16,7 @@ import { useRevenusNonSalaries } from './useRevenusNonSalaries';
 import { useChargesDeductibles } from './useChargesDeductibles';
 import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
+import { calculerCEHR } from '@/lib/fiscalite/calculerCEHR';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
@@ -259,7 +260,9 @@ export interface FiscalOverview {
   reductionPrelevementsSociaux: number;
   /** Prélèvements sociaux calculés, toutes catégories, après exonération 8RF…8RM, contributions 8TQ…8SB comprises. */
   prelevementsSociauxTotal: number;
-  /** Solde après prélèvement à la source ; null si aucun cadre 8 n'est saisi. */
+  /** CEHR (art. 223 sexies CGI, sans lissage), sur le RFR ; hors `impot.impotNet`, qui sert au taux moyen. */
+  cehr: number;
+  /** Solde après prélèvement à la source (CEHR comprise) ; null si aucun cadre 8 n'est saisi. */
   solde: SoldeImpotResult | null;
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
@@ -405,18 +408,21 @@ export function useFiscalOverview(): FiscalOverview {
       // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
       const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
       const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
+      // 8TK : déjà compris dans le revenu imposable (déclaré dans sa catégorie) — basculé de la base
+      // imposée en France vers le revenu retenu pour le taux effectif, RFR inchangé.
+      const revenuCredit8TK = Math.min(prelevementSourceDivers.revenuCreditImpotEgalImpotFrancais, Math.max(0, revenuImposableTotal));
       const revenuExonereEtCreditImpot = revenuExonereTauxEffectif.totalRetenu
         + revenuSalaires.revenuCreditImpotEgalImpotFrancais
         + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
         + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
         + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais
-        + prelevementSourceDivers.revenuTauxEffectif;
+        + prelevementSourceDivers.revenuTauxEffectif + revenuCredit8TK;
       const reductionsCreditsImpot = calculerReductionsCreditsImpot(
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
       );
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
       const calculer = (creditEtranger: number) => calculerImpot(
-        revenuImposableTotal,
+        revenuImposableTotal - revenuCredit8TK,
         parts,
         foyerInput.situationFamille,
         revenuExonereEtCreditImpot,
@@ -456,10 +462,11 @@ export function useFiscalOverview(): FiscalOverview {
       );
       const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
-      const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet, prelevementsSociauxTotal) : null;
+      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille);
+      const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;
 
       const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
-        impots: impot.impotApresDecote + impot.impotForfaitaire + prelevementsSociauxTotal,
+        impots: impot.impotApresDecote + impot.impotForfaitaire + cehr + prelevementsSociauxTotal,
         revenus: impot.revenuFiscalReference,
       };
       const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
@@ -488,6 +495,7 @@ export function useFiscalOverview(): FiscalOverview {
         prelevementSourceDivers,
         reductionPrelevementsSociaux,
         prelevementsSociauxTotal,
+        cehr,
         solde,
         impot,
         plafonnementIFI,

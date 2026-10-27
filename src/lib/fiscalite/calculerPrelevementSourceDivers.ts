@@ -7,7 +7,7 @@ export const TAUX_CSG_CRDS_FONCIER = 0.097;
 
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
-  case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8vf: false,
+  case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,
   case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null,
 };
 
@@ -20,8 +20,15 @@ const montant = (v: number | null) => Math.max(0, v ?? 0);
 const somme = (...v: (number | null)[]) => v.reduce<number>((s, x) => s + montant(x), 0);
 
 export interface PrelevementSourceDiversResult {
-  /** 8TI + 8TK : ajoutés au revenu retenu pour le taux effectif (8TK comme 1AF). */
+  /** 8TI : ajouté au revenu retenu pour le taux effectif. */
   revenuTauxEffectif: number;
+  /**
+   * 8TK : revenus déjà déclarés dans leur catégorie, ouvrant droit à un crédit
+   * égal à l'impôt français. L'appelant les retire de la base imposée en France
+   * et les ajoute au revenu retenu pour le taux effectif (comme 1AF), ce qui
+   * revient au crédit impôt × 8TK / revenu imposable.
+   */
+  revenuCreditImpotEgalImpotFrancais: number;
   /** 8TF : reprises ajoutées à l'impôt net. */
   reprises: number;
   /**
@@ -46,13 +53,14 @@ export interface PrelevementSourceDiversResult {
  * Cadre 8 de la 2042 et de la 2042-C (revenus 2025/impôt 2026), hors crédit
  * égal à l'impôt étranger (voir `creditImpotEgalImpotEtranger`, qui dépend
  * de l'impôt calculé). Informatives : 8HR/8HS (CDHR non calculée), 8TA,
- * 8UT, 8TT, 8UU, 8VF, 8SH/8SI (seuls les montants 8RF…8RM ont un effet).
- * Contributions 8TQ…8SB : montants saisis tels que déclarés, sans abattement
- * pour frais professionnels de 1,75 % (hypothèse à confronter au simulateur).
+ * 8UT, 8TT, 8UU, 8FV, 8SH/8SI (seuls les montants 8RF…8RM ont un effet).
+ * Contributions 8TQ…8SB : montants saisis tels que déclarés, la base déclarée
+ * étant déjà après déduction de 1,75 % sur salaires et chômage (brochure p. 328).
  */
 export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversInput): PrelevementSourceDiversResult {
   return {
-    revenuTauxEffectif: montant(input.case8ti) + montant(input.case8tk),
+    revenuTauxEffectif: montant(input.case8ti),
+    revenuCreditImpotEgalImpotFrancais: montant(input.case8tk),
     reprises: montant(input.case8tf),
     reductionPrelevementsSociaux: Math.round(
       montant(input.case8rf) * TAUX_CSG_CRDS_FONCIER

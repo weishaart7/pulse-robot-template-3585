@@ -2638,7 +2638,7 @@ export type Database = {
           case_8um: number | null
           case_8ut: number | null
           case_8uu: boolean | null
-          case_8vf: boolean | null
+          case_8fv: boolean | null
           case_8vl: number | null
           case_8vm: number | null
           case_8wm: number | null
@@ -2702,7 +2702,7 @@ export type Database = {
           case_8um?: number | null
           case_8ut?: number | null
           case_8uu?: boolean | null
-          case_8vf?: boolean | null
+          case_8fv?: boolean | null
           case_8vl?: number | null
           case_8vm?: number | null
           case_8wm?: number | null
@@ -2766,7 +2766,7 @@ export type Database = {
           case_8um?: number | null
           case_8ut?: number | null
           case_8uu?: boolean | null
-          case_8vf?: boolean | null
+          case_8fv?: boolean | null
           case_8vl?: number | null
           case_8vm?: number | null
           case_8wm?: number | null

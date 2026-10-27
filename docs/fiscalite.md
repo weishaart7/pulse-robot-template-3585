@@ -1448,7 +1448,9 @@ cadre 8 est enregistré).
 
 - **Solde** : impôt net − (`8HV`…`8KV` + `8HW`…`8KW`) + `8HY`…`8KY` + `8EA` ; PS calculés −
   `8HX`…`8KX` + `8HZ`…`8KZ`. Positif : reste à payer ; négatif : à rembourser.
-- **Taux effectif** : `8TI` et `8TK` ajoutés au revenu retenu pour le taux effectif (8TK comme 1AF).
+- **Taux effectif** : `8TI` ajouté au revenu retenu pour le taux effectif. `8TK` (déjà déclaré dans sa
+  catégorie, brochure p. 323) est retiré de la base imposée en France et ajouté au revenu retenu pour le
+  taux effectif, comme 1AF : équivaut au crédit impôt × 8TK / revenu imposable ; RFR inchangé.
 - **Crédit égal à l'impôt étranger** (`8PL`/`8VL`, `8PM`/`8VM`+`8WM`+`8UM`), non restituable, imputé
   avec 2AB : par catégorie, min(impôt étranger, impôt français × revenus / revenu imposable), l'impôt
   français étant pris après décote, impôt forfaitaire et réductions. Calcul en deux passes de
@@ -1458,14 +1460,18 @@ cadre 8 est enregistré).
 - **Exonération CSG-CRDS** (`8RF` à 9,7 %, `8RV`/`8RC`/`8RM` à 11,1 %), plafonnée aux PS du patrimoine
   calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. `8SH`/`8SI` sont
   informatifs : sans montants saisis, aucune exonération n'est calculée.
-- **Informatifs** : `8HR`/`8HS` (CDHR non calculée), `8TA`, `8UT`, `8TT`, `8UU`, `8VF`.
+- **CEHR** (`calculerCEHR.ts`, art. 223 sexies) : 3 % puis 4 % du RFR au-delà de 250 k€/500 k€
+  (personne seule) ou 500 k€/1 M€ (marié ou pacsé), sans lissage (`8TD` hors périmètre). Exposée à part
+  (`cehr`), hors `impot.impotNet` (taux moyen, PAS) ; ajoutée au solde, au total des impositions de la
+  carte et du Dashboard, et au plafonnement IFI.
+- **Informatifs** : `8HR`/`8HS` (CDHR non calculée), `8TA`, `8UT`, `8TT`, `8UU`, `8FV`.
 - **Contributions sociales sur revenus d'activité et de remplacement étrangers** (phase 8.2, mêmes
   table et formulaire) : CSG au taux de la case (9,2 % `8TQ`/`8TR`/`8SC`, 6,2 % `8SW`/`8TW`, 3,8 % `8SX`,
   8,3 % `8TV`/`8QV`/`8SA`, 6,6 % `8TH`/`8QH`/`8SD`, 3,8 % `8TX`/`8QX`/`8SB`), CRDS 0,5 % sur toutes,
   CASA 0,3 % sur les pensions à 8,3 % et 6,6 % et sur `8SC`. Comprises dans `prelevementsSociauxTotal`
   et le solde PS, hors plafond de l'exonération `8RF`…`8RM`.
-  - **Hypothèse à confronter au simulateur** : montants saisis pris tels quels, sans l'abattement de
-    1,75 % pour frais professionnels sur salaires et chômage.
+  - Montants saisis pris tels quels : la base déclarée est déjà après déduction de 1,75 % sur salaires et
+    chômage (brochure p. 328).
 - **Hors périmètre (acté)** : `8TM`, `8TN`, `8TD`, `8VN`, `8RP`/`8RQ`.
 
 ### Déclaration des revenus fonciers 2044

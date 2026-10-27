@@ -506,7 +506,7 @@ export const DECLARATION_2042_CASES: Declaration2042Case[] = [
   { code: '8UU', label: "Comptes ouverts, détenus, utilisés ou clos à l'étranger", sectionId: 'prelevement-source', elementId: 'case-8UU' },
   { code: '8SH', label: "Affilié à un régime d'assurance maladie EEE, Royaume-Uni ou Suisse, déclarant 1", sectionId: 'prelevement-source', elementId: 'case-8SH' },
   { code: '8SI', label: "Même situation, déclarant 2", sectionId: 'prelevement-source', elementId: 'case-8SI' },
-  { code: '8VF', label: "Revenus exonérés non retenus pour le taux effectif", sectionId: 'prelevement-source', elementId: 'case-8VF' },
+  { code: '8FV', label: "Revenus exonérés non retenus pour le taux effectif", sectionId: 'prelevement-source', elementId: 'case-8FV' },
   { code: '8TQ', label: "Revenus non salariaux de source étrangère, CSG 9,2 %", sectionId: 'prelevement-source', elementId: 'case-8TQ' },
   { code: '8TR', label: "Salaires de source étrangère, CSG 9,2 %", sectionId: 'prelevement-source', elementId: 'case-8TR' },
   { code: '8SC', label: "Allocations de préretraite, CSG 9,2 %", sectionId: 'prelevement-source', elementId: 'case-8SC' },

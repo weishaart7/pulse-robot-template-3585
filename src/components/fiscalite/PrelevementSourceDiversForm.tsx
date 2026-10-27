@@ -104,7 +104,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
 
         <SousGroupe titre="Revenus de source étrangère et taux effectif">
           <SingleMontantLigne label="Revenus exonérés retenus pour le calcul du taux effectif" extra="autres que salaires, pensions et revenus fonciers" code="8TI" value={ps.case8ti} onChange={v => update('case8ti', v)} />
-          <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" value={ps.case8tk} onChange={v => update('case8tk', v)} />
+          <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" aide="Montant avant impôt étranger, également déclaré dans sa catégorie : l'impôt français correspondant est annulé." value={ps.case8tk} onChange={v => update('case8tk', v)} />
           <MontantEclateLigne
             label="Revenus de capitaux mobiliers et plus-values étrangers, crédit d'impôt égal à l'impôt étranger"
             aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant."
@@ -123,7 +123,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
             ]}
           />
           <SingleMontantLigne label="Non-résidents : retenue à la source prélevée en France" extra="informatif, annexe 2041 E" code="8TA" value={ps.case8ta} onChange={v => update('case8ta', v)} />
-          <SingleCaseLigne label="Revenus exonérés non retenus pour le calcul du taux effectif" aide="Conventions internationales, organisations internationales, missions diplomatiques : informatif." code="8VF" checked={ps.case8vf} onChange={v => update('case8vf', v)} />
+          <SingleCaseLigne label="Revenus exonérés non retenus pour le calcul du taux effectif" aide="Conventions internationales, organisations internationales, missions diplomatiques : informatif." code="8FV" checked={ps.case8fv} onChange={v => update('case8fv', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Revenus d'activité et de remplacement soumis aux contributions sociales" aide="Revenus de source étrangère et salaire différé de l'héritier d'un exploitant agricole : CSG au taux indiqué, CRDS 0,5 %, CASA 0,3 % sur les pensions à 8,3 % et 6,6 % et les préretraites.">

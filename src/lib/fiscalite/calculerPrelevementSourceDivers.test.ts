@@ -20,9 +20,10 @@ describe('calculerPrelevementSourceDivers', () => {
     expect(calculerSoldeImpot(r, 5000, 600)).toEqual({ soldeImpot: 1000, soldePrelevementsSociaux: 250 });
   });
 
-  it('8TI et 8TK au taux effectif, 8TF en reprise', () => {
+  it('8TI au taux effectif, 8TK isolé (déjà dans sa catégorie), 8TF en reprise', () => {
     const r = calculerPrelevementSourceDivers({ ...VIDE, case8ti: 1000, case8tk: 2000, case8tf: 150 });
-    expect(r.revenuTauxEffectif).toBe(3000);
+    expect(r.revenuTauxEffectif).toBe(1000);
+    expect(r.revenuCreditImpotEgalImpotFrancais).toBe(2000);
     expect(r.reprises).toBe(150);
   });
 

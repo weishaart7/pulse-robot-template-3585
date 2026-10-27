@@ -108,11 +108,11 @@ const Dashboard = () => {
   const { data: maritalStatus } = useMaritalStatus();
   const { data: familyLinks } = useFamilyLinks();
   const [assetDemembrements, setAssetDemembrements] = useState<AssetDemembrement[]>([]);
-  const { impot, prelevementsSociauxTotal } = useFiscalOverview();
+  const { impot, cehr, prelevementsSociauxTotal } = useFiscalOverview();
 
   // Même calcul que FiscalOverviewCard.tsx (module Fiscalité) : IFI et prélèvements
   // sociaux sur les salaires non inclus, seules les impositions effectivement calculées sont sommées.
-  const impositionTotale = impot.impotNet + prelevementsSociauxTotal;
+  const impositionTotale = impot.impotNet + cehr + prelevementsSociauxTotal;
 
   useEffect(() => {
     assetDemembrementService.getAllForUser()
