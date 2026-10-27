@@ -1346,11 +1346,13 @@ export type Database = {
           dons_france: number | null
           dons_ue: number | null
           id: string
+          impot_etranger: number | null
           impots_revenus_n1: number | null
           revenus_hors_2042: number | null
           revenus_n1: number | null
           updated_at: string
           user_id: string
+          valeur_biens_etranger: number | null
         }
         Insert: {
           annee: number
@@ -1360,11 +1362,13 @@ export type Database = {
           dons_france?: number | null
           dons_ue?: number | null
           id?: string
+          impot_etranger?: number | null
           impots_revenus_n1?: number | null
           revenus_hors_2042?: number | null
           revenus_n1?: number | null
           updated_at?: string
           user_id: string
+          valeur_biens_etranger?: number | null
         }
         Update: {
           annee?: number
@@ -1374,11 +1378,13 @@ export type Database = {
           dons_france?: number | null
           dons_ue?: number | null
           id?: string
+          impot_etranger?: number | null
           impots_revenus_n1?: number | null
           revenus_hors_2042?: number | null
           revenus_n1?: number | null
           updated_at?: string
           user_id?: string
+          valeur_biens_etranger?: number | null
         }
         Relationships: []
       }

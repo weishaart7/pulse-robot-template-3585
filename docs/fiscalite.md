@@ -1600,7 +1600,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 ### Déclaration 2042-IFI
 
 - **Périmètre** : formulaire 2042-IFI au 1er janvier N (art. 964 à 983 CGI), cases 9AA à 9CA (annexes 2
-  et 3), 9GF/9GH (annexe 4), 9NC/9NG (dons), 9PR/9PX (plafonnement, annexe 5). Moteur pur
+  et 3), 9GF/9GH (annexe 4), 9NC/9NG (dons), 9PR/9PX (plafonnement, annexe 5), 9RS (impôt payé à l'étranger, annexe 6). Moteur pur
   [calculerDeclarationIFI.ts](src/lib/fiscalite/calculerDeclarationIFI.ts), cas de référence TEST-4
   (résidence principale 4 000 000 €, IR 2025 de 28 866 €, revenus 123 280 €) : 9AA 2 800 000 €, IFI
   théorique 13 690 € en 9GH, IFI net 13 553 €.
@@ -1620,7 +1620,11 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     net sous le seuil de 1,3 M€ ;
   - liquidation : barème de l'art. 977 (0,5 % à 1,5 % au-delà de 800 000 €), décote entre 1,3 et
     1,4 M€ (17 500 € − 1,25 % du patrimoine net), réduction pour dons (75 %, plafonnée à 50 000 € et à
-    l'impôt), puis plafonnement à 75 % des revenus (art. 979), dans cet ordre.
+    l'impôt), puis plafonnement à 75 % des revenus (art. 979), puis imputation de l'impôt payé à
+    l'étranger (art. 980), dans cet ordre ;
+  - 9RS : impôt de même nature que l'IFI payé hors de France, imputé dans la limite de l'IFI après
+    plafonnement × valeur nette imposable des biens étrangers / patrimoine net (valeur saisie, pas
+    d'indicateur « situé à l'étranger » par actif) ; sans cette valeur, rien n'est imputé.
 - **Préremplissage** ([preremplissageIFI.ts](src/lib/fiscalite/preremplissageIFI.ts)), depuis la nature de
   l'actif dans Patrimoine, à la quote-part du foyer (`computeQuotePart`) et à `valeur_estimee` :
   - résidence principale → 9AA ; résidences secondaires, locatifs nus et meublés, locaux professionnels,
@@ -1648,7 +1652,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   saisie remplace la valeur reprise ; sans 9PX, pas de plafonnement.
 - **Persistance** (migration `20261023120000_declaration_ifi`, service
   [declarationIFIService.ts](src/services/declarationIFIService.ts)) : `declarations_ifi` (`UNIQUE(user_id,
-  annee)`, case IFI théorique, 9BZ, dons, 9PR, 9PX, revenus hors 2042), `declaration_ifi_actifs` (FK
+  annee)`, case IFI théorique, 9BZ, dons, 9PR, 9PX, revenus hors 2042, 9RS `impot_etranger` et
+  `valeur_biens_etranger` — migration `20261027120000_declaration_ifi_9rs`), `declaration_ifi_actifs` (FK
   `asset_id`, catégorie, valeur, fraction taxable, `exclu`), `declaration_ifi_dettes` (FK `emprunt_id`,
   ligne, montant, catégorie du bien financé, `exclue`). Toutes les FK en `ON DELETE CASCADE`
   (`auth.users`, déclaration, `assets`, `emprunts`), RLS `(select auth.uid()) = user_id`. Colonne à NULL

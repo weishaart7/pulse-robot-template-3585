@@ -116,6 +116,7 @@ const DeclarationIFIInterface = ({ onClose, plafonnement2042 }: DeclarationIFIIn
                 <CaseReport code="9NG" libelle="Dons dans l’UE" valeur={r.case9NG} />
                 <CaseReport code="9PR" libelle="Impôts sur les revenus" valeur={r.case9PR} />
                 <CaseReport code="9PX" libelle="Revenus" valeur={r.case9PX} />
+                {r.case9RS > 0 && <CaseReport code="9RS" libelle="Impôts étrangers" valeur={r.case9RS} />}
               </GroupeCases>
             </div>
             <p className="mt-6 text-[12px] leading-5 text-muted-foreground">

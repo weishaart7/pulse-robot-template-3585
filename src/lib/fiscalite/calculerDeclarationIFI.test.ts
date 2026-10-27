@@ -151,4 +151,30 @@ describe('calculerDeclarationIFI — réductions et plafonnement', () => {
     expect(r.case9PX).toBeNull();
     expect(r.ifiNet).toBe(15_690);
   });
+
+  it('9RS : impôt étranger imputé en entier sous la limite', () => {
+    const r = calculerDeclarationIFI(decl({ ...base, impotEtranger: 3_000, valeurBiensEtranger: 1_000_000 }));
+    expect(r.limiteImputationEtranger).toBe(5_230);
+    expect(r.imputationEtranger).toBe(3_000);
+    expect(r.ifiNet).toBe(15_690 - 3_000);
+  });
+
+  it('9RS : imputation limitée à l\'IFI afférent aux biens étrangers', () => {
+    const r = calculerDeclarationIFI(decl({ ...base, impotEtranger: 9_000, valeurBiensEtranger: 1_000_000 }));
+    expect(r.case9RS).toBe(9_000);
+    expect(r.imputationEtranger).toBe(5_230);
+    expect(r.ifiNet).toBe(10_460);
+  });
+
+  it('9RS : sans valeur des biens étrangers, rien n\'est imputé', () => {
+    const r = calculerDeclarationIFI(decl({ ...base, impotEtranger: 3_000 }));
+    expect(r.imputationEtranger).toBe(0);
+    expect(r.ifiNet).toBe(15_690);
+  });
+
+  it('9RS : limite calculée sur l\'IFI après plafonnement', () => {
+    const r = calculerDeclarationIFI(decl({ ...base, impotsRevenusN1: 10_000, revenusN1: 30_000, impotEtranger: 9_000, valeurBiensEtranger: 1_000_000 }));
+    expect(r.limiteImputationEtranger).toBe(Math.round(12_500 / 3));
+    expect(r.ifiNet).toBe(12_500 - 4_167);
+  });
 });

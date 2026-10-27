@@ -52,6 +52,10 @@ export interface DeclarationIFIInput {
   impotsRevenusN1?: number;
   /** 9PX : revenus et produits N−1 (nets de frais professionnels, avant abattements). */
   revenusN1?: number | null;
+  /** 9RS : impôt de même nature que l'IFI payé à l'étranger sur des biens situés hors de France (art. 980). */
+  impotEtranger?: number;
+  /** Valeur nette imposable de ces biens, comprise dans le patrimoine net : borne l'imputation. */
+  valeurBiensEtranger?: number;
 }
 
 export interface TrancheIFI {
@@ -98,6 +102,10 @@ export interface DeclarationIFIResultat {
   /** 75 % des revenus N−1 ; null tant que 9PX n'est pas renseigné. */
   seuilPlafonnement: number | null;
   reductionPlafonnement: number;
+  case9RS: number;
+  /** IFI français afférent aux biens situés à l'étranger : IFI après plafonnement × leur part du patrimoine net. */
+  limiteImputationEtranger: number;
+  imputationEtranger: number;
   ifiNet: number;
 }
 
@@ -230,6 +238,14 @@ export function calculerDeclarationIFI(input: DeclarationIFIInput): DeclarationI
     ? 0
     : Math.min(ifiAvantPlafonnement, Math.max(0, ifiAvantPlafonnement + case9PR - seuilPlafonnement));
 
+  // Impôt payé à l'étranger (art. 980), imputé en dernier dans la limite de l'IFI afférent à ces biens.
+  const ifiApresPlafonnement = ifiAvantPlafonnement - reductionPlafonnement;
+  const case9RS = Math.round(positif(input.impotEtranger));
+  const limiteImputationEtranger = patrimoineNet > 0
+    ? Math.round(ifiApresPlafonnement * Math.min(1, positif(input.valeurBiensEtranger) / patrimoineNet))
+    : 0;
+  const imputationEtranger = Math.min(case9RS, limiteImputationEtranger);
+
   return {
     case9AA: Math.round(imposable.residencePrincipale),
     case9AB: Math.round(declare.autreBati),
@@ -264,6 +280,9 @@ export function calculerDeclarationIFI(input: DeclarationIFIInput): DeclarationI
     case9PX,
     seuilPlafonnement,
     reductionPlafonnement,
-    ifiNet: ifiAvantPlafonnement - reductionPlafonnement,
+    case9RS,
+    limiteImputationEtranger,
+    imputationEtranger,
+    ifiNet: ifiApresPlafonnement - imputationEtranger,
   };
 }

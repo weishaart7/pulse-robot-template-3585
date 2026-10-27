@@ -8,6 +8,7 @@ import type { DeclarationIFIActifRecord, DeclarationIFIDetteRecord, DeclarationI
 const declaration = (d: Partial<DeclarationIFIRecord> = {}): DeclarationIFIRecord => ({
   id: 'd', user_id: 'u', annee: 2026, deduire_ifi_theorique: true, biens_professionnels_exoneres: false,
   dons_france: null, dons_ue: null, impots_revenus_n1: null, revenus_n1: null, revenus_hors_2042: null,
+  impot_etranger: null, valeur_biens_etranger: null,
   created_at: '', updated_at: '', ...d,
 });
 const actif = (a: Partial<DeclarationIFIActifRecord>): DeclarationIFIActifRecord => ({

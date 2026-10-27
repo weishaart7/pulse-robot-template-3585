@@ -95,5 +95,7 @@ export function calculerDonneesIFI(annee: number, d: DonneesIFI, depuis2042: Pla
     donsUE: Number(d.declaration.dons_ue ?? 0),
     impotsRevenusN1: plafonnement.impots,
     revenusN1: plafonnement.revenus,
+    impotEtranger: Number(d.declaration.impot_etranger ?? 0),
+    valeurBiensEtranger: Number(d.declaration.valeur_biens_etranger ?? 0),
   });
 }

@@ -431,7 +431,7 @@ export function ReductionsSection({ etat, annee }: { etat: EtatIFI; annee: numbe
   return (
     <PanelCard className="py-8">
       <PanelCardHeader className="mb-6">
-        <PanelCardTitle><Etape n={3}>Dons et plafonnement</Etape></PanelCardTitle>
+        <PanelCardTitle><Etape n={3}>Dons, plafonnement et impôt étranger</Etape></PanelCardTitle>
         <PanelCardDescription className="max-w-3xl">
           {depuis2042
             ? `9PR et 9PX sont repris du calcul de l’impôt sur les revenus ${annee - 1} (Vision générale) ; une saisie les remplace.`
@@ -460,6 +460,12 @@ export function ReductionsSection({ etat, annee }: { etat: EtatIFI; annee: numbe
         <ChampCase code="" libelle="Revenus hors 2042, ajoutés à 9PX"
           aide="Revenus exonérés (livrets, plus-values exonérées…), revenus perçus à l’étranger nets de frais, produits soumis à prélèvement libératoire."
           value={nombre(declaration.revenus_hors_2042)} onCommit={(v) => modifierDeclaration({ revenus_hors_2042: v })} />
+        <ChampCase code="9RS" libelle="Impôts payés à l’étranger (annexe 6)"
+          aide="Impôt de même nature que l’IFI (impôt sur la fortune ou le patrimoine) payé dans un autre État sur des biens immobiliers qui y sont situés, également imposables en France. Pas un impôt foncier local."
+          value={nombre(declaration.impot_etranger)} onCommit={(v) => modifierDeclaration({ impot_etranger: v })} />
+        <ChampCase code="" libelle="Valeur nette imposable de ces biens"
+          aide="Valeur des biens situés à l’étranger retenue dans le patrimoine net, diminuée des dettes qui s’y rapportent. Borne l’imputation : IFI × cette valeur / patrimoine net."
+          value={nombre(declaration.valeur_biens_etranger)} onCommit={(v) => modifierDeclaration({ valeur_biens_etranger: v })} />
       </div>
     </PanelCard>
   );
@@ -484,7 +490,7 @@ export function LiquidationSection({ resultat: r }: { resultat: DeclarationIFIRe
       <PanelCardHeader className="mb-6">
         <PanelCardTitle><Etape n={4}>Calcul de l’impôt</Etape></PanelCardTitle>
         <PanelCardDescription className="max-w-3xl">
-          Barème de l’article 977, décote entre 1,3 et 1,4 M€, réduction pour dons, puis plafonnement à 75 % des revenus.
+          Barème de l’article 977, décote entre 1,3 et 1,4 M€, réduction pour dons, puis plafonnement à 75 % des revenus et impôt payé à l’étranger.
         </PanelCardDescription>
       </PanelCardHeader>
       <div className="max-w-xl">
@@ -513,6 +519,13 @@ export function LiquidationSection({ resultat: r }: { resultat: DeclarationIFIRe
                 libelle="Plafonnement"
                 aide={`IFI et impôts sur les revenus limités à 75 % des revenus, soit ${formatEuros(r.seuilPlafonnement)} ; impôts sur les revenus : ${formatEuros(r.case9PR)}.`}
                 valeur={-r.reductionPlafonnement}
+              />
+            )}
+            {r.case9RS > 0 && (
+              <LigneCalcul
+                libelle="Impôt payé à l’étranger"
+                aide={`${formatEuros(r.case9RS)} déclarés en 9RS, imputables dans la limite de l’IFI afférent aux biens étrangers : ${formatEuros(r.limiteImputationEtranger)}.`}
+                valeur={-r.imputationEtranger}
               />
             )}
           </>
