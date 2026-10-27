@@ -866,6 +866,11 @@ export type Database = {
           case_6qr: boolean | null
           case_6qs: number | null
           case_6qt: number | null
+          case_6qu: number | null
+          case_6nu: number | null
+          case_6ou: number | null
+          case_6pu: number | null
+          case_6ru: number | null
           case_6qw: boolean | null
           entretien_seul_6el: boolean | null
           entretien_seul_6em: boolean | null
@@ -907,6 +912,11 @@ export type Database = {
           case_6qr?: boolean | null
           case_6qs?: number | null
           case_6qt?: number | null
+          case_6qu?: number | null
+          case_6nu?: number | null
+          case_6ou?: number | null
+          case_6pu?: number | null
+          case_6ru?: number | null
           case_6qw?: boolean | null
           entretien_seul_6el?: boolean | null
           entretien_seul_6em?: boolean | null
@@ -948,6 +958,11 @@ export type Database = {
           case_6qr?: boolean | null
           case_6qs?: number | null
           case_6qt?: number | null
+          case_6qu?: number | null
+          case_6nu?: number | null
+          case_6ou?: number | null
+          case_6pu?: number | null
+          case_6ru?: number | null
           case_6qw?: boolean | null
           entretien_seul_6el?: boolean | null
           entretien_seul_6em?: boolean | null

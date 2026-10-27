@@ -19,6 +19,22 @@ export const PLAFOND_GROSSES_REPARATIONS = 25000;
 
 const montant = (v: number | null) => Math.max(0, v ?? 0);
 
+/** Report reportable d'une année vers l'imposition des revenus 2026. */
+export interface ReliquatAnnuel {
+  annee: number;
+  montant: number;
+}
+
+/** Épargne retraite d'un déclarant (6NS + 6RS face à 6PS, ou 6NT + 6RT face à 6PT). */
+export interface EpargneRetraiteDeclarant {
+  /** Cotisations déduites, avant limite du revenu global. */
+  deduit: number;
+  /** Plafond 6PS/6PT non consommé : estimation du report (l'avis ne détaille pas le plafond par année). */
+  plafondNonUtilise: number;
+  /** Cotisations au-delà du plafond : ni déductibles ni reportables. */
+  cotisationsPerdues: number;
+}
+
 export interface ChargesDeductiblesResult {
   /** 6GH : ajouté au revenu imposable avant toute imputation. */
   sommesAAjouter: number;
@@ -30,10 +46,25 @@ export interface ChargesDeductiblesResult {
   chargesDeductibles: number;
   /** Charges effectivement imputées (le revenu global ne descend pas sous 0). */
   chargesImputees: number;
-  /** Épargne retraite déduite (6NS/6RS, 6NT/6RT), comprise dans `chargesImputees`. */
+  /** Épargne retraite déduite (6NS/6RS, 6NT/6RT, 6NU/6RU), comprise dans `chargesImputees`. */
   epargneRetraiteDeduite: number;
   /** Épargne retraite effectivement imputée : réintégrée au RFR (art. 1417 IV 1° a CGI). */
   epargneRetraiteRetenuePourRFR: number;
+  /** Épargne retraite par déclarant, mutualisation 6QR appliquée si cochée. */
+  epargneRetraiteDeclarant1: EpargneRetraiteDeclarant;
+  epargneRetraiteDeclarant2: EpargneRetraiteDeclarant;
+  /** Personne à charge (6NU + 6RU face à 6PU), hors mutualisation 6QR. */
+  epargneRetraitePersonneCharge: EpargneRetraiteDeclarant;
+  /** Sans 6QR : déduction supplémentaire qu'apporterait la mutualisation des plafonds (0 sinon). */
+  gainMutualisation: number;
+  /** Déficits 2020 à 2024 non imputés, reportables sur les revenus 2026. */
+  deficitsReportables: ReliquatAnnuel[];
+  /** Reliquat de 6FA (déficit 2019) : sixième et dernière année d'imputation, définitivement perdu. */
+  deficitPerdu: number;
+  /** Grosses réparations 2016 et 2017 non imputées (plafond de 25 000 € ou revenu insuffisant), reportables. */
+  grossesReparationsReportables: ReliquatAnnuel[];
+  /** Reliquat de 6HP (dépenses 2015) : dixième et dernière année de report, expiré. */
+  grossesReparationsPerdues: number;
   /** Incidence nette sur le revenu imposable : 6GH − déficits antérieurs − charges imputées. */
   incidenceRevenuImposable: number;
 }
@@ -51,6 +82,12 @@ export interface ChargesDeductiblesResult {
  *
  * CSG déductible de l'année : 6,8 % de 2DF, et de 2BH si l'option barème
  * 2OP est exercée, calculée d'office en plus de 6DE (à ne pas y reporter).
+ *
+ * Charges imputées en partie (revenu insuffisant) : les grosses réparations,
+ * reportables, sont réputées imputées en dernier, juste après l'épargne
+ * retraite (réintégrée au RFR), pour limiter les charges définitivement perdues.
+ * Les reliquats 6FA (déficit 2019, art. 156 I CGI : 6 ans) et 6HP (dépenses
+ * 2015, art. 156 II 2° quater : 10 ans) expirent avec les revenus 2025.
  */
 export function calculerChargesDeductibles(
   input: ChargesDeductiblesInput,
@@ -66,11 +103,17 @@ export function calculerChargesDeductibles(
 
   const deficits = [input.case6fa, input.case6fb, input.case6fc, input.case6fd, input.case6fe, input.case6fl];
   let deficitsAnterieursImputes = 0;
+  const reliquatsDeficits: number[] = [];
   for (const d of deficits) {
     const impute = Math.min(montant(d), disponible);
     deficitsAnterieursImputes += impute;
     disponible -= impute;
+    reliquatsDeficits.push(montant(d) - impute);
   }
+  const deficitPerdu = reliquatsDeficits[0];
+  const deficitsReportables = reliquatsDeficits.slice(1)
+    .map((m, i) => ({ annee: 2020 + i, montant: m }))
+    .filter(r => r.montant > 0);
 
   const pensionEnfantMajeur = (v: number | null, entretienSeul = false) =>
     Math.min(montant(v), PLAFOND_PENSION_ENFANT_MAJEUR * (entretienSeul ? 2 : 1));
@@ -84,23 +127,50 @@ export function calculerChargesDeductibles(
   const cotisations2 = montant(input.case6nt) + montant(input.case6rt);
   const plafond1 = montant(input.case6ps);
   const plafond2 = montant(input.case6pt);
-  const epargneRetraiteDeduite = input.case6qr
-    ? Math.min(cotisations1 + cotisations2, plafond1 + plafond2)
-    : Math.min(cotisations1, plafond1) + Math.min(cotisations2, plafond2);
+  // Chacun s'impute d'abord sur son plafond ; avec 6QR, l'excédent de l'un s'impute sur le solde de l'autre.
+  const propre1 = Math.min(cotisations1, plafond1);
+  const propre2 = Math.min(cotisations2, plafond2);
+  const transfert1vers2 = input.case6qr ? Math.min(cotisations1 - propre1, plafond2 - propre2) : 0;
+  const transfert2vers1 = input.case6qr ? Math.min(cotisations2 - propre2, plafond1 - propre1) : 0;
+  const declarant = (cotisations: number, plafond: number, propre: number, recu: number, cede: number): EpargneRetraiteDeclarant => ({
+    deduit: propre + cede,
+    plafondNonUtilise: plafond - propre - recu,
+    cotisationsPerdues: cotisations - propre - cede,
+  });
+  const epargneRetraiteDeclarant1 = declarant(cotisations1, plafond1, propre1, transfert2vers1, transfert1vers2);
+  const epargneRetraiteDeclarant2 = declarant(cotisations2, plafond2, propre2, transfert1vers2, transfert2vers1);
+  const cotisationsPac = montant(input.case6nu) + montant(input.case6ru);
+  const plafondPac = montant(input.case6pu);
+  const proprePac = Math.min(cotisationsPac, plafondPac);
+  const epargneRetraitePersonneCharge = declarant(cotisationsPac, plafondPac, proprePac, 0, 0);
+  const epargneRetraiteDeduite = epargneRetraiteDeclarant1.deduit + epargneRetraiteDeclarant2.deduit
+    + epargneRetraitePersonneCharge.deduit;
+  const gainMutualisation = input.case6qr
+    ? 0
+    : Math.min(cotisations1 + cotisations2, plafond1 + plafond2) - propre1 - propre2;
 
   // Sans nombre saisi, un montant 6EU vaut pour une personne accueillie.
   const personnesAccueillies = input.case6ev ?? (montant(input.case6eu) > 0 ? 1 : 0);
   const accueil = Math.min(montant(input.case6eu), Math.max(0, personnesAccueillies) * PLAFOND_ACCUEIL_PERSONNE_AGEE);
-  const grossesReparations = Math.min(
-    montant(input.case6hp) + montant(input.case6hq) + montant(input.case6hr),
-    PLAFOND_GROSSES_REPARATIONS,
-  );
+  const reparations = [input.case6hp, input.case6hq, input.case6hr].map(montant);
+  const grossesReparations = Math.min(reparations[0] + reparations[1] + reparations[2], PLAFOND_GROSSES_REPARATIONS);
 
-  const chargesDeductibles = montant(input.case6de) + csgDeductibleAutomatique + pensions + epargneRetraiteDeduite
-    + montant(input.case6dg) + montant(input.case6dd) + accueil + grossesReparations;
+  const autresCharges = montant(input.case6de) + csgDeductibleAutomatique + pensions
+    + montant(input.case6dg) + montant(input.case6dd) + accueil;
+  const chargesDeductibles = autresCharges + epargneRetraiteDeduite + grossesReparations;
   const chargesImputees = Math.min(chargesDeductibles, disponible);
-  // Les charges imputées en partie : l'épargne retraite est réputée imputée en dernier.
-  const epargneRetraiteRetenuePourRFR = Math.max(0, chargesImputees - (chargesDeductibles - epargneRetraiteDeduite));
+  const epargneRetraiteRetenuePourRFR = Math.min(epargneRetraiteDeduite, Math.max(0, chargesImputees - autresCharges));
+  // Grosses réparations imputées les plus anciennes d'abord, dans la limite de 25 000 € et du revenu restant.
+  let reparationsImputables = Math.max(0, chargesImputees - autresCharges - epargneRetraiteDeduite);
+  const reliquatsReparations = reparations.map(m => {
+    const impute = Math.min(m, reparationsImputables);
+    reparationsImputables -= impute;
+    return m - impute;
+  });
+  const grossesReparationsPerdues = reliquatsReparations[0];
+  const grossesReparationsReportables = reliquatsReparations.slice(1)
+    .map((m, i) => ({ annee: 2016 + i, montant: m }))
+    .filter(r => r.montant > 0);
 
   return {
     sommesAAjouter,
@@ -110,6 +180,14 @@ export function calculerChargesDeductibles(
     chargesImputees,
     epargneRetraiteDeduite,
     epargneRetraiteRetenuePourRFR,
+    epargneRetraiteDeclarant1,
+    epargneRetraiteDeclarant2,
+    epargneRetraitePersonneCharge,
+    gainMutualisation,
+    deficitsReportables,
+    deficitPerdu,
+    grossesReparationsReportables,
+    grossesReparationsPerdues,
     incidenceRevenuImposable: sommesAAjouter - deficitsAnterieursImputes - chargesImputees,
   };
 }

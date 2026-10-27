@@ -6,6 +6,7 @@ const VIDE: ChargesDeductiblesInput = {
   case6de: null, case6el: null, case6em: null, case6gu: null, case6gi: null, case6gj: null, case6gp: null,
   case6ns: null, case6nt: null, case6rs: null, case6rt: null, case6ps: null, case6pt: null,
   case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
+  case6nu: null, case6ru: null, case6pu: null, case6ou: null, case6qu: null,
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
   entretienSeul6el: false, entretienSeul6em: false,
@@ -70,5 +71,56 @@ describe('calculerChargesDeductibles', () => {
     expect(r.deficitsAnterieursImputes).toBe(8000);
     expect(r.chargesImputees).toBe(3000);
     expect(r.incidenceRevenuImposable).toBe(-10000);
+  });
+
+  it('brochure : couple salarié, plafonds séparés puis mutualisés (6QR)', () => {
+    const base = { ...VIDE, case6ns: 1500, case6ps: 2837, case6nt: 5200, case6pt: 4637 };
+    const sans = calculerChargesDeductibles(base, 100000);
+    expect(sans.epargneRetraiteDeduite).toBe(1500 + 4637);
+    expect(sans.epargneRetraiteDeclarant1.plafondNonUtilise).toBe(1337);
+    expect(sans.epargneRetraiteDeclarant2.cotisationsPerdues).toBe(563);
+    expect(sans.gainMutualisation).toBe(563);
+    const avec = calculerChargesDeductibles({ ...base, case6qr: true }, 100000);
+    expect(avec.epargneRetraiteDeduite).toBe(6700);
+    expect(avec.epargneRetraiteDeclarant1.plafondNonUtilise).toBe(774);
+    expect(avec.epargneRetraiteDeclarant2).toEqual({ deduit: 5200, plafondNonUtilise: 0, cotisationsPerdues: 0 });
+    expect(avec.gainMutualisation).toBe(0);
+  });
+
+  it('brochure : non-salarié, cotisations PER au-delà du plafond perdues', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6ns: 3000, case6ps: 1545 }, 50000);
+    expect(r.epargneRetraiteDeduite).toBe(1545);
+    expect(r.epargneRetraiteDeclarant1.cotisationsPerdues).toBe(1455);
+  });
+
+  it('déficits : reliquat 6FA perdu, années suivantes reportables', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6fa: 3000, case6fb: 2000, case6fe: 1000 }, 1000);
+    expect(r.deficitsAnterieursImputes).toBe(1000);
+    expect(r.deficitPerdu).toBe(2000);
+    expect(r.deficitsReportables).toEqual([{ annee: 2020, montant: 2000 }, { annee: 2023, montant: 1000 }]);
+  });
+
+  it('grosses réparations : 25 000 € imputés les plus anciens d\'abord, reliquat 6HP expiré', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6hp: 10000, case6hq: 12000, case6hr: 8000 }, 100000);
+    expect(r.chargesImputees).toBe(25000);
+    expect(r.grossesReparationsPerdues).toBe(0);
+    expect(r.grossesReparationsReportables).toEqual([{ annee: 2017, montant: 5000 }]);
+    const faible = calculerChargesDeductibles({ ...VIDE, case6hp: 10000, case6hq: 2000 }, 6000);
+    expect(faible.grossesReparationsPerdues).toBe(4000);
+    expect(faible.grossesReparationsReportables).toEqual([{ annee: 2016, montant: 2000 }]);
+  });
+
+  it('revenu insuffisant : grosses réparations imputées après l\'épargne retraite', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6de: 1000, case6ns: 2000, case6ps: 5000, case6hq: 3000 }, 4000);
+    expect(r.epargneRetraiteRetenuePourRFR).toBe(2000);
+    expect(r.grossesReparationsReportables).toEqual([{ annee: 2016, montant: 2000 }]);
+  });
+
+  it('personne à charge : 6NU + 6RU plafonnés à 6PU, hors mutualisation 6QR', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6nu: 3000, case6ru: 1000, case6pu: 3500,
+      case6ns: 1000, case6ps: 5000, case6qr: true }, 100000);
+    expect(r.epargneRetraitePersonneCharge).toEqual({ deduit: 3500, plafondNonUtilise: 0, cotisationsPerdues: 500 });
+    expect(r.epargneRetraiteDeduite).toBe(4500);
+    expect(r.epargneRetraiteRetenuePourRFR).toBe(4500);
   });
 });

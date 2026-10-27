@@ -230,6 +230,46 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
             {chargesDeductibles.csgDeductibleAutomatique > 0 && (
               <LigneDetail label="dont CSG déductible sur 2BH/2DF (calculée d'office)" valeur={formatEuros(chargesDeductibles.csgDeductibleAutomatique)} />
             )}
+            {chargesDeductibles.gainMutualisation > 0 && (
+              <LigneDetail label="Mutualisation des plafonds épargne retraite (6QR)" note="non cochée" valeur={`− ${formatEuros(chargesDeductibles.gainMutualisation)} possible`} muted />
+            )}
+            {(() => {
+              const er1 = chargesDeductibles.epargneRetraiteDeclarant1;
+              const er2 = chargesDeductibles.epargneRetraiteDeclarant2;
+              const pac = chargesDeductibles.epargneRetraitePersonneCharge;
+              const perdues = er1.cotisationsPerdues + er2.cotisationsPerdues + pac.cotisationsPerdues;
+              const reportable = er1.plafondNonUtilise + er2.plafondNonUtilise + pac.plafondNonUtilise;
+              return (perdues > 0 || reportable > 0) && (
+                <LigneDetail
+                  label="Épargne retraite : plafond non utilisé"
+                  valeur={formatEuros(reportable)}
+                  sousLigne={`Estimation du report (D1 ${formatEuros(er1.plafondNonUtilise)} · D2 ${formatEuros(er2.plafondNonUtilise)}${pac.plafondNonUtilise > 0 ? ` · PAC ${formatEuros(pac.plafondNonUtilise)}` : ''})${perdues > 0 ? ` · ${formatEuros(perdues)} de cotisations au-delà du plafond, perdues` : ''}`}
+                  muted
+                />
+              );
+            })()}
+            {chargesDeductibles.deficitsReportables.length > 0 && (
+              <LigneDetail
+                label="Déficits globaux reportables"
+                valeur={formatEuros(chargesDeductibles.deficitsReportables.reduce((t, r) => t + r.montant, 0))}
+                sousLigne={chargesDeductibles.deficitsReportables.map(r => `${r.annee} : ${formatEuros(r.montant)}`).join(' · ')}
+                muted
+              />
+            )}
+            {chargesDeductibles.deficitPerdu > 0 && (
+              <LigneDetail label="Déficit 2019 (6FA) non imputé" note="expiré" valeur={formatEuros(chargesDeductibles.deficitPerdu)} muted />
+            )}
+            {chargesDeductibles.grossesReparationsReportables.length > 0 && (
+              <LigneDetail
+                label="Grosses réparations reportables"
+                valeur={formatEuros(chargesDeductibles.grossesReparationsReportables.reduce((t, r) => t + r.montant, 0))}
+                sousLigne={chargesDeductibles.grossesReparationsReportables.map(r => `${r.annee} : ${formatEuros(r.montant)}`).join(' · ')}
+                muted
+              />
+            )}
+            {chargesDeductibles.grossesReparationsPerdues > 0 && (
+              <LigneDetail label="Grosses réparations 2015 (6HP) non imputées" note="expiré" valeur={formatEuros(chargesDeductibles.grossesReparationsPerdues)} muted />
+            )}
             {revenuExonereTauxEffectif.totalRetenu > 0 && (
               <LigneDetail
                 label="Revenus exonérés retenus (taux effectif)"

@@ -1375,19 +1375,33 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
 
 - **Ordre (art. 156 CGI)** : 6GH ajouté, puis déficits globaux antérieurs `6FA`…`6FL` (les plus
   anciens d'abord), puis les charges ; le revenu ne descend jamais sous 0, le reliquat de charges est perdu.
+  Revenu insuffisant : les autres charges s'imputent d'abord, puis l'épargne retraite, puis les grosses
+  réparations (reportables, donc imputées en dernier pour limiter les pertes définitives).
+- **Reliquats** : `deficitsReportables` (2020 à 2024, par année) et `deficitPerdu` (6FA, 6ᵉ et dernière
+  année) ; `grossesReparationsReportables` (2016, 2017) et `grossesReparationsPerdues` (6HP, dépenses 2015 :
+  report de 10 ans, BOI-IR-BASE-20-60-20 § 140, expiré avec les revenus 2025). Affichés dans `FiscalOverviewCard`.
 - **Pensions alimentaires** : `6EL`/`6EM` plafonnés à 6 855 € par enfant
   (`PLAFOND_PENSION_ENFANT_MAJEUR`), doublé à 13 710 € si la case hors CERFA « enfant entretenu seul »
   est cochée (`entretienSeul6el`/`entretienSeul6em` : enfant marié/pacsé ou chargé de famille) ; `6GI`/`6GJ` × 1,25 puis même plafond ; `6GU` en totalité, `6GP` × 1,25.
-- **Épargne retraite** : min(`6NS + 6RS`, `6PS`) par déclarant ; avec `6QR`, plafonds additionnés.
-  Montant effectivement imputé (réputé imputé en dernier) réintégré au RFR (art. 1417 IV 1° a CGI).
-  `6QW`, `6OS`/`6OT`, `6QS`/`6QT` informatifs (plafond saisi tel que sur l'avis ou recalculé).
+- **Épargne retraite** : min(`6NS + 6RS`, `6PS`) par déclarant ; avec `6QR`, chacun s'impute sur son
+  plafond puis l'excédent de l'un sur le solde de l'autre. Personne à charge : min(`6NU + 6RU`, `6PU`),
+  hors mutualisation. Par membre : déduit, plafond non utilisé, cotisations perdues (ni déductibles ni
+  reportables) ; sans `6QR`, `gainMutualisation` signale la déduction supplémentaire possible.
+  Montant effectivement imputé réintégré au RFR (art. 1417 IV 1° a CGI).
+  `6QW`, `6OS`/`6OT`/`6OU`, `6QS`/`6QT`/`6QU` informatifs (plafond saisi tel que sur l'avis ou recalculé).
+- **Hypothèses** : ordre d'imputation ci-dessus non fixé par la brochure (choix favorable) ; plafond non
+  utilisé = **estimation** du report (l'avis ne détaille pas le plafond par année, l'imputation par
+  ancienneté est impossible), calculée avant limite du revenu global.
 - **CSG déductible de l'année** : 6,8 % de `2DF`, et de `2BH` si `2OP`, ajoutée d'office à `6DE`
   (`csgDeductibleAutomatique`, arrondie à l'euro, soumise à la limite du revenu global).
 - **Autres** : `6DE`, `6DG`, `6DD` en totalité ; `6EU` plafonné à 4 075 € × `6EV`
   (`PLAFOND_ACCUEIL_PERSONNE_AGEE`, 1 personne si `6EV` vide) ; `6HP`+`6HQ`+`6HR` plafonnés à 25 000 €.
 - **Vérifié brochure IR 2026** : 6 855 €, 13 710 €, 4 075 €, × 1,25 (6GI/6GJ/6GP), CSG 6,8 % sur 2BH/2DF.
-- **Hors périmètre (acté)** : colonne personne à charge (`6NU`, `6RU`, `6PU`, `6OU`, `6QU`), comme au cadre 5 ;
-  déficit global de l'année reportable non calculé.
+- **Hors périmètre (acté)** : déficit global de l'année reportable non calculé.
+- **Limite connue : non-résidents.** Le foyer n'a pas de statut résident / non-résident (`lieuResidence`
+  ne distingue que métropole et outre-mer) : les charges du cadre 6 sont toujours déduites, alors qu'elles
+  ne le sont pour un non-résident que s'il est « Schumacker » (BOI-IR-DOMIC-40), hors pensions alimentaires
+  retenues pour le taux moyen. À traiter avec le régime des non-résidents dans son ensemble (taux minimum, revenus de source française).
 
 ### Réductions et crédits d'impôt (cadre 7, phase 7.1)
 

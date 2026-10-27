@@ -608,7 +608,7 @@ export interface RevenusNonSalariesInput {
 
 /**
  * Charges déductibles du revenu global (cadre 6 de la 2042 et de la 2042-C,
- * phase 6.1) — déclarants 1 et 2 (colonne personne à charge hors périmètre).
+ * phase 6.1) — déclarants 1 et 2 ; colonne personne à charge pour l'épargne retraite seulement.
  */
 export interface ChargesDeductiblesInput {
   /** CSG déductible calculée sur les revenus du patrimoine */
@@ -649,6 +649,13 @@ export interface ChargesDeductiblesInput {
   case6qs: number | null;
   /** Autres cotisations déduites des BIC, BNC, BA, art. 62 ou salaires, déclarant 2 */
   case6qt: number | null;
+  /** Colonne personne à charge : cotisations PER déductibles (6NU), PERP et assimilées (6RU), plafond (6PU) */
+  case6nu: number | null;
+  case6ru: number | null;
+  case6pu: number | null;
+  /** Colonne personne à charge : cotisations déduites des revenus professionnels, informatives (6OU, 6QU) */
+  case6ou: number | null;
+  case6qu: number | null;
   /** Charges foncières des monuments historiques */
   case6dg: number | null;
   /** Autres déductions (art. 156 II et 156 bis CGI) */

@@ -9,6 +9,7 @@ const CHARGES_VIDE: ChargesDeductiblesInput = {
   case6de: null, case6el: null, case6em: null, case6gu: null, case6gi: null, case6gj: null, case6gp: null,
   case6ns: null, case6nt: null, case6rs: null, case6rt: null, case6ps: null, case6pt: null,
   case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
+  case6nu: null, case6ru: null, case6pu: null, case6ou: null, case6qu: null,
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
   entretienSeul6el: false, entretienSeul6em: false,
@@ -50,10 +51,10 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
       description="Cadre 6 de la 2042 et de la 2042-C : charges retranchées du revenu global, plafonds appliqués ici."
       saving={saving} onSave={handleSubmit}>
         <SousGroupe titre="CSG et pensions alimentaires">
-          <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" aide="Montant de l'avis. La CSG déductible sur 2DF (et 2BH avec l'option barème) est ajoutée automatiquement : ne pas la reporter ici." code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
+          <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" aide="Montant de l'avis. La CSG déductible sur 2DF (et 2BH avec l'option barème) est ajoutée automatiquement : ne pas la reporter ici. Corriger le montant prérempli si un avis complémentaire ou un dégrèvement est intervenu, en cas de plus-values avec abattement renforcé ou fixe de 500 000 € (CSG déductible au prorata de la plus-value soumise à l'IR), ou en cas de mariage, divorce ou décès en 2025 (répartition entre déclarations, par mois entiers en cas de décès)." code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
           <MontantEclateLigne
             label="Pension alimentaire versée à un enfant majeur"
-            aide="Plafond 6 855 € par enfant, doublé (13 710 €) si vous entretenez seul un enfant marié, pacsé ou chargé de famille : cochez la ligne suivante. Enfant hébergé sans ressources suffisantes : forfait de 4 075 € déclarable sans justificatif."
+            aide="Plafond 6 855 € par enfant, doublé (13 710 €) si vous entretenez seul un enfant chargé de famille : cochez la ligne suivante. Enfant marié ou pacsé : plafond de 6 855 € pour le jeune ménage si les beaux-parents participent, 13 710 € si vous l'entretenez seul. Enfant vivant sous votre toit sans ressources suffisantes : forfait de 4 075 € (× 2 s'il est marié ou pacsé) sans justificatif, réduit au prorata des mois d'hébergement, tout mois commencé comptant."
             items={[
               { label: '1er enfant', code: '6EL', value: ch.case6el, onChange: v => update('case6el', v) },
               { label: '2e enfant', code: '6EM', value: ch.case6em, onChange: v => update('case6em', v) },
@@ -61,7 +62,7 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
           />
           <SingleCaseLigne label="Enfant entretenu seul : 1er enfant" extra="hors formulaire, plafond doublé" code="6EL" checked={ch.entretienSeul6el} onChange={v => update('entretienSeul6el', v)} />
           <SingleCaseLigne label="Enfant entretenu seul : 2e enfant" extra="hors formulaire, plafond doublé" code="6EM" checked={ch.entretienSeul6em} onChange={v => update('entretienSeul6em', v)} />
-          <SingleMontantLigne label="Autres pensions alimentaires versées" extra="enfants mineurs, ascendants…" aide="Ascendant dans le besoin hébergé : forfait de 4 075 € déclarable sans justificatif." code="6GU" value={ch.case6gu} onChange={v => update('case6gu', v)} />
+          <SingleMontantLigne label="Autres pensions alimentaires versées" extra="enfants mineurs, ascendants…" aide="Ascendant dans le besoin hébergé : forfait de 4 075 € déclarable sans justificatif. Capital constitutif de rente pour un enfant mineur : capital ÷ années de service, 2 700 € par an au plus. Prestation compensatoire versée sur plus de 12 mois : assimilée à une pension. Enfant en résidence alternée : aucune pension déductible." code="6GU" value={ch.case6gu} onChange={v => update('case6gu', v)} />
           <MontantEclateLigne
             label="Décision de justice définitive avant 2006 : enfant majeur"
             items={[
@@ -78,17 +79,25 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
           <MontantLigne label="Cotisations PERP, Préfon, Corem, CGOS et assimilées" code1="6RS" code2="6RT" value1={ch.case6rs} value2={ch.case6rt} onChange1={v => update('case6rs', v)} onChange2={v => update('case6rt', v)} />
           <MontantLigne label="Plafond de déduction" code1="6PS" code2="6PT" value1={ch.case6ps} value2={ch.case6pt} onChange1={v => update('case6ps', v)} onChange2={v => update('case6pt', v)} />
           <SingleCaseLigne label="Vous souhaitez bénéficier du plafond de votre conjoint" code="6QR" checked={ch.case6qr} onChange={v => update('case6qr', v)} />
-          <SingleCaseLigne label="Vous êtes nouvellement domicilié en France en 2025" aide="Le plafond 6PS/6PT est alors à saisir tel que recalculé, faute d'avis d'impôt." code="6QW" checked={ch.case6qw} onChange={v => update('case6qw', v)} />
+          <SingleCaseLigne label="Vous êtes nouvellement domicilié en France en 2025" aide="Faute d'avis d'impôt, saisir en 6PS/6PT le plafond recalculé : 10 % des revenus professionnels 2025, sous déduction des cotisations 6OS/6OT et 6QS/6QT, majoré d'un plafond complémentaire égal au triple si l'expatriation n'était pas liée à une procédure judiciaire, fiscale ou douanière." code="6QW" checked={ch.case6qw} onChange={v => update('case6qw', v)} />
           <MontantLigne label="Cotisations PER déduites des BIC, BNC, BA, art. 62" aide="Déjà déduites des revenus professionnels : informatif." code1="6OS" code2="6OT" value1={ch.case6os} value2={ch.case6ot} onChange1={v => update('case6os', v)} onChange2={v => update('case6ot', v)} />
           <MontantLigne label="Autres cotisations déduites des BIC, BNC, BA, art. 62 ou salaires" aide="Déjà déduites des revenus professionnels : informatif." code1="6QS" code2="6QT" value1={ch.case6qs} value2={ch.case6qt} onChange1={v => update('case6qs', v)} onChange2={v => update('case6qt', v)} />
         </SousGroupe>
 
+        <SousGroupe titre="Épargne retraite : personne à charge" aide="Cotisations d'un membre du foyer à charge, déduites dans la limite de son propre plafond, sans mutualisation possible.">
+          <SingleMontantLigne label="Cotisations PER déductibles du revenu global" code="6NU" value={ch.case6nu} onChange={v => update('case6nu', v)} />
+          <SingleMontantLigne label="Cotisations PERP, Préfon, Corem, CGOS et assimilées" code="6RU" value={ch.case6ru} onChange={v => update('case6ru', v)} />
+          <SingleMontantLigne label="Plafond de déduction" code="6PU" value={ch.case6pu} onChange={v => update('case6pu', v)} />
+          <SingleMontantLigne label="Cotisations PER déduites des BIC, BNC, BA, art. 62" aide="Déjà déduites des revenus professionnels : informatif." code="6OU" value={ch.case6ou} onChange={v => update('case6ou', v)} />
+          <SingleMontantLigne label="Autres cotisations déduites des BIC, BNC, BA, art. 62 ou salaires" aide="Déjà déduites des revenus professionnels : informatif." code="6QU" value={ch.case6qu} onChange={v => update('case6qu', v)} />
+        </SousGroupe>
+
         <SousGroupe titre="Autres déductions">
           <SingleMontantLigne label="Charges foncières des monuments historiques" extra="art. 156 II CGI" code="6DG" value={ch.case6dg} onChange={v => update('case6dg', v)} />
-          <SingleMontantLigne label="Autres déductions" extra="art. 156 II et 156 bis CGI" code="6DD" value={ch.case6dd} onChange={v => update('case6dd', v)} />
+          <SingleMontantLigne label="Autres déductions" extra="art. 156 II et 156 bis CGI" aide="Retraite mutualiste du combattant (la rente maximale de 2 009 € n'est pas un plafond de déduction), cotisations de sécurité sociale non déduites ailleurs, rachats de cotisations sans salaires ni pensions. Les cotisations et rachats PREFON, COREM et CGOS vont en 6RS." code="6DD" value={ch.case6dd} onChange={v => update('case6dd', v)} />
           <MontantEclateLigne
-            label="Personnes de plus de 75 ans accueillies sous votre toit"
-            aide="Frais d'accueil plafonnés à 4 075 € par personne."
+            label="Personnes de plus de 75 ans accueillies sous votre toit, autres qu'ascendants"
+            aide="Frais d'accueil plafonnés à 4 075 € par personne. Personne née avant le 1.1.1951, vivant en permanence sous votre toit, sans droit à pension alimentaire, revenu imposable au plus 12 411,44 € (19 268,80 € pour un couple)."
             items={[
               { label: 'Nombre', code: '6EV', value: ch.case6ev, onChange: v => update('case6ev', v) },
               { label: "Frais d'accueil", code: '6EU', value: ch.case6eu, onChange: v => update('case6eu', v) },

@@ -172,6 +172,7 @@ const CHARGES_DEDUCTIBLES_PAR_DEFAUT: ChargesDeductiblesInput = {
   case6de: null, case6el: null, case6em: null, case6gu: null, case6gi: null, case6gj: null, case6gp: null,
   case6ns: null, case6nt: null, case6rs: null, case6rt: null, case6ps: null, case6pt: null,
   case6qr: false, case6qw: false, case6os: null, case6ot: null, case6qs: null, case6qt: null,
+  case6nu: null, case6ru: null, case6pu: null, case6ou: null, case6qu: null,
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
   entretienSeul6el: false, entretienSeul6em: false,

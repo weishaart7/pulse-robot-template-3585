@@ -6,7 +6,7 @@ export interface ChargesDeductibles extends ChargesDeductiblesInput {
 }
 
 const CASES_NUMERIQUES = [
-  'case6de', 'case6el', 'case6em', 'case6gu', 'case6gi', 'case6gj', 'case6gp', 'case6ns', 'case6nt', 'case6rs', 'case6rt', 'case6ps', 'case6pt', 'case6os', 'case6ot', 'case6qs', 'case6qt', 'case6dg', 'case6dd', 'case6ev', 'case6eu', 'case6hp', 'case6hq', 'case6hr', 'case6gh', 'case6fa', 'case6fb', 'case6fc', 'case6fd', 'case6fe', 'case6fl',
+  'case6de', 'case6el', 'case6em', 'case6gu', 'case6gi', 'case6gj', 'case6gp', 'case6ns', 'case6nt', 'case6rs', 'case6rt', 'case6ps', 'case6pt', 'case6os', 'case6ot', 'case6qs', 'case6qt', 'case6nu', 'case6ru', 'case6pu', 'case6ou', 'case6qu', 'case6dg', 'case6dd', 'case6ev', 'case6eu', 'case6hp', 'case6hq', 'case6hr', 'case6gh', 'case6fa', 'case6fb', 'case6fc', 'case6fd', 'case6fe', 'case6fl',
 ] as const;
 
 /** case6de → case_6de (colonne Supabase). */
