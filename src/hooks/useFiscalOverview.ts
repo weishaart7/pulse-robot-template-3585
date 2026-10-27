@@ -31,6 +31,7 @@ import {
   calculerRevenusFonciers2042,
   calculerRevenusNonSalaries,
   calculerChargesDeductibles,
+  alertesChargesDeductibles,
   calculerReductionsCreditsImpot,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -248,6 +249,8 @@ export interface FiscalOverview {
   deficitAgricoleImpute: number;
   /** Cadre 6 (charges déductibles, déficits globaux antérieurs, 6GH) — voir calculerChargesDeductibles.ts. */
   chargesDeductibles: ChargesDeductiblesResult;
+  /** Rappels croisant le cadre 6 et la situation de famille. */
+  alertesChargesDeductibles: string[];
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
   /** Cadre 8 (8TI/8TK, 8TF, PAS déjà payé, exonération CSG-CRDS) — voir calculerPrelevementSourceDivers.ts. */
@@ -480,6 +483,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenusNonSalaries,
         deficitAgricoleImpute,
         chargesDeductibles,
+        alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput),
         reductionsCreditsImpot,
         prelevementSourceDivers,
         reductionPrelevementsSociaux,

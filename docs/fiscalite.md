@@ -1392,8 +1392,21 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
 - **Hypothèses** : ordre d'imputation ci-dessus non fixé par la brochure (choix favorable) ; plafond non
   utilisé = **estimation** du report (l'avis ne détaille pas le plafond par année, l'imputation par
   ancienneté est impossible), calculée avant limite du revenu global.
-- **CSG déductible de l'année** : 6,8 % de `2DF`, et de `2BH` si `2OP`, ajoutée d'office à `6DE`
-  (`csgDeductibleAutomatique`, arrondie à l'euro, soumise à la limite du revenu global).
+- **CSG déductible de l'année** (`csgDeductibleCapitauxMobiliers`), reprise de la calculette IR DGFiP
+  (sources revenus 2024, `res-ser1.m`, variable DDCSG ; sources 2025 non publiées) : avec `2OP`, 6,8 % de
+  min(`2BH + 2DF`, revenus du cadre 2 imposés au barème : 2DC, 2CH, 2TS, 2TR, 2TZ, 2TT, 2DM, 2VV, 2WW, 2YY,
+  2ZZ, 2VN, 2VO, 2VP) ; sans `2OP`, `2BH` ignoré et 6,8 % de min(`2DF`, `2CH + 2YY + 2VN`, assurance-vie au
+  barème de plein droit, montants bruts). La brochure (« 2DF quelle que soit l'option ») est moins précise
+  que le simulateur. Cases au quotient (RDC, RCH, RTS, RTR, RYY) non saisies. Ajoutée d'office à `6DE`,
+  arrondie à l'euro, soumise à la limite du revenu global.
+- **Monuments historiques (6DG)** : seule ligne déclarée après limitation. Calcul d'appoint
+  `calculerMonumentsHistoriques.ts` (BOI-IR-BASE-20-40) : 100 % (classé/inscrit avec visites, versements aux
+  Affaires culturelles, travaux subventionnés nets, autres charges ouvert au public), 50 % (agréé avec visites,
+  autres charges fermé ou agréé), label Fondation : travaux nets de subvention à 50 %, 100 % si subvention
+  ≥ 20 %. Lignes non enregistrées : seul le résultat est reporté en 6DG.
+- **Alertes** (`alertesChargesDeductibles`, affichées dans `FiscalOverviewCard`) : pension à un enfant majeur
+  avec un enfant majeur rattaché ; 6GU/6GP avec un enfant mineur à charge (garde) ou en résidence alternée.
+  Le foyer ne relie pas une pension à un enfant précis : rappels, pas de blocage.
 - **Autres** : `6DE`, `6DG`, `6DD` en totalité ; `6EU` plafonné à 4 075 € × `6EV`
   (`PLAFOND_ACCUEIL_PERSONNE_AGEE`, 1 personne si `6EV` vide) ; `6HP`+`6HQ`+`6HR` plafonnés à 25 000 €.
 - **Vérifié brochure IR 2026** : 6 855 €, 13 710 €, 4 075 €, × 1,25 (6GI/6GJ/6GP), CSG 6,8 % sur 2BH/2DF.

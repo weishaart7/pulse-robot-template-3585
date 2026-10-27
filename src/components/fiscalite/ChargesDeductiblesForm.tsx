@@ -4,6 +4,7 @@ import { ChargesDeductibles } from '@/services/chargesDeductiblesService';
 import { ChargesDeductiblesInput } from '@/lib/fiscalite';
 import { DeclarantsHeader, MontantEclateLigne, MontantLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
+import { CalculMonumentsHistoriques } from './CalculMonumentsHistoriques';
 
 const CHARGES_VIDE: ChargesDeductiblesInput = {
   case6de: null, case6el: null, case6em: null, case6gu: null, case6gi: null, case6gj: null, case6gp: null,
@@ -51,7 +52,7 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
       description="Cadre 6 de la 2042 et de la 2042-C : charges retranchées du revenu global, plafonds appliqués ici."
       saving={saving} onSave={handleSubmit}>
         <SousGroupe titre="CSG et pensions alimentaires">
-          <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" aide="Montant de l'avis. La CSG déductible sur 2DF (et 2BH avec l'option barème) est ajoutée automatiquement : ne pas la reporter ici. Corriger le montant prérempli si un avis complémentaire ou un dégrèvement est intervenu, en cas de plus-values avec abattement renforcé ou fixe de 500 000 € (CSG déductible au prorata de la plus-value soumise à l'IR), ou en cas de mariage, divorce ou décès en 2025 (répartition entre déclarations, par mois entiers en cas de décès)." code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
+          <SingleMontantLigne label="CSG déductible" extra="calculée sur les revenus du patrimoine" aide="Montant de l'avis. La CSG déductible sur 2BH et 2DF est ajoutée automatiquement, comme le fait le simulateur DGFiP : avec l'option barème, 6,8 % de 2BH + 2DF dans la limite des revenus du cadre 2 imposés au barème ; sans option, 6,8 % de 2DF dans la limite des produits d'assurance-vie au barème de plein droit (2CH, 2YY, 2VN). Ne pas la reporter ici. Corriger le montant prérempli si un avis complémentaire ou un dégrèvement est intervenu, en cas de plus-values avec abattement renforcé ou fixe de 500 000 € (CSG déductible au prorata de la plus-value soumise à l'IR), ou en cas de mariage, divorce ou décès en 2025 (répartition entre déclarations, par mois entiers en cas de décès)." code="6DE" value={ch.case6de} onChange={v => update('case6de', v)} />
           <MontantEclateLigne
             label="Pension alimentaire versée à un enfant majeur"
             aide="Plafond 6 855 € par enfant, doublé (13 710 €) si vous entretenez seul un enfant chargé de famille : cochez la ligne suivante. Enfant marié ou pacsé : plafond de 6 855 € pour le jeune ménage si les beaux-parents participent, 13 710 € si vous l'entretenez seul. Enfant vivant sous votre toit sans ressources suffisantes : forfait de 4 075 € (× 2 s'il est marié ou pacsé) sans justificatif, réduit au prorata des mois d'hébergement, tout mois commencé comptant."
@@ -93,7 +94,8 @@ export const ChargesDeductiblesForm = ({ onSaved }: ChargesDeductiblesFormProps)
         </SousGroupe>
 
         <SousGroupe titre="Autres déductions">
-          <SingleMontantLigne label="Charges foncières des monuments historiques" extra="art. 156 II CGI" code="6DG" value={ch.case6dg} onChange={v => update('case6dg', v)} />
+          <SingleMontantLigne label="Charges foncières des monuments historiques" extra="art. 156 II CGI" aide="Seule ligne à déclarer après limitation : 100 % ou 50 % selon que l'immeuble est classé, inscrit ou agréé, ouvert ou fermé au public, avec ou sans recettes, ou labellisé Fondation du patrimoine. Utilisez le calcul ci-dessous." code="6DG" value={ch.case6dg} onChange={v => update('case6dg', v)} />
+          <CalculMonumentsHistoriques onReporter={v => update('case6dg', v)} />
           <SingleMontantLigne label="Autres déductions" extra="art. 156 II et 156 bis CGI" aide="Retraite mutualiste du combattant (la rente maximale de 2 009 € n'est pas un plafond de déduction), cotisations de sécurité sociale non déduites ailleurs, rachats de cotisations sans salaires ni pensions. Les cotisations et rachats PREFON, COREM et CGOS vont en 6RS." code="6DD" value={ch.case6dd} onChange={v => update('case6dd', v)} />
           <MontantEclateLigne
             label="Personnes de plus de 75 ans accueillies sous votre toit, autres qu'ascendants"

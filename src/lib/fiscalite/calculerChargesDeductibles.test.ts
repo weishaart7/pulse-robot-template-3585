@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculerChargesDeductibles } from './calculerChargesDeductibles';
+import { CapitauxMobiliersCSG, calculerChargesDeductibles } from './calculerChargesDeductibles';
 import { ChargesDeductiblesInput } from './types';
 
 const VIDE: ChargesDeductiblesInput = {
@@ -10,6 +10,12 @@ const VIDE: ChargesDeductiblesInput = {
   case6dg: null, case6dd: null, case6ev: null, case6eu: null, case6hp: null, case6hq: null, case6hr: null,
   case6gh: null, case6fa: null, case6fb: null, case6fc: null, case6fd: null, case6fe: null, case6fl: null,
   entretienSeul6el: false, entretienSeul6em: false,
+};
+
+const CM_VIDE: CapitauxMobiliersCSG = {
+  case2bh: null, case2df: null, case2op: false, case2dc: null, case2ch: null, case2ts: null, case2tr: null,
+  case2tz: null, case2tt: null, case2dm: null, case2vv: null, case2ww: null, case2yy: null, case2zz: null,
+  case2vn: null, case2vo: null, case2vp: null,
 };
 
 describe('calculerChargesDeductibles', () => {
@@ -34,16 +40,23 @@ describe('calculerChargesDeductibles', () => {
     expect(r.chargesImputees).toBe(5000 + 6855 + 12500);
   });
 
-  it('CSG déductible automatique : 6,8 % de 2DF, et de 2BH seulement avec 2OP', () => {
-    const cm = { case2bh: 10000, case2df: 5000, case2op: false };
-    expect(calculerChargesDeductibles(VIDE, 80000, cm).csgDeductibleAutomatique).toBe(340);
-    const r = calculerChargesDeductibles({ ...VIDE, case6de: 100 }, 80000, { ...cm, case2op: true });
+  it('CSG déductible automatique avec 2OP : 6,8 % de 2BH + 2DF, limité aux revenus imposés au barème', () => {
+    const cm = { ...CM_VIDE, case2bh: 10000, case2df: 5000, case2op: true, case2dc: 12000, case2tr: 3000 };
+    const r = calculerChargesDeductibles({ ...VIDE, case6de: 100 }, 80000, cm);
     expect(r.csgDeductibleAutomatique).toBe(1020);
     expect(r.chargesImputees).toBe(1120);
+    expect(calculerChargesDeductibles(VIDE, 80000, { ...cm, case2dc: 4000 }).csgDeductibleAutomatique).toBe(476);
+  });
+
+  it('CSG déductible automatique sans 2OP : 2BH ignoré, 2DF limité à l\'assurance-vie au barème de plein droit', () => {
+    const cm = { ...CM_VIDE, case2bh: 10000, case2df: 5000, case2dc: 20000 };
+    expect(calculerChargesDeductibles(VIDE, 80000, cm).csgDeductibleAutomatique).toBe(0);
+    expect(calculerChargesDeductibles(VIDE, 80000, { ...cm, case2ch: 2000, case2yy: 1000 }).csgDeductibleAutomatique).toBe(204);
+    expect(calculerChargesDeductibles(VIDE, 80000, { ...cm, case2ch: 9000 }).csgDeductibleAutomatique).toBe(340);
   });
 
   it('CSG déductible automatique limitée au revenu global avec les autres charges', () => {
-    const r = calculerChargesDeductibles({ ...VIDE, case6de: 500 }, 800, { case2bh: null, case2df: 10000, case2op: false });
+    const r = calculerChargesDeductibles({ ...VIDE, case6de: 500 }, 800, { ...CM_VIDE, case2df: 10000, case2ch: 10000 });
     expect(r.chargesDeductibles).toBe(1180);
     expect(r.chargesImputees).toBe(800);
   });

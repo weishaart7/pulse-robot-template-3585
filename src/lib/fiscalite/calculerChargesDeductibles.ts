@@ -1,4 +1,4 @@
-import { ChargesDeductiblesInput } from './types';
+import { ChargesDeductiblesInput, RevenusCapitauxMobiliersInput } from './types';
 
 /**
  * Plafond de la pension alimentaire à un enfant majeur, par enfant (art. 156 II 2° CGI) :
@@ -19,6 +19,27 @@ export const PLAFOND_GROSSES_REPARATIONS = 25000;
 
 const montant = (v: number | null) => Math.max(0, v ?? 0);
 
+/** Cases du cadre 2 utiles à la CSG déductible de l'année (formule du simulateur DGFiP). */
+export type CapitauxMobiliersCSG = Pick<RevenusCapitauxMobiliersInput,
+  'case2bh' | 'case2df' | 'case2op' | 'case2dc' | 'case2ch' | 'case2ts' | 'case2tr' | 'case2tz' | 'case2tt'
+  | 'case2dm' | 'case2vv' | 'case2ww' | 'case2yy' | 'case2zz' | 'case2vn' | 'case2vo' | 'case2vp'>;
+
+/**
+ * CSG déductible de l'année sur 2BH/2DF, reprise de la calculette IR DGFiP
+ * (sources revenus 2024, `res-ser1.m`, variable DDCSG) :
+ * - avec 2OP : 6,8 % de min(2BH + 2DF, revenus du cadre 2 imposés au barème) ;
+ * - sans 2OP : 2BH ignoré, 6,8 % de min(2DF, produits d'assurance-vie au barème
+ *   de plein droit 2CH + 2YY + 2VN), montants bruts avant abattement.
+ * Les cases au quotient (RDC, RCH, RTS, RTR, RYY) ne sont pas saisies dans l'outil.
+ */
+export function csgDeductibleCapitauxMobiliers(cm: CapitauxMobiliersCSG): number {
+  const avBaremePleinDroit = montant(cm.case2ch) + montant(cm.case2yy) + montant(cm.case2vn);
+  if (!cm.case2op) return Math.round(TAUX_CSG_DEDUCTIBLE * Math.min(montant(cm.case2df), avBaremePleinDroit));
+  const imposesAuBareme = avBaremePleinDroit + [cm.case2dc, cm.case2ts, cm.case2tr, cm.case2tz, cm.case2tt,
+    cm.case2dm, cm.case2vv, cm.case2ww, cm.case2zz, cm.case2vo, cm.case2vp].reduce<number>((t, v) => t + montant(v), 0);
+  return Math.round(TAUX_CSG_DEDUCTIBLE * Math.min(montant(cm.case2bh) + montant(cm.case2df), imposesAuBareme));
+}
+
 /** Report reportable d'une année vers l'imposition des revenus 2026. */
 export interface ReliquatAnnuel {
   annee: number;
@@ -38,7 +59,7 @@ export interface EpargneRetraiteDeclarant {
 export interface ChargesDeductiblesResult {
   /** 6GH : ajouté au revenu imposable avant toute imputation. */
   sommesAAjouter: number;
-  /** CSG déductible de l'année sur 2DF (et 2BH si 2OP), ajoutée d'office à 6DE ; comprise dans `chargesDeductibles`. */
+  /** CSG déductible de l'année sur 2BH/2DF (`csgDeductibleCapitauxMobiliers`), ajoutée d'office à 6DE ; comprise dans `chargesDeductibles`. */
   csgDeductibleAutomatique: number;
   /** 6FA à 6FL imputés, les plus anciens d'abord, dans la limite du revenu global. */
   deficitsAnterieursImputes: number;
@@ -80,8 +101,8 @@ export interface ChargesDeductiblesResult {
  * le plafond 6PS/6PT est saisi tel que figurant sur l'avis (ou recalculé
  * par l'utilisateur pour un nouveau résident).
  *
- * CSG déductible de l'année : 6,8 % de 2DF, et de 2BH si l'option barème
- * 2OP est exercée, calculée d'office en plus de 6DE (à ne pas y reporter).
+ * CSG déductible de l'année sur 2BH/2DF : voir `csgDeductibleCapitauxMobiliers`,
+ * calculée d'office en plus de 6DE (à ne pas y reporter).
  *
  * Charges imputées en partie (revenu insuffisant) : les grosses réparations,
  * reportables, sont réputées imputées en dernier, juste après l'épargne
@@ -92,13 +113,10 @@ export interface ChargesDeductiblesResult {
 export function calculerChargesDeductibles(
   input: ChargesDeductiblesInput,
   revenuBrutGlobal: number,
-  capitauxMobiliers: { case2bh: number | null; case2df: number | null; case2op: boolean } | null = null,
+  capitauxMobiliers: CapitauxMobiliersCSG | null = null,
 ): ChargesDeductiblesResult {
   const sommesAAjouter = montant(input.case6gh);
-  const csgDeductibleAutomatique = capitauxMobiliers
-    ? Math.round(TAUX_CSG_DEDUCTIBLE * (montant(capitauxMobiliers.case2df)
-      + (capitauxMobiliers.case2op ? montant(capitauxMobiliers.case2bh) : 0)))
-    : 0;
+  const csgDeductibleAutomatique = capitauxMobiliers ? csgDeductibleCapitauxMobiliers(capitauxMobiliers) : 0;
   let disponible = Math.max(0, revenuBrutGlobal + sommesAAjouter);
 
   const deficits = [input.case6fa, input.case6fb, input.case6fc, input.case6fd, input.case6fe, input.case6fl];

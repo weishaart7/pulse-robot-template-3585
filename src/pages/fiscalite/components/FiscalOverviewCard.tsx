@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi, comparaisonOptionBareme,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -267,6 +267,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
                 muted
               />
             )}
+            {alertesChargesDeductibles.map(alerte => (
+              <p key={alerte} className="border-b border-border/60 py-2 text-[12px] text-muted-foreground">{alerte}</p>
+            ))}
             {chargesDeductibles.grossesReparationsPerdues > 0 && (
               <LigneDetail label="Grosses réparations 2015 (6HP) non imputées" note="expiré" valeur={formatEuros(chargesDeductibles.grossesReparationsPerdues)} muted />
             )}
