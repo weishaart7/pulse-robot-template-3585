@@ -1210,8 +1210,10 @@ fonciers (§4).
   prélèvements sociaux dus au titre des revenus du patrimoine »), au taux provisoire de 18,6 %
   (`TAUX_PS_PLUS_VALUES`, voir dette §3). **Écart assumé avec le simulateur officiel** : sur le compte réel
   ci-dessus, aucune ligne PS pour 1TZ/1AY, total 7 175 € ; Pulse affiche désormais 7 175 € + 18 000 € ×
-  18,6 % = 10 523 €. La brochure prévaut ; un avis d'imposition réel départagerait. **3VD/3VI/3VF/3VJ/3VK** (gains pré-28.9.2012) :
-  aucune source trouvée avec certitude sur leur régime PS, non testés empiriquement. Branché dans
+  18,6 % = 10 523 €. La brochure prévaut ; un avis d'imposition réel départagerait. **3VD/3VI/3VF** (gains pré-28.9.2012 à taux
+  forfaitaire) : PS sur les revenus du patrimoine à 18,6 %, confirmé par ClickImpôts (3VD = 30 000 € →
+  5 580 €) ; la contribution salariale de 10 % reste portée par 3VN. **3VJ/3VK** : régime PS non confirmé,
+  hors calcul. Branché dans
   `useFiscalOverview.ts` (`prelevementsSociauxGainsActionnariat`) et affiché dans `FiscalOverviewCard.tsx`.
   Les tests couvrent le rapprochement avec le simulateur (7 175 € hors 1TZ/1AY), chaque mécanisme
   isolément et cumulés, l'assiette 1TZ+abattements, 1AY/1BY et l'exclusion des cases hors périmètre.

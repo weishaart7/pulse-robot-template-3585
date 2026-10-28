@@ -74,21 +74,30 @@ const TAUX_CONTRIBUTION_SALARIALE_3VN = 0.10;
 const TAUX_PS_GAINS_REVENUS_PATRIMOINE = TAUX_PS_PLUS_VALUES;
 
 /**
+ * Gains de levée d'options attribuées avant le 28.9.2012 imposés aux taux
+ * forfaitaires (3VD 18 %, 3VI 30 %, 3VF 41 %) : PS sur les revenus du
+ * patrimoine au même taux que 1TZ/1AY, confirmé par ClickImpôts (3VD =
+ * 30 000 € → 5 580 € de PS). La contribution salariale de 10 % reste portée
+ * par 3VN.
+ */
+const TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE = TAUX_PS_PLUS_VALUES;
+
+/**
  * Cases hors périmètre du calcul PS : aucune ligne de prélèvements sociaux
  * correspondante trouvée dans le détail du calcul du simulateur officiel sur
  * le compte réel testé (1TP = 2 000 €, 1MP = 5 000 € déclarés) et aucune
  * source de la brochure sur leur régime PS — non modélisé plutôt que deviné,
  * y compris pour 1TP malgré une source documentaire isolée suggérant un
  * régime salarial (voir TAUX_CSG_CRDS_LEVEE_OPTIONS ci-dessus).
- * 3VD/3VI/3VF/3VJ/3VK (gains pré-28.9.2012) : aucune source trouvée avec
- * certitude sur leur régime PS exact — non modélisé. 0XX : système du
+ * 3VJ/3VK (gains pré-28.9.2012 imposés selon les règles des salaires) :
+ * régime PS non confirmé — non modélisé. 0XX : système du
  * quotient, hors périmètre PS comme il l'est du reste de `calculerImpot.ts`
  * pour ce module.
  */
 export const CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE = [
   'case1tp', 'case1up',
   'case1mp', 'case1mq',
-  'case3vd', 'case3vi', 'case3vf', 'case3vj', 'case3vk',
+  'case3vj', 'case3vk',
   'case0xx',
 ] as const;
 
@@ -108,6 +117,9 @@ export interface PrelevementsSociauxGainsActionnariatResult {
   /** Base 1TZ+1UZ+1WZ+1VZ+1AY+1BY, soumise aux PS sur les revenus du patrimoine (voir TAUX_PS_GAINS_REVENUS_PATRIMOINE). */
   baseGainsRevenusPatrimoine: number;
   prelevementsSociauxGainsRevenusPatrimoine: number;
+  /** Base 3VD+3VI+3VF, soumise aux PS sur les revenus du patrimoine (voir TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE). */
+  baseGainsHistoriquesTauxForfaitaire: number;
+  prelevementsSociauxGainsHistoriquesTauxForfaitaire: number;
   prelevementsSociaux: number;
   casesHorsPerimetre: readonly string[];
 }
@@ -138,9 +150,11 @@ export interface PrelevementsSociauxGainsActionnariatResult {
  * 4. **3VN** : contribution salariale de 10 % (options/AGA).
  * 5. **1TZ/1UZ/1WZ/1VZ et 1AY/1BY** : PS sur les revenus du patrimoine,
  *    taux provisoire 18,6 % — voir TAUX_PS_GAINS_REVENUS_PATRIMOINE.
+ * 6. **3VD/3VI/3VF** : PS sur les revenus du patrimoine, 18,6 % — voir
+ *    TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE.
  *
  * Cases hors calcul : voir CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE
- * (1TP/1MP, et 3VD/3VI/3VF/3VJ/3VK, régime PS non confirmé avec certitude).
+ * (1TP/1MP, et 3VJ/3VK, régime PS non confirmé avec certitude).
  */
 export function calculerPrelevementsSociauxGainsActionnariatSalarie(
   input: GainsActionnariatSalarieInput,
@@ -165,6 +179,10 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
     + (input.case1vz ?? 0) + (input.case1ay ?? 0) + (input.case1by ?? 0);
   const prelevementsSociauxGainsRevenusPatrimoine = baseGainsRevenusPatrimoine * TAUX_PS_GAINS_REVENUS_PATRIMOINE;
 
+  const baseGainsHistoriquesTauxForfaitaire = (input.case3vd ?? 0) + (input.case3vi ?? 0) + (input.case3vf ?? 0);
+  const prelevementsSociauxGainsHistoriquesTauxForfaitaire =
+    baseGainsHistoriquesTauxForfaitaire * TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE;
+
   return {
     baseLeveeOptions,
     prelevementsSociauxLeveeOptions,
@@ -176,11 +194,14 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
     contributionSalariale3VN,
     baseGainsRevenusPatrimoine,
     prelevementsSociauxGainsRevenusPatrimoine,
+    baseGainsHistoriquesTauxForfaitaire,
+    prelevementsSociauxGainsHistoriquesTauxForfaitaire,
     prelevementsSociaux: prelevementsSociauxLeveeOptions
       + prelevementsSociauxCarriedInterestNonQualifiant
       + contributionSalariale1NY
       + contributionSalariale3VN
-      + prelevementsSociauxGainsRevenusPatrimoine,
+      + prelevementsSociauxGainsRevenusPatrimoine
+      + prelevementsSociauxGainsHistoriquesTauxForfaitaire,
     casesHorsPerimetre: CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE,
   };
 }

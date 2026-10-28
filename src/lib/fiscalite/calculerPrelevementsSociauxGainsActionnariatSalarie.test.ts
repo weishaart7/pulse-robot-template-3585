@@ -93,11 +93,18 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociaux).toBeCloseTo(2790, 6);
   });
 
-  it('ignore les gains historiques 3VD/3VI/3VF/3VJ/3VK (régime PS non confirmé)', () => {
+  it('3VD = 30 000 € : 5 580 € de PS (18,6 %, ClickImpôts)', () => {
+    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case3vd: 30000 }));
+    expect(result.baseGainsHistoriquesTauxForfaitaire).toBe(30000);
+    expect(result.prelevementsSociaux).toBeCloseTo(5580, 6);
+  });
+
+  it('cumule 3VD/3VI/3VF et ignore 3VJ/3VK (régime PS non confirmé)', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
       case3vd: 10000, case3vi: 10000, case3vf: 10000, case3vj: 10000, case3vk: 10000,
     }));
-    expect(result.prelevementsSociaux).toBe(0);
+    expect(result.baseGainsHistoriquesTauxForfaitaire).toBe(30000);
+    expect(result.prelevementsSociaux).toBeCloseTo(5580, 6);
   });
 
   it('ignore 0XX (système du quotient)', () => {
@@ -109,6 +116,8 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput());
     expect(result.casesHorsPerimetre).toContain('case1tp');
     expect(result.casesHorsPerimetre).toContain('case1mp');
+    expect(result.casesHorsPerimetre).toContain('case3vj');
+    expect(result.casesHorsPerimetre).not.toContain('case3vd');
     expect(result.casesHorsPerimetre).not.toContain('case1tz');
     expect(result.casesHorsPerimetre).not.toContain('case1uz');
     expect(result.casesHorsPerimetre).not.toContain('case1ay');
