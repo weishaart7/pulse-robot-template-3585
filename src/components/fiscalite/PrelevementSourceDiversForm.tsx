@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { usePrelevementSourceDivers } from '@/hooks/usePrelevementSourceDivers';
 import { PrelevementSourceDivers } from '@/services/prelevementSourceDiversService';
-import { PRELEVEMENT_SOURCE_DIVERS_VIDE, PrelevementSourceDiversInput } from '@/lib/fiscalite';
+import { PRELEVEMENT_SOURCE_DIVERS_VIDE, PrelevementSourceDiversInput, calculerPrelevementSourceDivers } from '@/lib/fiscalite';
 import { CaseLigne, MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -105,6 +105,11 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
         <SousGroupe titre="Revenus de source étrangère et taux effectif">
           <SingleMontantLigne label="Revenus exonérés retenus pour le calcul du taux effectif" extra="autres que salaires, pensions et revenus fonciers" code="8TI" value={ps.case8ti} onChange={v => update('case8ti', v)} />
           <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" aide="Montant avant impôt étranger, également déclaré dans sa catégorie : l'impôt français correspondant est annulé." value={ps.case8tk} onChange={v => update('case8tk', v)} />
+          <SingleMontantLigne label="Dont revenus du patrimoine · PS 18,6 %" extra="ventilation interne, non déclarée" aide="Capitaux mobiliers et plus-values de valeurs mobilières compris dans 8TK : leurs prélèvements sociaux sont neutralisés par le crédit égal à l'impôt français." code="8TK" value={ps.case8tk186} onChange={v => update('case8tk186', v)} />
+          <SingleMontantLigne label="Dont revenus du patrimoine · PS 17,2 %" extra="ventilation interne, hors foncier (4BK/4BL)" aide="Revenus restés à 17,2 % après la LFSS 2026, compris dans 8TK. Taux des BIC non professionnels à confirmer." code="8TK" value={ps.case8tk172} onChange={v => update('case8tk172', v)} />
+          {calculerPrelevementSourceDivers(ps).ventilation8TKSuperieure && (
+            <p className="py-2 text-[13px] text-muted-foreground">La ventilation excède 8TK : l'excédent est ignoré.</p>
+          )}
           <MontantEclateLigne
             label="Revenus de capitaux mobiliers et plus-values étrangers, crédit d'impôt égal à l'impôt étranger"
             aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant (IR puis prélèvements sociaux). Impôt étranger à saisir dans la limite du taux prévu par la convention."

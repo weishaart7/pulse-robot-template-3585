@@ -17,6 +17,7 @@ import { useChargesDeductibles } from './useChargesDeductibles';
 import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
 import { calculerCEHR } from '@/lib/fiscalite/calculerCEHR';
+import { TAUX_PRELEVEMENTS_SOCIAUX } from '@/lib/immobilier/rentabilite';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
@@ -38,6 +39,8 @@ import {
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
   TAUX_CSG_CRDS_FONCIER,
   TAUX_CSG_CRDS_PATRIMOINE,
+  TAUX_PRELEVEMENT_SOLIDARITE,
+  TAUX_PS_PATRIMOINE,
   exonerationTotaleCsgCrds,
   calculerSoldeImpot,
   creditImpotEgalImpotEtranger,
@@ -456,17 +459,19 @@ export function useFiscalOverview(): FiscalOverview {
         exonerationCsgCrds: exonerationTotale,
       });
       const impot = calculer(creditEtranger.creditImpot);
+      // PS de la 2044 hors fraction 4BL (crédit égal à l'impôt français, qui neutralise aussi les PS).
+      const prelevementsSociaux2044 = Math.max(0, (revenusFonciers?.prelevementsSociaux ?? 0) - revenusFonciers2042.neutralisationPS2044);
       const prelevementsSociauxBruts = prelevementsSociauxCapitauxMobiliers.prelevementsSociaux
         + prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux
         + prelevementsSociauxGainsActionnariat.prelevementsSociaux
         + plusValuesGainsDivers.prelevementsSociaux
-        + (revenusFonciers?.prelevementsSociaux ?? 0)
+        + prelevementsSociaux2044
         + revenusFonciers2042.prelevementsSociaux
         + revenusNonSalaries.prelevementsSociaux;
       // PS des gains d'actionnariat (régime salarial) exclus du plafond de l'exonération patrimoine.
       // 8SH (personne seule) ou 8SH + 8SI (couple) : exonération de CSG-CRDS de tous les revenus du
       // patrimoine — fonciers à 9,7/17,2, 2DI (CSG-CRDS seule) en totalité, le reste à 11,1/18,6.
-      const prelevementsSociauxFonciers = (revenusFonciers?.prelevementsSociaux ?? 0) + revenusFonciers2042.prelevementsSociaux;
+      const prelevementsSociauxFonciers = prelevementsSociaux2044 + revenusFonciers2042.prelevementsSociaux;
       const reductionPrelevementsSociaux = exonerationTotale
         ? Math.round(
           prelevementsSociauxFonciers * (TAUX_CSG_CRDS_FONCIER / 0.172)
@@ -479,12 +484,20 @@ export function useFiscalOverview(): FiscalOverview {
           prelevementSourceDivers.reductionPrelevementsSociaux,
           Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux),
         );
+      // 8TK ventilé : PS neutralisés par le crédit égal à l'impôt français (seul le prélèvement de
+      // solidarité reste dû après l'exonération 8SH/8SI), plafonnés aux PS restant dus.
+      const neutralisationPS8TK = Math.min(
+        Math.round(exonerationTotale
+          ? (prelevementSourceDivers.assiettePS8TK186 + prelevementSourceDivers.assiettePS8TK172) * TAUX_PRELEVEMENT_SOLIDARITE
+          : prelevementSourceDivers.assiettePS8TK186 * TAUX_PS_PATRIMOINE + prelevementSourceDivers.assiettePS8TK172 * TAUX_PRELEVEMENTS_SOCIAUX),
+        Math.max(0, prelevementsSociauxBruts - prelevementsSociauxGainsActionnariat.prelevementsSociaux - reductionPrelevementsSociaux),
+      );
       // Reliquat du crédit 8VL imputé sur les PS dus au titre de 8PL, sans excéder les PS dus.
       const creditEtrangerPrelevementsSociaux = Math.min(
         creditEtranger.creditPrelevementsSociaux,
-        Math.max(0, prelevementsSociauxBruts - reductionPrelevementsSociaux),
+        Math.max(0, prelevementsSociauxBruts - reductionPrelevementsSociaux - neutralisationPS8TK),
       );
-      const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux - creditEtrangerPrelevementsSociaux
+      const prelevementsSociauxTotal = prelevementsSociauxBruts - reductionPrelevementsSociaux - neutralisationPS8TK - creditEtrangerPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
       const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient);
       const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;

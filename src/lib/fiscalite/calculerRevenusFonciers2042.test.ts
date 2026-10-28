@@ -15,15 +15,18 @@ describe('calculerRevenusFonciers2042', () => {
     expect(r.alertes).toEqual([]);
   });
 
-  it('4BK : fraction de 4BE sortie du barème vers le crédit d\'impôt, toujours soumise aux PS', () => {
+  it('4BK : fraction de 4BE sortie du barème vers le crédit d\'impôt, PS neutralisés', () => {
     const r = calculerRevenusFonciers2042({ ...VIDE, case4be: 10000, case4bk: 4000 }, null);
     expect(r.totalNetImposable).toBe(4200);
     expect(r.revenuCreditImpotEgalImpotFrancais).toBe(2800);
-    expect(r.prelevementsSociaux).toBe(1204);
+    // 17,2 % × 4 200 : la fraction 4BK (2 800) échappe aux PS.
+    expect(r.prelevementsSociaux).toBe(722);
   });
 
   it('4BL : fraction de 4BA plafonnée à 4BA', () => {
     expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 3000 }, 2000).deductionReel4BL).toBe(2000);
+    // PS de la 2044 sur la fraction 4BL, à retrancher par l'appelant : 17,2 % × 2 000.
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 3000 }, 2000).neutralisationPS2044).toBe(344);
     expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 3000 }, null).deductionReel4BL).toBe(0);
   });
 
@@ -56,12 +59,12 @@ describe('calculerRevenusFonciers2042', () => {
     expect(excedent.prelevementsSociaux).toBe(0);
   });
 
-  it('4BA saisi sans 2044 : au barème hors 4BL, PS sur le tout', () => {
+  it('4BA saisi sans 2044 : au barème hors 4BL, PS hors 4BL', () => {
     const r = calculerRevenusFonciers2042({ ...VIDE, case4ba: 5000, case4bl: 1000 }, null);
     expect(r.totalNetImposable).toBe(4000);
     expect(r.revenuCreditImpotEgalImpotFrancais).toBe(1000);
     expect(r.deductionReel4BL).toBe(0);
-    expect(r.prelevementsSociaux).toBe(860);
+    expect(r.prelevementsSociaux).toBe(688);
   });
 
   it('2044 ouverte : 4BA et 4BD saisis ignorés et signalés', () => {

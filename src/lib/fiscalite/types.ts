@@ -835,4 +835,8 @@ export interface PrelevementSourceDiversInput {
   case8sd: number | null;
   /** Pensions en capital soumises à imposition forfaitaire, CSG 3,8 % (phase 8.2) */
   case8sb: number | null;
+  /** Ventilation interne de 8TK (pas de case officielle) : dont revenus du patrimoine à PS 18,6 % */
+  case8tk186: number | null;
+  /** Ventilation interne de 8TK : dont revenus du patrimoine à PS 17,2 %, hors foncier (4BK/4BL) */
+  case8tk172: number | null;
 }

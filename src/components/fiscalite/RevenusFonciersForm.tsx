@@ -101,7 +101,7 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
       saving={saving} onSave={handleSubmit}>
         <SousGroupe titre="Micro-foncier">
           <SingleMontantLigne label="Recettes brutes sans abattement" extra="n'excédant pas 15 000 €" code="4BE" value={rf.case4be} onChange={v => update('case4be', v)} />
-          <SingleMontantLigne label="Dont recettes de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" code="4BK" value={rf.case4bk} onChange={v => update('case4bk', v)} />
+          <SingleMontantLigne label="Dont recettes de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" aide="Crédit égal à l'impôt français : IR et prélèvements sociaux neutralisés. Ne pas utiliser pour les PS si la convention exclut la CSG-CRDS (Royaume-Uni, Inde, Bahreïn, Monaco)." code="4BK" value={rf.case4bk} onChange={v => update('case4bk', v)} />
           {renderAlertes(alertes.filter(a => ALERTES_MICRO.includes(a)))}
         </SousGroupe>
 
@@ -111,7 +111,7 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
           {declaration2044
             ? <LectureLigne label="Revenus fonciers imposables" code="4BA" value={declaration2044.case4BA} />
             : <SingleMontantLigne label="Revenus fonciers imposables" extra="parts de sociétés immobilières seulement" code="4BA" value={rf.case4ba} onChange={v => update('case4ba', v)} />}
-          <SingleMontantLigne label="Dont revenus de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" code="4BL" value={rf.case4bl} onChange={v => update('case4bl', v)} />
+          <SingleMontantLigne label="Dont revenus de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" aide="Crédit égal à l'impôt français : IR et prélèvements sociaux neutralisés. Ne pas utiliser pour les PS si la convention exclut la CSG-CRDS (Royaume-Uni, Inde, Bahreïn, Monaco)." code="4BL" value={rf.case4bl} onChange={v => update('case4bl', v)} />
           <LectureLigne label="Déficit imputable sur les revenus fonciers" code="4BB" value={declaration2044?.case4BB ?? null} />
           <LectureLigne label="Déficit imputable sur le revenu global" code="4BC" value={declaration2044?.case4BC ?? null} />
           {declaration2044

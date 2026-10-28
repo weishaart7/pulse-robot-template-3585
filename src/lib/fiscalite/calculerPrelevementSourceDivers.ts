@@ -19,7 +19,7 @@ export function exonerationTotaleCsgCrds(input: PrelevementSourceDiversInput, co
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
   case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,
-  case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null,
+  case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null, case8tk186: null, case8tk172: null,
 };
 
 /** CRDS sur tous les revenus d'activité et de remplacement (ord. 96-50). */
@@ -40,6 +40,15 @@ export interface PrelevementSourceDiversResult {
    * revient au crédit impôt × 8TK / revenu imposable.
    */
   revenuCreditImpotEgalImpotFrancais: number;
+  /**
+   * Ventilation interne de 8TK (18,6 % puis 17,2 %), plafonnée à 8TK dans cet
+   * ordre : revenus du patrimoine dont les PS sont neutralisés par le crédit
+   * égal à l'impôt français. Taux appliqués par l'appelant (7,5 % si 8SH/8SI).
+   */
+  assiettePS8TK186: number;
+  assiettePS8TK172: number;
+  /** Ventilation 8TK supérieure à 8TK : l'excédent est écarté. */
+  ventilation8TKSuperieure: boolean;
   /** 8TF : reprises ajoutées à l'impôt net. */
   reprises: number;
   /**
@@ -69,9 +78,13 @@ export interface PrelevementSourceDiversResult {
  * étant déjà après déduction de 1,75 % sur salaires et chômage (brochure p. 328).
  */
 export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversInput): PrelevementSourceDiversResult {
+  const assiettePS8TK186 = Math.min(montant(input.case8tk186), montant(input.case8tk));
   return {
     revenuTauxEffectif: montant(input.case8ti),
     revenuCreditImpotEgalImpotFrancais: montant(input.case8tk),
+    assiettePS8TK186,
+    assiettePS8TK172: Math.min(montant(input.case8tk172), montant(input.case8tk) - assiettePS8TK186),
+    ventilation8TKSuperieure: somme(input.case8tk186, input.case8tk172) > montant(input.case8tk),
     reprises: montant(input.case8tf),
     reductionPrelevementsSociaux: Math.round(
       montant(input.case8rf) * TAUX_CSG_CRDS_FONCIER

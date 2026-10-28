@@ -40,8 +40,17 @@ export interface RevenusFonciers2042Result {
   revenuExonereTauxEffectif: number;
   /** 4BY (amortissement Robien/Borloo neuf déjà déduit) : réintégré au RFR seulement. */
   revenuExonereRetenuPourRFR: number;
-  /** 17,2 % du foncier net hors 2044 après 4BD, 4BK/4BL compris (taux inchangé par la LFSS 2026 pour les revenus fonciers). */
+  /**
+   * 17,2 % du foncier net hors 2044 après 4BD, hors 4BK/4BL (taux inchangé par
+   * la LFSS 2026 pour les revenus fonciers) : le crédit égal à l'impôt français
+   * neutralise aussi les PS (notice 2047, BOI-INT-DG-20-20-100 § 110).
+   */
   prelevementsSociaux: number;
+  /**
+   * PS de la 2044 afférents à la fraction 4BL (`deductionReel4BL` × 17,2 %),
+   * à retrancher par l'appelant des PS de la 2044, plafonnés à ceux-ci.
+   */
+  neutralisationPS2044: number;
   alertes: AlerteRevenusFonciers2042[];
 }
 
@@ -93,7 +102,8 @@ export function calculerRevenusFonciers2042(
     deficitAnterieurImpute: imputeBareme + imputeEtranger,
     revenuExonereTauxEffectif: (input.case4ea ?? 0) + netMicro(input.case4eb ?? 0),
     revenuExonereRetenuPourRFR: input.case4by ?? 0,
-    prelevementsSociaux: Math.round((brutBareme + brutEtranger - imputeBareme - imputeEtranger) * TAUX_PRELEVEMENTS_SOCIAUX),
+    prelevementsSociaux: Math.round((brutBareme - imputeBareme) * TAUX_PRELEVEMENTS_SOCIAUX),
+    neutralisationPS2044: Math.round(deductionReel4BL * TAUX_PRELEVEMENTS_SOCIAUX),
     alertes,
   };
 }

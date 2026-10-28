@@ -61,6 +61,16 @@ describe('calculerPrelevementSourceDivers', () => {
   });
 });
 
+describe('ventilation interne de 8TK (PS neutralisés)', () => {
+  it('assiettes plafonnées à 8TK, 18,6 % d\'abord', () => {
+    const r = calculerPrelevementSourceDivers({ ...VIDE, case8tk: 10000, case8tk186: 6000, case8tk172: 3000 });
+    expect([r.assiettePS8TK186, r.assiettePS8TK172, r.ventilation8TKSuperieure]).toEqual([6000, 3000, false]);
+    const excedent = calculerPrelevementSourceDivers({ ...VIDE, case8tk: 5000, case8tk186: 4000, case8tk172: 3000 });
+    expect([excedent.assiettePS8TK186, excedent.assiettePS8TK172, excedent.ventilation8TKSuperieure]).toEqual([4000, 1000, true]);
+    expect(calculerPrelevementSourceDivers({ ...VIDE, case8tk186: 4000 }).assiettePS8TK186).toBe(0);
+  });
+});
+
 describe('contributions sociales sur revenus étrangers (phase 8.2)', () => {
   it('CSG au taux de la case, CRDS 0,5 %, CASA 0,3 % sur pensions à 8,3 % et 6,6 %', () => {
     expect(calculerPrelevementSourceDivers({ ...VIDE, case8tr: 10000 }).contributionsSocialesRevenusActivite).toBe(970);

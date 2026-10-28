@@ -1287,7 +1287,7 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 - **4EA / 4EB** : 4EA et 70 % de 4EB ajoutés aux revenus exonérés retenus pour le taux effectif, sans PS.
 - **4BY** (amortissement Robien/Borloo neuf déduit) : réintégré au RFR seulement.
 - **4BA saisi sans 2044** (brochure IR 2026 p. 157 : revenus de seules parts de sociétés immobilières
-  non IS, déclarés directement) : au barème hors fraction 4BL, PS 17,2 %. Ignoré (alerte) si une 2044
+  non IS, déclarés directement) : au barème hors fraction 4BL, PS 17,2 % hors fraction 4BL. Ignoré (alerte) si une 2044
   est ouverte ; alerte s'il coexiste avec 4BE (micro exclu dans ce cas).
 - **4BD saisi sans 2044** (CGI art. 32, brochure p. 158 : déficits antérieurs déductibles du net
   micro-foncier) : imputé sur le foncier net hors 2044 (micro et 4BA direct), part au barème d'abord puis
@@ -1299,7 +1299,13 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 - **Contrôles de saisie** (non bloquants) : 4BK au-delà de 4BE, 4BL sans 4BA ou au-delà de 4BA
   (excédent écarté). 4BA/4BD saisis puis masqués par une 2044 : effaçables depuis l'alerte.
 - **4BN / 4BZ** : informatives.
-- **Hypothèse à confronter au simulateur** : 4BK soumis aux PS comme le reste de 4BE.
+- **PS neutralisés sur 4BK/4BL** : le crédit égal à l'impôt français couvre l'IR augmenté des PS
+  (notice 2047 2025 ; BOI-INT-DG-20-20-100 § 110, CSG-CRDS assimilées à l'IR pour les conventions).
+  4BK net et 4BL saisi sans 2044 sortent de l'assiette des PS 17,2 % ; avec une 2044,
+  `neutralisationPS2044` (17,2 % × fraction 4BL) est retranchée des PS de la 2044 dans
+  `useFiscalOverview.ts`, avant l'exonération 8SH/8SI. Non modélisé : conventions excluant la CSG-CRDS
+  (Royaume-Uni art. 24 § 2 c, Inde et Bahreïn CRDS seule, Monaco, Polynésie, Saint-Martin) — rappel
+  dans l'aide de 4BK/4BL.
 
 ### Revenus des professions non salariées (cadre 5, phases 5.1, 5.2, lots 1 et 2)
 
@@ -1451,6 +1457,12 @@ cadre 8 est enregistré).
 - **Taux effectif** : `8TI` ajouté au revenu retenu pour le taux effectif. `8TK` (déjà déclaré dans sa
   catégorie, brochure p. 323) est retiré de la base imposée en France et ajouté au revenu retenu pour le
   taux effectif, comme 1AF : équivaut au crédit impôt × 8TK / revenu imposable ; RFR inchangé.
+- **PS sur 8TK** : ventilation interne (colonnes `case_8tk186`, `case_8tk172`, aucune case officielle)
+  des revenus du patrimoine compris dans 8TK, plafonnée à 8TK (18,6 % d'abord, alerte au-delà). Leurs
+  PS sont neutralisés (18,6 % / 17,2 %, ou 7,5 % de prélèvement de solidarité seul si 8SH/8SI),
+  plafonnés aux PS du patrimoine restant dus. Le reste de 8TK (salaires, pensions, BIC/BNC
+  professionnels) ne supporte pas de PS du patrimoine. Foncier exclu (passe par 4BK/4BL). **À
+  confirmer** : taux des BIC non professionnels après la LFSS 2026 (l'utilisateur ventile).
 - **Crédit égal à l'impôt étranger** (`8PL`/`8VL`, `8PM`/`8VM`+`8WM`+`8UM`), non restituable, imputé
   avec 2AB : par catégorie, min(impôt étranger, impôt français correspondant), l'impôt français
   s'entendant de l'IR augmenté des PS (brochure IR 2026 p. 366). Imputé d'abord sur l'IR, le reliquat
