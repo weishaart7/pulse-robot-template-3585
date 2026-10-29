@@ -1456,6 +1456,13 @@ désormais `prelevementsSociauxTotal` (repris par `FiscalOverviewCard.tsx`, `Das
 plafonnement IFI) et `solde` (bloc « Après prélèvement à la source » de la carte, affiché dès qu'un
 cadre 8 est enregistré).
 
+- **Arrondi des PS** (`arrondirPrelevementsSociaux.ts`) : les modules exposent leurs bases, le hook les
+  additionne au niveau du foyer par contribution, puis arrondit chacune à l'euro le plus proche, comme
+  l'avis : CSG-CRDS patrimoine 11,1 % (dont 2DI et 1NX), CSG-CRDS foncier 9,7 %, solidarité 7,5 %
+  (patrimoine + foncier + 1NX), CSG-CRDS 9,7 % de 1TT, contribution 10 % (1TT + 3VN + 1NX), 30 % (1NY).
+  8TK ventilé réduit les bases de toutes les lignes, l'exonération 8SH/8SI ou 8RF…8RM celles de la
+  CSG-CRDS seule. Vérifié sur ClickImpôts (rentes, base 29 500 € : 3 275 + 2 213 = 5 488 €). Les
+  contributions 8TQ…8SB sont aussi arrondies une à une.
 - **Solde** : impôt net − (`8HV`…`8KV` + `8HW`…`8KW`) + `8HY`…`8KY` + `8EA` ; PS calculés −
   `8HX`…`8KX` + `8HZ`…`8KZ`. Positif : reste à payer ; négatif : à rembourser.
 - **Taux effectif** : `8TI` ajouté au revenu retenu pour le taux effectif. `8TK` (déjà déclaré dans sa

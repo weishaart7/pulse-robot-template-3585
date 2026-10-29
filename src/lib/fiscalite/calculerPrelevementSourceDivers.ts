@@ -95,15 +95,16 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
     prelevementsSociauxDejaPayes: somme(input.case8hx, input.case8ix, input.case8jx, input.case8kx)
       - somme(input.case8hz, input.case8iz, input.case8jz, input.case8kz),
     avanceReductionsCredits: montant(input.case8ea),
-    contributionsSocialesRevenusActivite: Math.round(
-      somme(input.case8tq, input.case8tr) * (0.092 + TAUX_CRDS)
-      + montant(input.case8sc) * (0.092 + TAUX_CRDS + TAUX_CASA)
-      + somme(input.case8sw, input.case8tw) * (0.062 + TAUX_CRDS)
-      + montant(input.case8sx) * (0.038 + TAUX_CRDS)
-      + somme(input.case8tv, input.case8qv, input.case8sa) * (0.083 + TAUX_CRDS + TAUX_CASA)
-      + somme(input.case8th, input.case8qh, input.case8sd) * (0.066 + TAUX_CRDS + TAUX_CASA)
-      + somme(input.case8tx, input.case8qx, input.case8sb) * (0.038 + TAUX_CRDS),
-    ),
+    // Chaque contribution arrondie à l'euro, comme sur l'avis d'imposition.
+    contributionsSocialesRevenusActivite: [
+      somme(input.case8tq, input.case8tr) * (0.092 + TAUX_CRDS),
+      montant(input.case8sc) * (0.092 + TAUX_CRDS + TAUX_CASA),
+      somme(input.case8sw, input.case8tw) * (0.062 + TAUX_CRDS),
+      montant(input.case8sx) * (0.038 + TAUX_CRDS),
+      somme(input.case8tv, input.case8qv, input.case8sa) * (0.083 + TAUX_CRDS + TAUX_CASA),
+      somme(input.case8th, input.case8qh, input.case8sd) * (0.066 + TAUX_CRDS + TAUX_CASA),
+      somme(input.case8tx, input.case8qx, input.case8sb) * (0.038 + TAUX_CRDS),
+    ].reduce((total, contribution) => total + Math.round(contribution), 0),
   };
 }
 
