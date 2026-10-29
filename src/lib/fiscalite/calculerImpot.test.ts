@@ -502,3 +502,23 @@ describe('calculerImpot — taxes annexes (agents généraux, 5QM/5RM)', () => {
     expect(r.impotNet).toBe(1680);
   });
 });
+
+describe('calculerImpot — crédit égal à l\'impôt français', () => {
+  it('avis ClickImpôts : 1AJ 30 000, 1AF 15 000, 1AC 20 000, 1AH 10 000 → 8 012 − 2 671 = 5 341 €', () => {
+    const parts = makeParts({ partsBase: 1, nombreParts: 1 });
+    // Revenu imposable 27 000 (1AJ net) + 13 500 (1AF net), taux effectif sur 27 000 d'exonérés.
+    const r = calculerImpot(27000, parts, 'celibataire', 27000, 'metropole', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13500);
+    expect(r.revenuMondialFictif).toBe(67500);
+    expect(r.impotProportionnel).toBe(8012);
+    expect(r.creditImpotFrancais).toBe(2671);
+    expect(r.impotNet).toBe(5341);
+  });
+
+  it('crédit imputé après la décote', () => {
+    const parts = makeParts({ partsBase: 1, nombreParts: 1 });
+    const r = calculerImpot(15000, parts, 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5000);
+    expect(r.decote).toBeGreaterThan(0);
+    expect(r.creditImpotFrancais).toBe(Math.round(r.impotApresDecote * 5000 / 20000));
+    expect(r.impotNet).toBe(r.impotApresDecote - r.creditImpotFrancais);
+  });
+});

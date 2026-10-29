@@ -110,6 +110,7 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
         />
         <MontantLigne
           label="Pensions perçues par les non-résidents et pensions de source étrangère avec crédit d'impôt égal à l'impôt français"
+          extra="résidents : report de la 2047 · non-résidents non gérés"
           code1="1AL" code2="1BL"
           value1={pensions.case1al} value2={pensions.case1bl}
           onChange1={v => update('case1al', v)} onChange2={v => update('case1bl', v)}
@@ -145,7 +146,7 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
         />
         <MontantParTrancheAgeLigne
           label="Rentes perçues par les non-résidents et rentes de source étrangère"
-          aide="Rentes de source étrangère avec crédit d'impôt égal à l'impôt français."
+          aide="Rentes de source étrangère avec crédit d'impôt égal à l'impôt français, report de la 2047. Non-résidents non gérés."
           tranches={[
             { ageLabel: 'Moins de 50 ans', code: '1AR', value: pensions.case1ar, onChange: v => update('case1ar', v) },
             { ageLabel: 'De 50 à 59 ans', code: '1BR', value: pensions.case1br, onChange: v => update('case1br', v) },

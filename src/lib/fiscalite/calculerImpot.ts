@@ -77,6 +77,8 @@ export interface ImpotResult {
   decote: number;
   impotApresDecote: number;
   impotForfaitaire: number;
+  /** Crédit égal à l'impôt français (1AF…, 4BL, 8TK) imputé après la décote, avant les réductions du cadre 7. */
+  creditImpotFrancais: number;
   creditImpotAssuranceVie: number;
   creditImpotEtranger2AB: number;
   creditImpotValeursEtrangeres2CK: number;
@@ -196,13 +198,14 @@ function calculerImpotApresQuotientFamilial(
  * pas encore appliqué.
  *
  * `revenuExonereTauxEffectif` (optionnel, 0 par défaut) : revenu exonéré net
- * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`),
- * additionné par `useFiscalOverview.ts` au revenu ouvrant droit à un crédit
- * d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) — les
- * deux mécanismes sont mathématiquement équivalents (même formule de prorata)
- * lorsque le crédit est imputé avant réduction outre-mer et décote, hypothèse
- * retenue faute de confirmation BOFiP explicite de l'ordre exact (voir
- * docs/fiscalite.md).
+ * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`) ;
+ * l'impôt proportionnel qui en résulte est arrondi à l'euro.
+ * `revenuCreditImpotFrancais` (optionnel, 0 par défaut) : revenu ouvrant droit
+ * au crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR…1DR, 4BL,
+ * 8TK), compris dans la base française et le revenu imposable ; le crédit
+ * (impôt après décote × revenu / base française, arrondi) est imputé comme
+ * une réduction, après la décote — ordre de l'avis ClickImpôts (1AJ 30 000,
+ * 1AF 15 000, 1AC 20 000, 1AH 10 000 : 8 012 − 2 671 = 5 341 €).
  * `lieuResidence` (optionnel, 'metropole' par défaut) : détermine la
  * réduction outre-mer.
  * `impotForfaitaire` (optionnel, 0 par défaut) : impôt à taux forfaitaire
@@ -274,11 +277,13 @@ export function calculerImpot(
   reprisesImpot = 0,
   revenuTauxMarginal = 0,
   taxesAnnexes = 0,
+  revenuCreditImpotFrancais = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
   const revenuExceptionnel = Math.max(0, revenuExceptionnelQuotient);
-  const revenuMondialFictifOrdinaire = revenu + revenuExonere;
+  const revenuCredit = Math.max(0, revenuCreditImpotFrancais);
+  const revenuMondialFictifOrdinaire = revenu + revenuCredit + revenuExonere;
 
   const qfOrdinaire = calculerImpotApresQuotientFamilial(revenuMondialFictifOrdinaire, parts);
 
@@ -299,9 +304,10 @@ export function calculerImpot(
 
   const { impotSansMajorations, impotAvecMajorations, avantageQuotientFamilial, plafondQuotientFamilial, plafonnementApplique } = qfOrdinaire;
 
-  const baseFrance = revenu + revenuExceptionnel;
+  const baseFrance = revenu + revenuCredit + revenuExceptionnel;
   const tauxEffectif = revenuMondialFictif > 0 ? impotApresPlafonnement / revenuMondialFictif : 0;
-  const impotProportionnel = revenuExonere > 0 ? tauxEffectif * baseFrance : impotApresPlafonnement;
+  // Arrondi à l'euro, comme l'avis (« impôt après application du taux effectif »).
+  const impotProportionnel = revenuExonere > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresPlafonnement;
 
   const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = REDUCTION_OUTRE_MER[lieuResidence];
   const reductionOutreMer = Math.min(plafondReductionOutreMer, impotProportionnel * tauxReductionOutreMer);
@@ -318,8 +324,10 @@ export function calculerImpot(
   const tmi = tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0);
   const impotTauxMarginal = Math.round(Math.max(0, revenuTauxMarginal) * tmi);
   const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;
-  const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotAvantReductions));
-  const impotAvantCreditsFinaux = impotAvantReductions - reductionsImpotAppliquees;
+  // Crédit égal à l'impôt français : quote-part de l'impôt au barème, arrondie, imputée en premier.
+  const creditImpotFrancais = baseFrance > 0 ? Math.round(impotApresDecote * revenuCredit / baseFrance) : 0;
+  const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotAvantReductions - creditImpotFrancais));
+  const impotAvantCreditsFinaux = impotAvantReductions - creditImpotFrancais - reductionsImpotAppliquees;
 
   // 2AB (non restituable) plafonné sur l'impôt restant dû, avant les crédits restituables (2CK, assurance-vie).
   const creditImpotEtranger2ABApplique = Math.max(0, Math.min(creditImpotEtranger2AB, impotAvantCreditsFinaux));
@@ -338,7 +346,7 @@ export function calculerImpot(
     + Math.max(0, taxesAnnexes);
 
   return {
-    revenuImposable: revenu,
+    revenuImposable: revenu + revenuCredit,
     revenuExonereTauxEffectif: revenuExonere,
     revenuMondialFictif,
     revenuFiscalReference: revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL
@@ -358,6 +366,7 @@ export function calculerImpot(
     decote,
     impotApresDecote,
     impotForfaitaire: Math.max(0, impotForfaitaire),
+    creditImpotFrancais,
     creditImpotAssuranceVie: creditImpotAssuranceVieApplique,
     creditImpotEtranger2AB: creditImpotEtranger2ABApplique,
     creditImpotValeursEtrangeres2CK: creditImpotValeursEtrangeres2CKApplique,

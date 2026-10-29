@@ -124,7 +124,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     },
   ];
   const baseBareme = revenus.reduce((s, r) => s + r.valeur, 0);
-  const irBareme = Math.max(0, impot.impotApresDecote);
+  const irBareme = Math.max(0, impot.impotApresDecote - impot.creditImpotFrancais);
   const revenusAvecCout = revenus.map((r) => ({
     ...r,
     ir: (baseBareme > 0 ? (irBareme * r.valeur) / baseBareme : 0) + r.forfaitaire,

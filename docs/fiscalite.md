@@ -1821,12 +1821,12 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   changement plus large — non modélisé plutôt que deviné. Cas rare (célibataire/divorcé/séparé, case T,
   et aucun autre enfant/personne à charge que la personne invalide) : un écart resterait possible pour
   ce profil précis.
-- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : ordre exact face à la
-  décote et à la réduction outre-mer non confirmé par le BOFiP consulté.** Le crédit est implémenté en
-  réutilisant le mécanisme du taux effectif (imputé avant réduction outre-mer/décote), mathématiquement
-  équivalent à la formule officielle du crédit **dans ce cas précis** — mais aucune source ne confirme
-  explicitement que le crédit réel s'impute au même point du calcul pour tous les cas (foyers proches du
-  seuil de décote, DOM-TOM). Un écart resterait possible pour ces profils limites. **1AF/1BF n'a pas
+- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR, 4BL, 8TK) : ordre aligné
+  sur l'avis ClickImpôts.** Le revenu reste dans la base française ; l'impôt après taux effectif est
+  arrondi à l'euro, puis le crédit (impôt après décote × revenu / base française, arrondi) est imputé
+  comme une réduction, après la décote et avant le cadre 7 (`calculerImpot.ts::creditImpotFrancais`).
+  Cas de référence : 1AJ 30 000, 1AF 15 000, 1AC 20 000, 1AH 10 000 → 8 012 − 2 671 = 5 341 €.
+  Seule la 2047 alimentera à terme ces cases (report). **1AF/1BF n'a pas
   d'option frais réels modélisée** (pas de case CERFA dédiée identifiée, contrairement à 1AC/1BC qui ont
   1AE/1BE) : seul l'abattement forfaitaire de 10 % standard est appliqué — hypothèse, pas une lecture
   certaine de la brochure. **1AF/1BF mélange sur le CERFA les non-résidents fiscaux et les résidents

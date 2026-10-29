@@ -143,6 +143,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
         />
         <MontantLigne
           label="Salaires perçus par les non-résidents et salaires de source étrangère avec crédit d'impôt égal à l'impôt français"
+          extra="résidents : report de la 2047 · non-résidents non gérés"
           code1="1AF" code2="1BF"
           value1={revenus.case1af} value2={revenus.case1bf}
           onChange1={v => update('case1af', v)} onChange2={v => update('case1bf', v)}

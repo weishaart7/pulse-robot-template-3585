@@ -407,20 +407,20 @@ export function useFiscalOverview(): FiscalOverview {
         + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
         + revenusNonSalaries.impotForfaitaire;
       const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
-      // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) : additionné au
-      // revenu retenu pour le taux effectif, mathématiquement équivalent dans les deux cas (imputé
-      // avant réduction outre-mer/décote) — hypothèse retenue, voir docs/fiscalite.md.
+      // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR, 4BL, 8TK) : revenu
+      // compris dans la base française, crédit imputé après la décote (voir calculerImpot.ts).
       const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
       const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
-      // 8TK : déjà compris dans le revenu imposable (déclaré dans sa catégorie) — basculé de la base
-      // imposée en France vers le revenu retenu pour le taux effectif, RFR inchangé.
+      // 8TK : déjà compris dans le revenu imposable (déclaré dans sa catégorie) — basculé vers le revenu
+      // ouvrant droit au crédit, RFR inchangé.
       const revenuCredit8TK = Math.min(prelevementSourceDivers.revenuCreditImpotEgalImpotFrancais, Math.max(0, revenuImposableTotal));
-      const revenuExonereEtCreditImpot = revenuExonereTauxEffectif.totalRetenu
-        + revenuSalaires.revenuCreditImpotEgalImpotFrancais
+      const revenuExonere = revenuExonereTauxEffectif.totalRetenu
+        + revenusFonciers2042.revenuExonereTauxEffectif + revenusNonSalaries.revenuExonereTauxEffectif
+        + prelevementSourceDivers.revenuTauxEffectif;
+      const revenuCreditImpotFrancais = revenuSalaires.revenuCreditImpotEgalImpotFrancais
         + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
-        + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais + revenusFonciers2042.revenuExonereTauxEffectif
-        + revenusNonSalaries.revenuExonereTauxEffectif + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais
-        + prelevementSourceDivers.revenuTauxEffectif + revenuCredit8TK;
+        + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais
+        + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais + revenuCredit8TK;
       const reductionsCreditsImpot = calculerReductionsCreditsImpot(
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
       );
@@ -429,7 +429,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenuImposableTotal - revenuCredit8TK,
         parts,
         foyerInput.situationFamille,
-        revenuExonereEtCreditImpot,
+        revenuExonere,
         foyerInput.lieuResidence,
         impotForfaitaireTotal,
         gainsActionnariat.revenuExceptionnelQuotient,
@@ -445,11 +445,13 @@ export function useFiscalOverview(): FiscalOverview {
         prelevementSourceDivers.reprises,
         revenusNonSalaries.revenuImposableTauxMarginal,
         revenusNonSalaries.taxeAgentsGeneraux,
+        revenuCreditImpotFrancais,
       );
       const impotSansCreditEtranger = calculer(0);
       const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
       const creditEtranger = creditImpotEgalImpotEtranger(prelevementSourceInput, {
-        impotBareme: impotSansCreditEtranger.impotApresDecote - impotSansCreditEtranger.reductionsImpot,
+        impotBareme: impotSansCreditEtranger.impotApresDecote - impotSansCreditEtranger.creditImpotFrancais
+          - impotSansCreditEtranger.reductionsImpot,
         revenuImposable: revenuImposableTotal - revenuCredit8TK,
         optionBareme: capitauxMobiliersInput.case2op,
         exonerationCsgCrds: exonerationTotale,
