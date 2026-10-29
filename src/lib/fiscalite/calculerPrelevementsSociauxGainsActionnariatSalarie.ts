@@ -22,6 +22,14 @@ import { GainsActionnariatSalarieInput } from './types';
  * documentaire isolée.
  */
 const TAUX_CSG_CRDS_LEVEE_OPTIONS = 0.092 + 0.005;
+/**
+ * Contribution salariale de 10 % (art. L137-14 CSS) sur 1TT/1UT, due
+ * automatiquement : brochure IR 2026 — « automatiquement soumis à la
+ * contribution salariale de 10 %. Ne les reportez pas ligne 3VN ». Confirmé
+ * par ClickImpôts (1TT = 100 000 € → 19 700 € de PS). Le rapprochement du
+ * compte réel (7 175 €) ne la faisait pas apparaître : la brochure prévaut.
+ */
+const TAUX_CONTRIBUTION_SALARIALE_1TT = 0.10;
 
 /**
  * Carried-interest ne remplissant pas les conditions du régime de faveur
@@ -105,6 +113,8 @@ export interface PrelevementsSociauxGainsActionnariatResult {
   /** Base 1TT/1UT, soumise à 9,7 % (CSG 9,2 % + CRDS 0,5 %, régime salarial). 1TP/1UP volontairement exclu — voir TAUX_CSG_CRDS_LEVEE_OPTIONS. */
   baseLeveeOptions: number;
   prelevementsSociauxLeveeOptions: number;
+  /** Contribution salariale de 10 % sur la même base 1TT/1UT (voir TAUX_CONTRIBUTION_SALARIALE_1TT). */
+  contributionSalarialeLeveeOptions: number;
   /** Base 1NX/1OX (carried-interest non qualifiant), soumise aux 3 prélèvements distincts détaillés ci-dessus. */
   baseCarriedInterestNonQualifiant: number;
   prelevementsSociauxCarriedInterestNonQualifiant: number;
@@ -137,7 +147,8 @@ export interface PrelevementsSociauxGainsActionnariatResult {
  * du foyer reconstitué à l'euro près** (7 175 € — voir docs/fiscalite.md
  * pour le détail du rapprochement).
  *
- * 1. **1TT/1UT** : régime salarial, CSG 9,2 % + CRDS 0,5 %. 1TP/1UP
+ * 1. **1TT/1UT** : régime salarial, CSG 9,2 % + CRDS 0,5 %, plus la
+ *    contribution salariale de 10 % due d'office (hors 3VN). 1TP/1UP
  *    volontairement exclu malgré une source documentaire isolée suggérant le
  *    même régime — voir TAUX_CSG_CRDS_LEVEE_OPTIONS.
  * 2. **1NX/1OX** (carried-interest non qualifiant) : CSG+CRDS 11,10 %
@@ -147,7 +158,7 @@ export interface PrelevementsSociauxGainsActionnariatResult {
  *    sur la même base, non cumulables avec le régime salarial de 1TT.
  * 3. **1NY/1OY** : contribution salariale de 30 % (carried-interest soumis à
  *    ce régime spécifique, distinct de 1NX).
- * 4. **3VN** : contribution salariale de 10 % (options/AGA).
+ * 4. **3VN** : contribution salariale de 10 % (options/AGA hors 1TT/1UT).
  * 5. **1TZ/1UZ/1WZ/1VZ et 1AY/1BY** : PS sur les revenus du patrimoine,
  *    taux provisoire 18,6 % — voir TAUX_PS_GAINS_REVENUS_PATRIMOINE.
  * 6. **3VD/3VI/3VF** : PS sur les revenus du patrimoine, 18,6 % — voir
@@ -161,6 +172,7 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
 ): PrelevementsSociauxGainsActionnariatResult {
   const baseLeveeOptions = (input.case1tt ?? 0) + (input.case1ut ?? 0);
   const prelevementsSociauxLeveeOptions = baseLeveeOptions * TAUX_CSG_CRDS_LEVEE_OPTIONS;
+  const contributionSalarialeLeveeOptions = baseLeveeOptions * TAUX_CONTRIBUTION_SALARIALE_1TT;
 
   const baseCarriedInterestNonQualifiant = (input.case1nx ?? 0) + (input.case1ox ?? 0);
   const prelevementsSociauxCarriedInterestNonQualifiant = baseCarriedInterestNonQualifiant * (
@@ -186,6 +198,7 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
   return {
     baseLeveeOptions,
     prelevementsSociauxLeveeOptions,
+    contributionSalarialeLeveeOptions,
     baseCarriedInterestNonQualifiant,
     prelevementsSociauxCarriedInterestNonQualifiant,
     baseCarriedInterest1NY,
@@ -197,6 +210,7 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
     baseGainsHistoriquesTauxForfaitaire,
     prelevementsSociauxGainsHistoriquesTauxForfaitaire,
     prelevementsSociaux: prelevementsSociauxLeveeOptions
+      + contributionSalarialeLeveeOptions
       + prelevementsSociauxCarriedInterestNonQualifiant
       + contributionSalariale1NY
       + contributionSalariale3VN

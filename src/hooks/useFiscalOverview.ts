@@ -243,8 +243,8 @@ export interface FiscalOverview {
    * Prélèvements sociaux sur les gains d'actionnariat salarié (Phase 3 — voir
    * docs/fiscalite.md). Périmètre établi par vérification empirique contre
    * le simulateur officiel plutôt que par recherche documentaire seule (les
-   * sources généralistes se contredisaient) : 1TP/1TT au régime salarial
-   * (9,7 %), 1NX au régime carried-interest non qualifiant (28,6 % combiné),
+   * sources généralistes se contredisaient) : 1TT au régime salarial
+   * (9,7 % + contribution salariale de 10 %), 1NX au régime carried-interest non qualifiant (28,6 % combiné),
    * 1NY/3VN aux contributions salariales spécifiques (30 %/10 %). 1TZ/1AY/
    * 1MP et les gains historiques 3VD/3VI/3VF/3VJ hors périmètre.
    */

@@ -34,10 +34,20 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     // CSG 9,2 % + CRDS 0,5 % sur 1TT (1TP exclu) = 1380 + 75
     expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(1380 + 75, 6);
     // Total du simulateur officiel, qui n'affiche aucune ligne PS pour 1TZ/1AY.
-    expect(result.prelevementsSociaux - result.prelevementsSociauxGainsRevenusPatrimoine).toBeCloseTo(7175, 6);
+    // Contribution salariale de 10 % sur 1TT absente du simulateur : la brochure prévaut.
+    expect(result.contributionSalarialeLeveeOptions).toBeCloseTo(1500, 6);
+    expect(result.prelevementsSociaux - result.prelevementsSociauxGainsRevenusPatrimoine
+      - result.contributionSalarialeLeveeOptions).toBeCloseTo(7175, 6);
     // 1TZ + 1AY soumis aux PS sur les revenus du patrimoine (brochure p.111-112).
     expect(result.prelevementsSociauxGainsRevenusPatrimoine).toBeCloseTo(18000 * 0.186, 6);
-    expect(result.prelevementsSociaux).toBeCloseTo(7175 + 3348, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(7175 + 1500 + 3348, 6);
+  });
+
+  it('1TT = 100 000 € : 19 700 € de PS, 3VN = 50 000 € en plus : 24 700 € (ClickImpôts)', () => {
+    expect(calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1tt: 100000 })).prelevementsSociaux)
+      .toBeCloseTo(19700, 6);
+    expect(calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1tt: 100000, case3vn: 50000 })).prelevementsSociaux)
+      .toBeCloseTo(24700, 6);
   });
 
   it('applique 9,7 % (CSG 9,2 % + CRDS 0,5 %) sur 1TT/1UT uniquement (1TP/1UP exclu)', () => {
@@ -133,6 +143,7 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     }));
     expect(result.prelevementsSociaux).toBeCloseTo(
       result.prelevementsSociauxLeveeOptions
+        + result.contributionSalarialeLeveeOptions
         + result.prelevementsSociauxCarriedInterestNonQualifiant
         + result.contributionSalariale1NY
         + result.contributionSalariale3VN,

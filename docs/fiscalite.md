@@ -1172,7 +1172,9 @@ fonciers (§4).
   du total PS du foyer affiché sur ce même compte (7 175 €) avec le total recalculé par le module**.
   1. **1TT/1UT** : régime salarial — CSG 9,2 % + CRDS 0,5 % = 9,7 %. Base officielle « CRDS sur les
      revenus d'activité et de remplacement » = 15 000 € = montant exact de 1TT ; montants CSG/CRDS
-     reconstitués à l'euro près (1 380 € et 75 €).
+     reconstitués à l'euro près (1 380 € et 75 €). **S'y ajoute la contribution salariale de 10 %
+     (art. L137-14 CSS), due d'office sans report en 3VN** (brochure IR 2026 ; ClickImpôts : 1TT =
+     100 000 € → 19 700 €), absente du simulateur sur ce compte : la brochure prévaut.
   2. **1NX/1OX (carried-interest non qualifiant)** : régime spécifique en 3 prélèvements distincts sur
      la même base — CSG (10,6 %) + CRDS (0,5 %) = 11,10 % (taux LFSS 2026, déjà applicable aux revenus
      2025 pour cette case car recouvrée par voie de rôle et non prélevée à la source pendant l'année),
