@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { arrondirPrelevementsSociaux, BasesPrelevementsSociaux } from './arrondirPrelevementsSociaux';
 
 const bases = (b: Partial<BasesPrelevementsSociaux> = {}): BasesPrelevementsSociaux => ({
-  patrimoine: 0, csgCrdsPatrimoineSeule: 0, foncier: 0, neutralisePatrimoine: 0, neutraliseFoncier: 0,
+  patrimoine: 0, csgCrdsPatrimoineSeule: 0, foncier: 0, assuranceVie: 0, neutralisePatrimoine: 0, neutraliseFoncier: 0,
   exonerationTotaleCsgCrds: false, exonerePatrimoine: 0, exonereFoncier: 0, activite: 0,
   contributionSalariale10: 0, carriedInterest: 0, contributionSalariale30: 0, ...b,
 });
@@ -47,5 +47,12 @@ describe('arrondirPrelevementsSociaux', () => {
     const r = arrondirPrelevementsSociaux(bases({ patrimoine: 10000, neutralisePatrimoine: 15000 }));
     expect(r.total).toBe(0);
     expect(r.neutralisation8TK).toBe(1860);
+  });
+
+  it('assurance-vie à 17,2 % : 2CH = 50 000 € → 8 600 € (ClickImpôts)', () => {
+    const r = arrondirPrelevementsSociaux(bases({ assuranceVie: 50000 }));
+    expect(r.csgCrdsFoncier).toBe(4850);
+    expect(r.solidarite).toBe(3750);
+    expect(r.total).toBe(8600);
   });
 });

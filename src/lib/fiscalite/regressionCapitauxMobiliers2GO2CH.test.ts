@@ -14,7 +14,7 @@ import { FoyerFiscalInput, RevenusCapitauxMobiliersInput } from './types';
  * correct des deux côtés.
  */
 describe('régression : célibataire, 2GO=4000/2CH=6000, 2OP décoché', () => {
-  it('retrouve les montants du simulateur officiel : 640 € d\'IR, 1 860 € de PS', () => {
+  it('retrouve les montants du simulateur officiel : 640 € d\'IR, 1 776 € de PS (2CH à 17,2 %)', () => {
     const revenus: RevenusCapitauxMobiliersInput = {
       case2dh: null, case2ch: 6000, case2uu: null, case2vv: null, case2ww: null,
       case2xx: null, case2yy: null, case2zz: null,
@@ -51,7 +51,7 @@ describe('régression : célibataire, 2GO=4000/2CH=6000, 2OP décoché', () => {
     );
 
     expect(impot.impotNet).toBe(640);
-    expect(ps.prelevementsSociaux).toBeCloseTo(1860, 6);
+    expect(ps.prelevementsSociaux).toBeCloseTo(1776, 6);
   });
 });
 
@@ -66,7 +66,7 @@ describe('régression : célibataire, 2GO=4000/2CH=6000, 2OP décoché', () => {
  * officiel) étaient faux.
  */
 describe('régression : célibataire, 2VV=5000 seul, 2OP décoché', () => {
-  it('retrouve les montants du simulateur officiel : 30 € d\'IR, 930 € de PS', () => {
+  it('retrouve les montants du simulateur officiel : 30 € d\'IR, 860 € de PS (17,2 %)', () => {
     const revenus: RevenusCapitauxMobiliersInput = {
       case2dh: null, case2ch: null, case2uu: null, case2vv: 5000, case2ww: null,
       case2xx: null, case2yy: null, case2zz: null,
@@ -103,6 +103,6 @@ describe('régression : célibataire, 2VV=5000 seul, 2OP décoché', () => {
     );
 
     expect(impot.impotNet).toBe(30);
-    expect(ps.prelevementsSociaux).toBeCloseTo(930, 6);
+    expect(ps.prelevementsSociaux).toBeCloseTo(860, 6);
   });
 });

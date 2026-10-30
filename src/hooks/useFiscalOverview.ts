@@ -470,6 +470,7 @@ export function useFiscalOverview(): FiscalOverview {
         csgCrdsPatrimoineSeule: somme(capitauxMobiliersInput.case2di),
         foncier: Math.max(0, (revenusFonciers?.revenuFoncierNetImposable ?? 0) - revenusFonciers2042.deductionReel4BL)
           + revenusFonciers2042.totalNetImposable,
+        assuranceVie: prelevementsSociauxCapitauxMobiliers.baseAssuranceVie,
         neutralisePatrimoine: prelevementSourceDivers.assiettePS8TK186,
         neutraliseFoncier: prelevementSourceDivers.assiettePS8TK172,
         exonerationTotaleCsgCrds: exonerationTotale,

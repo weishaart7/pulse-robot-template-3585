@@ -31,6 +31,16 @@ export const TAUX_PS_CAPITAUX_MOBILIERS = 0.186;
 export const TAUX_CSG_CRDS_2DI = 0.111;
 
 /**
+ * Produits d'assurance-vie et de capitalisation : 17,2 % (CSG-CRDS 9,7 % + solidarité 7,5 %). La
+ * hausse de CSG de la LFSS 2026 ne s'applique pas à ces produits (vérifié sur ClickImpôts :
+ * 2CH = 50 000 € → 8 600 € de PS, et non 9 300 €).
+ */
+export const TAUX_PS_ASSURANCE_VIE = 0.172;
+
+/** Prélèvement libératoire de 7,5 % déjà acquitté à la source sur 2DH (affiché pour information). */
+export const TAUX_PFL_2DH = 0.075;
+
+/**
  * Cases du cadre 2 volontairement exclues du calcul PS : uniquement celles
  * **explicitement libellées « soumis au prélèvement libératoire »** sur le
  * CERFA (2DH, 2XX, 2VM) — un mécanisme historique où le prélèvement, lors du
@@ -61,7 +71,7 @@ export const TAUX_CSG_CRDS_2DI = 0.111;
  * si un écart réapparaît sur l'une d'elles.
  */
 export const CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE = [
-  'case2dh', 'case2xx', 'case2vm',
+  'case2xx', 'case2vm',
 ] as const;
 
 export interface PrelevementsSociauxCapitauxMobiliersResult {
@@ -81,6 +91,14 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
    * corrigé » ci-dessus. Diminuée de `montantDejaSoumis`, plancher à 0.
    */
   baseImposable: number;
+  /**
+   * Base à 17,2 % : produits d'assurance-vie et de capitalisation (2CH, 2DH, 2VV, 2WW, 2YY, 2ZZ,
+   * 2VN, 2VO, 2VP), au brut. Les revenus déjà soumis (2CG/2BH/2DF/2DG) s'imputent d'abord sur
+   * `baseImposable`, le reliquat sur cette base.
+   */
+  baseAssuranceVie: number;
+  /** PFL de 7,5 % sur 2DH, déjà prélevé à la source : information, non ajouté au total dû. */
+  prelevementLiberatoire2DH: number;
   /** Somme des cases ci-dessus, avant déduction des revenus déjà soumis aux PS. */
   assietteBrute: number;
   /**
@@ -93,7 +111,7 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
   montantDejaSoumis: number;
   /** CSG/CRDS (11,1 %) sur 2DI, en plus des PS à 18,6 % sur `baseImposable`. */
   csgCrds2DI: number;
-  /** Total : `baseImposable` × 18,6 % + `csgCrds2DI`. */
+  /** Total : `baseImposable` × 18,6 % + `baseAssuranceVie` × 17,2 % + `csgCrds2DI`. */
   prelevementsSociaux: number;
   /**
    * Saisies incohérentes avec la brochure (p.132-133), sans effet sur le
@@ -140,17 +158,19 @@ export function calculerPrelevementsSociauxCapitauxMobiliers(
   const sansAbattement = (input.case2ts ?? 0) + (input.case2tr ?? 0) + (input.case2tt ?? 0)
     + (input.case2tq ?? 0) + (input.case2tz ?? 0);
   const revenusReputesDistribuesSansMajoration = input.case2go ?? 0;
-  const contratsNonLiberatoiresSansAbattement = (input.case2ch ?? 0) + (input.case2vv ?? 0)
+  const assuranceVie = (input.case2ch ?? 0) + (input.case2dh ?? 0) + (input.case2vv ?? 0)
     + (input.case2ww ?? 0) + (input.case2yy ?? 0) + (input.case2zz ?? 0)
     + (input.case2vn ?? 0) + (input.case2vo ?? 0) + (input.case2vp ?? 0);
 
   // 2DM : fraction exonérée d'IR des impatriés, retenue pour les PS (brochure p.135).
-  const assietteBrute = dividendesBrut + sansAbattement + revenusReputesDistribuesSansMajoration
-    + contratsNonLiberatoiresSansAbattement + (input.case2dm ?? 0);
+  const assiette186 = dividendesBrut + sansAbattement + revenusReputesDistribuesSansMajoration
+    + (input.case2dm ?? 0);
+  const assietteBrute = assiette186 + assuranceVie;
   const montantDejaSoumis = (input.case2cg ?? 0) + (input.case2bh ?? 0) + (input.case2df ?? 0)
     + (input.case2dg ?? 0);
   // Plancher à 0 : des cases « déjà soumis » supérieures aux revenus déclarés relèvent d'une erreur de saisie, pas d'un crédit de PS.
-  const baseImposable = Math.max(0, assietteBrute - montantDejaSoumis);
+  const baseImposable = Math.max(0, assiette186 - montantDejaSoumis);
+  const baseAssuranceVie = Math.max(0, assuranceVie - Math.max(0, montantDejaSoumis - assiette186));
   const csgCrds2DI = (input.case2di ?? 0) * TAUX_CSG_CRDS_2DI;
 
   const incoherencesSaisie: string[] = [];
@@ -166,10 +186,12 @@ export function calculerPrelevementsSociauxCapitauxMobiliers(
 
   return {
     baseImposable,
+    baseAssuranceVie,
+    prelevementLiberatoire2DH: (input.case2dh ?? 0) * TAUX_PFL_2DH,
     assietteBrute,
     montantDejaSoumis,
     csgCrds2DI,
-    prelevementsSociaux: baseImposable * TAUX_PS_CAPITAUX_MOBILIERS + csgCrds2DI,
+    prelevementsSociaux: baseImposable * TAUX_PS_CAPITAUX_MOBILIERS + baseAssuranceVie * TAUX_PS_ASSURANCE_VIE + csgCrds2DI,
     incoherencesSaisie,
     casesHorsPerimetre: CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE,
   };

@@ -13,6 +13,8 @@ export interface BasesPrelevementsSociaux {
   csgCrdsPatrimoineSeule: number;
   /** Revenus fonciers à 17,2 % (2044 et cadre 4). */
   foncier: number;
+  /** Produits d'assurance-vie à 17,2 % (même CSG-CRDS que le foncier, hors 8TK et 8RF). */
+  assuranceVie: number;
   /** 8TK ventilé : fractions neutralisées par le crédit égal à l'impôt français. */
   neutralisePatrimoine: number;
   neutraliseFoncier: number;
@@ -67,11 +69,11 @@ export function arrondirPrelevementsSociaux(b: BasesPrelevementsSociaux): Prelev
     const csgCrdsPatrimoine = exonere && b.exonerationTotaleCsgCrds ? 0
       : arrondi(positif(patrimoine + b.csgCrdsPatrimoineSeule - (exonere ? b.exonerePatrimoine : 0)) * TAUX_CSG_CRDS_PATRIMOINE);
     const csgCrdsFoncier = exonere && b.exonerationTotaleCsgCrds ? 0
-      : arrondi(positif(foncier - (exonere ? b.exonereFoncier : 0)) * TAUX_CSG_CRDS_FONCIER);
+      : arrondi((positif(foncier - (exonere ? b.exonereFoncier : 0)) + b.assuranceVie) * TAUX_CSG_CRDS_FONCIER);
     return {
       csgCrdsPatrimoine: csgCrdsPatrimoine + arrondi(b.carriedInterest * TAUX_CSG_CRDS_PATRIMOINE),
       csgCrdsFoncier,
-      solidarite: arrondi((patrimoine + foncier + b.carriedInterest) * TAUX_PRELEVEMENT_SOLIDARITE),
+      solidarite: arrondi((patrimoine + foncier + b.assuranceVie + b.carriedInterest) * TAUX_PRELEVEMENT_SOLIDARITE),
     };
   };
   const somme = (l: ReturnType<typeof lignes>) => l.csgCrdsPatrimoine + l.csgCrdsFoncier + l.solidarite;

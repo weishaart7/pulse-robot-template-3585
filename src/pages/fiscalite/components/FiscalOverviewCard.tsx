@@ -87,6 +87,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     { label: 'Impôt sur le revenu (IR)', valeur: impot.impotNet },
     { label: 'Contribution exceptionnelle sur les hauts revenus', valeur: cehr },
     { label: 'Prélèvements sociaux (capitaux mobiliers)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
+    ...(prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH > 0
+      ? [{ label: 'Prélèvement libératoire 2DH (7,5 %, déjà prélevé)', valeur: null, texte: formatEuros(prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH) }]
+      : []),
     { label: 'Prélèvements sociaux (pensions, retraites, rentes)', valeur: prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux },
     { label: "Prélèvements sociaux (gains d'actionnariat salarié)", valeur: prelevementsSociauxGainsActionnariat.prelevementsSociaux },
     { label: 'Prélèvements sociaux (plus-values)', valeur: plusValuesGainsDivers.prelevementsSociaux },

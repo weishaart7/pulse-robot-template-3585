@@ -1073,9 +1073,14 @@ fonciers (§4).
   sont déjà prélevées en paie (URSSAF), 1AJ/1BJ etc. sont déjà nets — rien à recalculer côté IR.
   Pour les capitaux mobiliers : **18,6 %** sur dividendes/revenus assimilés (2DC/2FU, sur leur montant
   **brut**, l'abattement de 40 % étant réservé à l'IR, art. 158-3 CGI), intérêts/produits sans
-  abattement (2TS/2TR/2TT/2TQ/2TZ), revenus réputés distribués (2GO), et tous les produits/gains de
-  contrats d'assurance-vie/capitalisation non « soumis au prélèvement libératoire » (2CH, 2VV, 2WW,
-  2YY, 2ZZ, 2VN, 2VO, 2VP — voir « Bug corrigé » ci-dessous). **Cette assiette brute est diminuée
+  abattement (2TS/2TR/2TT/2TQ/2TZ) et revenus réputés distribués (2GO). **17,2 %** (CSG-CRDS 9,7 % +
+  solidarité 7,5 %, `TAUX_PS_ASSURANCE_VIE`, base `baseAssuranceVie`) sur les produits d'assurance-vie
+  et de capitalisation, au brut : 2CH, 2DH, 2VV, 2WW, 2YY, 2ZZ, 2VN, 2VO, 2VP — la hausse de CSG de la
+  LFSS 2026 ne vise pas ces produits (vérifié sur ClickImpôts : 2CH = 50 000 € → 8 600 €). Cette base
+  rejoint la ligne CSG-CRDS 9,7 % du foncier dans `arrondirPrelevementsSociaux.ts`. 2DH : PS dus comme
+  ci-dessus, et PFL de 7,5 % (`prelevementLiberatoire2DH`) affiché pour information dans la vue
+  d'ensemble, non ajouté au total (déjà prélevé à la source).
+  **Cette assiette brute est diminuée
   des revenus déjà soumis aux PS à la source** (brochure DGFiP IR 2026 p.132-133, plancher à 0) :
   2CG/2BH/2DF (PS complets déjà prélevés, montants aussi compris dans 2DC/2TR/2CH/2VV… — cas courant
   des comptes-titres et fonds euros français, qui étaient auparavant comptés deux fois) et 2DG (seul
@@ -1086,10 +1091,9 @@ fonciers (§4).
   diverger explicitement de l'assiette IR de la même case. Indépendant de 2OP : les PS sont dus que le
   revenu soit finalement imposé au barème ou au PFU, contrairement à l'IR (vérifié empiriquement sur
   2GO/2CH et 2VV, 2OP décoché à chaque fois — non re-testé avec 2OP coché).
-  **Exclues du calcul** (`CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE`) : uniquement les cases
-  explicitement libellées « soumis au prélèvement libératoire » sur le CERFA — 2DH, 2XX, 2VM — un
-  mécanisme historique où le prélèvement, lors du versement, réglait définitivement IR *et* PS
-  ensemble ; rien à recalculer.
+  **Exclues du calcul** (`CASES_PS_CAPITAUX_MOBILIERS_HORS_PERIMETRE`) : 2XX et 2VM, déjà réglées à
+  titre définitif à la source. Les montants déjà soumis (2CG/2BH/2DF/2DG) s'imputent d'abord sur la
+  base à 18,6 %, le reliquat sur la base assurance-vie.
   **Bugs corrigés — deux erreurs distinctes détectées par comparaison avec le simulateur officiel sur
   deux comptes réels d'un même utilisateur (foyer célibataire).**
   1. **Taux resté à 17,2 % (CSG 9,2 %) au lieu de 18,6 % (CSG 10,6 % + CRDS 0,5 % + solidarité 7,5 %,
@@ -1103,7 +1107,7 @@ fonciers (§4).
      au taux 2026 dès les revenus 2025 — ce module ne l'avait pas reporté depuis sa découverte ailleurs.
   2. **2CH/2DH/2VV/2WW/2XX/2YY/2ZZ/2VM/2VN/2VO/2VP intégralement exclus des PS, sur l'hypothèse d'un
      « taux historique » non reconstituable (art. L136-7 CSS) pour l'ensemble de la famille
-     assurance-vie/capitalisation — hypothèse invalidée par deux tests isolés.** Foyer célibataire,
+     assurance-vie/capitalisation — hypothèse invalidée par deux tests isolés.** (Le taux de 18,6 % alors retenu sur 2CH/2VV a depuis été ramené à 17,2 %, voir plus haut.) Foyer célibataire,
      2OP décoché : 2GO=4 000 €/2CH=6 000 € → Kairos annonçait 744 € de PS (2GO seul, 18,6 %) contre
      1 860 € au simulateur officiel, soit exactement (2GO+2CH) × 18,6 % = 10 000 × 18,6 % — 2CH compté
      en totalité, montant BRUT, sans l'abattement de 4 600 €/9 200 € réservé à l'IR. Deuxième test,
@@ -1867,6 +1871,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 ### 🟡 Mineur (cosmétique, ergonomie, refactor)
 
+- **Vue d'ensemble — graphique absent sans salaires ni pensions.** Quand le foyer n'a que d'autres
+  revenus (capitaux mobiliers, foncier, BIC…), le graphique de la vue d'ensemble ne s'affiche pas.
 - **`declaration2042CasesIndex.ts` (barre de recherche des cases) tenu à jour manuellement, sans
   vérification automatique.** Chaque nouvelle case ajoutée dans un formulaire de la 2042 doit être
   répliquée à la main dans cet index (`code`, `label`, `sectionId`, `elementId`) pour rester

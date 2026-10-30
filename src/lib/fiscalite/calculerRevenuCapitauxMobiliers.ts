@@ -1,3 +1,4 @@
+import { TAUX_PFL_2DH } from './calculerPrelevementsSociauxCapitauxMobiliers';
 import { FoyerFiscalInput, RevenusCapitauxMobiliersInput } from './types';
 
 /** Abattement de 40 % sur les revenus distribués (2DC/2FU), applicable uniquement en cas d'option barème (2OP). */
@@ -16,8 +17,6 @@ const COEFFICIENT_2GO = 1.25;
  */
 const ABATTEMENT_CONTRATS_8_ANS_CELIBATAIRE = 4600;
 const ABATTEMENT_CONTRATS_8_ANS_COUPLE = 9200;
-/** Taux du prélèvement libératoire historique dont 2DH a déjà fait l'objet, base du crédit d'impôt sur abattement inutilisé. */
-const TAUX_PFL_2DH = 0.075;
 
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
