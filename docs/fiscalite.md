@@ -1262,7 +1262,8 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   `3VW` exclu (brochure IR 2026 p. 155).
 - **Reports expirés** (`3SB`, art. 150-0 D bis ; `3SZ`, OPC monétaires, art. 150-0 B quater) :
   imposés au taux applicable à l'expiration du report (brochure IR 2026 p. 145), donc selon `2OP`
-  comme `3VG` ; retenus au RFR et aux PS 18,6 % sur le montant déclaré.
+  comme `3VG` ; retenus au RFR. `3SZ` est soumis aux PS 18,6 % sur le montant déclaré ; `3SB` en est
+  exclu (seul l'IR est reporté par l'art. 150-0 D bis, les PS ont été acquittés l'année de la cession).
 - **Prélèvements sociaux 18,6 %** (CSG 10,6 % LFSS 2026 + CRDS 0,5 % + solidarité 7,5 %, applicable
   aux revenus du patrimoine 2025 ; revenus fonciers, plus-values immobilières et assurance-vie restent
   à 17,2 %) sur `3VG + 3UA + 3WE + 3AN`, avant tout abattement. `3VT` exclu (PS prélevés à la source
@@ -1281,8 +1282,7 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   agriculteurs).
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
   saisie de `3VG`/`3AN`, reliquat reportable seulement).
-- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3PI` hors PS ; base PS
-  de `3SB` = montant après abattement (la base légale avant abattement n'est pas saisie) ; régime de
+- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3PI` hors PS ; régime de
   `3SZ` non détaillé par la brochure, aligné sur `3VG` ; contribution salariale
   spécifique de 10 % évoquée par une source pour certains gains cédés du 16.2.2025 au 31.12.2027, non
   modélisée.
@@ -1820,7 +1820,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   déduction sous-estimée pour un foyer concerné.
 
 - **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3PI` sans prélèvements sociaux,
-  base PS de `3SB` après abattement, `3SZ` aligné sur `3VG`, contribution de 10 % non modélisée (voir §2, « Plus-values
+  `3SZ` aligné sur `3VG`, contribution de 10 % non modélisée (voir §2, « Plus-values
   et gains divers »).
 - **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
   que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.

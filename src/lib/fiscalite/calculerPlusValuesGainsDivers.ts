@@ -56,7 +56,7 @@ export interface PlusValuesGainsDiversResult {
    * diminués de la moins-value non imputable des impatriés 3VR (plancher 0).
    */
   revenuExonereRetenuPourRFR: number;
-  /** Base soumise aux PS à 18,6 % : 3VG, 3UA, 3WE, 3SB, 3SZ, 3AN, gains BSPCE et 3VQ, avant tout abattement, moins 3VR (plancher 0). */
+  /** Base soumise aux PS à 18,6 % : 3VG, 3UA, 3WE, 3SZ, 3AN, gains BSPCE et 3VQ, avant tout abattement, moins 3VR (plancher 0). */
   basePrelevementsSociaux: number;
   prelevementsSociaux: number;
   casesExclues: readonly string[];
@@ -79,9 +79,9 @@ export interface PlusValuesGainsDiversResult {
  * 3PI est toujours taxé à 50 % (art. 150 ter CGI), indépendamment de 2OP.
  *
  * Prélèvements sociaux : 3VT exclu (prélevés à la source par l'établissement
- * gestionnaire du PEA), 3PI exclu en attendant vérification ; 3SB et 3SZ
- * soumis à 18,6 % sur le montant déclaré (pour 3SB, approximation : la base
- * légale est la plus-value avant abattement, non saisie).
+ * gestionnaire du PEA), 3PI exclu en attendant vérification, 3SB exclu (seul
+ * l'IR est reporté par l'art. 150-0 D bis : les PS ont été acquittés l'année
+ * de la cession) ; 3SZ soumis à 18,6 % sur le montant déclaré.
  *
  * **BSPCE (phase 3.2, art. 163 bis G CGI, LF 2025)** : activité ≥ 3 ans,
  * 3TJ − 3TK et 3TL − 3TM (gain de cession des bons depuis 2025, régime des
@@ -143,7 +143,7 @@ export function calculerPlusValuesGainsDivers(
   if (input.case3cn) bareme += actifsNumeriques;
   else basePFU += actifsNumeriques;
 
-  const basePrelevementsSociaux = Math.max(0, droitCommun + renforce + actifsNumeriques + reportExpire
+  const basePrelevementsSociaux = Math.max(0, droitCommun + renforce + actifsNumeriques + (input.case3sz ?? 0)
     + bspceAvant2018 + bspceAncien + bspceCession2025 + gainExerciceBspce
     + bspceMoinsDeTroisAns + (input.case3vq ?? 0) - moinsValueImpatries);
 
