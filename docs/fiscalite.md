@@ -906,12 +906,18 @@ fonciers (§4).
   dus sur les intérêts bruts (p.128) : non reconstituable, signalé par une aide sous la case.
   **Mode d'imposition à 3 choix (comme ClickImpôts)** : `case2op` vaut `false` (PFU), `true` (barème)
   ou `null` (mode le plus favorable, par défaut ; colonne `case_2op` nullable, sans migration).
-  `useFiscalOverview.ts` exécute tout le calcul avec et sans 2OP (`simuler`), compare l'imposition
-  totale (IR + CEHR + PS, la CSG déductible de l'année variant avec 2OP) et, en mode `null`, retient le
-  barème seulement s'il est strictement plus faible. `comparaisonOptionBareme` (null si identique)
-  expose les deux montants, le mode retenu et `automatique`, affichés dans `FiscalOverviewCard`. Le
-  formulaire du cadre 2 propose les 3 choix en boutons radio. Limite : CSG déductible des années
-  suivantes non comptée. La case de renonciation (déclaration papier seulement) n'est pas reprise. **Contrôle de saisie** :
+  `useFiscalOverview.ts` exécute tout le calcul avec et sans 2OP (`simuler`, dans `evaluer`) et
+  compare l'**imposition à comparer**, comme ClickImpôts : imposition totale (IR + CEHR + PS + PFL 2DH)
+  au PFU, contre imposition au barème diminuée du gain anticipé = `csgDeductibleAnticipee` (6,8 % des
+  revenus du cadre 2 imposés au barème du seul fait de 2OP — 2DC brut, 2TS, 2TR, 2TZ, 2TT, 2VV, 2WW,
+  2ZZ, 2VO, 2VP —, moins 2BH/2DF ; hypothèse de revenus identiques l'an prochain) × TMI de la colonne
+  barème, arrondi. En mode `null`, le barème n'est retenu que s'il est strictement plus faible.
+  `comparaisonOptionBareme` (null si identique) expose les deux colonnes (`ColonneComparatif`), la
+  CSG anticipée, le TMI, le gain, le mode retenu et `automatique`. `simulerOptionBareme` recalcule ce
+  comparatif pour un cadre 2 non enregistré : `ComparatifOptionBareme.tsx` l'affiche en direct sous
+  les 3 boutons radio du formulaire (autres cadres tels qu'enregistrés). Non repris : la ligne « revenus
+  taxables au PFU » de Click (base non exposée par le calcul), le TMI saisi manuellement, la CSG
+  anticipée sur les plus-values du cadre 3. La case de renonciation (déclaration papier seulement) n'est pas reprise. **Contrôle de saisie** :
   `calculerPrelevementsSociauxCapitauxMobiliers.ts::incoherencesSaisie` signale 2CG+2BH+2DF+2DG
   supérieurs aux revenus déclarés, ou 2DI > 2DG ; avertissement dans le formulaire, sans effet sur le
   calcul.

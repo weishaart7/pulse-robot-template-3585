@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CapitauxMobiliersCSG, calculerChargesDeductibles } from './calculerChargesDeductibles';
+import { CapitauxMobiliersCSG, calculerChargesDeductibles, csgDeductibleAnticipee } from './calculerChargesDeductibles';
 import { ChargesDeductiblesInput } from './types';
 
 const VIDE: ChargesDeductiblesInput = {
@@ -135,5 +135,22 @@ describe('calculerChargesDeductibles', () => {
     expect(r.epargneRetraitePersonneCharge).toEqual({ deduit: 3500, plafondNonUtilise: 0, cotisationsPerdues: 500 });
     expect(r.epargneRetraiteDeduite).toBe(4500);
     expect(r.epargneRetraiteRetenuePourRFR).toBe(4500);
+  });
+});
+
+describe('csgDeductibleAnticipee', () => {
+  const cm = (v: Partial<CapitauxMobiliersCSG>): CapitauxMobiliersCSG => ({
+    case2bh: null, case2df: null, case2op: null, case2dc: null, case2ch: null, case2ts: null, case2tr: null,
+    case2tz: null, case2tt: null, case2dm: null, case2vv: null, case2ww: null, case2yy: null, case2zz: null,
+    case2vn: null, case2vo: null, case2vp: null, ...v,
+  });
+
+  it('6,8 % des revenus imposés au barème par l\'option (ClickImpôts : 20 000 € → 1 360 €)', () => {
+    expect(csgDeductibleAnticipee(cm({ case2dc: 20000 }))).toBe(1360);
+  });
+
+  it('hors 2CH (barème de plein droit) et diminuée de 2BH/2DF', () => {
+    expect(csgDeductibleAnticipee(cm({ case2ch: 10000 }))).toBe(0);
+    expect(csgDeductibleAnticipee(cm({ case2tr: 10000, case2bh: 4000 }))).toBe(408);
   });
 });

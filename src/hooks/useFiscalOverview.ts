@@ -33,6 +33,7 @@ import {
   calculerRevenusFonciers2042,
   calculerRevenusNonSalaries,
   calculerChargesDeductibles,
+  csgDeductibleAnticipee,
   alertesChargesDeductibles,
   calculerReductionsCreditsImpot,
   calculerPrelevementSourceDivers,
@@ -201,7 +202,27 @@ export const ANNEE_IFI = ANNEE_REVENUS + 1;
  * 2OP ; la CSG déductible (2BH) est comprise via calculerChargesDeductibles.
  * Null quand les deux options donnent le même impôt.
  */
+/** Une colonne du comparatif PFU/barème (montants arrondis par l'affichage). */
+export interface ColonneComparatif {
+  revenuBrutGlobal: number;
+  impotBareme: number;
+  impotProportionnel: number;
+  prelevementsSociaux: number;
+  /** Réductions et crédits imputés (cadre 7, crédits du cadre 2, crédits égaux à l'impôt). */
+  reductions: number;
+  cehr: number;
+  /** IR + CEHR + PS + PFL de 2DH, comme l'imposition totale de la vue d'ensemble. */
+  imposition: number;
+}
+
 export interface ComparaisonOptionBareme {
+  pfu: ColonneComparatif;
+  bareme: ColonneComparatif;
+  /** CSG déductible anticipée sur les revenus de l'année suivante, avec l'option (`csgDeductibleAnticipee`). */
+  csgDeductibleAnticipee: number;
+  /** TMI de la colonne barème, retenu pour l'année suivante. */
+  tmiAnticipe: number;
+  gainFiscalAnticipe: number;
   /** Mode retenu dans le calcul (true = barème). */
   optionActuelle: boolean;
   /** Mode le plus favorable choisi automatiquement (2OP non tranchée). */
@@ -282,8 +303,10 @@ export interface FiscalOverview {
   plafonnementIFI: Plafonnement2042 | null;
   /** 2042-IFI de ANNEE_IFI ; null sans déclaration ouverte pour cette année. */
   ifi: DeclarationIFIResultat | null;
-  /** Impôt net avec et sans option 2OP ; null si l'option est sans effet. */
+  /** Comparatif avec et sans option 2OP ; null si l'option est sans effet. */
   comparaisonOptionBareme: ComparaisonOptionBareme | null;
+  /** Comparatif recalculé pour un cadre 2 non enregistré (formulaire), le reste de la déclaration tel qu'enregistré. */
+  simulerOptionBareme: (capitauxMobiliers: RevenusCapitauxMobiliersInput) => ComparaisonOptionBareme | null;
   /** Recharge les 9 sources Supabase — à appeler après une saisie dans la 2042 (voir FiscaliteSection.tsx). */
   refetch: () => void;
 }
@@ -362,13 +385,12 @@ export function useFiscalOverview(): FiscalOverview {
     refetchPrelevementSource();
   };
 
-  const overview = useMemo(() => {
+  const evaluer = useCallback((capitauxMobiliersSaisis: RevenusCapitauxMobiliersInput) => {
     const foyerInput = foyer ?? FOYER_PAR_DEFAUT;
     const revenusInput = revenus ?? REVENUS_SALAIRES_PAR_DEFAUT;
     const gainsInput = gains ?? GAINS_ACTIONNARIAT_PAR_DEFAUT;
     const exoneresInput = exoneres ?? REVENUS_EXONERES_PAR_DEFAUT;
     const pensionsInput = pensions ?? PENSIONS_RETRAITES_RENTES_PAR_DEFAUT;
-    const capitauxMobiliersSaisis = capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT;
 
     // Calcul complet pour un jeu de capitaux mobiliers : appelé une seconde fois avec 2OP inversé pour le comparatif.
     const simuler = (capitauxMobiliersInput: RevenusCapitauxMobiliersInput & { case2op: boolean }) => {
@@ -524,6 +546,7 @@ export function useFiscalOverview(): FiscalOverview {
         prelevementsSociauxTotal,
         cehr,
         solde,
+        revenuBrutGlobal,
         impot,
         plafonnementIFI,
         ifi,
@@ -532,20 +555,49 @@ export function useFiscalOverview(): FiscalOverview {
 
     const avecOption = simuler({ ...capitauxMobiliersSaisis, case2op: true });
     const sansOption = simuler({ ...capitauxMobiliersSaisis, case2op: false });
-    // Impôt total comparé (IR, CEHR et PS) : la CSG déductible de l'année varie avec 2OP.
-    const total = (r: typeof avecOption) => r.impot.impotNet + r.cehr + r.prelevementsSociauxTotal;
-    const impotAvecOption = total(avecOption);
-    const impotSansOption = total(sansOption);
-    // Mode le plus favorable (2OP non tranchée) : barème seulement s'il réduit l'impôt, PFU à égalité.
+    const colonne = (r: typeof avecOption): ColonneComparatif => {
+      const impotProportionnel = r.impot.impotForfaitaire + r.impot.impotTauxMarginal + r.impot.taxesAnnexes;
+      return {
+        revenuBrutGlobal: r.revenuBrutGlobal,
+        impotBareme: r.impot.impotApresDecote,
+        impotProportionnel,
+        prelevementsSociaux: r.prelevementsSociauxTotal,
+        reductions: r.impot.impotApresDecote + impotProportionnel + r.impot.reprisesImpot - r.impot.impotNet,
+        cehr: r.cehr,
+        imposition: r.impot.impotNet + r.cehr + r.prelevementsSociauxTotal
+          + r.prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH,
+      };
+    };
+    const pfu = colonne(sansOption);
+    const bareme = colonne(avecOption);
+    // Gain anticipé de la CSG déductible l'année suivante, au TMI de la colonne barème (comme ClickImpôts).
+    const csgAnticipee = csgDeductibleAnticipee(capitauxMobiliersSaisis);
+    const tmiAnticipe = avecOption.impot.tmi;
+    const gainFiscalAnticipe = Math.round(csgAnticipee * tmiAnticipe);
+    const impotSansOption = pfu.imposition;
+    const impotAvecOption = bareme.imposition - gainFiscalAnticipe;
+    // Mode le plus favorable (2OP non tranchée) : barème seulement s'il réduit l'imposition à comparer, PFU à égalité.
     const automatique = capitauxMobiliersSaisis.case2op === null;
     const optionActuelle = automatique ? impotAvecOption < impotSansOption : capitauxMobiliersSaisis.case2op === true;
     const resultat = optionActuelle ? avecOption : sansOption;
     const comparaisonOptionBareme: ComparaisonOptionBareme | null = Math.round(impotAvecOption) === Math.round(impotSansOption)
       ? null
-      : { optionActuelle, automatique, impotAvecOption, impotSansOption };
+      : {
+        pfu, bareme, csgDeductibleAnticipee: csgAnticipee, tmiAnticipe, gainFiscalAnticipe,
+        optionActuelle, automatique, impotAvecOption, impotSansOption,
+      };
 
     return { ...resultat, comparaisonOptionBareme };
   }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
-  return { ...overview, refetch };
+  const overview = useMemo(
+    () => evaluer(capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT),
+    [evaluer, capitauxMobiliers],
+  );
+  const simulerOptionBareme = useCallback(
+    (cm: RevenusCapitauxMobiliersInput) => evaluer(cm).comparaisonOptionBareme,
+    [evaluer],
+  );
+
+  return { ...overview, simulerOptionBareme, refetch };
 }

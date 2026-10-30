@@ -203,7 +203,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
                 : choixOptimal
                   ? 'Le choix actuel est le plus favorable cette année.'
                   : `${baremePlusFavorable ? 'Opter pour le barème' : 'Revenir au prélèvement forfaitaire'} réduirait l'imposition de ${formatEuros(Math.abs(impotAvecOption - impotSansOption))}.`}
-              {' '}Option globale (capitaux mobiliers et plus-values) ; IR, CEHR et prélèvements sociaux ; CSG déductible des années suivantes non comptée.
+              {' '}Option globale (capitaux mobiliers et plus-values) ; imposition totale, barème diminué du gain anticipé de CSG déductible l'an prochain ({formatEuros(comparaisonOptionBareme.gainFiscalAnticipe)}).
             </p>
           </div>
         );

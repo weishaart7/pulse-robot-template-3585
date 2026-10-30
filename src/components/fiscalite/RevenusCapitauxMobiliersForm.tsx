@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useRevenusCapitauxMobiliers } from '@/hooks/useRevenusCapitauxMobiliers';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
@@ -8,6 +8,8 @@ import { calculerRevenuCapitauxMobiliers } from '@/lib/fiscalite/calculerRevenuC
 import { calculerPrelevementsSociauxCapitauxMobiliers } from '@/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers';
 import { LectureLigne, MontantEclateLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
+import { ComparatifOptionBareme } from './ComparatifOptionBareme';
+import { useFiscalOverview } from '@/hooks/useFiscalOverview';
 
 const MODES_2OP: { label: string; valeur: boolean | null }[] = [
   { label: 'Appliquer le prélèvement forfaitaire unique (PFU)', valeur: false },
@@ -41,6 +43,9 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
   const deficitReportable = calculerRevenuCapitauxMobiliers(revenus, foyer?.situationFamille ?? 'celibataire')
     .deficitReportableAnnee;
   const incoherencesSaisie = calculerPrelevementsSociauxCapitauxMobiliers(revenus).incoherencesSaisie;
+  // Comparatif PFU/barème en direct : cadre 2 du formulaire, autres cadres tels qu'enregistrés.
+  const { simulerOptionBareme, loading: loadingOverview } = useFiscalOverview();
+  const comparatif = useMemo(() => (loadingOverview ? null : simulerOptionBareme(revenus)), [loadingOverview, simulerOptionBareme, revenus]);
 
   useEffect(() => {
     if (data) {
@@ -192,6 +197,7 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
               {mode.label}
             </label>
           ))}
+          {!loadingOverview && <ComparatifOptionBareme comparaison={comparatif} />}
         </SousGroupe>
     </Cadre2042>
   );

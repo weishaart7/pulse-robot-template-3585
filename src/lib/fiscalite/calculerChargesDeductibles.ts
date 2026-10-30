@@ -40,6 +40,18 @@ export function csgDeductibleCapitauxMobiliers(cm: CapitauxMobiliersCSG): number
   return Math.round(TAUX_CSG_DEDUCTIBLE * Math.min(montant(cm.case2bh) + montant(cm.case2df), imposesAuBareme));
 }
 
+/**
+ * CSG déductible anticipée sur les revenus de l'année suivante, si l'option pour le barème est
+ * reconduite (comparatif PFU/barème, comme ClickImpôts) : 6,8 % des revenus du cadre 2 imposés au
+ * barème du seul fait de 2OP, diminués de 2BH/2DF (CSG déjà déductible cette année). Hypothèse :
+ * revenus identiques l'année suivante.
+ */
+export function csgDeductibleAnticipee(cm: CapitauxMobiliersCSG): number {
+  const imposesParOption = [cm.case2dc, cm.case2ts, cm.case2tr, cm.case2tz, cm.case2tt,
+    cm.case2vv, cm.case2ww, cm.case2zz, cm.case2vo, cm.case2vp].reduce<number>((t, v) => t + montant(v), 0);
+  return Math.round(TAUX_CSG_DEDUCTIBLE * Math.max(0, imposesParOption - montant(cm.case2bh) - montant(cm.case2df)));
+}
+
 /** Report reportable d'une année vers l'imposition des revenus 2026. */
 export interface ReliquatAnnuel {
   annee: number;
