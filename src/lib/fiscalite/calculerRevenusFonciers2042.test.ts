@@ -39,7 +39,19 @@ describe('calculerRevenusFonciers2042', () => {
 
   it('alertes : micro avec une 2044 ouverte, recettes au-delà de 15 000 €', () => {
     expect(calculerRevenusFonciers2042({ ...VIDE, case4be: 16000 }, 0).alertes)
-      .toEqual(['micro_et_reel', 'micro_au_dela_du_seuil']);
+      .toEqual(['micro_et_reel']);
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4be: 16000 }, null).alertes)
+      .toEqual(['micro_au_dela_du_seuil']);
+  });
+
+  it('avec une 2044, 4BE, 4BK et 4EB sont écartés', () => {
+    const r = calculerRevenusFonciers2042({ ...VIDE, case4be: 10000, case4bk: 2000, case4eb: 1000 }, 5000);
+    expect(r.totalNetImposable).toBe(0);
+    expect(r.revenuCreditImpotEgalImpotFrancais).toBe(0);
+    expect(r.revenuExonereTauxEffectif).toBe(0);
+    expect(r.prelevementsSociaux).toBe(0);
+    expect(r.alertes).toEqual(['micro_et_reel']);
+    expect(calculerRevenusFonciers2042({ ...VIDE, case4eb: 1000 }, 5000).alertes).toEqual(['micro_et_reel']);
   });
 
   it('4BD sans 2044 : imputé sur le net micro, PS après déficit', () => {

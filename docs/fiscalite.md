@@ -1298,7 +1298,8 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 
 - **4BE (micro-foncier)** : abattement de 30 % (art. 32 CGI), 70 % au barème ; PS 17,2 % sur ce net
   (revenus fonciers non concernés par la hausse de CSG de la LFSS 2026). Avertissement non bloquant si
-  une 2044 est ouverte pour l'année ou si 4BE dépasse 15 000 €.
+  4BE dépasse 15 000 €. Si une 2044 est ouverte pour l'année, le micro-foncier est exclu : 4BE, 4BK et
+  4EB valent 0 et passent en lecture seule ; une saisie antérieure est signalée et effaçable depuis l'alerte.
 - **4BK / 4BL** (source étrangère, crédit d'impôt égal à l'impôt français) : fractions de 4BE (après
   abattement) et de 4BA (plafonnée au revenu foncier net de la 2044), jamais additionnées ; retirées du
   revenu imposable et ajoutées au revenu retenu pour le taux effectif, comme 1AF/1AL.
@@ -1316,7 +1317,8 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
   fiable mais suppose de suivre la consommation des déficits par année d'origine (10 ans) côté micro.
 - **Contrôles de saisie** (non bloquants) : 4BK au-delà de 4BE, 4BL sans 4BA ou au-delà de 4BA
   (excédent écarté). 4BA/4BD saisis puis masqués par une 2044 : effaçables depuis l'alerte.
-- **4BN / 4BZ** : informatives.
+- **4BN / 4BZ** : informatives ; 4BZ est cochée et verrouillée dès qu'une 2044 est ouverte. Avec une
+  2044, seules 4BN et 4EA restent saisissables, ainsi que 4BL et 4BY tant que la 2044 ne les porte pas.
 - **PS neutralisés sur 4BK/4BL** : le crédit égal à l'impôt français couvre l'IR augmenté des PS
   (notice 2047 2025 ; BOI-INT-DG-20-20-100 § 110, CSG-CRDS assimilées à l'IR pour les conventions).
   4BK net et 4BL saisi sans 2044 sortent de l'assiette des PS 17,2 % ; avec une 2044,
@@ -1548,7 +1550,9 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 - **Option pour le réel** : si les recettes (cases A + E) ne dépassent pas 15 000 €, la section Résultat
   rappelle que déposer la 2044 vaut option pour le réel, irrévocable 3 ans (sauf exclusion du micro-foncier).
 - **Ligne 228** : seuls les taux du tableau 4 de la brochure (15, 26, 30, 40, 45, 50, 60, 70, 85 %,
-  `TAUX_DEDUCTION_SPECIFIQUE_2044`) sont retenus, tout autre taux vaut 0 ; choix par liste à l'écran.
+  `TAUX_DEDUCTION_SPECIFIQUE_2044`) sont retenus, tout autre taux vaut 0 ; choix par liste à l'écran,
+  chaque taux suivi de ses dispositifs (`DISPOSITIFS_DEDUCTION_SPECIFIQUE_2044` : seul le taux est stocké,
+  30 % et 70 % citent Borloo ancien et Cosse ensemble), calcul « taux × ligne 215 = montant » sous le champ.
   Loc'Avantages (réduction d'impôt) n'y figure pas.
 - **Ligne 230** : peut être négative (charges réelles supérieures aux provisions déduites l'an dernier :
   supplément de charges ; migration `20261027180000` lève la contrainte `>= 0`).
@@ -1618,7 +1622,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   droit « Report sur la 2042 » : 4BA à 4BD, plus le net imposable informatif quand 4BA et 4BD coexistent.
   Hook [useDeclaration2044.ts](src/hooks/useDeclaration2044.ts) : chaque champ s'enregistre à la sortie
   (champ vidé = NULL), mise à jour optimiste, recalcul immédiat. Ligne 222 saisie en nombre de locaux (1 affiché par défaut, minimum 1),
-  ligne 228 en taux choisi dans une liste, le montant calculé est affiché sous le champ. Ouvrir la 2044 d'une année crée
+  ligne 228 en taux choisi dans une liste avec ses dispositifs, le calcul détaillé est affiché sous le champ. Ouvrir la 2044 d'une année crée
   sa ligne `declarations_2044` et les colonnes des actifs éligibles. Suppression d'un immeuble ou d'une
   société sans confirmation. Colonne reliée à un actif : pastille lagon dans l'en-tête ; valeur
   préremplie en clair (placeholder), saisie en gras avec un bouton de retour à la valeur préremplie ;

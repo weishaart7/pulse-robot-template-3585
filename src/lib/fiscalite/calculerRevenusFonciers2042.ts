@@ -62,7 +62,8 @@ export interface RevenusFonciers2042Result {
  * 4BA se saisit directement (parts de sociétés immobilières seulement, brochure
  * p. 157) et 4BD s'impute sur le foncier net, part au barème d'abord, sans le
  * rendre négatif (CGI art. 32, brochure p. 158) ; avec une 2044, ces deux saisies
- * sont ignorées car la 2044 les calcule. 4BN/4BZ sont informatives. Le calcul ne
+ * sont ignorées car la 2044 les calcule, et le micro-foncier (4BE, 4BK, 4EB) est
+ * écarté, les deux régimes étant exclusifs. 4BN/4BZ sont informatives. Le calcul ne
  * bloque pas les incompatibilités, il les signale (`alertes`).
  */
 export function calculerRevenusFonciers2042(
@@ -70,9 +71,12 @@ export function calculerRevenusFonciers2042(
   revenuFoncierReel: number | null,
 ): RevenusFonciers2042Result {
   const avec2044 = revenuFoncierReel !== null;
-  const recettesMicro = input.case4be ?? 0;
+  // Avec une 2044, le micro-foncier est exclu : 4BE, 4BK et 4EB valent 0.
+  const recettesMicro = avec2044 ? 0 : input.case4be ?? 0;
+  const recettesMicroEtrangeres = avec2044 ? 0 : input.case4bk ?? 0;
+  const recettesMicroExonerees = avec2044 ? 0 : input.case4eb ?? 0;
   const netMicroTotal = netMicro(recettesMicro);
-  const netMicroEtranger = netMicro(Math.min(input.case4bk ?? 0, recettesMicro));
+  const netMicroEtranger = netMicro(Math.min(recettesMicroEtrangeres, recettesMicro));
   const reelSaisi = avec2044 ? 0 : input.case4ba ?? 0;
   const reelSaisiEtranger = Math.min(input.case4bl ?? 0, reelSaisi);
   const deductionReel4BL = avec2044 ? Math.min(input.case4bl ?? 0, Math.max(0, revenuFoncierReel)) : 0;
@@ -84,13 +88,15 @@ export function calculerRevenusFonciers2042(
   const imputeEtranger = Math.min(deficit - imputeBareme, brutEtranger);
 
   const alertes: AlerteRevenusFonciers2042[] = [];
-  if (recettesMicro > 0 && avec2044) alertes.push('micro_et_reel');
+  if (avec2044 && ((input.case4be ?? 0) > 0 || (input.case4bk ?? 0) > 0 || (input.case4eb ?? 0) > 0)) {
+    alertes.push('micro_et_reel');
+  }
   if (recettesMicro > SEUIL_MICRO_FONCIER) alertes.push('micro_au_dela_du_seuil');
   if (recettesMicro > 0 && reelSaisi > 0) alertes.push('micro_et_parts_sci');
   if (avec2044 && (input.case4ba ?? 0) > 0) alertes.push('4ba_ignore_2044');
   if (avec2044 && (input.case4bd ?? 0) > 0) alertes.push('4bd_ignore_2044');
   // 4BK/4BL sont des fractions : au-delà de leur case mère, l'excédent est écarté.
-  if ((input.case4bk ?? 0) > recettesMicro) alertes.push('4bk_superieur_4be');
+  if (recettesMicroEtrangeres > recettesMicro) alertes.push('4bk_superieur_4be');
   const baseReel = avec2044 ? Math.max(0, revenuFoncierReel) : reelSaisi;
   if ((input.case4bl ?? 0) > 0 && baseReel === 0) alertes.push('4bl_sans_reel');
   else if ((input.case4bl ?? 0) > baseReel) alertes.push('4bl_superieur_4ba');
@@ -100,7 +106,7 @@ export function calculerRevenusFonciers2042(
     deductionReel4BL,
     revenuCreditImpotEgalImpotFrancais: brutEtranger - imputeEtranger + deductionReel4BL,
     deficitAnterieurImpute: imputeBareme + imputeEtranger,
-    revenuExonereTauxEffectif: (input.case4ea ?? 0) + netMicro(input.case4eb ?? 0),
+    revenuExonereTauxEffectif: (input.case4ea ?? 0) + netMicro(recettesMicroExonerees),
     revenuExonereRetenuPourRFR: input.case4by ?? 0,
     prelevementsSociaux: Math.round((brutBareme - imputeBareme) * TAUX_PRELEVEMENTS_SOCIAUX),
     neutralisationPS2044: Math.round(deductionReel4BL * TAUX_PRELEVEMENTS_SOCIAUX),

@@ -96,11 +96,11 @@ export const CaseMontant = ({ code, value, onChange, ariaLabel, unite = '€' }:
 };
 
 /** Case à cocher d'une case du Cerfa, alignée à droite de sa colonne. */
-const CaseCocher = ({ code, checked, onChange, libelle }: { code: string; checked: boolean; onChange: (v: boolean) => void; libelle?: string }) => (
-  <label htmlFor={`case-${code}`} className="flex h-9 cursor-pointer items-center justify-end gap-2 font-normal">
+const CaseCocher = ({ code, checked, onChange, libelle, disabled }: { code: string; checked: boolean; onChange: (v: boolean) => void; libelle?: string; disabled?: boolean }) => (
+  <label htmlFor={`case-${code}`} className={cn('flex h-9 items-center justify-end gap-2 font-normal', disabled ? 'cursor-default' : 'cursor-pointer')}>
     {libelle && <span className="text-[12px] text-muted-foreground sm:hidden">{libelle}</span>}
     <span className="rounded-[2px] bg-lagon-soft px-1 text-[11px] font-medium tabular-nums text-lagon-ink">{code}</span>
-    <Checkbox id={`case-${code}`} checked={checked} onCheckedChange={(c) => onChange(!!c)} />
+    <Checkbox id={`case-${code}`} checked={checked} disabled={disabled} onCheckedChange={(c) => onChange(!!c)} />
   </label>
 );
 
@@ -176,13 +176,15 @@ interface SingleCaseLigneProps {
   code: string;
   checked: boolean;
   onChange: (value: boolean) => void;
+  /** Case reportée automatiquement (ex. 4BZ depuis la 2044) : non modifiable. */
+  disabled?: boolean;
 }
 
 /** Ligne case à cocher unique, sans colonne déclarant 2 (ex. 2OP). */
-export const SingleCaseLigne = ({ label, extra, aide, code, checked, onChange }: SingleCaseLigneProps) => (
+export const SingleCaseLigne = ({ label, extra, aide, code, checked, onChange, disabled }: SingleCaseLigneProps) => (
   <div className={cn(LIGNE, GRILLE_DECLARANTS)}>
     <LigneLabel label={label} extra={extra} aide={aide} />
-    <CaseCocher code={code} checked={checked} onChange={onChange} />
+    <CaseCocher code={code} checked={checked} onChange={onChange} disabled={disabled} />
     <span className="hidden sm:block" />
   </div>
 );

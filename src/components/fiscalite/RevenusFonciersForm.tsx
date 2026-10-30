@@ -17,7 +17,7 @@ const FONCIERS_VIDE: RevenusFonciers2042Input = {
 };
 
 const TEXTE_ALERTE = {
-  micro_et_reel: "Une 2044 (régime réel) est ouverte pour 2025 : le micro-foncier ne peut pas s'y ajouter, sauf exception.",
+  micro_et_reel: 'Une 2044 (régime réel) est ouverte pour 2025 : le micro-foncier saisi (4BE, 4BK, 4EB) est ignoré.',
   micro_au_dela_du_seuil: 'Au-delà de 15 000 € de recettes brutes, le régime réel (2044) est obligatoire.',
   micro_et_parts_sci: "4BA direct est réservé aux seuls revenus de parts de sociétés immobilières : avec une location en direct, ces revenus vont en 4BE (micro) ou dans une 2044.",
   '4ba_ignore_2044': 'Une 2044 est ouverte pour 2025 : le 4BA saisi est ignoré, celui de la 2044 est retenu.',
@@ -33,9 +33,10 @@ type Alerte = keyof typeof TEXTE_ALERTE;
 const ALERTES_MICRO: readonly Alerte[] = ['micro_et_reel', 'micro_au_dela_du_seuil', 'micro_et_parts_sci', '4bk_superieur_4be'];
 
 /** Saisie masquée par la 2044 : effaçable depuis l'alerte. */
-const CASE_IGNOREE: Partial<Record<Alerte, 'case4ba' | 'case4bd'>> = {
-  '4ba_ignore_2044': 'case4ba',
-  '4bd_ignore_2044': 'case4bd',
+const CASES_IGNOREES: Partial<Record<Alerte, readonly (keyof RevenusFonciers2042Input)[]>> = {
+  micro_et_reel: ['case4be', 'case4bk', 'case4eb'],
+  '4ba_ignore_2044': ['case4ba'],
+  '4bd_ignore_2044': ['case4bd'],
 };
 
 interface RevenusFonciersFormProps {
@@ -82,12 +83,12 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
   const { alertes } = calculerRevenusFonciers2042(rf, declaration2044 ? declaration2044.case4BA : null);
 
   const renderAlertes = (liste: Alerte[]) => liste.map(a => {
-    const cle = CASE_IGNOREE[a];
+    const cles = CASES_IGNOREES[a];
     return (
       <p key={a} className="py-2 text-[13px] text-muted-foreground">
         {TEXTE_ALERTE[a]}
-        {cle && (
-          <button type="button" className="ml-2 underline underline-offset-2 hover:text-foreground" onClick={() => update(cle, null)}>
+        {cles && (
+          <button type="button" className="ml-2 underline underline-offset-2 hover:text-foreground" onClick={() => setRf(prev => ({ ...prev, ...Object.fromEntries(cles.map(c => [c, null])) }))}>
             Effacer la saisie
           </button>
         )}
@@ -99,9 +100,13 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
     <Cadre2042 titre="Revenus fonciers"
       description="Cadre 4 de la 2042 : locations non meublées. Le régime réel se remplit dans la 2044 et se reprend ici."
       saving={saving} onSave={handleSubmit}>
-        <SousGroupe titre="Micro-foncier">
-          <SingleMontantLigne label="Recettes brutes sans abattement" extra="n'excédant pas 15 000 €" code="4BE" value={rf.case4be} onChange={v => update('case4be', v)} />
-          <SingleMontantLigne label="Dont recettes de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" aide="Crédit égal à l'impôt français : IR et prélèvements sociaux neutralisés. Ne pas utiliser pour les PS si la convention exclut la CSG-CRDS (Royaume-Uni, Inde, Bahreïn, Monaco)." code="4BK" value={rf.case4bk} onChange={v => update('case4bk', v)} />
+        <SousGroupe titre="Micro-foncier" aide={declaration2044 ? 'Une 2044 est ouverte pour 2025 : le micro-foncier est exclu.' : undefined}>
+          {declaration2044
+            ? <LectureLigne label="Recettes brutes sans abattement" code="4BE" value={null} />
+            : <SingleMontantLigne label="Recettes brutes sans abattement" extra="n'excédant pas 15 000 €" code="4BE" value={rf.case4be} onChange={v => update('case4be', v)} />}
+          {declaration2044
+            ? <LectureLigne label="Dont recettes de source étrangère" code="4BK" value={null} />
+            : <SingleMontantLigne label="Dont recettes de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" aide="Crédit égal à l'impôt français : IR et prélèvements sociaux neutralisés. Ne pas utiliser pour les PS si la convention exclut la CSG-CRDS (Royaume-Uni, Inde, Bahreïn, Monaco)." code="4BK" value={rf.case4bk} onChange={v => update('case4bk', v)} />}
           {renderAlertes(alertes.filter(a => ALERTES_MICRO.includes(a)))}
         </SousGroupe>
 
@@ -123,11 +128,13 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
 
         <SousGroupe titre="Revenus fonciers exonérés retenus pour le taux effectif">
           <SingleMontantLigne label="Régime réel : revenus fonciers exonérés" code="4EA" value={rf.case4ea} onChange={v => update('case4ea', v)} />
-          <SingleMontantLigne label="Micro-foncier : recettes brutes exonérées" code="4EB" value={rf.case4eb} onChange={v => update('case4eb', v)} />
+          {declaration2044
+            ? <LectureLigne label="Micro-foncier : recettes brutes exonérées" code="4EB" value={null} />
+            : <SingleMontantLigne label="Micro-foncier : recettes brutes exonérées" code="4EB" value={rf.case4eb} onChange={v => update('case4eb', v)} />}
         </SousGroupe>
 
         <SingleCaseLigne label="Vous ne percevez plus de revenus fonciers en 2026" code="4BN" checked={rf.case4bn} onChange={v => update('case4bn', v)} />
-        <SingleCaseLigne label="Vous souscrivez une déclaration n° 2044 spéciale" code="4BZ" checked={rf.case4bz} onChange={v => update('case4bz', v)} />
+        <SingleCaseLigne label="Vous souscrivez une déclaration n° 2044 spéciale" code="4BZ" checked={declaration2044 ? true : rf.case4bz} disabled={!!declaration2044} onChange={v => update('case4bz', v)} />
     </Cadre2042>
   );
 };

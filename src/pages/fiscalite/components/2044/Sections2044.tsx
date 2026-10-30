@@ -4,7 +4,7 @@ import { AideTooltip } from '@/components/fiscalite/DeclarationLigne';
 import { cn } from '@/lib/utils';
 import type { Declaration2044Result, Immeuble2044Result } from '@/lib/fiscalite/calculerDeclaration2044';
 import { SEUIL_MICRO_FONCIER } from '@/lib/immobilier/foncierFoyer';
-import { FORFAIT_FRAIS_GESTION_PAR_LOCAL, renovationEnergetiqueApplicable, TAUX_DEDUCTION_SPECIFIQUE_2044 } from '@/lib/fiscalite/calculerDeclaration2044';
+import { DISPOSITIFS_DEDUCTION_SPECIFIQUE_2044, FORFAIT_FRAIS_GESTION_PAR_LOCAL, renovationEnergetiqueApplicable, TAUX_DEDUCTION_SPECIFIQUE_2044 } from '@/lib/fiscalite/calculerDeclaration2044';
 import { COLONNES_IMMEUBLE_2044, COLONNES_PART_2044, type Declaration2044ImmeubleRecord, type Declaration2044PartRecord } from '@/services/declaration2044Service';
 import type { useDeclaration2044 } from '@/hooks/useDeclaration2044';
 import { formatEuros, Grille2044, LigneCalculee, LigneGroupe, LigneSaisie, MontantCellule } from './Grille2044';
@@ -79,7 +79,7 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
               )}
             >
               <option value="">Aucune</option>
-              {TAUX_DEDUCTION_SPECIFIQUE_2044.map((t) => <option key={t} value={t}>{t} %</option>)}
+              {TAUX_DEDUCTION_SPECIFIQUE_2044.map((t) => <option key={t} value={t}>{t} % — {DISPOSITIFS_DEDUCTION_SPECIFIQUE_2044[t]}</option>)}
             </select>
           ) : (
           <MontantCellule
@@ -95,7 +95,11 @@ export function ImmeublesSection({ etat, annee }: { etat: Etat2044; annee: numbe
           />
           )}
           {l.unite && (lignes[idx][l.resultat] as number) > 0 && (
-            <div className="pr-2 text-right text-[11px] tabular-nums text-muted-foreground">= {formatEuros(lignes[idx][l.resultat] as number)}</div>
+            <div className="pr-2 text-right text-[11px] tabular-nums text-muted-foreground">
+              {l.unite === '%'
+                ? `${Number(i[l.colonne])} % × ${formatEuros(lignes[idx].ligne215)} (l. 215) = ${formatEuros(lignes[idx][l.resultat] as number)}`
+                : `= ${formatEuros(lignes[idx][l.resultat] as number)}`}
+            </div>
           )}
         </div>
       ))}

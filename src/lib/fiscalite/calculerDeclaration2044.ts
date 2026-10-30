@@ -15,6 +15,22 @@ export const FORFAIT_FRAIS_GESTION_PAR_LOCAL = 20;
 export const TAUX_DEDUCTION_SPECIFIQUE_2044 = [15, 26, 30, 40, 45, 50, 60, 70, 85] as const;
 
 /**
+ * Dispositifs correspondant à chaque taux de la ligne 228 (brochure IR 2026, tableau 4). Seul le taux est
+ * stocké : 30 % et 70 % sont communs à Borloo ancien et Cosse, le libellé les cite donc ensemble.
+ */
+export const DISPOSITIFS_DEDUCTION_SPECIFIQUE_2044: Record<(typeof TAUX_DEDUCTION_SPECIFIQUE_2044)[number], string> = {
+  15: 'Cosse intermédiaire',
+  26: 'Besson ancien, Robien ZRR',
+  30: 'Borloo ancien ou Cosse intermédiaire',
+  40: 'Carrières',
+  45: 'Borloo ancien social',
+  50: 'Cosse social',
+  60: 'Borloo ancien social',
+  70: 'Borloo ancien intermédié ou Cosse social',
+  85: 'Cosse intermédié',
+};
+
+/**
  * Le relèvement du plafond de déficit par la rénovation énergétique (224bis, 112bis) ne vaut que pour les
  * dépenses payées du 1.1.2023 au 31.12.2025 : hors de ces années, la ligne 434 est nulle.
  */
