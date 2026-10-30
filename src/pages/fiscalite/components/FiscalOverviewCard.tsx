@@ -74,7 +74,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
-  const impositionRevenus = impot.impotNet + cehr + prelevementsSociauxTotal;
+  // PFL de 2DH : déjà prélevé à la source, compté dans l'imposition mais pas dans le solde à payer.
+  const impositionRevenus = impot.impotNet + cehr + prelevementsSociauxTotal
+    + prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH;
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
   const noteImpot = [
@@ -88,7 +90,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     { label: 'Contribution exceptionnelle sur les hauts revenus', valeur: cehr },
     { label: 'Prélèvements sociaux (capitaux mobiliers)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
     ...(prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH > 0
-      ? [{ label: 'Prélèvement libératoire 2DH (7,5 %, déjà prélevé)', valeur: null, texte: formatEuros(prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH) }]
+      ? [{ label: 'Prélèvement libératoire 2DH (7,5 %, déjà prélevé)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH }]
       : []),
     { label: 'Prélèvements sociaux (pensions, retraites, rentes)', valeur: prelevementsSociauxPensionsRetraitesRentes.prelevementsSociaux },
     { label: "Prélèvements sociaux (gains d'actionnariat salarié)", valeur: prelevementsSociauxGainsActionnariat.prelevementsSociaux },

@@ -1078,8 +1078,8 @@ fonciers (§4).
   et de capitalisation, au brut : 2CH, 2DH, 2VV, 2WW, 2YY, 2ZZ, 2VN, 2VO, 2VP — la hausse de CSG de la
   LFSS 2026 ne vise pas ces produits (vérifié sur ClickImpôts : 2CH = 50 000 € → 8 600 €). Cette base
   rejoint la ligne CSG-CRDS 9,7 % du foncier dans `arrondirPrelevementsSociaux.ts`. 2DH : PS dus comme
-  ci-dessus, et PFL de 7,5 % (`prelevementLiberatoire2DH`) affiché pour information dans la vue
-  d'ensemble, non ajouté au total (déjà prélevé à la source).
+  ci-dessus, et PFL de 7,5 % (`prelevementLiberatoire2DH`) compté dans l'imposition totale de la
+  vue d'ensemble, mais pas dans le solde à payer (déjà prélevé à la source).
   **Cette assiette brute est diminuée
   des revenus déjà soumis aux PS à la source** (brochure DGFiP IR 2026 p.132-133, plancher à 0) :
   2CG/2BH/2DF (PS complets déjà prélevés, montants aussi compris dans 2DC/2TR/2CH/2VV… — cas courant
