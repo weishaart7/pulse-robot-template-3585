@@ -155,7 +155,7 @@ const REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT: RevenusCapitauxMobiliersInput = {
   case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
   case2vm: null, case2vn: null, case2vo: null, case2vp: null,
   case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
-  case2op: false,
+  case2op: null,
 };
 
 const PLUS_VALUES_PAR_DEFAUT: PlusValuesGainsDiversInput = {
@@ -202,7 +202,10 @@ export const ANNEE_IFI = ANNEE_REVENUS + 1;
  * Null quand les deux options donnent le même impôt.
  */
 export interface ComparaisonOptionBareme {
+  /** Mode retenu dans le calcul (true = barème). */
   optionActuelle: boolean;
+  /** Mode le plus favorable choisi automatiquement (2OP non tranchée). */
+  automatique: boolean;
   impotAvecOption: number;
   impotSansOption: number;
 }
@@ -368,7 +371,7 @@ export function useFiscalOverview(): FiscalOverview {
     const capitauxMobiliersSaisis = capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT;
 
     // Calcul complet pour un jeu de capitaux mobiliers : appelé une seconde fois avec 2OP inversé pour le comparatif.
-    const simuler = (capitauxMobiliersInput: RevenusCapitauxMobiliersInput) => {
+    const simuler = (capitauxMobiliersInput: RevenusCapitauxMobiliersInput & { case2op: boolean }) => {
 
       // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
       const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput);
@@ -527,14 +530,19 @@ export function useFiscalOverview(): FiscalOverview {
       };
     };
 
-    const resultat = simuler(capitauxMobiliersSaisis);
-    const alternative = simuler({ ...capitauxMobiliersSaisis, case2op: !capitauxMobiliersSaisis.case2op });
-    const [avecOption, sansOption] = capitauxMobiliersSaisis.case2op ? [resultat, alternative] : [alternative, resultat];
-    const impotAvecOption = avecOption.impot.impotNet;
-    const impotSansOption = sansOption.impot.impotNet;
+    const avecOption = simuler({ ...capitauxMobiliersSaisis, case2op: true });
+    const sansOption = simuler({ ...capitauxMobiliersSaisis, case2op: false });
+    // Impôt total comparé (IR, CEHR et PS) : la CSG déductible de l'année varie avec 2OP.
+    const total = (r: typeof avecOption) => r.impot.impotNet + r.cehr + r.prelevementsSociauxTotal;
+    const impotAvecOption = total(avecOption);
+    const impotSansOption = total(sansOption);
+    // Mode le plus favorable (2OP non tranchée) : barème seulement s'il réduit l'impôt, PFU à égalité.
+    const automatique = capitauxMobiliersSaisis.case2op === null;
+    const optionActuelle = automatique ? impotAvecOption < impotSansOption : capitauxMobiliersSaisis.case2op === true;
+    const resultat = optionActuelle ? avecOption : sansOption;
     const comparaisonOptionBareme: ComparaisonOptionBareme | null = Math.round(impotAvecOption) === Math.round(impotSansOption)
       ? null
-      : { optionActuelle: capitauxMobiliersSaisis.case2op, impotAvecOption, impotSansOption };
+      : { optionActuelle, automatique, impotAvecOption, impotSansOption };
 
     return { ...resultat, comparaisonOptionBareme };
   }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);

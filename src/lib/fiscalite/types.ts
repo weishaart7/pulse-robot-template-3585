@@ -217,8 +217,11 @@ export interface RevenusCapitauxMobiliersInput {
   case2vu: number | null;
   /** Fraction exonérée des RCM des impatriés (CGI art. 155 B) : RFR et PS seulement. */
   case2dm: number | null;
-  /** Hors catégorie : option pour l'imposition au barème (case à cocher, en pied de cadre). */
-  case2op: boolean;
+  /**
+   * Hors catégorie : option pour l'imposition au barème (2OP). true = barème, false = PFU,
+   * null = mode le plus favorable, résolu dans `useFiscalOverview.ts` (choix par défaut, comme ClickImpôts).
+   */
+  case2op: boolean | null;
 }
 
 /**

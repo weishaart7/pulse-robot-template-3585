@@ -118,7 +118,7 @@ function rowToRevenusCapitauxMobiliers(row: RevenusCapitauxMobiliersRow): Revenu
     case2vt: toNumberOrNull(row.case_2vt),
     case2vu: toNumberOrNull(row.case_2vu),
     case2dm: toNumberOrNull(row.case_2dm),
-    case2op: row.case_2op ?? false,
+    case2op: row.case_2op ?? null,
   };
 }
 

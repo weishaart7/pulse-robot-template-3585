@@ -6,8 +6,14 @@ import { RevenusCapitauxMobiliers } from '@/services/revenusCapitauxMobiliersSer
 import { RevenusCapitauxMobiliersInput } from '@/lib/fiscalite';
 import { calculerRevenuCapitauxMobiliers } from '@/lib/fiscalite/calculerRevenuCapitauxMobiliers';
 import { calculerPrelevementsSociauxCapitauxMobiliers } from '@/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers';
-import { LectureLigne, MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
+import { LectureLigne, MontantEclateLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
+
+const MODES_2OP: { label: string; valeur: boolean | null }[] = [
+  { label: 'Appliquer le prélèvement forfaitaire unique (PFU)', valeur: false },
+  { label: "Opter pour l'imposition au barème progressif (2OP)", valeur: true },
+  { label: "Appliquer le mode d'imposition le plus favorable", valeur: null },
+];
 
 const REVENUS_VIDE: RevenusCapitauxMobiliersInput = {
   case2dh: null, case2ch: null, case2uu: null, case2vv: null, case2ww: null,
@@ -20,7 +26,7 @@ const REVENUS_VIDE: RevenusCapitauxMobiliersInput = {
   case2aa: null, case2al: null, case2am: null, case2an: null, case2aq: null, case2ar: null,
   case2vm: null, case2vn: null, case2vo: null, case2vp: null,
   case2vq: null, case2vr: null, case2vs: null, case2vt: null, case2vu: null, case2dm: null,
-  case2op: false,
+  case2op: null,
 };
 
 interface RevenusCapitauxMobiliersFormProps {
@@ -173,12 +179,20 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
           />
         </SousGroupe>
 
-        <SingleCaseLigne
-          label="Vous optez pour l'imposition au barème de vos revenus de capitaux mobiliers et gains de cession de valeurs mobilières"
-          code="2OP"
-          checked={revenus.case2op}
-          onChange={v => update('case2op', v)}
-        />
+        <SousGroupe titre="Choix du mode d'imposition (PFU ou barème)" aide="Option globale pour les revenus de capitaux mobiliers et les gains de cession de valeurs mobilières (2OP). Le mode le plus favorable compare l'impôt total (IR + PS) dans les deux cas et retient le plus faible.">
+          {MODES_2OP.map(mode => (
+            <label key={mode.label} className="flex cursor-pointer items-center gap-2.5 border-b border-border/50 py-2.5 text-[13px]">
+              <input
+                type="radio"
+                name="mode-2op"
+                className="h-3.5 w-3.5 accent-foreground"
+                checked={revenus.case2op === mode.valeur}
+                onChange={() => update('case2op', mode.valeur)}
+              />
+              {mode.label}
+            </label>
+          ))}
+        </SousGroupe>
     </Cadre2042>
   );
 };

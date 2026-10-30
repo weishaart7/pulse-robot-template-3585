@@ -189,19 +189,21 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
       )}
 
       {comparaisonOptionBareme && (() => {
-        const { optionActuelle, impotAvecOption, impotSansOption } = comparaisonOptionBareme;
+        const { optionActuelle, automatique, impotAvecOption, impotSansOption } = comparaisonOptionBareme;
         const baremePlusFavorable = impotAvecOption < impotSansOption;
         const choixOptimal = baremePlusFavorable === optionActuelle;
         return (
           <div className="mt-4 border-t border-border pt-3">
             <p className="text-[11.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">Option pour le barème (2OP)</p>
-            <LigneDetail label={`Impôt au barème (2OP cochée)${optionActuelle ? ' · option actuelle' : ''}`} valeur={formatEuros(impotAvecOption)} />
-            <LigneDetail label={`Impôt au prélèvement forfaitaire (2OP décochée)${optionActuelle ? '' : ' · option actuelle'}`} valeur={formatEuros(impotSansOption)} />
+            <LigneDetail label={`Imposition au barème (2OP cochée)${optionActuelle ? ' · retenue' : ''}`} valeur={formatEuros(impotAvecOption)} />
+            <LigneDetail label={`Imposition au prélèvement forfaitaire (2OP décochée)${optionActuelle ? '' : ' · retenue'}`} valeur={formatEuros(impotSansOption)} />
             <p className="mt-1 text-[11.5px] leading-snug text-muted-foreground">
-              {choixOptimal
-                ? 'Le choix actuel est le plus favorable cette année.'
-                : `${baremePlusFavorable ? 'Cocher' : 'Décocher'} 2OP réduirait l'impôt de ${formatEuros(Math.abs(impotAvecOption - impotSansOption))}.`}
-              {' '}Option globale (capitaux mobiliers et plus-values) ; prélèvements sociaux inchangés ; CSG déductible des années suivantes non comptée.
+              {automatique
+                ? `Mode le plus favorable : ${optionActuelle ? "l'option pour le barème a été retenue" : 'le prélèvement forfaitaire a été retenu'}.`
+                : choixOptimal
+                  ? 'Le choix actuel est le plus favorable cette année.'
+                  : `${baremePlusFavorable ? 'Opter pour le barème' : 'Revenir au prélèvement forfaitaire'} réduirait l'imposition de ${formatEuros(Math.abs(impotAvecOption - impotSansOption))}.`}
+              {' '}Option globale (capitaux mobiliers et plus-values) ; IR, CEHR et prélèvements sociaux ; CSG déductible des années suivantes non comptée.
             </p>
           </div>
         );

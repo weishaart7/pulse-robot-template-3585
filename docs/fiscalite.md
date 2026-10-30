@@ -904,10 +904,14 @@ fonciers (§4).
   formulaire (« à reporter ligne 2AR l'an prochain ») ; les déficits antérieurs non absorbés ne
   recréent pas de déficit. `2TT` est saisi net des pertes imputées pour l'IR, alors que les PS restent
   dus sur les intérêts bruts (p.128) : non reconstituable, signalé par une aide sous la case.
-  **Comparatif 2OP** : `useFiscalOverview.ts` exécute tout le calcul une seconde fois avec 2OP inversé
-  (`simuler`) et expose `comparaisonOptionBareme` (impôt net avec/sans option, null si identique),
-  affiché dans `FiscalOverviewCard` avec le sens du choix le plus favorable. Limites : PS inchangés
-  par construction, CSG déductible de l'année suivante non comptée. **Contrôle de saisie** :
+  **Mode d'imposition à 3 choix (comme ClickImpôts)** : `case2op` vaut `false` (PFU), `true` (barème)
+  ou `null` (mode le plus favorable, par défaut ; colonne `case_2op` nullable, sans migration).
+  `useFiscalOverview.ts` exécute tout le calcul avec et sans 2OP (`simuler`), compare l'imposition
+  totale (IR + CEHR + PS, la CSG déductible de l'année variant avec 2OP) et, en mode `null`, retient le
+  barème seulement s'il est strictement plus faible. `comparaisonOptionBareme` (null si identique)
+  expose les deux montants, le mode retenu et `automatique`, affichés dans `FiscalOverviewCard`. Le
+  formulaire du cadre 2 propose les 3 choix en boutons radio. Limite : CSG déductible des années
+  suivantes non comptée. La case de renonciation (déclaration papier seulement) n'est pas reprise. **Contrôle de saisie** :
   `calculerPrelevementsSociauxCapitauxMobiliers.ts::incoherencesSaisie` signale 2CG+2BH+2DF+2DG
   supérieurs aux revenus déclarés, ou 2DI > 2DG ; avertissement dans le formulaire, sans effet sur le
   calcul.
