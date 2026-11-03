@@ -7,7 +7,7 @@ import { motion, useReducedMotion, useSpring, useTransform } from "motion/react"
 import { cn } from "@/lib/utils";
 
 // Ressort court et souple (léger rebond) : la séparation suit le clic sans traîner.
-const SPRING = { type: "spring", visualDuration: 0.38, bounce: 0.18 } as const;
+const SPRING = { type: "spring", visualDuration: 0.3, bounce: 0 } as const;
 
 // Le col est rompu une fois l'écart ouvert à cette fraction de l'espacement.
 const NECK_BREAK = 0.22;

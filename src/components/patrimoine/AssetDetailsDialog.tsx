@@ -497,8 +497,8 @@ export const AssetDetailsDialog = ({ asset, open, onOpenChange }: AssetDetailsDi
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-secondary rounded-[1px] h-1.5 overflow-hidden">
                     <div 
-                      className="bg-lagon h-1.5 transition-all"
-                      style={{ width: `${asset.attachement_emotionnel}%` }}
+                      className="bg-lagon h-1.5 w-full origin-left transition-transform duration-300 ease-out"
+                      style={{ transform: `scaleX(${asset.attachement_emotionnel / 100})` }}
                     />
                   </div>
                   <span className="font-medium">{asset.attachement_emotionnel}/10</span>

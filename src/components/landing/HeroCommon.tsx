@@ -18,12 +18,6 @@ export function HeroCommon() {
       />
 
       <div className="relative z-10 mx-auto flex max-w-[720px] flex-col items-center gap-6">
-        <span
-          className="-my-2 text-lg"
-          style={{ color: "var(--lp-ink)", fontFamily: "'Schoolbell', cursive" }}
-        >
-          Version Beta
-        </span>
         <span className="text-base font-bold text-white">{"{patrimoine, lisible}"}</span>
         <h1
           className="lp-display text-[36px] sm:text-[48px]"

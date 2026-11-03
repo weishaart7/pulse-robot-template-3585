@@ -541,3 +541,11 @@
   background-color: #6f4e37;
   color: #fff;
 }
+
+/* Transparence réduite : surfaces floutées rendues opaques */
+@media (prefers-reduced-transparency: reduce) {
+  *, *::before, *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}

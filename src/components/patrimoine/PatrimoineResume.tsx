@@ -301,7 +301,7 @@ const PersonBlock = ({ name, value, share, barClassName, rows }: {
     {share !== undefined && (
       <div className="mt-2 flex items-center gap-2">
         <div className="h-1.5 flex-1 overflow-hidden rounded-[1px] bg-secondary">
-          <div className={`h-full transition-all duration-700 ease-out ${barClassName}`} style={{ width: `${share}%` }} />
+          <div className={`h-full w-full origin-left transition-transform duration-300 ease-out ${barClassName}`} style={{ transform: `scaleX(${share / 100})` }} />
         </div>
         <span className="w-9 text-right text-[12px] tabular-nums text-muted-foreground">{Math.round(share)} %</span>
       </div>

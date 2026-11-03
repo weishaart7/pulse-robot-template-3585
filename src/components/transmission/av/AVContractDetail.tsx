@@ -598,11 +598,11 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
               {/* Visual bar */}
               <div className="h-2.5 rounded-full bg-muted overflow-hidden flex">
                 <div
-                  className="bg-primary transition-all"
+                  className="bg-primary transition-[width] duration-300 ease-out"
                   style={{ width: `${details.part_fonds_euros}%` }}
                 />
                 <div
-                  className="bg-accent transition-all"
+                  className="bg-accent transition-[width] duration-300 ease-out"
                   style={{ width: `${details.part_unites_compte}%` }}
                 />
               </div>
