@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 // plaque taupe à plat (feature card ElevenLabs), coins 20 px, aucune ombre ni bordure,
 // chiffres en Inter 300. Palette achromatique : l'encre marque l'élément principal,
 // le gris cendre les éléments secondaires.
-export const DASH_INK = '#0c0a09';
+export const DASH_INK = '#212529';
 export const DASH_MUTED = '#a59f97';
 export const DASH_TRACK = '#ddd8d2';
 

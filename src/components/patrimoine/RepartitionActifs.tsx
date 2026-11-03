@@ -195,7 +195,7 @@ const BarreEmpilee = ({ categories, active, onActiveChange }: {
               onMouseLeave={() => onActiveChange(null)}
               className={cn(
                 'flex h-full min-w-[3px] items-end overflow-hidden rounded-[1px] px-2 pb-1.5',
-                dark ? 'text-white' : 'text-[#0c0a09]'
+                dark ? 'text-white' : 'text-[#212529]'
               )}
               style={{ width: `${c.pct}%`, backgroundColor: c.color, transformOrigin: 'left' }}
               initial={{ scaleX: reduced ? 1 : 0 }}

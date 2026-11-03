@@ -36,32 +36,32 @@
        canvas crème chaud, encre quasi noire, filets pierre, aucune couleur
        d'interface (l'unique étincelle --spark est réservée aux alertes). */
     --background: 0 20% 99%;    /* #fdfcfc eggshell */
-    --foreground: 20 14% 4%;    /* #0c0a09 ink */
+    --foreground: 210 11% 15%;    /* #212529 ink */
 
     --card: 0 20% 99%;          /* #fdfcfc */
-    --card-foreground: 20 14% 4%;
+    --card-foreground: 210 11% 15%;
 
     --popover: 0 20% 99%;
-    --popover-foreground: 20 14% 4%;
+    --popover-foreground: 210 11% 15%;
 
-    --primary: 20 14% 4%;       /* #0c0a09 - boutons pleins, anneaux de focus */
+    --primary: 210 11% 15%;       /* #212529 - boutons pleins, anneaux de focus */
     --primary-foreground: 0 20% 99%;
 
     --secondary: 30 17% 95%;    /* #f5f3f1 warm taupe */
-    --secondary-foreground: 20 14% 4%;
+    --secondary-foreground: 210 11% 15%;
 
     --muted: 30 17% 95%;        /* #f5f3f1 */
     --muted-foreground: 34 6% 44%; /* #777169 smoke - texte secondaire */
 
     --accent: 30 17% 95%;       /* #f5f3f1 - survol des éléments neutres */
-    --accent-foreground: 20 14% 4%;
+    --accent-foreground: 210 11% 15%;
 
     --destructive: 358 75% 59%; /* #e5484d */
     --destructive-foreground: 0 0% 100%;
 
     --border: 34 15% 91%;       /* #ebe8e4 stone - filets */
     --input: 33 14% 85%;        /* #ddd8d2 - bordure des champs, un cran plus lisible que les filets */
-    --ring: 20 14% 4%;
+    --ring: 210 11% 15%;
     --form-field-accent: 33 14% 85%; /* bordures des champs bg-muted (règle plus bas) */
 
     /* Échelle chaude secondaire */
@@ -73,7 +73,7 @@
     --radius: 0.875rem;         /* lg 14px · md 12px · sm 10px */
 
     /* Séries de graphiques — miroir de SERIES dans src/lib/palette.ts */
-    --chart-1: 20 14% 4%;       /* #0c0a09 encre */
+    --chart-1: 210 11% 15%;       /* #212529 encre */
     --chart-2: 224 100% 51%;    /* #0447ff violet */
     --chart-3: 16 100% 51%;     /* #ff4704 braise */
     --chart-4: 34 6% 44%;       /* #777169 smoke */
@@ -81,13 +81,13 @@
     --chart-6: 17 100% 75%;     /* #ffa47f braise claire */
 
     --sidebar-background: 0 20% 99%;
-    --sidebar-foreground: 20 14% 4%;
-    --sidebar-primary: 20 14% 4%;
+    --sidebar-foreground: 210 11% 15%;
+    --sidebar-primary: 210 11% 15%;
     --sidebar-primary-foreground: 0 20% 99%;
     --sidebar-accent: 30 17% 95%;
-    --sidebar-accent-foreground: 20 14% 4%;
+    --sidebar-accent-foreground: 210 11% 15%;
     --sidebar-border: 34 15% 91%;
-    --sidebar-ring: 20 14% 4%;
+    --sidebar-ring: 210 11% 15%;
   }
 }
 
@@ -410,7 +410,7 @@
 */
 .landing-portal {
   --lp-blue: #007aff;
-  --lp-ink: #0c0a09;
+  --lp-ink: #212529;
   --lp-graphite: #44403b;
   --lp-smoke: #777169;
   --lp-white: #ffffff;

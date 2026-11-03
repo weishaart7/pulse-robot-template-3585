@@ -138,7 +138,7 @@ export function Treemap({
               : `${item.label} · ${formatValue ? formatValue(item.value) + ' · ' : ''}${pct.toFixed(1).replace('.', ',')} %`}
             className={cn(
               'absolute overflow-hidden rounded-[1px] p-2.5',
-              dark ? 'text-white' : 'text-[#0c0a09]'
+              dark ? 'text-white' : 'text-[#212529]'
             )}
             style={{ left: r.x, top: r.y, width: Math.max(0, w), height: Math.max(0, h), backgroundColor: item.color }}
             onMouseEnter={() => onActiveChange?.(item.label === 'Autres' && regroupes.length > 0 ? null : item.label)}

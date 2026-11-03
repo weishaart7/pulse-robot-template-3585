@@ -2,7 +2,7 @@
 // Valeurs hexadécimales à 6 chiffres : certains appelants y suffixent une opacité (`${X}1a`).
 // Les deux étincelles ElevenLabs (violet, braise) ne servent qu'ici, dans les visuels de
 // données et les alertes — jamais sur des boutons, liens ou chrome d'interface.
-export const INK = '#0c0a09';
+export const INK = '#212529';
 export const GRAPHITE = '#44403b';
 export const SMOKE = '#777169';
 export const ASH = '#a59f97';

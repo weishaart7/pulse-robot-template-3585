@@ -129,7 +129,7 @@ const FamilleSection = () => {
             <button
               type="button"
               onClick={() => navigate('/dashboard/famille/membres')}
-              className={`inline-flex h-8 items-center rounded-[2px] border border-border px-3 text-[12.5px] font-medium text-foreground transition-colors hover:bg-secondary ${FOCUS_RING}`}
+              className={`inline-flex h-8 items-center rounded-[2px] bg-primary px-3 text-[12.5px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 ${FOCUS_RING}`}
             >
               {membres.length === 0 ? 'Ajouter des membres' : 'Gérer les membres'}
             </button>
