@@ -18,7 +18,7 @@ import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
 import { calculerCEHR } from '@/lib/fiscalite/calculerCEHR';
 import { arrondirPrelevementsSociaux } from '@/lib/fiscalite/arrondirPrelevementsSociaux';
-import { calculerAbattementPersonnesAgees, type AbattementPersonnesAgeesResult } from '@/lib/fiscalite/calculerAbattementPersonnesAgees';
+import { calculerAbattementsSpeciaux, type AbattementsSpeciauxResult } from '@/lib/fiscalite/calculerAbattementsSpeciaux';
 import {
   calculerGainsActionnariatSalarie,
   calculerImpot,
@@ -279,8 +279,8 @@ export interface FiscalOverview {
   deficitAgricoleImpute: number;
   /** Cadre 6 (charges déductibles, déficits globaux antérieurs, 6GH) — voir calculerChargesDeductibles.ts. */
   chargesDeductibles: ChargesDeductiblesResult;
-  /** Abattement spécial personnes âgées ou invalides (art. 157 bis CGI), retranché du revenu net global. */
-  abattementPersonnesAgees: AbattementPersonnesAgeesResult;
+  /** Abattements spéciaux retranchés du revenu net global : personnes âgées ou invalides (art. 157 bis), rattachement (art. 196 B). */
+  abattementsSpeciaux: AbattementsSpeciauxResult;
   /** Rappels croisant le cadre 6 et la situation de famille. */
   alertesChargesDeductibles: string[];
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
@@ -431,11 +431,11 @@ export function useFiscalOverview(): FiscalOverview {
       const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
       const chargesDeductibles = calculerChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput);
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
-      // Art. 157 bis : seuil apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
-      const abattementPersonnesAgees = calculerAbattementPersonnesAgees(
-        foyerInput, revenuNetGlobal + gainsActionnariat.revenuExceptionnelQuotient, ANNEE_REVENUS,
+      // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
+      const abattementsSpeciaux = calculerAbattementsSpeciaux(
+        foyerInput, revenuNetGlobal, ANNEE_REVENUS, revenuNetGlobal + gainsActionnariat.revenuExceptionnelQuotient,
       );
-      const revenuImposableTotal = revenuNetGlobal - Math.min(abattementPersonnesAgees.abattement, Math.max(0, revenuNetGlobal));
+      const revenuImposableTotal = revenuNetGlobal - abattementsSpeciaux.total;
       const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
         + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
         + revenusNonSalaries.impotForfaitaire;
@@ -547,7 +547,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenusNonSalaries,
         deficitAgricoleImpute,
         chargesDeductibles,
-        abattementPersonnesAgees,
+        abattementsSpeciaux,
         alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput),
         reductionsCreditsImpot,
         prelevementSourceDivers,

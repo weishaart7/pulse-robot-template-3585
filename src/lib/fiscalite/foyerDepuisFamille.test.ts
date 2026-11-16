@@ -27,7 +27,7 @@ describe('foyerDepuisFamille', () => {
     ], 2025);
     expect(r.valeurs.enfantsMajeursRattaches).toBe(1);
     expect(r.valeurs.enfantsCharge.map((e) => e.anneeNaissance)).toEqual([2007, 2025]);
-    expect(r.notes).toEqual(["Test : né(e) en 2026, après l'année des revenus 2025 : non compté(e)."]);
+    expect(r.notes).toEqual(["Test : né(e) en 2026, après l'année des revenus 2025 : non compté(e).", 'Enfant majeur rattaché marié, pacsé ou ayant des enfants ? Il relève de la case N (abattement par personne), pas de la case J : à corriger dans le Ménage.']);
   });
 
   it('enfants non retenus : non fiscalement à charge, décédé avant N, sans date (signalé)', () => {
@@ -104,6 +104,7 @@ describe('foyerDepuisFamille', () => {
     expect(r.notes).toEqual([
       "Etu Test : 21 ans ou plus au 1er janvier 2025, rattachement possible seulement s'il poursuit des études, à vérifier.",
       'Vieux Test : 25 ans ou plus au 1er janvier 2025, non handicapé(e) : rattachement impossible, non compté(e).',
+      'Enfant majeur rattaché marié, pacsé ou ayant des enfants ? Il relève de la case N (abattement par personne), pas de la case J : à corriger dans le Ménage.',
     ]);
   });
 

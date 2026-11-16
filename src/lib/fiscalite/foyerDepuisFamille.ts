@@ -126,6 +126,7 @@ export function foyerDepuisFamille(
     notes.push('Vous vivez seul(e) avec vos enfants ? Cochez la case T (Famille ne le précise pas).');
   }
 
+  if (enfantsMajeursRattaches > 0) notes.push('Enfant majeur rattaché marié, pacsé ou ayant des enfants ? Il relève de la case N (abattement par personne), pas de la case J : à corriger dans le Ménage.');
   if (!anneeDe(profile?.date_naissance)) notes.push('Votre date de naissance est absente dans Famille : abattement personnes âgées non calculable.');
   if (enCouple && !anneeDe(marital?.date_naissance_conjoint)) notes.push('Date de naissance du conjoint absente dans Famille : abattement personnes âgées non calculable pour le conjoint.');
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculerAbattementPersonnesAgees } from './calculerAbattementPersonnesAgees';
+import { calculerAbattementPersonnesAgees, calculerAbattementsSpeciaux } from './calculerAbattementsSpeciaux';
 import type { FoyerFiscalInput } from './types';
 
 const foyer = (patch: Partial<FoyerFiscalInput> = {}): FoyerFiscalInput => ({
@@ -53,5 +53,33 @@ describe('calculerAbattementPersonnesAgees (art. 157 bis, revenus 2025)', () => 
   it('jamais au-delà du revenu net global', () => {
     expect(calculerAbattementPersonnesAgees(foyer({ anneeNaissanceDeclarant1: 1950 }), 1000, 2025).abattement).toBe(1000);
     expect(calculerAbattementPersonnesAgees(foyer({ anneeNaissanceDeclarant1: 1950 }), -500, 2025).abattement).toBe(0);
+  });
+});
+
+describe('calculerAbattementsSpeciaux (art. 157 bis + 196 B, revenus 2025)', () => {
+  it('case N = 2, revenu 72 000 : 13 710 € (simulateur officiel : RNI 58 290)', () => {
+    expect(calculerAbattementsSpeciaux(foyer({ situationFamille: 'marie', personnesRattacheesFoyerDistinct: 2 }), 72000, 2025).total).toBe(13710);
+  });
+
+  it('case N = 3 : 20 565 € (simulateur officiel : RNI 51 435)', () => {
+    expect(calculerAbattementsSpeciaux(foyer({ personnesRattacheesFoyerDistinct: 3 }), 72000, 2025).rattachement).toBe(20565);
+  });
+
+  it('seuil 157 bis apprécié avant le rattachement : 1 411 + 13 710 (simulateur officiel : 15 121)', () => {
+    const r = calculerAbattementsSpeciaux(foyer({ anneeNaissanceDeclarant1: 1950, personnesRattacheesFoyerDistinct: 2 }), 27000, 2025);
+    expect([r.personnesAgees.abattement, r.rattachement, r.total]).toEqual([1411, 13710, 15121]);
+  });
+
+  it('plafonné au revenu net global (simulateur officiel : 10 800 → 0)', () => {
+    expect(calculerAbattementsSpeciaux(foyer({ personnesRattacheesFoyerDistinct: 2 }), 10800, 2025).total).toBe(10800);
+  });
+
+  it('petit-enfant en résidence alternée : demi-abattement de 3 428 €, P borné par N', () => {
+    expect(calculerAbattementsSpeciaux(foyer({ personnesRattacheesFoyerDistinct: 2, petitsEnfantsRattachesAlternee: 1 }), 50000, 2025).rattachement).toBe(6855 + 3428);
+    expect(calculerAbattementsSpeciaux(foyer({ personnesRattacheesFoyerDistinct: 1, petitsEnfantsRattachesAlternee: 3 }), 50000, 2025).rattachement).toBe(3428);
+  });
+
+  it('sans rattachement ni condition d\'âge : rien', () => {
+    expect(calculerAbattementsSpeciaux(foyer(), 50000, 2025).total).toBe(0);
   });
 });

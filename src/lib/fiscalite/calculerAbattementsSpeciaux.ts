@@ -53,3 +53,41 @@ export function calculerAbattementPersonnesAgees(
     anneeNaissanceManquante,
   };
 }
+
+/** Abattement par personne rattachée au titre d'un enfant ayant fondé un foyer distinct (art. 196 B CGI), revenus 2025. */
+export const ABATTEMENT_RATTACHEMENT_2026 = 6855;
+/** Demi-abattement par petit-enfant en résidence alternée (BOI-IR-BASE-40 §240 : 3 428 €). */
+export const ABATTEMENT_RATTACHEMENT_ALTERNEE_2026 = 3428;
+
+export interface AbattementsSpeciauxResult {
+  personnesAgees: AbattementPersonnesAgeesResult;
+  /** Abattement art. 196 B (cases N/P) effectivement imputé. */
+  rattachement: number;
+  /** Total retranché du revenu net global (jamais au-delà de celui-ci). */
+  total: number;
+}
+
+/**
+ * Abattements spéciaux retranchés du revenu net global (BOI-IR-BASE-40), dans l'ordre vérifié sur
+ * le simulateur officiel : seuil personnes âgées apprécié sur le revenu net global avant tout
+ * abattement, puis 6 855 € par personne rattachée (case N), divisé par deux pour chaque
+ * petit-enfant en résidence alternée (case P, comprise dans N). Total plafonné au revenu.
+ *
+ * `revenuNetGlobal` : revenu sur lequel les abattements s'imputent. `revenuNetGlobalSeuil` : revenu
+ * retenu pour le seuil 157 bis (0XX compris pour son total), égal au précédent par défaut.
+ */
+export function calculerAbattementsSpeciaux(
+  foyer: FoyerFiscalInput,
+  revenuNetGlobal: number,
+  anneeRevenus: number,
+  revenuNetGlobalSeuil = revenuNetGlobal,
+): AbattementsSpeciauxResult {
+  const personnesAgees = calculerAbattementPersonnesAgees(foyer, revenuNetGlobalSeuil, anneeRevenus);
+  const personnes = Math.max(0, foyer.personnesRattacheesFoyerDistinct ?? 0);
+  const alternes = Math.min(personnes, Math.max(0, foyer.petitsEnfantsRattachesAlternee ?? 0));
+  const rattachementBrut = (personnes - alternes) * ABATTEMENT_RATTACHEMENT_2026 + alternes * ABATTEMENT_RATTACHEMENT_ALTERNEE_2026;
+  const rng = Math.max(0, revenuNetGlobal);
+  const agees = Math.min(personnesAgees.abattement, rng);
+  const rattachement = Math.min(rattachementBrut, rng - agees);
+  return { personnesAgees: { ...personnesAgees, abattement: agees }, rattachement, total: agees + rattachement };
+}

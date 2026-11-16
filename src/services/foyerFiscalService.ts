@@ -23,6 +23,8 @@ interface FoyerFiscalRow {
   veuve_de_guerre: boolean;
   annee_naissance_declarant1: number | null;
   annee_naissance_declarant2: number | null;
+  personnes_rattachees_foyer_distinct: number;
+  petits_enfants_rattaches_alternee: number;
 }
 
 function rowToFoyerFiscal(row: FoyerFiscalRow): FoyerFiscal {
@@ -43,6 +45,8 @@ function rowToFoyerFiscal(row: FoyerFiscalRow): FoyerFiscal {
     veuveDeGuerre: row.veuve_de_guerre,
     anneeNaissanceDeclarant1: row.annee_naissance_declarant1 ?? null,
     anneeNaissanceDeclarant2: row.annee_naissance_declarant2 ?? null,
+    personnesRattacheesFoyerDistinct: row.personnes_rattachees_foyer_distinct ?? 0,
+    petitsEnfantsRattachesAlternee: row.petits_enfants_rattaches_alternee ?? 0,
   };
 }
 
@@ -64,6 +68,8 @@ function foyerFiscalToRow(foyer: FoyerFiscal, userId: string) {
     veuve_de_guerre: foyer.veuveDeGuerre,
     annee_naissance_declarant1: foyer.anneeNaissanceDeclarant1 ?? null,
     annee_naissance_declarant2: foyer.anneeNaissanceDeclarant2 ?? null,
+    personnes_rattachees_foyer_distinct: foyer.personnesRattacheesFoyerDistinct ?? 0,
+    petits_enfants_rattaches_alternee: foyer.petitsEnfantsRattachesAlternee ?? 0,
   };
 }
 

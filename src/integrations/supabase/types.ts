@@ -1817,6 +1817,8 @@ export type Database = {
           ancien_parent_isole: boolean
           annee_naissance_declarant1: number | null
           annee_naissance_declarant2: number | null
+          personnes_rattachees_foyer_distinct: number
+          petits_enfants_rattaches_alternee: number
           created_at: string
           enfants_charge: Json
           enfants_majeurs_rattaches: number
@@ -1838,6 +1840,8 @@ export type Database = {
           ancien_parent_isole?: boolean
           annee_naissance_declarant1?: number | null
           annee_naissance_declarant2?: number | null
+          personnes_rattachees_foyer_distinct?: number
+          petits_enfants_rattaches_alternee?: number
           created_at?: string
           enfants_charge?: Json
           enfants_majeurs_rattaches?: number
@@ -1859,6 +1863,8 @@ export type Database = {
           ancien_parent_isole?: boolean
           annee_naissance_declarant1?: number | null
           annee_naissance_declarant2?: number | null
+          personnes_rattachees_foyer_distinct?: number
+          petits_enfants_rattaches_alternee?: number
           created_at?: string
           enfants_charge?: Json
           enfants_majeurs_rattaches?: number

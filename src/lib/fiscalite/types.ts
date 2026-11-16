@@ -25,6 +25,10 @@ export interface FoyerFiscalInput {
   /** Années de naissance des déclarants (case 0DA/0DB) : abattement personnes âgées (art. 157 bis CGI). */
   anneeNaissanceDeclarant1?: number | null;
   anneeNaissanceDeclarant2?: number | null;
+  /** Case N : personnes rattachées au titre d'enfants mariés, pacsés ou chargés de famille (enfant, conjoint, leurs enfants) — abattement art. 196 B, pas de demi-part. */
+  personnesRattacheesFoyerDistinct?: number;
+  /** Case P : dont petits-enfants en résidence alternée (demi-abattement). */
+  petitsEnfantsRattachesAlternee?: number;
 }
 
 export interface MajorationDetail {

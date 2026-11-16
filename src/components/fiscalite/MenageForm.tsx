@@ -241,7 +241,7 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
           </div>
         ))}
         <div className="flex flex-wrap items-center justify-between gap-4 py-3">
-          <ChampMenage label="Enfants majeurs rattachés" aide="Enfant majeur qui demande son rattachement à votre déclaration plutôt que de déclarer ses propres revenus." inline>
+          <ChampMenage label="Enfants majeurs célibataires rattachés (J)" aide="Enfant majeur célibataire, veuf ou divorcé, sans enfant, qui demande son rattachement : une demi-part chacun." inline>
             <Input
               type="number"
               min={0}
@@ -252,6 +252,29 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
           </ChampMenage>
           <AddButton tone="citron" onClick={ajouterEnfant}>Ajouter un enfant</AddButton>
         </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pb-3">
+          <ChampMenage label="Personnes rattachées, enfants mariés ou chargés de famille (N)" aide="Nombre total de personnes : l'enfant, son conjoint ou partenaire et ses propres enfants (au moins 2). Un abattement de 6 855 € par personne, pas de demi-part." inline>
+            <Input
+              type="number"
+              min={0}
+              className="w-20 rounded-[2px] tabular-nums"
+              value={foyer.personnesRattacheesFoyerDistinct ?? 0}
+              onChange={ev => update('personnesRattacheesFoyerDistinct', Math.max(0, Number(ev.target.value)))}
+            />
+          </ChampMenage>
+          <ChampMenage label="dont petits-enfants en résidence alternée (P)" aide="Abattement divisé par deux pour chacun." inline>
+            <Input
+              type="number"
+              min={0}
+              className="w-20 rounded-[2px] tabular-nums"
+              value={foyer.petitsEnfantsRattachesAlternee ?? 0}
+              onChange={ev => update('petitsEnfantsRattachesAlternee', Math.max(0, Number(ev.target.value)))}
+            />
+          </ChampMenage>
+        </div>
+        {(foyer.personnesRattacheesFoyerDistinct ?? 0) === 1 && (
+          <p className="pb-3 text-[12px] text-destructive">La case N compte au moins 2 personnes : l'enfant et son conjoint, ou l'enfant et son propre enfant.</p>
+        )}
       </SousGroupe>
 
       <SousGroupe titre="Autres personnes invalides à charge (hors enfants)">

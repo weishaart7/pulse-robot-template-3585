@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, abattementPersonnesAgees, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -235,11 +235,18 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
             {chargesDeductibles.chargesImputees > 0 && (
               <LigneDetail label="Charges déductibles (cadre 6)" valeur={`− ${formatEuros(chargesDeductibles.chargesImputees)}`} />
             )}
-            {abattementPersonnesAgees.abattement > 0 && (
+            {abattementsSpeciaux.personnesAgees.abattement > 0 && (
               <LigneDetail
                 label="Abattements spéciaux (personnes âgées ou invalides)"
-                sousLigne={`${abattementPersonnesAgees.beneficiaires} bénéficiaire${abattementPersonnesAgees.beneficiaires > 1 ? 's' : ''}, art. 157 bis CGI`}
-                valeur={`− ${formatEuros(abattementPersonnesAgees.abattement)}`}
+                sousLigne={`${abattementsSpeciaux.personnesAgees.beneficiaires} bénéficiaire${abattementsSpeciaux.personnesAgees.beneficiaires > 1 ? 's' : ''}, art. 157 bis CGI`}
+                valeur={`− ${formatEuros(abattementsSpeciaux.personnesAgees.abattement)}`}
+              />
+            )}
+            {abattementsSpeciaux.rattachement > 0 && (
+              <LigneDetail
+                label="Abattements spéciaux (enfants mariés ou chargés de famille rattachés)"
+                sousLigne="Cases N et P, art. 196 B CGI"
+                valeur={`− ${formatEuros(abattementsSpeciaux.rattachement)}`}
               />
             )}
             {chargesDeductibles.csgDeductibleAutomatique > 0 && (

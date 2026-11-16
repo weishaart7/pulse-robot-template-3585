@@ -1804,12 +1804,16 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   vivre seul appréciée au 31 décembre pour T et L), décès (deux déclarations, maintien pour l'année du
   décès de la demi-part d'invalidité du conjoint décédé) : le Ménage ne connaît qu'une situation
   annuelle unique (brochure IR 2026 p. 75-77).
-- **Quotient familial — rattachements ouvrant un abattement.** Les enfants majeurs mariés, pacsés ou
-  chargés de famille rattachés donnent un abattement de 6 855 € par personne (6 855 € / 2 par
-  petit-enfant en résidence alternée), pas une demi-part : `enfantsMajeursRattaches` est un simple
-  compteur traité comme des enfants célibataires (brochure IR 2026 p. 83).
+- **Rattachement d'enfants mariés, pacsés ou chargés de famille (art. 196 B)** : calculé
+  (`calculerAbattementsSpeciaux.ts`). Case N = nombre de personnes rattachées (enfant, conjoint, leurs
+  enfants ; au moins 2), 6 855 € chacune, 3 428 € par petit-enfant en résidence alternée (case P,
+  comprise dans N) ; pas de demi-part. `enfantsMajeursRattaches` reste la case J (célibataires sans
+  enfant, demi-part). Abattement imputé après celui des personnes âgées, dont le seuil se lit avant lui ;
+  total plafonné au revenu net global. Famille ne dit pas si un enfant majeur est marié ou a des
+  enfants : la reprise le compte en J et le signale. Case P non contrôlée sur le simulateur officiel
+  (absente du modèle simplifié).
 - **Abattement personnes âgées ou invalides (art. 157 bis CGI)** : calculé
-  (`calculerAbattementPersonnesAgees.ts`, BOI-IR-BASE-40 §60, revenus 2025 : 2 822 € jusqu'à 17 670 € de
+  (`calculerAbattementsSpeciaux.ts`, BOI-IR-BASE-40 §60, revenus 2025 : 2 822 € jusqu'à 17 670 € de
   revenu net global, 1 411 € jusqu'à 28 430 €, par déclarant de plus de 65 ans au 31/12 ou invalide P/F).
   Retranché du revenu net global après le cadre 6, donc aussi du RFR ; 0XX compté pour son total dans le seuil.
   Années de naissance 0DA/0DB saisies dans le Ménage ou reprises de Famille ; sans elles, abattement non
