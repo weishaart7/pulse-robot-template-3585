@@ -25,22 +25,16 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociaux).toBe(0);
   });
 
-  it('compte réel (1TP=2000, 1TT=15000, 1TZ=8000, 1NX=20000, 1AY=10000, 1MP=5000) : simulateur officiel 7175 hors 1TZ/1AY, écart assumé de 18 000 × 18,6 % (brochure IR 2026)', () => {
+  it('compte réel (1TP=2000, 1TT=15000, 1TZ=8000, 1NX=20000, 1AY=10000, 1MP=5000) selon le simulateur officiel 2026', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
       case1tp: 2000, case1tt: 15000, case1tz: 8000, case1nx: 20000, case1ay: 10000, case1mp: 5000,
     }));
-    // CSG-CRDS 11,10 % + solidarité 7,5 % + contribution salariale 10 % sur 1NX = 2220 + 1500 + 2000
-    expect(result.prelevementsSociauxCarriedInterestNonQualifiant).toBeCloseTo(2220 + 1500 + 2000, 6);
-    // CSG 9,2 % + CRDS 0,5 % sur 1TT (1TP exclu) = 1380 + 75
-    expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(1380 + 75, 6);
-    // Total du simulateur officiel, qui n'affiche aucune ligne PS pour 1TZ/1AY.
-    // Contribution salariale de 10 % sur 1TT absente du simulateur : la brochure prévaut.
+    // 1TT : 9,7 % + 10 % ; 1TZ + 1AY : 18,6 % ; 1MP : 10 % ; 1NX et 1TP : rien.
+    expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(1455, 6);
     expect(result.contributionSalarialeLeveeOptions).toBeCloseTo(1500, 6);
-    expect(result.prelevementsSociaux - result.prelevementsSociauxGainsRevenusPatrimoine
-      - result.contributionSalarialeLeveeOptions).toBeCloseTo(7175, 6);
-    // 1TZ + 1AY soumis aux PS sur les revenus du patrimoine (brochure p.111-112).
     expect(result.prelevementsSociauxGainsRevenusPatrimoine).toBeCloseTo(18000 * 0.186, 6);
-    expect(result.prelevementsSociaux).toBeCloseTo(7175 + 1500 + 3348, 6);
+    expect(result.contributionSalariale1MP).toBeCloseTo(500, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(1455 + 1500 + 3348 + 500, 6);
   });
 
   it('1TT = 100 000 € : 19 700 € de PS, 3VN = 50 000 € en plus : 24 700 € (ClickImpôts)', () => {
@@ -58,10 +52,8 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociauxLeveeOptions).toBeCloseTo(16000 * 0.097, 6);
   });
 
-  it('applique 28,6 % (11,10 % + 7,5 % + 10 %) sur 1NX/1OX', () => {
-    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1nx: 10000, case1ox: 5000 }));
-    expect(result.baseCarriedInterestNonQualifiant).toBe(15000);
-    expect(result.prelevementsSociauxCarriedInterestNonQualifiant).toBeCloseTo(15000 * 0.286, 6);
+  it('1NX/1OX : aucun prélèvement (simulateur officiel 2026)', () => {
+    expect(calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1nx: 10000, case1ox: 5000 })).prelevementsSociaux).toBe(0);
   });
 
   it('applique 30 % sur 1NY/1OY (contribution salariale carried-interest)', () => {
@@ -76,11 +68,11 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.contributionSalariale3VN).toBeCloseTo(1000, 6);
   });
 
-  it('ignore 1TP/1MP (régime PS non modélisé)', () => {
-    const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
-      case1tp: 2000, case1up: 1000, case1mp: 5000, case1mq: 1000,
-    }));
-    expect(result.prelevementsSociaux).toBe(0);
+  it('ignore 1TP/1UP ; 1MP/1MQ à 10 % (simulateur officiel 2026 : 5 000 + 3 000 → 800 €)', () => {
+    expect(calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1tp: 2000, case1up: 1000 })).prelevementsSociaux).toBe(0);
+    const r = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({ case1mp: 5000, case1mq: 3000 }));
+    expect(r.base1MP).toBe(8000);
+    expect(r.prelevementsSociaux).toBeCloseTo(800, 6);
   });
 
   it('soumet 1TZ aux PS sur les revenus du patrimoine (18,6 %)', () => {
@@ -109,12 +101,13 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
     expect(result.prelevementsSociaux).toBeCloseTo(5580, 6);
   });
 
-  it('cumule 3VD/3VI/3VF et ignore 3VJ/3VK (régime PS non confirmé)', () => {
+  it('cumule 3VD/3VI/3VF ; 3VJ/3VK à 18,6 % (simulateur officiel 2026 : 8 000 → 1 488 €)', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
-      case3vd: 10000, case3vi: 10000, case3vf: 10000, case3vj: 10000, case3vk: 10000,
+      case3vd: 10000, case3vi: 10000, case3vf: 10000, case3vj: 5000, case3vk: 3000,
     }));
     expect(result.baseGainsHistoriquesTauxForfaitaire).toBe(30000);
-    expect(result.prelevementsSociaux).toBeCloseTo(5580, 6);
+    expect(result.baseGainsRevenusPatrimoine).toBe(8000);
+    expect(result.prelevementsSociaux).toBeCloseTo(5580 + 1488, 6);
   });
 
   it('ignore 0XX (système du quotient)', () => {
@@ -125,8 +118,8 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
   it('expose la liste des cases hors périmètre', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput());
     expect(result.casesHorsPerimetre).toContain('case1tp');
-    expect(result.casesHorsPerimetre).toContain('case1mp');
-    expect(result.casesHorsPerimetre).toContain('case3vj');
+    expect(result.casesHorsPerimetre).not.toContain('case1mp');
+    expect(result.casesHorsPerimetre).not.toContain('case3vj');
     expect(result.casesHorsPerimetre).not.toContain('case3vd');
     expect(result.casesHorsPerimetre).not.toContain('case1tz');
     expect(result.casesHorsPerimetre).not.toContain('case1uz');
@@ -139,12 +132,12 @@ describe('calculerPrelevementsSociauxGainsActionnariatSalarie', () => {
 
   it('cumule les 4 mécanismes simultanément', () => {
     const result = calculerPrelevementsSociauxGainsActionnariatSalarie(makeInput({
-      case1tt: 15000, case1nx: 20000, case1ny: 10000, case3vn: 10000,
+      case1tt: 15000, case1mp: 20000, case1ny: 10000, case3vn: 10000,
     }));
     expect(result.prelevementsSociaux).toBeCloseTo(
       result.prelevementsSociauxLeveeOptions
         + result.contributionSalarialeLeveeOptions
-        + result.prelevementsSociauxCarriedInterestNonQualifiant
+        + result.contributionSalariale1MP
         + result.contributionSalariale1NY
         + result.contributionSalariale3VN,
       6,

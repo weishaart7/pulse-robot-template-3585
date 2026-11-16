@@ -39,19 +39,19 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(bareme.revenuExonereRetenuPourRFR).toBe(550000);
   });
 
-  it('3VT suit 2OP, sans PS (prélevés à la source sur le PEA)', () => {
+  it('3VT suit 2OP, PS à 18,6 % (simulateur officiel 2026)', () => {
     const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vt: 2000 }, false);
     expect(r.impotForfaitaire).toBeCloseTo(256);
-    expect(r.prelevementsSociaux).toBe(0);
+    expect(r.prelevementsSociaux).toBeCloseTo(372);
   });
 
-  it('3PI : taxé à 50 % quelle que soit 2OP, au RFR, hors PS', () => {
+  it('3PI : taxé à 50 % quelle que soit 2OP, au RFR, PS à 18,6 % (simulateur officiel 2026)', () => {
     for (const option of [false, true]) {
       const r = calculerPlusValuesGainsDivers({ ...VIDE, case3pi: 4000 }, option);
       expect(r.totalNetImposable).toBe(0);
       expect(r.impotForfaitaire).toBeCloseTo(2000);
       expect(r.revenuExonereRetenuPourRFR).toBe(4000);
-      expect(r.prelevementsSociaux).toBe(0);
+      expect(r.prelevementsSociaux).toBeCloseTo(744);
     }
   });
 

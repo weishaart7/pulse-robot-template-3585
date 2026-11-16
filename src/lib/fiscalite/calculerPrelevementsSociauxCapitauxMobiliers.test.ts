@@ -52,37 +52,37 @@ describe('calculerPrelevementsSociauxCapitauxMobiliers', () => {
     expect(avecOption.prelevementsSociaux).toBe(sansOption.prelevementsSociaux);
   });
 
-  it('applique 17,2 % sur 2CH, sans l\'abattement de 4 600 €/9 200 € (réservé à l\'IR)', () => {
+  it('applique 18,6 % sur 2CH, sans l\'abattement de 4 600 €/9 200 € (réservé à l\'IR)', () => {
     const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2ch: 6000 }));
     expect(result.baseAssuranceVie).toBe(6000); // pas 1400 (net d'abattement)
-    expect(result.prelevementsSociaux).toBeCloseTo(6000 * 0.172, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(6000 * 0.186, 6);
   });
 
-  it('2DH : PS à 17,2 % et PFL de 7,5 % affiché (ClickImpôts : 50 000 € → 8 600 € et 3 750 €)', () => {
+  it('2DH : PS déjà prélevés à la source (simulateur officiel 2026 : 0 €), PFL de 7,5 % affiché', () => {
     const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dh: 50000 }));
-    expect(result.prelevementsSociaux).toBeCloseTo(8600, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(0, 6);
     expect(result.prelevementLiberatoire2DH).toBeCloseTo(3750, 6);
   });
 
-  it('2GO à 18,6 % et 2CH à 17,2 %', () => {
+  it('2GO à 18,6 % et 2CH à 18,6 %', () => {
     const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2go: 4000, case2ch: 6000 }));
     expect(result.baseImposable).toBe(4000);
     expect(result.baseAssuranceVie).toBe(6000);
-    expect(result.prelevementsSociaux).toBeCloseTo(744 + 1032, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(744 + 1116, 6);
   });
 
-  it('applique 17,2 % sur 2VV seul, sur son montant brut (pas net d\'abattement)', () => {
+  it('applique 18,6 % sur 2VV seul, sur son montant brut (pas net d\'abattement)', () => {
     const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2vv: 5000 }));
     expect(result.baseAssuranceVie).toBe(5000); // pas 400 (net après abattement de 4600, réservé à l'IR)
-    expect(result.prelevementsSociaux).toBeCloseTo(860, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(930, 6);
   });
 
-  it('applique 17,2 % sur 2WW/2YY/2ZZ/2VN/2VO/2VP, au brut (même règle que 2CH/2VV)', () => {
+  it('applique 18,6 % sur 2WW/2YY/2ZZ/2VN/2VO/2VP, au brut (même règle que 2CH/2VV)', () => {
     const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({
       case2ww: 1000, case2yy: 1000, case2zz: 1000, case2vn: 1000, case2vo: 1000, case2vp: 1000,
     }));
     expect(result.baseAssuranceVie).toBe(6000);
-    expect(result.prelevementsSociaux).toBeCloseTo(6000 * 0.172, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(6000 * 0.186, 6);
   });
 
   it('ignore 2XX/2VM, déjà réglées à la source', () => {
@@ -109,7 +109,7 @@ describe('calculerPrelevementsSociauxCapitauxMobiliers', () => {
       case2dh: 50000,
     }));
     expect(result.baseImposable).toBe(13000);
-    expect(result.prelevementsSociaux).toBeCloseTo(13000 * 0.186 + 50000 * 0.172, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(13000 * 0.186, 6);
   });
   it('exclut de la base les revenus déjà soumis aux PS (2BH) — pas de double prélèvement', () => {
     const result = calculerPrelevementsSociauxCapitauxMobiliers(makeInput({ case2dc: 10000, case2bh: 10000 }));
@@ -128,7 +128,7 @@ describe('calculerPrelevementsSociauxCapitauxMobiliers', () => {
     // Imputés d'abord sur la base à 18,6 % (15 000 → 5 000), 2CH intact.
     expect(result.baseImposable).toBe(5000);
     expect(result.baseAssuranceVie).toBe(5000);
-    expect(result.prelevementsSociaux).toBeCloseTo(5000 * 0.186 + 5000 * 0.172, 6);
+    expect(result.prelevementsSociaux).toBeCloseTo(10000 * 0.186, 6);
   });
 
   it('applique la CSG/CRDS de 11,1 % sur 2DI, compris dans 2DG', () => {

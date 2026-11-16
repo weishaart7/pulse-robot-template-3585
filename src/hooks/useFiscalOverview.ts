@@ -244,7 +244,7 @@ export interface FiscalOverview {
   /** Cadre 3 : barème, impôt forfaitaire (12,8 %, 19 %, 30 %, 50 %), RFR et prélèvements sociaux à 18,6 % — voir calculerPlusValuesGainsDivers.ts. */
   plusValuesGainsDivers: PlusValuesGainsDiversResult;
   /**
-   * Prélèvements sociaux (17,2 %) — périmètre partiel : seuls les capitaux
+   * Prélèvements sociaux (18,6 %, assurance-vie comprise) — périmètre partiel : seuls les capitaux
    * mobiliers « prélevés à la source » sont couverts pour l'instant (voir
    * calculerPrelevementsSociauxCapitauxMobiliers.ts). Salaires, pensions et
    * gains d'actionnariat restent hors périmètre (voir docs/fiscalite.md).
@@ -495,7 +495,7 @@ export function useFiscalOverview(): FiscalOverview {
       // Bases du foyer par contribution, arrondies une seule fois (voir arrondirPrelevementsSociaux.ts).
       // 2044 hors fraction 4BL (crédit égal à l'impôt français, qui neutralise aussi les PS).
       const ps = arrondirPrelevementsSociaux({
-        patrimoine: prelevementsSociauxCapitauxMobiliers.baseImposable
+        patrimoine: prelevementsSociauxCapitauxMobiliers.baseImposable + prelevementsSociauxCapitauxMobiliers.baseAssuranceVie
           + prelevementsSociauxPensionsRetraitesRentes.baseImposableRentesViageres
           + prelevementsSociauxGainsActionnariat.baseGainsRevenusPatrimoine
           + prelevementsSociauxGainsActionnariat.baseGainsHistoriquesTauxForfaitaire
@@ -504,15 +504,14 @@ export function useFiscalOverview(): FiscalOverview {
         csgCrdsPatrimoineSeule: somme(capitauxMobiliersInput.case2di),
         foncier: Math.max(0, (revenusFonciers?.revenuFoncierNetImposable ?? 0) - revenusFonciers2042.deductionReel4BL)
           + revenusFonciers2042.totalNetImposable,
-        assuranceVie: prelevementsSociauxCapitauxMobiliers.baseAssuranceVie,
         neutralisePatrimoine: prelevementSourceDivers.assiettePS8TK186,
         neutraliseFoncier: prelevementSourceDivers.assiettePS8TK172,
         exonerationTotaleCsgCrds: exonerationTotale,
         exonerePatrimoine: somme(prelevementSourceInput.case8rv, prelevementSourceInput.case8rc, prelevementSourceInput.case8rm),
         exonereFoncier: somme(prelevementSourceInput.case8rf),
         activite: prelevementsSociauxGainsActionnariat.baseLeveeOptions,
-        contributionSalariale10: prelevementsSociauxGainsActionnariat.baseLeveeOptions + prelevementsSociauxGainsActionnariat.base3VN,
-        carriedInterest: prelevementsSociauxGainsActionnariat.baseCarriedInterestNonQualifiant,
+        contributionSalariale10: prelevementsSociauxGainsActionnariat.baseLeveeOptions + prelevementsSociauxGainsActionnariat.base1MP
+          + prelevementsSociauxGainsActionnariat.base3VN,
         contributionSalariale30: prelevementsSociauxGainsActionnariat.baseCarriedInterest1NY,
       });
       const reductionPrelevementsSociaux = ps.reductionExoneration;

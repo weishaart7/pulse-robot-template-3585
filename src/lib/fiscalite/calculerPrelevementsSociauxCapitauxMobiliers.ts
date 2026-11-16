@@ -31,11 +31,11 @@ export const TAUX_PS_CAPITAUX_MOBILIERS = 0.186;
 export const TAUX_CSG_CRDS_2DI = 0.111;
 
 /**
- * Produits d'assurance-vie et de capitalisation : 17,2 % (CSG-CRDS 9,7 % + solidarité 7,5 %). La
- * hausse de CSG de la LFSS 2026 ne s'applique pas à ces produits (vérifié sur ClickImpôts :
- * 2CH = 50 000 € → 8 600 € de PS, et non 9 300 €).
+ * Produits d'assurance-vie et de capitalisation : 18,6 %, comme les autres revenus du capital
+ * (simulateur officiel 2026 : 2CH = 5 000 € → 930 €). Choix aligné sur le simulateur, alors que
+ * ClickImpôts donnait 17,2 % (2CH = 50 000 € → 8 600 €) en lisant la LFSS 2026 comme les excluant.
  */
-export const TAUX_PS_ASSURANCE_VIE = 0.172;
+export const TAUX_PS_ASSURANCE_VIE = TAUX_PS_CAPITAUX_MOBILIERS;
 
 /** Prélèvement libératoire de 7,5 % déjà acquitté à la source sur 2DH (affiché pour information). */
 export const TAUX_PFL_2DH = 0.075;
@@ -92,8 +92,9 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
    */
   baseImposable: number;
   /**
-   * Base à 17,2 % : produits d'assurance-vie et de capitalisation (2CH, 2DH, 2VV, 2WW, 2YY, 2ZZ,
-   * 2VN, 2VO, 2VP), au brut. Les revenus déjà soumis (2CG/2BH/2DF/2DG) s'imputent d'abord sur
+   * Base à 18,6 % (voir TAUX_PS_ASSURANCE_VIE) : produits d'assurance-vie et de capitalisation (2CH,
+   * 2VV, 2WW, 2YY, 2ZZ, 2VN, 2VO, 2VP), au brut. 2DH en est exclu : ses PS sont déjà prélevés à la
+   * source (simulateur officiel 2026 : 0 €). Les revenus déjà soumis (2CG/2BH/2DF/2DG) s'imputent d'abord sur
    * `baseImposable`, le reliquat sur cette base.
    */
   baseAssuranceVie: number;
@@ -111,7 +112,7 @@ export interface PrelevementsSociauxCapitauxMobiliersResult {
   montantDejaSoumis: number;
   /** CSG/CRDS (11,1 %) sur 2DI, en plus des PS à 18,6 % sur `baseImposable`. */
   csgCrds2DI: number;
-  /** Total : `baseImposable` × 18,6 % + `baseAssuranceVie` × 17,2 % + `csgCrds2DI`. */
+  /** Total : (`baseImposable` + `baseAssuranceVie`) × 18,6 % + `csgCrds2DI`. */
   prelevementsSociaux: number;
   /**
    * Saisies incohérentes avec la brochure (p.132-133), sans effet sur le
@@ -158,7 +159,7 @@ export function calculerPrelevementsSociauxCapitauxMobiliers(
   const sansAbattement = (input.case2ts ?? 0) + (input.case2tr ?? 0) + (input.case2tt ?? 0)
     + (input.case2tq ?? 0) + (input.case2tz ?? 0);
   const revenusReputesDistribuesSansMajoration = input.case2go ?? 0;
-  const assuranceVie = (input.case2ch ?? 0) + (input.case2dh ?? 0) + (input.case2vv ?? 0)
+  const assuranceVie = (input.case2ch ?? 0) + (input.case2vv ?? 0)
     + (input.case2ww ?? 0) + (input.case2yy ?? 0) + (input.case2zz ?? 0)
     + (input.case2vn ?? 0) + (input.case2vo ?? 0) + (input.case2vp ?? 0);
 

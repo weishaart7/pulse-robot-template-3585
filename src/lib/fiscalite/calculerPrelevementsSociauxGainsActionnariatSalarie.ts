@@ -32,32 +32,19 @@ const TAUX_CSG_CRDS_LEVEE_OPTIONS = 0.092 + 0.005;
 const TAUX_CONTRIBUTION_SALARIALE_1TT = 0.10;
 
 /**
- * Carried-interest ne remplissant pas les conditions du régime de faveur
- * (1NX/1OX, requalifié salaire — voir calculerGainsActionnariatSalarie.ts) :
- * régime PS spécifique vérifié empiriquement sur le compte réel (comparaison
- * avec le détail du calcul du simulateur officiel, voir docs/fiscalite.md) —
- * trois prélèvements distincts, tous assis sur le même montant brut :
- * - CSG (10,6 %) + CRDS (0,5 %) = 11,10 % : taux 2026 (LFSS 2026, hausse de
- *   1,4 point de CSG sur les revenus du capital) déjà applicable aux revenus
- *   2025 pour cette case, car recouvrée par voie de rôle (avis d'imposition)
- *   et non prélevée à la source pendant l'année — à la différence des
- *   dividendes/intérêts (`calculerPrelevementsSociauxCapitauxMobiliers.ts`,
- *   qui restent à 17,2 % pour les revenus 2025).
- * - Prélèvement de solidarité : 7,5 %.
- * - Contribution salariale spécifique : 10 % — mécanisme distinct de la
- *   contribution salariale de 30 % (1NY/1OY, carried-interest qualifiant
- *   partiellement), et de celle de 10 % sur 3VN (options/AGA) : les trois
- *   sont vérifiées comme des prélèvements séparés, non substituables.
+ * Carried-interest non qualifiant (1NX/1OX, requalifié salaire) : aucun prélèvement social liquidé avec
+ * l'IR (simulateur officiel 2026 : 1NX = 5 000 € → 0 €), seule la contribution de 30 % sur 1NY/1OY
+ * est due. Choix aligné sur le simulateur, contre l'ancien rapprochement d'un compte réel (voir docs).
  */
-const TAUX_CSG_CRDS_CARRIED_INTEREST_NON_QUALIFIANT = 0.106 + 0.005;
-const TAUX_SOLIDARITE_CARRIED_INTEREST_NON_QUALIFIANT = 0.075;
-const TAUX_CONTRIBUTION_SALARIALE_CARRIED_INTEREST_NON_QUALIFIANT = 0.10;
 
 /** Contribution salariale sur le carried-interest soumis à ce régime spécifique (1NY/1OY, art. L137-18 CSS). */
 const TAUX_CONTRIBUTION_SALARIALE_1NY = 0.30;
 
 /** Contribution salariale sur les gains d'actionnariat salarié/options soumis à 3VN (art. L137-13 CSS). */
 const TAUX_CONTRIBUTION_SALARIALE_3VN = 0.10;
+
+/** Contribution salariale de 10 % sur les management packages 1MP/1MQ (simulateur officiel 2026 : 5 000 € → 500 €). */
+const TAUX_CONTRIBUTION_SALARIALE_1MP = 0.10;
 
 /**
  * Gains d'acquisition d'actions gratuites (1TZ, avec ses abattements
@@ -91,21 +78,12 @@ const TAUX_PS_GAINS_REVENUS_PATRIMOINE = TAUX_PS_PLUS_VALUES;
 const TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE = TAUX_PS_PLUS_VALUES;
 
 /**
- * Cases hors périmètre du calcul PS : aucune ligne de prélèvements sociaux
- * correspondante trouvée dans le détail du calcul du simulateur officiel sur
- * le compte réel testé (1TP = 2 000 €, 1MP = 5 000 € déclarés) et aucune
- * source de la brochure sur leur régime PS — non modélisé plutôt que deviné,
- * y compris pour 1TP malgré une source documentaire isolée suggérant un
- * régime salarial (voir TAUX_CSG_CRDS_LEVEE_OPTIONS ci-dessus).
- * 3VJ/3VK (gains pré-28.9.2012 imposés selon les règles des salaires) :
- * régime PS non confirmé — non modélisé. 0XX : système du
- * quotient, hors périmètre PS comme il l'est du reste de `calculerImpot.ts`
- * pour ce module.
+ * Cases hors périmètre du calcul PS : 1TP/1UP (aucune ligne PS sur le compte réel testé, voir
+ * TAUX_CSG_CRDS_LEVEE_OPTIONS) et 0XX (système du quotient, hors périmètre PS de ce module).
+ * 3VJ/3VK rejoignent la base patrimoine (18,6 %) et 1MP/1MQ la contribution de 10 % (simulateur 2026).
  */
 export const CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE = [
   'case1tp', 'case1up',
-  'case1mp', 'case1mq',
-  'case3vj', 'case3vk',
   'case0xx',
 ] as const;
 
@@ -115,16 +93,16 @@ export interface PrelevementsSociauxGainsActionnariatResult {
   prelevementsSociauxLeveeOptions: number;
   /** Contribution salariale de 10 % sur la même base 1TT/1UT (voir TAUX_CONTRIBUTION_SALARIALE_1TT). */
   contributionSalarialeLeveeOptions: number;
-  /** Base 1NX/1OX (carried-interest non qualifiant), soumise aux 3 prélèvements distincts détaillés ci-dessus. */
-  baseCarriedInterestNonQualifiant: number;
-  prelevementsSociauxCarriedInterestNonQualifiant: number;
   /** Base 1NY/1OY, soumise à la contribution salariale spécifique de 30 %. */
   baseCarriedInterest1NY: number;
   contributionSalariale1NY: number;
+  /** Base 1MP/1MQ, soumise à la contribution salariale de 10 %. */
+  base1MP: number;
+  contributionSalariale1MP: number;
   /** Base 3VN, soumise à la contribution salariale de 10 %. */
   base3VN: number;
   contributionSalariale3VN: number;
-  /** Base 1TZ+1UZ+1WZ+1VZ+1AY+1BY, soumise aux PS sur les revenus du patrimoine (voir TAUX_PS_GAINS_REVENUS_PATRIMOINE). */
+  /** Base 1TZ+1UZ+1WZ+1VZ+1AY+1BY+3VJ+3VK, soumise aux PS sur les revenus du patrimoine (voir TAUX_PS_GAINS_REVENUS_PATRIMOINE). */
   baseGainsRevenusPatrimoine: number;
   prelevementsSociauxGainsRevenusPatrimoine: number;
   /** Base 3VD+3VI+3VF, soumise aux PS sur les revenus du patrimoine (voir TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE). */
@@ -151,21 +129,16 @@ export interface PrelevementsSociauxGainsActionnariatResult {
  *    contribution salariale de 10 % due d'office (hors 3VN). 1TP/1UP
  *    volontairement exclu malgré une source documentaire isolée suggérant le
  *    même régime — voir TAUX_CSG_CRDS_LEVEE_OPTIONS.
- * 2. **1NX/1OX** (carried-interest non qualifiant) : CSG+CRDS 11,10 %
- *    (taux 2026, déjà applicable aux revenus 2025 pour ce type de revenu
- *    recouvré par voie de rôle) + prélèvement de solidarité 7,5 % +
- *    contribution salariale spécifique 10 % — trois prélèvements distincts
- *    sur la même base, non cumulables avec le régime salarial de 1TT.
- * 3. **1NY/1OY** : contribution salariale de 30 % (carried-interest soumis à
- *    ce régime spécifique, distinct de 1NX).
- * 4. **3VN** : contribution salariale de 10 % (options/AGA hors 1TT/1UT).
- * 5. **1TZ/1UZ/1WZ/1VZ et 1AY/1BY** : PS sur les revenus du patrimoine,
- *    taux provisoire 18,6 % — voir TAUX_PS_GAINS_REVENUS_PATRIMOINE.
+ * 2. **1NX/1OX** (carried-interest non qualifiant) : aucun prélèvement
+ *    (simulateur officiel 2026).
+ * 3. **1NY/1OY** : contribution salariale de 30 %, sur 1NY/1OY seuls.
+ * 4. **1MP/1MQ** et **3VN** : contribution salariale de 10 %.
+ * 5. **1TZ/1UZ/1WZ/1VZ, 1AY/1BY et 3VJ/3VK** : PS sur les revenus du
+ *    patrimoine, 18,6 % — voir TAUX_PS_GAINS_REVENUS_PATRIMOINE.
  * 6. **3VD/3VI/3VF** : PS sur les revenus du patrimoine, 18,6 % — voir
  *    TAUX_PS_GAINS_HISTORIQUES_TAUX_FORFAITAIRE.
  *
- * Cases hors calcul : voir CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE
- * (1TP/1MP, et 3VJ/3VK, régime PS non confirmé avec certitude).
+ * Cases hors calcul : voir CASES_PS_GAINS_ACTIONNARIAT_HORS_PERIMETRE (1TP/1UP, 0XX).
  */
 export function calculerPrelevementsSociauxGainsActionnariatSalarie(
   input: GainsActionnariatSalarieInput,
@@ -174,21 +147,17 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
   const prelevementsSociauxLeveeOptions = baseLeveeOptions * TAUX_CSG_CRDS_LEVEE_OPTIONS;
   const contributionSalarialeLeveeOptions = baseLeveeOptions * TAUX_CONTRIBUTION_SALARIALE_1TT;
 
-  const baseCarriedInterestNonQualifiant = (input.case1nx ?? 0) + (input.case1ox ?? 0);
-  const prelevementsSociauxCarriedInterestNonQualifiant = baseCarriedInterestNonQualifiant * (
-    TAUX_CSG_CRDS_CARRIED_INTEREST_NON_QUALIFIANT
-    + TAUX_SOLIDARITE_CARRIED_INTEREST_NON_QUALIFIANT
-    + TAUX_CONTRIBUTION_SALARIALE_CARRIED_INTEREST_NON_QUALIFIANT
-  );
-
   const baseCarriedInterest1NY = (input.case1ny ?? 0) + (input.case1oy ?? 0);
   const contributionSalariale1NY = baseCarriedInterest1NY * TAUX_CONTRIBUTION_SALARIALE_1NY;
+
+  const base1MP = (input.case1mp ?? 0) + (input.case1mq ?? 0);
+  const contributionSalariale1MP = base1MP * TAUX_CONTRIBUTION_SALARIALE_1MP;
 
   const base3VN = input.case3vn ?? 0;
   const contributionSalariale3VN = base3VN * TAUX_CONTRIBUTION_SALARIALE_3VN;
 
   const baseGainsRevenusPatrimoine = (input.case1tz ?? 0) + (input.case1uz ?? 0) + (input.case1wz ?? 0)
-    + (input.case1vz ?? 0) + (input.case1ay ?? 0) + (input.case1by ?? 0);
+    + (input.case1vz ?? 0) + (input.case1ay ?? 0) + (input.case1by ?? 0) + (input.case3vj ?? 0) + (input.case3vk ?? 0);
   const prelevementsSociauxGainsRevenusPatrimoine = baseGainsRevenusPatrimoine * TAUX_PS_GAINS_REVENUS_PATRIMOINE;
 
   const baseGainsHistoriquesTauxForfaitaire = (input.case3vd ?? 0) + (input.case3vi ?? 0) + (input.case3vf ?? 0);
@@ -199,10 +168,10 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
     baseLeveeOptions,
     prelevementsSociauxLeveeOptions,
     contributionSalarialeLeveeOptions,
-    baseCarriedInterestNonQualifiant,
-    prelevementsSociauxCarriedInterestNonQualifiant,
     baseCarriedInterest1NY,
     contributionSalariale1NY,
+    base1MP,
+    contributionSalariale1MP,
     base3VN,
     contributionSalariale3VN,
     baseGainsRevenusPatrimoine,
@@ -211,7 +180,7 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
     prelevementsSociauxGainsHistoriquesTauxForfaitaire,
     prelevementsSociaux: prelevementsSociauxLeveeOptions
       + contributionSalarialeLeveeOptions
-      + prelevementsSociauxCarriedInterestNonQualifiant
+      + contributionSalariale1MP
       + contributionSalariale1NY
       + contributionSalariale3VN
       + prelevementsSociauxGainsRevenusPatrimoine

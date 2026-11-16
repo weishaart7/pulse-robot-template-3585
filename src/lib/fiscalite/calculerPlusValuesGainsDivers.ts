@@ -145,7 +145,8 @@ export function calculerPlusValuesGainsDivers(
 
   const basePrelevementsSociaux = Math.max(0, droitCommun + renforce + actifsNumeriques + (input.case3sz ?? 0)
     + bspceAvant2018 + bspceAncien + bspceCession2025 + gainExerciceBspce
-    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) - moinsValueImpatries);
+    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) + pea + instrumentsFinanciers - moinsValueImpatries);
+  // 3VT (PEA avant 5 ans) et 3PI (instruments à 50 %) soumis à 18,6 % (simulateur officiel 2026 : 5 000 € → 930 €).
 
   return {
     totalNetImposable: bareme,

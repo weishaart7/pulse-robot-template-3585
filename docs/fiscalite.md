@@ -1091,10 +1091,12 @@ fonciers (§4).
   sont déjà prélevées en paie (URSSAF), 1AJ/1BJ etc. sont déjà nets — rien à recalculer côté IR.
   Pour les capitaux mobiliers : **18,6 %** sur dividendes/revenus assimilés (2DC/2FU, sur leur montant
   **brut**, l'abattement de 40 % étant réservé à l'IR, art. 158-3 CGI), intérêts/produits sans
-  abattement (2TS/2TR/2TT/2TQ/2TZ) et revenus réputés distribués (2GO). **17,2 %** (CSG-CRDS 9,7 % +
-  solidarité 7,5 %, `TAUX_PS_ASSURANCE_VIE`, base `baseAssuranceVie`) sur les produits d'assurance-vie
-  et de capitalisation, au brut : 2CH, 2DH, 2VV, 2WW, 2YY, 2ZZ, 2VN, 2VO, 2VP — la hausse de CSG de la
-  LFSS 2026 ne vise pas ces produits (vérifié sur ClickImpôts : 2CH = 50 000 € → 8 600 €). Cette base
+  abattement (2TS/2TR/2TT/2TQ/2TZ) et revenus réputés distribués (2GO). **18,6 %** également
+  (`TAUX_PS_ASSURANCE_VIE`, base `baseAssuranceVie`, versée dans la base patrimoine) sur les produits
+  d'assurance-vie et de capitalisation, au brut : 2CH, 2VV, 2WW, 2YY, 2ZZ, 2VN, 2VO, 2VP — choix aligné
+  sur le simulateur officiel 2026 (2CH = 5 000 € → 930 €), alors que ClickImpôts donnait 17,2 %
+  (2CH = 50 000 € → 8 600 €) en lisant la LFSS 2026 comme les excluant. **2DH hors PS** (déjà prélevés
+  à la source ; simulateur : 0 €). Cette base
   rejoint la ligne CSG-CRDS 9,7 % du foncier dans `arrondirPrelevementsSociaux.ts`. 2DH : PS dus comme
   ci-dessus, et PFL de 7,5 % (`prelevementLiberatoire2DH`) compté dans l'imposition totale de la
   vue d'ensemble, mais pas dans le solde à payer (déjà prélevé à la source).
@@ -1125,7 +1127,7 @@ fonciers (§4).
      au taux 2026 dès les revenus 2025 — ce module ne l'avait pas reporté depuis sa découverte ailleurs.
   2. **2CH/2DH/2VV/2WW/2XX/2YY/2ZZ/2VM/2VN/2VO/2VP intégralement exclus des PS, sur l'hypothèse d'un
      « taux historique » non reconstituable (art. L136-7 CSS) pour l'ensemble de la famille
-     assurance-vie/capitalisation — hypothèse invalidée par deux tests isolés.** (Le taux de 18,6 % alors retenu sur 2CH/2VV a depuis été ramené à 17,2 %, voir plus haut.) Foyer célibataire,
+     assurance-vie/capitalisation — hypothèse invalidée par deux tests isolés.** (Taux de 18,6 % sur 2CH/2VV confirmé par le simulateur officiel 2026, voir plus haut.) Foyer célibataire,
      2OP décoché : 2GO=4 000 €/2CH=6 000 € → Kairos annonçait 744 € de PS (2GO seul, 18,6 %) contre
      1 860 € au simulateur officiel, soit exactement (2GO+2CH) × 18,6 % = 10 000 × 18,6 % — 2CH compté
      en totalité, montant BRUT, sans l'abattement de 4 600 €/9 200 € réservé à l'IR. Deuxième test,
@@ -1197,7 +1199,9 @@ fonciers (§4).
      reconstitués à l'euro près (1 380 € et 75 €). **S'y ajoute la contribution salariale de 10 %
      (art. L137-14 CSS), due d'office sans report en 3VN** (brochure IR 2026 ; ClickImpôts : 1TT =
      100 000 € → 19 700 €), absente du simulateur sur ce compte : la brochure prévaut.
-  2. **1NX/1OX (carried-interest non qualifiant)** : régime spécifique en 3 prélèvements distincts sur
+  2. **1NX/1OX (carried-interest non qualifiant)** : **aucun prélèvement** depuis l'alignement sur le
+     simulateur officiel 2026 (1NX = 5 000 € → 0 € ; seul 1NY/1OY porte la contribution de 30 %). Ancien
+     régime, abandonné : 3 prélèvements distincts sur
      la même base — CSG (10,6 %) + CRDS (0,5 %) = 11,10 % (taux LFSS 2026, déjà applicable aux revenus
      2025 pour cette case car recouvrée par voie de rôle et non prélevée à la source pendant l'année),
      prélèvement de solidarité 7,5 %, et contribution salariale spécifique 10 % — total combiné 28,6 %.
@@ -1236,8 +1240,9 @@ fonciers (§4).
   ci-dessus, aucune ligne PS pour 1TZ/1AY, total 7 175 € ; Pulse affiche désormais 7 175 € + 18 000 € ×
   18,6 % = 10 523 €. La brochure prévaut ; un avis d'imposition réel départagerait. **3VD/3VI/3VF** (gains pré-28.9.2012 à taux
   forfaitaire) : PS sur les revenus du patrimoine à 18,6 %, confirmé par ClickImpôts (3VD = 30 000 € →
-  5 580 €) ; la contribution salariale de 10 % reste portée par 3VN. **3VJ/3VK** : régime PS non confirmé,
-  hors calcul. Branché dans
+  5 580 €) ; la contribution salariale de 10 % reste portée par 3VN. **3VJ/3VK** : PS du patrimoine à 18,6 %
+  (simulateur officiel 2026 : 5 000 + 3 000 → 1 488 €). **1MP/1MQ** : contribution salariale de 10 %
+  (simulateur : 5 000 + 3 000 → 800 €), alors que le compte réel n'en montrait pas. Branché dans
   `useFiscalOverview.ts` (`prelevementsSociauxGainsActionnariat`) et affiché dans `FiscalOverviewCard.tsx`.
   Les tests couvrent le rapprochement avec le simulateur (7 175 € hors 1TZ/1AY), chaque mécanisme
   isolément et cumulés, l'assiette 1TZ+abattements, 1AY/1BY et l'exclusion des cases hors périmètre.
@@ -1265,7 +1270,7 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   abattements pour durée de détention `3SG`/`3SL` ne s'appliquent pas, l'abattement fixe `3VA` si.
 - **Barème (2OP)** : les mêmes montants, nets de `3SG`/`3SL`/`3VA`, rejoignent le revenu imposable.
 - **`3PI`** : profits sur instruments financiers à terme (teneur de compte en ETNC) taxés à 50 %
-  (art. 150 ter CGI), quelle que soit `2OP`, retenus au RFR, hors PS.
+  (art. 150 ter CGI), quelle que soit `2OP`, retenus au RFR, PS 18,6 % (simulateur officiel 2026).
 - **RFR** : bases imposées à taux forfaitaire, abattements `3SG`/`3SL`/`3VA` réintégrés, `3VZ` ;
   `3VW` exclu (brochure IR 2026 p. 155).
 - **Reports expirés** (`3SB`, art. 150-0 D bis ; `3SZ`, OPC monétaires, art. 150-0 B quater) :
@@ -1274,9 +1279,9 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   simulateur officiel 2026, contre la lettre de l'art. 1417 IV 1°). `3SZ` est soumis aux PS 18,6 % sur le montant déclaré ; `3SB` en est
   exclu (seul l'IR est reporté par l'art. 150-0 D bis, les PS ont été acquittés l'année de la cession).
 - **Prélèvements sociaux 18,6 %** (CSG 10,6 % LFSS 2026 + CRDS 0,5 % + solidarité 7,5 %, applicable
-  aux revenus du patrimoine 2025 ; revenus fonciers, plus-values immobilières et assurance-vie restent
-  à 17,2 %) sur `3VG + 3UA + 3WE + 3AN`, avant tout abattement. `3VT` exclu (PS prélevés à la source
-  sur le PEA), `3VZ`/`3VW` exclus (prélevés chez le notaire).
+  aux revenus du patrimoine 2025 ; revenus fonciers et plus-values immobilières restent à 17,2 %) sur
+  `3VG + 3UA + 3WE + 3AN + 3VT + 3PI`, avant tout abattement (3VT et 3PI : simulateur officiel 2026).
+  `3VZ`/`3VW` exclus (prélevés chez le notaire).
 - **BSPCE** (art. 163 bis G CGI ; LF 2025 distingue gain d'exercice et gain de cession pour les titres
   souscrits depuis le 1.1.2025) : activité ≥ 3 ans — `3TJ − 3TK`, `3TL − 3TM` suivent `2OP`
   (12,8 % ou barème), `3SJ` taxé à 19 % et `3PC` à 12,8 % sans effet de `2OP` (option salaires de
@@ -1291,7 +1296,7 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   agriculteurs).
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
   saisie de `3VG`/`3AN`, reliquat reportable seulement).
-- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : `3PI` hors PS ; régime de
+- **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : régime de
   `3SZ` non détaillé par la brochure, aligné sur `3VG` ; contribution salariale
   spécifique de 10 % évoquée par une source pour certains gains cédés du 16.2.2025 au 31.12.2027, non
   modélisée.
@@ -1842,8 +1847,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   IR 2026 la prévoit (cotisations d'épargne retraite des personnes à charge, plafond propre). Non saisie :
   déduction sous-estimée pour un foyer concerné.
 
-- **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3PI` sans prélèvements sociaux,
-  `3SZ` aligné sur `3VG`, contribution de 10 % non modélisée (voir §2, « Plus-values
+- **Cadre 3 — hypothèses à confronter au simulateur officiel** : `3SZ` aligné sur `3VG`, contribution de 10 % non modélisée (voir §2, « Plus-values
   et gains divers »).
 - **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
   que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.
@@ -2004,10 +2008,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   route : un futur cadre 2042 (revenus fonciers, plus-values, etc.). **Prélèvements sociaux — chantier
   terminé pour les 3 phases identifiées** : `calculerPrelevementsSociauxCapitauxMobiliers.ts` couvre
   dividendes/intérêts/2GO et la famille assurance-vie non libératoire (2CH/2VV/2WW/2YY/2ZZ/2VN/2VO/2VP)
-  à 18,6 % (Phase 1, taux et périmètre corrigés — voir §2) ; `calculerPrelevementsSociauxPensionsRetraitesRentes.ts`
+  à 18,6 % (2DH hors PS) (Phase 1, taux et périmètre corrigés — voir §2) ; `calculerPrelevementsSociauxPensionsRetraitesRentes.ts`
   couvre les rentes viagères à titre onéreux (18,6 % fixe, taux corrigé depuis 17,2 % — voir §2, Phase 2) ;
-  `calculerPrelevementsSociauxGainsActionnariatSalarie.ts` couvre 1TT (9,7 % salarial), 1NX (28,6 %
-  combiné, carried-interest non qualifiant), 1NY et 3VN (contributions salariales 30 %/10 %, Phase 3 —
+  `calculerPrelevementsSociauxGainsActionnariatSalarie.ts` couvre 1TT (9,7 % salarial), 1NY (30 %), 1MP et 3VN
+  (contributions salariales 10 %), 1TZ/1AY/3VJ/3VD (patrimoine 18,6 %) ; 1NX sans PS (Phase 3 —
   périmètre établi par vérification empirique contre le simulateur officiel plutôt que recherche
   documentaire seule, les sources généralistes se contredisant sur cette catégorie). Voir §2 pour le
   détail des trois phases, y compris les cases hors périmètre de chacune (2DH/2XX/2VM, seules cases
@@ -2015,8 +2019,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   capital PER 1AI et capital retraite 1AT pour la Phase 2**
   — le taux de CSG/CRDS/CASA sur les pensions dépend d'un RFR N-2 non modélisé, une approximation par le
   revenu imposable courant s'étant révélée empiriquement fausse de plusieurs milliers d'euros sur un
-  compte réel ; 1TP/1MP et les gains historiques 3VD/3VI/3VF/3VJ/3VK pour la Phase 3, régime PS non
-  confirmé). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS pour les trois phases :
+  compte réel ; 1TP pour la Phase 3). Salaires (cadre 1, 1AJ etc.) volontairement exclus du périmètre PS pour les trois phases :
   déjà nets des cotisations salariales prélevées en paie, rien à recalculer côté IR.
 - **Différé, déductible du code** :
   - **Revenus des valeurs et capitaux mobiliers — hors calcul (voir §2/§3)** :

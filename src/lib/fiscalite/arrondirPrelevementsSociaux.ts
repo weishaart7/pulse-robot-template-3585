@@ -7,14 +7,12 @@ const TAUX_CONTRIBUTION_SALARIALE_30 = 0.30;
 
 /** Bases du foyer, toutes catégories additionnées, avant arrondi. */
 export interface BasesPrelevementsSociaux {
-  /** Revenus du patrimoine à 18,6 % (cadres 1 rentes et gains, 2, 3, 5). */
+  /** Revenus du patrimoine à 18,6 % (cadres 1 rentes et gains, 2 dont assurance-vie, 3, 5). */
   patrimoine: number;
   /** Soumis à la seule CSG-CRDS du patrimoine (2DI). */
   csgCrdsPatrimoineSeule: number;
   /** Revenus fonciers à 17,2 % (2044 et cadre 4). */
   foncier: number;
-  /** Produits d'assurance-vie à 17,2 % (même CSG-CRDS que le foncier, hors 8TK et 8RF). */
-  assuranceVie: number;
   /** 8TK ventilé : fractions neutralisées par le crédit égal à l'impôt français. */
   neutralisePatrimoine: number;
   neutraliseFoncier: number;
@@ -25,10 +23,8 @@ export interface BasesPrelevementsSociaux {
   exonereFoncier: number;
   /** 1TT/1UT : CSG-CRDS 9,7 %. */
   activite: number;
-  /** Contribution salariale de 10 % (1TT/1UT, 3VN). */
+  /** Contribution salariale de 10 % (1TT/1UT, 1MP/1MQ, 3VN). */
   contributionSalariale10: number;
-  /** Carried-interest non qualifiant (1NX/1OX) : CSG-CRDS 11,1 %, solidarité 7,5 %, contribution 10 %. */
-  carriedInterest: number;
   /** Contribution salariale de 30 % (1NY/1OY). */
   contributionSalariale30: number;
 }
@@ -69,11 +65,11 @@ export function arrondirPrelevementsSociaux(b: BasesPrelevementsSociaux): Prelev
     const csgCrdsPatrimoine = exonere && b.exonerationTotaleCsgCrds ? 0
       : arrondi(positif(patrimoine + b.csgCrdsPatrimoineSeule - (exonere ? b.exonerePatrimoine : 0)) * TAUX_CSG_CRDS_PATRIMOINE);
     const csgCrdsFoncier = exonere && b.exonerationTotaleCsgCrds ? 0
-      : arrondi((positif(foncier - (exonere ? b.exonereFoncier : 0)) + b.assuranceVie) * TAUX_CSG_CRDS_FONCIER);
+      : arrondi(positif(foncier - (exonere ? b.exonereFoncier : 0)) * TAUX_CSG_CRDS_FONCIER);
     return {
-      csgCrdsPatrimoine: csgCrdsPatrimoine + arrondi(b.carriedInterest * TAUX_CSG_CRDS_PATRIMOINE),
+      csgCrdsPatrimoine,
       csgCrdsFoncier,
-      solidarite: arrondi((patrimoine + foncier + b.assuranceVie + b.carriedInterest) * TAUX_PRELEVEMENT_SOLIDARITE),
+      solidarite: arrondi((patrimoine + foncier) * TAUX_PRELEVEMENT_SOLIDARITE),
     };
   };
   const somme = (l: ReturnType<typeof lignes>) => l.csgCrdsPatrimoine + l.csgCrdsFoncier + l.solidarite;
@@ -82,7 +78,7 @@ export function arrondirPrelevementsSociaux(b: BasesPrelevementsSociaux): Prelev
   const apres8TK = lignes(true, false);
   const nets = lignes(true, true);
   const csgCrdsActivite = arrondi(b.activite * TAUX_CSG_CRDS_ACTIVITE);
-  const contributionSalariale10 = arrondi((b.contributionSalariale10 + b.carriedInterest) * TAUX_CONTRIBUTION_SALARIALE_10);
+  const contributionSalariale10 = arrondi(b.contributionSalariale10 * TAUX_CONTRIBUTION_SALARIALE_10);
   const contributionSalariale30 = arrondi(b.contributionSalariale30 * TAUX_CONTRIBUTION_SALARIALE_30);
   const horsPatrimoine = csgCrdsActivite + contributionSalariale10 + contributionSalariale30;
 

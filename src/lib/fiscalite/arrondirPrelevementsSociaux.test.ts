@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { arrondirPrelevementsSociaux, BasesPrelevementsSociaux } from './arrondirPrelevementsSociaux';
 
 const bases = (b: Partial<BasesPrelevementsSociaux> = {}): BasesPrelevementsSociaux => ({
-  patrimoine: 0, csgCrdsPatrimoineSeule: 0, foncier: 0, assuranceVie: 0, neutralisePatrimoine: 0, neutraliseFoncier: 0,
+  patrimoine: 0, csgCrdsPatrimoineSeule: 0, foncier: 0, neutralisePatrimoine: 0, neutraliseFoncier: 0,
   exonerationTotaleCsgCrds: false, exonerePatrimoine: 0, exonereFoncier: 0, activite: 0,
-  contributionSalariale10: 0, carriedInterest: 0, contributionSalariale30: 0, ...b,
+  contributionSalariale10: 0, contributionSalariale30: 0, ...b,
 });
 
 describe('arrondirPrelevementsSociaux', () => {
@@ -36,9 +36,9 @@ describe('arrondirPrelevementsSociaux', () => {
     expect(r.total).toBe(24700);
   });
 
-  it('exonération totale : seule la solidarité reste due, carried-interest non exonéré', () => {
-    const r = arrondirPrelevementsSociaux(bases({ patrimoine: 10000, foncier: 10000, carriedInterest: 1000, exonerationTotaleCsgCrds: true }));
-    expect(r.csgCrdsPatrimoine).toBe(111);
+  it('exonération totale : seule la solidarité reste due', () => {
+    const r = arrondirPrelevementsSociaux(bases({ patrimoine: 10000, foncier: 10000, exonerationTotaleCsgCrds: true }));
+    expect(r.csgCrdsPatrimoine).toBe(0);
     expect(r.csgCrdsFoncier).toBe(0);
     expect(r.reductionExoneration).toBe(2080);
   });
@@ -49,10 +49,4 @@ describe('arrondirPrelevementsSociaux', () => {
     expect(r.neutralisation8TK).toBe(1860);
   });
 
-  it('assurance-vie à 17,2 % : 2CH = 50 000 € → 8 600 € (ClickImpôts)', () => {
-    const r = arrondirPrelevementsSociaux(bases({ assuranceVie: 50000 }));
-    expect(r.csgCrdsFoncier).toBe(4850);
-    expect(r.solidarite).toBe(3750);
-    expect(r.total).toBe(8600);
-  });
 });
