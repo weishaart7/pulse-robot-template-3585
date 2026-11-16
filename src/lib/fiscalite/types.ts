@@ -763,6 +763,32 @@ export interface ReductionsCreditsImpotInput {
   case7dg: boolean;
   /** Hors CERFA : membres du foyer âgés de plus de 65 ans (majoration du plafond services à la personne) */
   membresPlus65Ans: number | null;
+  /** Frais de garde des enfants de moins de 6 ans au 1.1.2025 : 1er, 2e, 3e enfant */
+  case7ga?: number | null;
+  case7gb?: number | null;
+  case7gc?: number | null;
+  /** Idem, enfants en résidence alternée */
+  case7ge?: number | null;
+  case7gf?: number | null;
+  case7gg?: number | null;
+  /** Nombre d'enfants scolarisés : collège (7EA), lycée (7EC), supérieur (7EF) ; 7EB/7ED/7EG en résidence alternée */
+  case7ea?: number | null;
+  case7eb?: number | null;
+  case7ec?: number | null;
+  case7ed?: number | null;
+  case7ef?: number | null;
+  case7eg?: number | null;
+  /** Cotisations syndicales, déclarant 1 / déclarant 2 */
+  case7ac?: number | null;
+  case7ae?: number | null;
+  /** Prestations compensatoires : sommes versées en 2025 (7WN), total fixé par jugement ou capital reconstitué (7WO), capital en substitution de rente (7WM, sans effet sur le calcul) */
+  case7wn?: number | null;
+  case7wo?: number | null;
+  case7wm?: number | null;
+  /** Dons et cotisations aux partis politiques */
+  case7uh?: number | null;
+  /** Report des versements ESUS effectués du 9.5 au 31.12.2021 */
+  case7dc?: number | null;
 }
 
 /**

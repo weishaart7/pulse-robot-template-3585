@@ -1462,24 +1462,37 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
 
 ### Réductions et crédits d'impôt (cadre 7, phase 7.1)
 
-Moteur pur `calculerReductionsCreditsImpot(input, foyer, revenuImposable)` (table
+Moteur pur `calculerReductionsCreditsImpot(input, foyer, revenuImposable, revenusActivite)` (table
 `reductions_credits_impot`), branché dans `useFiscalOverview.ts` ; `calculerImpot.ts` reçoit
-`reductionsImpot` et `creditsImpotCadre7` (fin de la liste des paramètres).
+`reductionsImpot` (= `totalReductions`) et `creditsImpotCadre7` (= `totalCredits`). `revenusActivite` =
+salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déclarant.
 
 - **Ordre d'imputation** : réductions (non restituables) sur l'impôt après décote augmenté de l'impôt
   forfaitaire, plancher 0 ; puis 2AB, puis crédits restituables (2CK, assurance-vie, services à la
   personne), sans plancher.
 - **Dons** : 75 % sur `7UD` (maximum 1 000 €) et `7UD + 7UQ` (maximum 2 000 €), 75 % sur `7UJ`
   (maximum 1 000 €) ; l'excédent rejoint `7UF` à 66 %, dans la limite de 20 % du revenu imposable.
+  `7UH` (partis politiques) : 66 %, maximum 15 000 € par foyer, dans la même limite de 20 %.
   Le reliquat (`donsExcedentaires`, reportable 5 ans) n'a pas d'effet sur l'année.
 - **Services à la personne** : crédit de 50 % de `7DB − 7DR` dans un plafond de 12 000 €, majoré de
   1 500 € par enfant à charge (750 € en résidence alternée), enfant majeur rattaché et personne
   invalide (repris du Ménage), ascendant `7DL` et membre de plus de 65 ans, maximum 15 000 € ;
   15 000 € / 18 000 € avec `7DQ` ; 20 000 € sans majoration avec `7DG`.
+- **Frais de garde** (`7GA`…`7GC`, `7GE`…`7GG` en résidence alternée) : crédit restituable de 50 %,
+  plafond 3 500 € par enfant (1 750 € en alternée).
+- **Scolarité** (`7EA`/`7EC`/`7EF`, nombre d'enfants) : réduction de 61 / 153 / 183 € par enfant,
+  moitié pour `7EB`/`7ED`/`7EG` (résidence alternée), arrondie une fois à l'euro.
+- **Cotisations syndicales** (`7AC`/`7AE`) : crédit restituable de 66 %, dans la limite de 1 % des
+  salaires et pensions bruts du déclarant (1AJ 50 000 € → 500 € retenus, simulateur).
+- **Prestations compensatoires** (`7WN`/`7WO`) : réduction de 25 % de `7WN`, ramené à
+  `7WN × 30 500 / 7WO` si `7WO` dépasse 30 500 €. `7WM` est saisie mais sans effet, comme sur le
+  simulateur officiel 2026.
+- **Report ESUS 2021** (`7DC`) : réduction de 25 %, plafond 50 000 € (100 000 € pour un couple).
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
-- **Plafonnement global des niches (10 000 €)** : sans effet sur le seul crédit du cadre 7 (au plus
-  10 000 €) ; à appliquer quand la 2042-RICI sera couverte.
+- **Plafonnement global des niches (10 000 €)** : non appliqué. Le simulateur officiel 2026 ne
+  l'applique pas non plus à `7DC` (100 000 € → 25 000 € de réduction) ; Aurevia suit le simulateur.
+  À revoir quand la 2042-RICI sera couverte.
 - **Hors périmètre (acté)** : 2042-RICI, report des dons excédentaires des années antérieures.
 
 ### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)

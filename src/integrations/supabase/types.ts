@@ -2904,6 +2904,25 @@ export type Database = {
       }
       reductions_credits_impot: {
         Row: {
+          case_7ga: number | null
+          case_7gb: number | null
+          case_7gc: number | null
+          case_7ge: number | null
+          case_7gf: number | null
+          case_7gg: number | null
+          case_7ea: number | null
+          case_7eb: number | null
+          case_7ec: number | null
+          case_7ed: number | null
+          case_7ef: number | null
+          case_7eg: number | null
+          case_7ac: number | null
+          case_7ae: number | null
+          case_7wn: number | null
+          case_7wo: number | null
+          case_7wm: number | null
+          case_7uh: number | null
+          case_7dc: number | null
           case_7db: number | null
           case_7dg: boolean | null
           case_7dl: number | null
@@ -2920,6 +2939,25 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_7ga?: number | null
+          case_7gb?: number | null
+          case_7gc?: number | null
+          case_7ge?: number | null
+          case_7gf?: number | null
+          case_7gg?: number | null
+          case_7ea?: number | null
+          case_7eb?: number | null
+          case_7ec?: number | null
+          case_7ed?: number | null
+          case_7ef?: number | null
+          case_7eg?: number | null
+          case_7ac?: number | null
+          case_7ae?: number | null
+          case_7wn?: number | null
+          case_7wo?: number | null
+          case_7wm?: number | null
+          case_7uh?: number | null
+          case_7dc?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null
@@ -2936,6 +2974,25 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_7ga?: number | null
+          case_7gb?: number | null
+          case_7gc?: number | null
+          case_7ge?: number | null
+          case_7gf?: number | null
+          case_7gg?: number | null
+          case_7ea?: number | null
+          case_7eb?: number | null
+          case_7ec?: number | null
+          case_7ed?: number | null
+          case_7ef?: number | null
+          case_7eg?: number | null
+          case_7ac?: number | null
+          case_7ae?: number | null
+          case_7wn?: number | null
+          case_7wo?: number | null
+          case_7wm?: number | null
+          case_7uh?: number | null
+          case_7dc?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null

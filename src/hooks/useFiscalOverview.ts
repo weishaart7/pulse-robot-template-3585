@@ -456,6 +456,12 @@ export function useFiscalOverview(): FiscalOverview {
         + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais + revenuCredit8TK;
       const reductionsCreditsImpot = calculerReductionsCreditsImpot(
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
+        {
+          declarant1: revenuSalaires.declarant1.remunerationsBrutes + (pensionsInput.case1as ?? 0)
+            + (pensionsInput.case1az ?? 0) + (pensionsInput.case1ao ?? 0) + (pensionsInput.case1am ?? 0),
+          declarant2: revenuSalaires.declarant2.remunerationsBrutes + (pensionsInput.case1bs ?? 0)
+            + (pensionsInput.case1bz ?? 0) + (pensionsInput.case1bo ?? 0) + (pensionsInput.case1bm ?? 0),
+        },
       );
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
       const calculer = (creditEtranger: number) => calculerImpot(
@@ -474,7 +480,7 @@ export function useFiscalOverview(): FiscalOverview {
           + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions,
-        reductionsCreditsImpot.creditServicesPersonne,
+        reductionsCreditsImpot.totalCredits,
         creditEtranger,
         prelevementSourceDivers.reprises,
         revenusNonSalaries.revenuImposableTauxMarginal,

@@ -5,7 +5,12 @@ export interface ReductionsCreditsImpot extends ReductionsCreditsImpotInput {
   id?: string;
 }
 
-const CASES_NUMERIQUES = ['case7ud', 'case7uq', 'case7uj', 'case7uf', 'case7db', 'case7dr', 'case7dl'] as const;
+const CASES_NUMERIQUES = [
+  'case7ud', 'case7uq', 'case7uj', 'case7uf', 'case7db', 'case7dr', 'case7dl',
+  'case7ga', 'case7gb', 'case7gc', 'case7ge', 'case7gf', 'case7gg',
+  'case7ea', 'case7eb', 'case7ec', 'case7ed', 'case7ef', 'case7eg',
+  'case7ac', 'case7ae', 'case7wn', 'case7wo', 'case7wm', 'case7uh', 'case7dc',
+] as const;
 
 /** case7ud → case_7ud (colonne Supabase). */
 const colonne = (cle: string) => cle.replace(/^case/, 'case_');
