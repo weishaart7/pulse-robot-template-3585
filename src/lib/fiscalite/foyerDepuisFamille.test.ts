@@ -9,7 +9,7 @@ const enfant = (l: Partial<FamilyLink>): FamilyLink => ({
 
 describe('foyerDepuisFamille', () => {
   it('couple marié, deux enfants communs mineurs dont un handicapé', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [enfant({}), enfant({ date_naissance: '2019-06-10', handicap: true })], 2025);
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Marié(e)' }, [enfant({}), enfant({ date_naissance: '2019-06-10', handicap: true })], 2025);
     expect(r.valeurs.situationFamille).toBe('marie');
     expect(r.valeurs.enfantsCharge).toEqual([
       { anneeNaissance: 2015, invalide: false, residenceAlternee: false },
@@ -19,7 +19,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('minorité au 1er janvier : né le 31.12.2006 majeur, né le 1.1.2007 mineur, né pendant 2025 compté, après exclu', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Pacsé(e)' }, [
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Pacsé(e)' }, [
       enfant({ date_naissance: '2006-12-31' }),
       enfant({ date_naissance: '2007-01-01' }),
       enfant({ date_naissance: '2025-11-30' }),
@@ -31,7 +31,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('enfants non retenus : non fiscalement à charge, décédé avant N, sans date (signalé)', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Marié(e)' }, [
       enfant({ fiscalement_a_charge: false }),
       enfant({ est_decede: true, date_deces: '2024-12-31' }),
       enfant({ prenom: 'Léa', date_naissance: null }),
@@ -41,7 +41,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('enfant décédé pendant N compté (y compris né et décédé pendant N) ; sans date de décès : exclu et signalé', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Marié(e)' }, [
       enfant({ est_decede: true, date_deces: '2025-01-15' }),
       enfant({ est_decede: true, date_naissance: '2025-03-01', date_deces: '2025-04-01' }),
       enfant({ prenom: 'Max', est_decede: true, date_deces: null }),
@@ -53,7 +53,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('concubinage : célibataire, enfant commun et enfant du client comptés, enfant du partenaire seul exclu', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Concubinage', personne_handicapee_conjoint: true }, [
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { statut_couple: 'Concubinage', personne_handicapee_conjoint: true }, [
       enfant({ enfant_de: 'both_parents' }),
       enfant({ enfant_de: 'user' }),
       enfant({ enfant_de: 'spouse', prenom: 'Tom' }),
@@ -66,7 +66,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('divorcé avec enfant : suggestion de la case T', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Divorcé(e)' }, [enfant({ enfant_de: 'user' })], 2025);
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { statut_couple: 'Divorcé(e)' }, [enfant({ enfant_de: 'user' })], 2025);
     expect(r.valeurs.situationFamille).toBe('divorce');
     expect(r.notes.some((n) => n.includes('case T'))).toBe(true);
   });
@@ -93,7 +93,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('enfants majeurs : handicapé à charge, moins de 21 ans rattaché, 21-24 ans rattaché avec note, 25 ans et plus exclu', () => {
-    const r = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [
+    const r = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Marié(e)' }, [
       enfant({ prenom: 'Handi', date_naissance: '1995-04-01', handicap: true }),
       enfant({ prenom: 'Jeune', date_naissance: '2004-01-01' }),
       enfant({ prenom: 'Etu', date_naissance: '2003-06-01' }),
@@ -108,7 +108,7 @@ describe('foyerDepuisFamille', () => {
   });
 
   it('séparation de corps signalée, statut absent → célibataire', () => {
-    expect(foyerDepuisFamille({}, { statut_couple: 'Marié(e)', separation_de_corps: true }, [], 2025).notes[0]).toContain('Séparation de corps');
+    expect(foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Marié(e)', separation_de_corps: true }, [], 2025).notes[0]).toContain('Séparation de corps');
     expect(foyerDepuisFamille(null, null, [], 2025).valeurs.situationFamille).toBe('celibataire');
   });
 });
@@ -120,7 +120,7 @@ const foyer = (f: Partial<FoyerFiscalInput> = {}): FoyerFiscalInput => ({
 });
 
 describe('appliquerFamille et ecartsAvecFamille', () => {
-  const famille = foyerDepuisFamille({}, { statut_couple: 'Marié(e)' }, [enfant({}), enfant({ date_naissance: '2019-01-05' })], 2025).valeurs;
+  const famille = foyerDepuisFamille({ date_naissance: '1980-01-01' }, { date_naissance_conjoint: '1982-01-01', statut_couple: 'Marié(e)' }, [enfant({}), enfant({ date_naissance: '2019-01-05' })], 2025).valeurs;
 
   it('remplace les champs de Famille, garde lieu, cases T et G, et la résidence alternée par année', () => {
     const avant = foyer({ enfantsCharge: [{ anneeNaissance: 2019, invalide: false, residenceAlternee: true }] });
@@ -137,6 +137,8 @@ describe('appliquerFamille et ecartsAvecFamille', () => {
     expect(ecartsAvecFamille(avant, famille)).toEqual([
       'Situation : marié(e) dans Famille, célibataire ici.',
       'Enfants mineurs à charge : 2 dans Famille, 0 ici (ou années de naissance, invalidité différentes).',
+      'Année de naissance (0DA) : 1980 dans Famille, non renseignée ici.',
+      'Année de naissance du conjoint (0DB) : 1982 dans Famille, non renseignée ici.',
     ]);
     expect(ecartsAvecFamille(appliquerFamille(avant, famille), famille)).toEqual([]);
   });

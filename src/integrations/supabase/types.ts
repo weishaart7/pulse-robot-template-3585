@@ -1815,6 +1815,8 @@ export type Database = {
           ancien_combattant_declarant1: boolean
           ancien_combattant_declarant2: boolean
           ancien_parent_isole: boolean
+          annee_naissance_declarant1: number | null
+          annee_naissance_declarant2: number | null
           created_at: string
           enfants_charge: Json
           enfants_majeurs_rattaches: number
@@ -1834,6 +1836,8 @@ export type Database = {
           ancien_combattant_declarant1?: boolean
           ancien_combattant_declarant2?: boolean
           ancien_parent_isole?: boolean
+          annee_naissance_declarant1?: number | null
+          annee_naissance_declarant2?: number | null
           created_at?: string
           enfants_charge?: Json
           enfants_majeurs_rattaches?: number
@@ -1853,6 +1857,8 @@ export type Database = {
           ancien_combattant_declarant1?: boolean
           ancien_combattant_declarant2?: boolean
           ancien_parent_isole?: boolean
+          annee_naissance_declarant1?: number | null
+          annee_naissance_declarant2?: number | null
           created_at?: string
           enfants_charge?: Json
           enfants_majeurs_rattaches?: number

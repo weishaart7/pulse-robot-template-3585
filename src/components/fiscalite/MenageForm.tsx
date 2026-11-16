@@ -189,6 +189,24 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
               </SelectContent>
             </Select>
           </ChampMenage>
+          <ChampMenage label="Année de naissance — déclarant 1 (0DA)" aide="Abattement personnes âgées : plus de 65 ans au 31 décembre de l'année des revenus.">
+            <Input
+              type="number"
+              className="rounded-[2px] tabular-nums"
+              value={foyer.anneeNaissanceDeclarant1 ?? ''}
+              onChange={ev => update('anneeNaissanceDeclarant1', ev.target.value === '' ? null : Number(ev.target.value))}
+            />
+          </ChampMenage>
+          {(foyer.situationFamille === 'marie' || foyer.situationFamille === 'pacse') && (
+            <ChampMenage label="Année de naissance — déclarant 2 (0DB)">
+              <Input
+                type="number"
+                className="rounded-[2px] tabular-nums"
+                value={foyer.anneeNaissanceDeclarant2 ?? ''}
+                onChange={ev => update('anneeNaissanceDeclarant2', ev.target.value === '' ? null : Number(ev.target.value))}
+              />
+            </ChampMenage>
+          )}
         </div>
       </SousGroupe>
 

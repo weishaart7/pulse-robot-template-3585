@@ -1808,8 +1808,12 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   chargés de famille rattachés donnent un abattement de 6 855 € par personne (6 855 € / 2 par
   petit-enfant en résidence alternée), pas une demi-part : `enfantsMajeursRattaches` est un simple
   compteur traité comme des enfants célibataires (brochure IR 2026 p. 83).
-- **Abattement personnes âgées de plus de 65 ans ou invalides (art. 157 bis CGI) absent** du calcul
-  (brochure IR 2026 p. 79 et 370).
+- **Abattement personnes âgées ou invalides (art. 157 bis CGI)** : calculé
+  (`calculerAbattementPersonnesAgees.ts`, BOI-IR-BASE-40 §60, revenus 2025 : 2 822 € jusqu'à 17 670 € de
+  revenu net global, 1 411 € jusqu'à 28 430 €, par déclarant de plus de 65 ans au 31/12 ou invalide P/F).
+  Retranché du revenu net global après le cadre 6, donc aussi du RFR ; 0XX compté pour son total dans le seuil.
+  Années de naissance 0DA/0DB saisies dans le Ménage ou reprises de Famille ; sans elles, abattement non
+  calculé. Hors périmètre : second abattement du conjoint survivant l'année du décès.
 - **Rang des personnes invalides recueillies** : elles ne décalent que les enfants en résidence
   alternée (seule règle explicite de la brochure p. 81) ; leur effet éventuel sur le rang des enfants à
   charge exclusive reste à confirmer au BOFiP (BOI-IR-LIQ-10-10-10-30).

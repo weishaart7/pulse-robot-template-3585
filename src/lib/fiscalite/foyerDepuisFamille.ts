@@ -9,7 +9,8 @@ import type { EnfantCharge, FoyerFiscalInput, PersonneInvalideCharge } from './t
 /** Champs du Ménage alimentés par Famille. */
 export type ChampsFamille = Pick<FoyerFiscalInput,
   | 'situationFamille' | 'enfantsCharge' | 'enfantsMajeursRattaches' | 'personnesInvalidesCharge'
-  | 'invaliditeDeclarant1' | 'invaliditeDeclarant2' | 'ancienCombattantDeclarant1' | 'ancienCombattantDeclarant2'>;
+  | 'invaliditeDeclarant1' | 'invaliditeDeclarant2' | 'ancienCombattantDeclarant1' | 'ancienCombattantDeclarant2'
+  | 'anneeNaissanceDeclarant1' | 'anneeNaissanceDeclarant2'>;
 
 export interface FoyerDepuisFamille {
   valeurs: ChampsFamille;
@@ -125,6 +126,9 @@ export function foyerDepuisFamille(
     notes.push('Vous vivez seul(e) avec vos enfants ? Cochez la case T (Famille ne le précise pas).');
   }
 
+  if (!anneeDe(profile?.date_naissance)) notes.push('Votre date de naissance est absente dans Famille : abattement personnes âgées non calculable.');
+  if (enCouple && !anneeDe(marital?.date_naissance_conjoint)) notes.push('Date de naissance du conjoint absente dans Famille : abattement personnes âgées non calculable pour le conjoint.');
+
   return {
     valeurs: {
       situationFamille,
@@ -135,6 +139,8 @@ export function foyerDepuisFamille(
       invaliditeDeclarant2: enCouple && !!marital?.personne_handicapee_conjoint,
       ancienCombattantDeclarant1: ancienCombattant(profile?.ancien_combattant, profile?.date_naissance, 'Vous'),
       ancienCombattantDeclarant2: enCouple && ancienCombattant(marital?.ancien_combattant_conjoint, marital?.date_naissance_conjoint, 'Votre conjoint(e)'),
+      anneeNaissanceDeclarant1: anneeDe(profile?.date_naissance),
+      anneeNaissanceDeclarant2: enCouple ? anneeDe(marital?.date_naissance_conjoint) : null,
     },
     notes,
   };
@@ -182,6 +188,12 @@ export function ecartsAvecFamille(foyer: FoyerFiscalInput, valeurs: ChampsFamill
   ];
   for (const [cle, libelle] of cases) {
     if (foyer[cle] !== valeurs[cle]) ecarts.push(`${libelle} : ${valeurs[cle] ? 'oui' : 'non'} dans Famille, ${foyer[cle] ? 'oui' : 'non'} ici.`);
+  }
+  const annees: [keyof ChampsFamille, string][] = [['anneeNaissanceDeclarant1', 'Année de naissance (0DA)'], ['anneeNaissanceDeclarant2', 'Année de naissance du conjoint (0DB)']];
+  for (const [cle, libelle] of annees) {
+    const famille = valeurs[cle] ?? null;
+    const ici = foyer[cle] ?? null;
+    if (famille !== null && famille !== ici) ecarts.push(`${libelle} : ${famille} dans Famille, ${ici ?? 'non renseignée'} ici.`);
   }
   return ecarts;
 }

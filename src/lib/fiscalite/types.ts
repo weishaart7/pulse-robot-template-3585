@@ -22,6 +22,9 @@ export interface FoyerFiscalInput {
   ancienCombattantDeclarant2: boolean;
   veufAncienCombattant: boolean;
   veuveDeGuerre: boolean;
+  /** Années de naissance des déclarants (case 0DA/0DB) : abattement personnes âgées (art. 157 bis CGI). */
+  anneeNaissanceDeclarant1?: number | null;
+  anneeNaissanceDeclarant2?: number | null;
 }
 
 export interface MajorationDetail {
