@@ -68,6 +68,26 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
           ))}
         </SousGroupe>
 
+        <SousGroupe titre="Plus-values en report d'imposition (art. 150-0 B ter)" aide="3WI/3WJ imposées à 24 %/19 % ; 3WR, 3WS et 3WT sont des montants d'impôt ajoutés tels quels ; 3WN et 3WP entrent au revenu fiscal de référence.">
+          <SingleMontantLigne label="Réalisées du 14.11 au 31.12.2012, taxables à 24 %" code="3WI" value={pv.case3wi ?? null} onChange={v => update('case3wi', v)} />
+          <SingleMontantLigne label="Réalisées du 14.11 au 31.12.2012, taxables à 19 %" code="3WJ" value={pv.case3wj ?? null} onChange={v => update('case3wj', v)} />
+          <SingleMontantLigne label="Plus-values avant abattement réalisées de 2013 à 2016" code="3WN" value={pv.case3wn ?? null} onChange={v => update('case3wn', v)} />
+          <SingleMontantLigne label="Plus-values avant abattement réalisées depuis le 1.1.2017" code="3XN" value={pv.case3xn ?? null} onChange={v => update('case3xn', v)} />
+          <SingleMontantLigne label="Plus-values imposables" extra="exigée avec 3WN ou 3XN" code="3WP" value={pv.case3wp ?? null} onChange={v => update('case3wp', v)} />
+          <SingleMontantLigne label="IR au taux historique du barème" extra="montant d'impôt" code="3WR" value={pv.case3wr ?? null} onChange={v => update('case3wr', v)} />
+          <SingleMontantLigne label="IR au taux historique de 12,8 %" extra="montant d'impôt" code="3WS" value={pv.case3ws ?? null} onChange={v => update('case3ws', v)} />
+          <SingleMontantLigne label="Contribution exceptionnelle sur les hauts revenus" extra="montant d'impôt" code="3WT" value={pv.case3wt ?? null} onChange={v => update('case3wt', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Plus-values imposées selon le système du quotient" aide="Uniquement avec l'option pour le barème (2OP). Quotient de 4 ; les abattements sont réintégrés au revenu fiscal de référence.">
+          <SingleMontantLigne label="Plus-value sans abattement au quotient" code="RVG" value={pv.caseRvg ?? null} onChange={v => update('caseRvg', v)} />
+          <SingleMontantLigne label="Quotient" extra="4" code="NVG" value={pv.caseNvg ?? null} onChange={v => update('caseNvg', v)} />
+          <SingleMontantLigne label="Abattement de droit commun au quotient" code="RSG" value={pv.caseRsg ?? null} onChange={v => update('caseRsg', v)} />
+          <SingleMontantLigne label="Plus-value avec abattement renforcé, avant abattement, au quotient" code="RUA" value={pv.caseRua ?? null} onChange={v => update('caseRua', v)} />
+          <SingleMontantLigne label="Quotient" extra="4" code="NUA" value={pv.caseNua ?? null} onChange={v => update('caseNua', v)} />
+          <SingleMontantLigne label="Abattement renforcé au quotient" code="RSL" value={pv.caseRsl ?? null} onChange={v => update('caseRsl', v)} />
+        </SousGroupe>
+
         <SousGroupe titre="Autres gains">
           <SingleMontantLigne label="Gain sur retrait ou rachat du PEA ou du PEA-PME" extra="avant expiration de la 5e année" code="3VT" value={pv.case3vt} onChange={v => update('case3vt', v)} />
           <SingleMontantLigne label="Profits sur instruments financiers taxables à 50 %" code="3PI" value={pv.case3pi} onChange={v => update('case3pi', v)} />

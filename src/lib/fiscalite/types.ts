@@ -311,6 +311,26 @@ export interface PlusValuesGainsDiversInput {
   case3vr: number | null;
   case3vc: number | null;
   case3ex: number | null;
+  /** Plus-values en report (art. 150-0 B ter) réalisées du 14.11 au 31.12.2012, taxables à 24 % (3WI) ou 19 % (3WJ) */
+  case3wi?: number | null;
+  case3wj?: number | null;
+  /** Plus-values en report avant abattement : réalisées de 2013 à 2016 (3WN), depuis le 1.1.2017 (3XN) */
+  case3wn?: number | null;
+  case3xn?: number | null;
+  /** Plus-values en report imposables (3WP, sans effet propre sur le calcul) */
+  case3wp?: number | null;
+  /** Impôt dû sur ces reports : IR au taux historique du barème (3WR), à 12,8 % (3WS), CEHR (3WT) */
+  case3wr?: number | null;
+  case3ws?: number | null;
+  case3wt?: number | null;
+  /** Plus-values au quotient (option 2OP) : sans abattement (RVG, quotient NVG = 4), abattement de droit commun (RSG) */
+  caseRvg?: number | null;
+  caseNvg?: number | null;
+  caseRsg?: number | null;
+  /** Plus-values au quotient avec abattement renforcé : avant abattement (RUA, quotient NUA = 4), abattement (RSL) */
+  caseRua?: number | null;
+  caseNua?: number | null;
+  caseRsl?: number | null;
 }
 
 /**

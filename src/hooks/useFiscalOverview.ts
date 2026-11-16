@@ -412,6 +412,8 @@ export function useFiscalOverview(): FiscalOverview {
       const prelevementsSociauxCapitauxMobiliers = calculerPrelevementsSociauxCapitauxMobiliers(capitauxMobiliersInput);
       // 2OP vaut pour le cadre 2 et pour les plus-values mobilières du cadre 3.
       const plusValuesGainsDivers = calculerPlusValuesGainsDivers(plusValues ?? PLUS_VALUES_PAR_DEFAUT, capitauxMobiliersInput.case2op);
+      // Revenus au quotient (coefficient 4) : 0XX et plus-values RVG/RUA (option barème).
+      const revenuExceptionnelQuotient = gainsActionnariat.revenuExceptionnelQuotient + plusValuesGainsDivers.revenuExceptionnelQuotient;
       const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
       const parts = calculerPartsFiscales(foyerInput);
       const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
@@ -433,7 +435,7 @@ export function useFiscalOverview(): FiscalOverview {
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
       // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
       const abattementsSpeciaux = calculerAbattementsSpeciaux(
-        foyerInput, revenuNetGlobal, ANNEE_REVENUS, revenuNetGlobal + gainsActionnariat.revenuExceptionnelQuotient,
+        foyerInput, revenuNetGlobal, ANNEE_REVENUS, revenuNetGlobal + revenuExceptionnelQuotient,
       );
       const revenuImposableTotal = revenuNetGlobal - abattementsSpeciaux.total;
       const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
@@ -471,7 +473,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenuExonere,
         foyerInput.lieuResidence,
         impotForfaitaireTotal,
-        gainsActionnariat.revenuExceptionnelQuotient,
+        revenuExceptionnelQuotient,
         revenuCapitauxMobiliers.creditImpotAssuranceVie,
         revenuCapitauxMobiliers.creditImpotEtranger2AB,
         revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
@@ -510,7 +512,9 @@ export function useFiscalOverview(): FiscalOverview {
           + revenusNonSalaries.basePrelevementsSociaux,
         csgCrdsPatrimoineSeule: somme(capitauxMobiliersInput.case2di),
         foncier: Math.max(0, (revenusFonciers?.revenuFoncierNetImposable ?? 0) - revenusFonciers2042.deductionReel4BL)
-          + revenusFonciers2042.totalNetImposable,
+          + revenusFonciers2042.totalNetImposable + plusValuesGainsDivers.basePrelevementsSociaux172,
+        // 3XN (report, taux 2017 de 17,2 %) suit les lignes du foncier (simulateur officiel 2026).
+        historique155: plusValuesGainsDivers.basePrelevementsSociaux155,
         neutralisePatrimoine: prelevementSourceDivers.assiettePS8TK186,
         neutraliseFoncier: prelevementSourceDivers.assiettePS8TK172,
         exonerationTotaleCsgCrds: exonerationTotale,

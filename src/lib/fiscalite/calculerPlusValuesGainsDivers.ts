@@ -28,6 +28,9 @@ const TAUX_BSPCE_AVANT_2018 = 0.19;
  * de 50 % (art. 150 ter CGI), sans option barème.
  */
 const TAUX_3PI = 0.50;
+/** Plus-values en report réalisées du 14.11 au 31.12.2012 (3WI, 3WJ). */
+const TAUX_3WI = 0.24;
+const TAUX_3WJ = 0.19;
 
 /** Plafond de l'abattement fixe des dirigeants de PME partant à la retraite (art. 150-0 D ter CGI), 600 000 € au profit de jeunes agriculteurs. */
 const PLAFOND_ABATTEMENT_FIXE_DIRIGEANT = 500_000;
@@ -56,8 +59,17 @@ export interface PlusValuesGainsDiversResult {
    * diminués de la moins-value non imputable des impatriés 3VR (plancher 0).
    */
   revenuExonereRetenuPourRFR: number;
-  /** Base soumise aux PS à 18,6 % : 3VG, 3UA, 3WE, 3SZ, 3AN, gains BSPCE et 3VQ, avant tout abattement, moins 3VR (plancher 0). */
+  /** Base soumise aux PS à 18,6 % : 3VG, 3UA, 3WE, 3SZ, 3AN, gains BSPCE, 3VQ, RVG et RUA, avant tout abattement, moins 3VR (plancher 0). */
   basePrelevementsSociaux: number;
+  /** Base soumise aux PS à 17,2 % (taux 2017) : 3XN, rejoint la ligne du foncier (simulateur officiel 2026). */
+  basePrelevementsSociaux172: number;
+  /** Base soumise aux PS à 15,5 % (taux 2013-2016) : 3WI, 3WJ, 3WN. */
+  basePrelevementsSociaux155: number;
+  /**
+   * Plus-values au quotient (RVG − RSG) + (RUA − RSL), option barème seulement : hors revenu imposable,
+   * imposées par le système du quotient (coefficient 4, comme 0XX), RFR augmenté du quart.
+   */
+  revenuExceptionnelQuotient: number;
   prelevementsSociaux: number;
   casesExclues: readonly string[];
 }
@@ -128,11 +140,27 @@ export function calculerPlusValuesGainsDivers(
   const bspceMoinsDeTroisAns = (input.case3sk ?? 0) + (input.case3pe ?? 0);
   const capitalRisque = input.case3vc ?? 0;
 
+  // Reports (simulateur officiel 2026) : 3WI/3WJ imposés à 24 %/19 % ; 3WR/3WS/3WT sont des impôts déjà
+  // calculés, ajoutés tels quels ; 3WN/3XN entrent au RFR ; 3WP n'a pas d'effet propre.
+  const report2012 = (input.case3wi ?? 0) + (input.case3wj ?? 0);
+  const impotReports = (input.case3wi ?? 0) * TAUX_3WI + (input.case3wj ?? 0) * TAUX_3WJ
+    + (input.case3wr ?? 0) + (input.case3ws ?? 0) + (input.case3wt ?? 0);
+  const reportsAvantAbattement = (input.case3wn ?? 0) + (input.case3xn ?? 0);
+
+  // Quotient (RVG/RUA, coefficient NVG/NUA = 4) : seulement avec l'option barème ; abattements réintégrés au RFR.
+  const abattementQuotient = optionBareme
+    ? Math.min(input.caseRsg ?? 0, input.caseRvg ?? 0) + Math.min(input.caseRsl ?? 0, input.caseRua ?? 0)
+    : 0;
+  const revenuExceptionnelQuotient = optionBareme
+    ? Math.max(0, (input.caseRvg ?? 0) + (input.caseRua ?? 0) - abattementQuotient)
+    : 0;
+
   let bareme = 0;
   let basePFU = 0;
   let rfrHorsBareme = plusValuesImmobilieres + abattementFixe
     + abattementBspceAncien + abattementBspceCession2025 + (input.case3vq ?? 0) + capitalRisque
-    + (input.case3ex ?? 0) + bspceMoinsDeTroisAns + instrumentsFinanciers + bspceAvant2018 + complementPrixReport;
+    + (input.case3ex ?? 0) + bspceMoinsDeTroisAns + instrumentsFinanciers + bspceAvant2018 + complementPrixReport
+    + report2012 + reportsAvantAbattement + abattementQuotient;
 
   if (optionBareme) {
     bareme += droitCommun - abattementDroitCommun + renforceApresFixe - abattementRenforce
@@ -148,19 +176,24 @@ export function calculerPlusValuesGainsDivers(
 
   const basePrelevementsSociaux = Math.max(0, droitCommun + complementPrixReport + renforce + actifsNumeriques + (input.case3sz ?? 0)
     + bspceAvant2018 + bspceAncien + bspceCession2025 + gainExerciceBspce
-    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) + pea + instrumentsFinanciers - moinsValueImpatries);
+    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) + pea + instrumentsFinanciers - moinsValueImpatries
+    + (optionBareme ? (input.caseRvg ?? 0) + (input.caseRua ?? 0) : 0));
   // 3VT (PEA avant 5 ans) et 3PI (instruments à 50 %) soumis à 18,6 % (simulateur officiel 2026 : 5 000 € → 930 €).
 
   return {
     totalNetImposable: bareme,
     impotForfaitaire: basePFU * TAUX_PFU + bspceMoinsDeTroisAns * TAUX_BSPCE_MOINS_DE_3_ANS
-      + bspceAvant2018 * TAUX_BSPCE_AVANT_2018 + instrumentsFinanciers * TAUX_3PI,
+      + bspceAvant2018 * TAUX_BSPCE_AVANT_2018 + instrumentsFinanciers * TAUX_3PI + impotReports,
     // 3SB hors RFR, au PFU comme au barème (simulateur officiel 2026, choix retenu contre l'art. 1417 IV 1°) :
     // au barème, il est retiré du RFR alors qu'il figure dans le revenu imposable.
     revenuExonereRetenuPourRFR: Math.max(0, rfrHorsBareme + basePFU - moinsValueImpatries - (optionBareme ? 0 : (input.case3sb ?? 0)))
       - (optionBareme ? (input.case3sb ?? 0) : 0),
     basePrelevementsSociaux,
-    prelevementsSociaux: basePrelevementsSociaux * TAUX_PS_PLUS_VALUES,
+    basePrelevementsSociaux172: input.case3xn ?? 0,
+    basePrelevementsSociaux155: report2012 + (input.case3wn ?? 0),
+    revenuExceptionnelQuotient,
+    prelevementsSociaux: basePrelevementsSociaux * TAUX_PS_PLUS_VALUES + (input.case3xn ?? 0) * 0.172
+      + (report2012 + (input.case3wn ?? 0)) * 0.155,
     casesExclues: CASES_PLUS_VALUES_EXCLUES_DU_CALCUL,
   };
 }
@@ -186,5 +219,11 @@ export function controlerSaisiePlusValues(input: PlusValuesGainsDiversInput): st
   if (totalAbattementsFixes > PLAFOND_ABATTEMENT_FIXE_DIRIGEANT) {
     alertes.push('Abattements fixes 3VA + 3TK + 3TM supérieurs à 500 000 € (600 000 € seulement pour une cession à de jeunes agriculteurs)');
   }
+  const reports = (input.case3wn ?? 0) + (input.case3xn ?? 0);
+  if ((input.case3wp ?? 0) > 0 && reports <= 0) alertes.push('3WP exige le montant avant abattement en 3WN ou 3XN');
+  if (reports > 0 && (input.case3wp ?? 0) <= 0) alertes.push('3WN ou 3XN exige les plus-values imposables en 3WP');
+  if ((input.caseRvg ?? 0) > 0 && input.caseNvg !== 4) alertes.push('NVG doit valoir 4 quand RVG est rempli');
+  if ((input.caseRua ?? 0) > 0 && input.caseNua !== 4) alertes.push('NUA doit valoir 4 quand RUA est rempli');
+  if ((input.caseRua ?? 0) > 0 && (input.caseRsl ?? 0) <= 0) alertes.push("RUA exige l'abattement renforcé RSL (ou l'abattement fixe RVA, non géré)");
   return alertes;
 }

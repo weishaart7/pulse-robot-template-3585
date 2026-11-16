@@ -9,10 +9,12 @@ const CASES_NUMERIQUES = [
   'case3vg', 'case3sg', 'case3vh', 'case3ua', 'case3sl', 'case3va', 'case3vt', 'case3pi', 'case3sb', 'case3sz', 'case3we',
   'case3an', 'case3bn', 'case3vz', 'case3vw',
   'case3sj', 'case3tj', 'case3tk', 'case3sk', 'case3tl', 'case3tm', 'case3pc', 'case3pe', 'case3vq', 'case3vr', 'case3vc', 'case3ex',
+  'case3wi', 'case3wj', 'case3wn', 'case3xn', 'case3wp', 'case3wr', 'case3ws', 'case3wt',
+  'caseRvg', 'caseNvg', 'caseRsg', 'caseRua', 'caseNua', 'caseRsl',
 ] as const;
 
-/** case3vg → case_3vg (colonne Supabase). */
-const colonne = (cle: string) => cle.replace(/^case/, 'case_');
+/** case3vg → case_3vg, caseRvg → case_rvg (colonne Supabase). */
+const colonne = (cle: string) => cle.replace(/^case/, 'case_').toLowerCase();
 
 /**
  * Les colonnes `numeric` sont sérialisées en chaîne par PostgREST : coercées en

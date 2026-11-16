@@ -1295,15 +1295,24 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   base des PS et le RFR du cadre 3, sans les rendre négatifs.
 - **Contrôles de saisie** (`controlerSaisiePlusValues`, sans effet sur le calcul) : non-cumul
   `3VA`/`3SL`, `3VA` > `3UA`, `3VA + 3TK + 3TM` > 500 000 € (600 000 € pour une cession à de jeunes
-  agriculteurs).
+  agriculteurs) ; prérequis du simulateur pour `3WP`/`3WN`/`3XN`, `NVG`/`NUA` = 4, `RUA` sans `RSL`.
+- **Report 150-0 B ter** (simulateur officiel 2026) : `3WI`/`3WJ` imposés à 24 %/19 % (impôt
+  forfaitaire), au RFR, PS à 15,5 % ; `3WN` (PS 15,5 %) et `3XN` (PS 17,2 %, ligne du foncier) au RFR ;
+  `3WP` sans effet propre ; `3WR`/`3WS`/`3WT` sont des impôts déjà calculés, ajoutés à l'impôt
+  forfaitaire. PS à 15,5 % : CSG 8,2 % sur sa ligne, CRDS 0,5 % et 6,8 % rejoignent les lignes
+  CSG-CRDS patrimoine et solidarité (`arrondirPrelevementsSociaux.ts`, `historique155`).
+- **Plus-values au quotient** (`RVG`/`NVG`/`RSG`, `RUA`/`NUA`/`RSL`), option barème seulement :
+  `(RVG − RSG) + (RUA − RSL)` rejoint `revenuExceptionnelQuotient` avec `0XX` (coefficient 4, RFR au
+  quart) ; `RSG`/`RSL` réintégrés au RFR ; PS à 18,6 % sur `RVG + RUA` brut. `RVA` (abattement fixe au
+  quotient) non géré.
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
   saisie de `3VG`/`3AN`, reliquat reportable seulement).
 - **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : régime de
   `3SZ` non détaillé par la brochure, aligné sur `3VG` ; contribution salariale
   spécifique de 10 % évoquée par une source pour certains gains cédés du 16.2.2025 au 31.12.2027, non
   modélisée.
-- **Hors périmètre (acté)** : exit tax (`3WM`…`3YA`) et report 150-0 B ter (`3WH`…`3WT`), rares et
-  adossés aux 2074 ; non-résidents (`3SE`), non gérés par le logiciel.
+- **Hors périmètre (acté)** : exit tax (`3WM`…`3YA`) et les autres cases du report 150-0 B ter
+  (`3WH`…), rares et adossées aux 2074 ; non-résidents (`3SE`), non gérés par le logiciel.
 
 ### Revenus fonciers saisis dans la 2042 (cadre 4, phase 4.1)
 

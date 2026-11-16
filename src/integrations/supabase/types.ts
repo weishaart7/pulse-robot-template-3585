@@ -2533,6 +2533,20 @@ export type Database = {
       }
       plus_values_gains_divers: {
         Row: {
+          case_3wi: number | null
+          case_3wj: number | null
+          case_3wn: number | null
+          case_3xn: number | null
+          case_3wp: number | null
+          case_3wr: number | null
+          case_3ws: number | null
+          case_3wt: number | null
+          case_rvg: number | null
+          case_nvg: number | null
+          case_rsg: number | null
+          case_rua: number | null
+          case_nua: number | null
+          case_rsl: number | null
           case_3an: number | null
           case_3bn: number | null
           case_3cn: boolean | null
@@ -2567,6 +2581,20 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_3wi?: number | null
+          case_3wj?: number | null
+          case_3wn?: number | null
+          case_3xn?: number | null
+          case_3wp?: number | null
+          case_3wr?: number | null
+          case_3ws?: number | null
+          case_3wt?: number | null
+          case_rvg?: number | null
+          case_nvg?: number | null
+          case_rsg?: number | null
+          case_rua?: number | null
+          case_nua?: number | null
+          case_rsl?: number | null
           case_3an?: number | null
           case_3bn?: number | null
           case_3cn?: boolean | null
@@ -2601,6 +2629,20 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_3wi?: number | null
+          case_3wj?: number | null
+          case_3wn?: number | null
+          case_3xn?: number | null
+          case_3wp?: number | null
+          case_3wr?: number | null
+          case_3ws?: number | null
+          case_3wt?: number | null
+          case_rvg?: number | null
+          case_nvg?: number | null
+          case_rsg?: number | null
+          case_rua?: number | null
+          case_nua?: number | null
+          case_rsl?: number | null
           case_3an?: number | null
           case_3bn?: number | null
           case_3cn?: boolean | null
