@@ -7,7 +7,7 @@ import { GainsActionnariatSalarieInput } from './types';
  * par `impotForfaitaire` ci-dessous (voir docs/fiscalite.md).
  */
 export const CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL = [
-  'case1uz', 'case1wz', 'case1vz', // montants d'abattement déjà déduits de 1TZ (métadonnées, pas un revenu)
+  'case1uz', 'case1wz', 'case1vz', // abattements déjà déduits de 1TZ : hors IR, retenus au seul RFR (revenuExonereRetenuPourRFR)
   'case1ny', 'case1oy', // contribution salariale de 30 % sur le carried-interest : pas de l'IR
   'case3vn', // contribution salariale de 10 % sur options/AGA : pas de l'IR
   'case0xx', // système du quotient (art. 163-0 A CGI) : traité séparément par calculerImpot.ts, pas additionné à totalNetImposable
@@ -63,6 +63,11 @@ export interface GainsActionnariatSalarieResult {
    * calculerImpot.ts) — n'entre ni dans totalNetImposable ni dans impotForfaitaire.
    */
   revenuExceptionnelQuotient: number;
+  /**
+   * Retenu au RFR seul (simulateur officiel 2026) : abattements déjà déduits de 1TZ (1UZ/1WZ/1VZ,
+   * art. 1417 IV a bis) et gains à taux forfaitaire 3VD/3VI/3VF (hors barème), pour leur montant.
+   */
+  revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
 }
 
@@ -100,6 +105,8 @@ export function calculerGainsActionnariatSalarie(
     totalNetImposable,
     impotForfaitaire,
     revenuExceptionnelQuotient: Math.max(0, input.case0xx ?? 0),
+    revenuExonereRetenuPourRFR: (input.case1uz ?? 0) + (input.case1wz ?? 0) + (input.case1vz ?? 0)
+      + (input.case3vd ?? 0) + (input.case3vi ?? 0) + (input.case3vf ?? 0),
     casesExclues: CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL,
   };
 }

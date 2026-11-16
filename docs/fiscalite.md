@@ -527,8 +527,14 @@ fonciers (§4).
   12,8 % (2DC/2FU sans abattement, 2TS/2TR/2TT/2TQ/2TZ, 2GO × 1,25, 2ZZ, 2WW net, 2VP) et base à 7,5 %
   (2VV net, 2VO) — `calculerImpot` ne recevant que le montant de l'impôt forfaitaire, jamais sa base. Sommé avec celui de `calculerRevenuSalaires.ts` dans `useFiscalOverview.ts` avant
   transmission à `calculerImpot`.
-  **3 cases supplémentaires réintégrées au RFR dans `calculerRevenuSalaires.ts`, sans plafond (totalité
-  du montant saisi) : 1AQ/1BQ, 1DY/1EY, 1SM/1DN.** Chacune confirmée par une source primaire (texte de
+  **Montant retenu au RFR pour tous les salaires exonérés (1GH/1HH et 1AD/1BD dans leur limite,
+  1AQ/1BQ, 1DY/1EY, 1SM/1DN, 1PB/1PC)** : diminué de sa quote-part de l'abattement forfaitaire du
+  déclarant, calculé sur imposable + exonéré (plancher 509 €, plafond 14 555 €), soit
+  `exonéré × (1 − A / (imposable + exonéré))` ; en entier si les frais réels l'emportent (ils ne
+  s'imputent que sur l'imposable). Vérifié sur le simulateur officiel 2026 : 1AJ 50 000 + 1GH 5 000 →
+  +4 500 € ; 1AJ 200 000 → +4 645 € ; 1GH 3 000 seul → 2 491 € ; frais réels → 5 000 €.
+  **3 cases supplémentaires réintégrées au RFR dans `calculerRevenuSalaires.ts`, sans plafond :
+  1AQ/1BQ, 1DY/1EY, 1SM/1DN.** Chacune confirmée par une source primaire (texte de
   loi ou BOFiP), pas seulement par la presse généraliste — leçon tirée du faux positif 1PB ci-dessus.
   **1AQ/1BQ** (agents généraux d'assurance, bénéfices exonérés au titre des zones franches
   urbaines/entreprises nouvelles, art. 44 sexies et s. CGI) : confirmé par le texte de loi lui-même
@@ -674,7 +680,8 @@ fonciers (§4).
   correspondante, aucun seuil de 152 500 € à recalculer côté outil). Cases et taux vérifiés visuellement
   sur la brochure officielle DGFiP (2042-C, revenus 2025, page 3, cases 111/150) avant codage. **Exclues
   du calcul** (`CASES_GAINS_ACTIONNARIAT_EXCLUES_DU_CALCUL`) : 1UZ/1WZ/1VZ (montants d'abattement déjà
-  déduits de 1TZ — les ajouter serait un double-comptage), 1NY/1OY et 3VN (contributions salariales de
+  déduits de 1TZ — les ajouter serait un double-comptage ; retenus au seul RFR, art. 1417 IV a bis, comme
+  3VD/3VI/3VF pour leur montant, voir `revenuExonereRetenuPourRFR`), 1NY/1OY et 3VN (contributions salariales de
   30 %/10 % sur le carried-interest/les options, pas de l'IR). 24 tests couvrent
   l'agrégation des cases barème, l'impôt forfaitaire (chaque taux isolément, cumul, indépendance vis-à-vis
   du barème) et la non-inclusion des cases exclues.
@@ -722,7 +729,8 @@ fonciers (§4).
   `totalNetImposable`), comme 1AL ; (2) **1AI** (capital
   des plans d'épargne retraite) imposable au barème **sans** abattement (texte explicite de la
   brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI) hors barème : abattement spécifique
-  de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire` — même famille que
+  de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire`, et 90 % du capital au
+  RFR (art. 1417 IV c ; simulateur officiel 2026) — même famille que
   3VD/3VI/3VF de `calculerGainsActionnariatSalarie.ts`. Rentes viagères à titre onéreux (1AW) :
   fraction imposable par tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %, vérifiée contre l'exemple
   chiffré de la brochure p.120), incluse dans `totalNetImposable` **sans** l'abattement de 10 % classique
@@ -1262,7 +1270,8 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   `3VW` exclu (brochure IR 2026 p. 155).
 - **Reports expirés** (`3SB`, art. 150-0 D bis ; `3SZ`, OPC monétaires, art. 150-0 B quater) :
   imposés au taux applicable à l'expiration du report (brochure IR 2026 p. 145), donc selon `2OP`
-  comme `3VG` ; retenus au RFR. `3SZ` est soumis aux PS 18,6 % sur le montant déclaré ; `3SB` en est
+  comme `3VG` ; `3SZ` retenu au RFR, `3SB` exclu du RFR au PFU comme au barème (choix aligné sur le
+  simulateur officiel 2026, contre la lettre de l'art. 1417 IV 1°). `3SZ` est soumis aux PS 18,6 % sur le montant déclaré ; `3SB` en est
   exclu (seul l'IR est reporté par l'art. 150-0 D bis, les PS ont été acquittés l'année de la cession).
 - **Prélèvements sociaux 18,6 %** (CSG 10,6 % LFSS 2026 + CRDS 0,5 % + solidarité 7,5 %, applicable
   aux revenus du patrimoine 2025 ; revenus fonciers, plus-values immobilières et assurance-vie restent
@@ -1304,7 +1313,8 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
   abattement) et de 4BA (plafonnée au revenu foncier net de la 2044), jamais additionnées ; retirées du
   revenu imposable et ajoutées au revenu retenu pour le taux effectif, comme 1AF/1AL.
 - **4EA / 4EB** : 4EA et 70 % de 4EB ajoutés aux revenus exonérés retenus pour le taux effectif, sans PS.
-- **4BY** (amortissement Robien/Borloo neuf déduit) : réintégré au RFR seulement.
+- **4BY** (amortissement Robien/Borloo neuf déduit) : informatif, hors RFR (absent de l'art. 1417 IV en
+  vigueur ; simulateur officiel 2026 identique).
 - **4BA saisi sans 2044** (brochure IR 2026 p. 157 : revenus de seules parts de sociétés immobilières
   non IS, déclarés directement) : au barème hors fraction 4BL, PS 17,2 % hors fraction 4BL. Ignoré (alerte) si une 2044
   est ouverte ; alerte s'il coexiste avec 4BE (micro exclu dans ce cas).
@@ -1370,7 +1380,8 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Inventeurs et auteurs de logiciels non professionnels** (art. 93 quater, brochure p. 181) : `5QJ`/`5RJ`
   à 10 % avec PS 18,6 % ; `5TC`/`5UC` (soumis aux cotisations sociales) à 10 % sans PS ; RFR.
 - **Plus-values exonérées départ à la retraite** (`5HG`/`5IG`, art. 151 septies A, y compris l'indemnité
-  des agents généraux) : pas d'impôt, PS 18,6 %, retenues au RFR (hypothèse validée).
+  des agents généraux) : pas d'impôt, PS 18,6 %, hors RFR (absentes de l'art. 1417 IV ; simulateur
+  officiel 2026 identique).
 - **Forfait forestier** (`5HD`/`5ID`) : ajouté au BA, avant les déficits agricoles antérieurs ; sans PS
   (hypothèse validée : bénéfice agricole).
 - **Excédent de moyenne triennale** (`5XT`/`5XU`, art. 75-0 B, brochure p. 165) : hors revenu au barème,

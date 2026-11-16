@@ -350,8 +350,9 @@ export function calculerImpot(
     revenuImposable: revenu + revenuCredit,
     revenuExonereTauxEffectif: revenuExonere,
     revenuMondialFictif,
-    revenuFiscalReference: revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL
-      + Math.max(0, revenuExonereRetenuPourRFR),
+    // Ajustement signé : 3SB au barème est retiré du RFR (voir calculerPlusValuesGainsDivers.ts).
+    revenuFiscalReference: Math.max(0, revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL
+      + revenuExonereRetenuPourRFR),
     nombreParts: parts.nombreParts,
     quotientFamilial: parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0,
     impotSansMajorations,

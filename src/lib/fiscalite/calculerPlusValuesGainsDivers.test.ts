@@ -97,17 +97,17 @@ describe('calculerPlusValuesGainsDivers', () => {
     expect(r.basePrelevementsSociaux).toBe(3300);
   });
 
-  it('3SB et 3SZ suivent 2OP comme 3VG au RFR ; seul 3SZ est soumis aux PS', () => {
+  it('3SB et 3SZ suivent 2OP pour l\'impôt ; 3SB hors RFR (simulateur officiel 2026) ; seul 3SZ est soumis aux PS', () => {
     const pfu = calculerPlusValuesGainsDivers({ ...VIDE, case3sb: 1000, case3sz: 500 }, false);
     expect(pfu.totalNetImposable).toBe(0);
     expect(pfu.impotForfaitaire).toBeCloseTo(1500 * 0.128);
-    expect(pfu.revenuExonereRetenuPourRFR).toBe(1500);
+    expect(pfu.revenuExonereRetenuPourRFR).toBe(500);
     expect(pfu.basePrelevementsSociaux).toBe(500);
 
     const bareme = calculerPlusValuesGainsDivers({ ...VIDE, case3sb: 1000, case3sz: 500 }, true);
     expect(bareme.totalNetImposable).toBe(1500);
     expect(bareme.impotForfaitaire).toBe(0);
-    expect(bareme.revenuExonereRetenuPourRFR).toBe(0);
+    expect(bareme.revenuExonereRetenuPourRFR).toBe(-1000);
   });
 
   it('3VR ne rend ni la base des PS ni le RFR négatifs', () => {

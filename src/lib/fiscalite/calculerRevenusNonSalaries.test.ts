@@ -37,12 +37,12 @@ describe('calculerRevenusNonSalaries', () => {
     expect(r.revenuExonereRetenuPourRFR).toBe(18000);
   });
 
-  it('5HG/5IG : prélèvements sociaux seuls, retenus au RFR, sans impôt', () => {
+  it('5HG/5IG : prélèvements sociaux seuls, hors RFR (simulateur officiel 2026), sans impôt', () => {
     const r = calculerRevenusNonSalaries({ ...VIDE, case5hg: 40000, case5ig: 10000 });
     expect(r.totalNetImposable).toBe(0);
     expect(r.impotForfaitaire).toBe(0);
     expect(r.prelevementsSociaux).toBe(Math.round(50000 * 0.186));
-    expect(r.revenuExonereRetenuPourRFR).toBe(50000);
+    expect(r.revenuExonereRetenuPourRFR).toBe(0);
   });
 
   it('5XT/5XU : hors barème, transmis pour le taux marginal et retenu au RFR', () => {

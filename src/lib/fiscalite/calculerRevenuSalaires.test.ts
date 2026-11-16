@@ -203,72 +203,32 @@ describe('calculerRevenuSalaires — plafond d\'exonération 1GH/1HH (heures sup
   });
 });
 
-describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (1GH/1HH et 1AD/1BD réintégrés dans le RFR)', () => {
-  it("1GH/1HH sous le plafond : la totalité est retenue pour le RFR, bien qu'exonérée d'IR", () => {
-    const result = calculerRevenuSalaires(makeInput({ case1gh: 3000, case1hh: 2000 }));
-    expect(result.totalNetImposable).toBe(0);
-    expect(result.revenuExonereRetenuPourRFR).toBe(5000);
+describe('calculerRevenuSalaires — revenuExonereRetenuPourRFR (quote-part d\'abattement, simulateur officiel 2026)', () => {
+  const rfr = (o: Partial<RevenusSalairesInput>) => Math.round(calculerRevenuSalaires(makeInput(o)).revenuExonereRetenuPourRFR);
+
+  it('1AJ 50 000 + 1GH 5 000 : 4 500 € (10 % sur l\'ensemble)', () => {
+    expect(rfr({ case1aj: 50000, case1gh: 5000 })).toBe(4500);
   });
-
-  it('1GH au-dessus du plafond : seule la fraction exonérée (7 500 €) est retenue, le surplus est déjà dans totalNetImposable', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1gh: 10000 }));
-    expect(result.totalNetImposable).toBe(2500 - 509);
-    expect(result.revenuExonereRetenuPourRFR).toBe(7500);
+  it('plafond de 14 555 € atteint : 1AJ 200 000 + 1GH 5 000 → 4 645 €', () => {
+    expect(rfr({ case1aj: 200000, case1gh: 5000 })).toBe(4645);
   });
-
-  it('1AD/1BD sous le seuil : la totalité est retenue pour le RFR, bien qu\'exonérée d\'IR', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1ad: 2000, case1bd: 1000 }));
-    expect(result.totalNetImposable).toBe(0);
-    expect(result.revenuExonereRetenuPourRFR).toBe(3000);
+  it('plancher de 509 € : 1GH 3 000 seul → 2 491 €', () => {
+    expect(rfr({ case1gh: 3000 })).toBe(2491);
   });
-
-  it('1AD au-dessus du seuil (3 000 €, ou 6 000 € si 1AV coché) : seule la fraction exonérée est retenue', () => {
-    const sansMajoration = calculerRevenuSalaires(makeInput({ case1ad: 5000 }));
-    expect(sansMajoration.revenuExonereRetenuPourRFR).toBe(3000);
-
-    const avecMajoration = calculerRevenuSalaires(makeInput({ case1ad: 5000, case1av: true }));
-    expect(avecMajoration.revenuExonereRetenuPourRFR).toBe(5000);
+  it('1GH 9 000 seul : part exonérée de 7 500 € → 6 750 €, surplus imposable 991 €', () => {
+    const r = calculerRevenuSalaires(makeInput({ case1gh: 9000 }));
+    expect(Math.round(r.revenuExonereRetenuPourRFR)).toBe(6750);
+    expect(Math.round(r.totalNetImposable)).toBe(991);
   });
-
-  it('1GH et 1AD se cumulent', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1gh: 3000, case1ad: 2000 }));
-    expect(result.revenuExonereRetenuPourRFR).toBe(5000);
+  it('frais réels retenus : montant exonéré en entier (1AJ 50 000, 1AK 10 000, 1GH 5 000)', () => {
+    expect(rfr({ case1aj: 50000, case1ak: 10000, case1gh: 5000 })).toBe(5000);
   });
-
-  it('1AQ/1BQ (agents généraux d\'assurance, ZFU/entreprises nouvelles) : totalité retenue, sans plafond', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1aq: 4000, case1bq: 2500 }));
-    expect(result.totalNetImposable).toBe(0);
-    expect(result.revenuExonereRetenuPourRFR).toBe(6500);
+  it('1AD 2 000, 1AQ, 1DY, 1SM, 1PB : même règle (4 500 € pour 5 000 €, 1 800 € pour 2 000 €)', () => {
+    expect(rfr({ case1aj: 50000, case1ad: 2000 })).toBe(1800);
+    for (const k of ['case1aq', 'case1dy', 'case1sm', 'case1pb'] as const) expect(rfr({ case1aj: 50000, [k]: 5000 })).toBe(4500);
   });
-
-  it('1DY/1EY (salariés impatriés, fraction exonérée) : totalité retenue, sans plafond', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1dy: 15000, case1ey: 8000 }));
-    expect(result.totalNetImposable).toBe(0);
-    expect(result.revenuExonereRetenuPourRFR).toBe(23000);
-  });
-
-  it('1SM/1DN (sommes exonérées issues du CET) : totalité retenue, sans plafond', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1sm: 1200, case1dn: 600 }));
-    expect(result.totalNetImposable).toBe(0);
-    expect(result.revenuExonereRetenuPourRFR).toBe(1800);
-  });
-
-  it('1PB/1PC (pourboires exonérés) : totalité retenue, sans plafond', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1pb: 580, case1pc: 300 }));
-    expect(result.totalNetImposable).toBe(0);
-    expect(result.revenuExonereRetenuPourRFR).toBe(880);
-  });
-
-  it('toutes les cases sans plafond se cumulent avec 1GH/1AD', () => {
-    const result = calculerRevenuSalaires(makeInput({
-      case1gh: 3000, case1ad: 2000, case1aq: 4000, case1dy: 1000, case1sm: 500, case1pb: 980,
-    }));
-    expect(result.revenuExonereRetenuPourRFR).toBe(3000 + 2000 + 4000 + 1000 + 500 + 980);
-  });
-
-  it('nul par défaut (aucune case renseignée)', () => {
-    const result = calculerRevenuSalaires(makeInput({ case1aj: 30000 }));
-    expect(result.revenuExonereRetenuPourRFR).toBe(0);
+  it('déclarant 2 : sa propre quote-part', () => {
+    expect(rfr({ case1aj: 50000, case1bj: 30000, case1hh: 5000 })).toBe(4500);
   });
 });
 

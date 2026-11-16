@@ -96,6 +96,13 @@ export interface RevenuSalairesDeclarantDetail {
    * `netImposable` : elle est restituée via `calculerGainsActionnariatSalarie`.
    */
   netImposableActionnariat: number;
+  /**
+   * Salaires exonérés du déclarant (1GH, 1AD, 1AQ, 1DY, 1SM, 1PB, dans leurs limites d'exonération)
+   * retenus au RFR (art. 1417 IV c et e) : diminués de leur quote-part de l'abattement forfaitaire
+   * calculé sur l'ensemble imposable + exonéré (plancher/plafond compris), retenus en entier si les
+   * frais réels l'emportent — vérifié sur le simulateur officiel 2026.
+   */
+  exonereRetenuRFR: number;
 }
 
 export interface RevenuSalairesResult {
@@ -240,6 +247,7 @@ export function calculerDeclarant(
   remunerationsExonereesTauxEffectif = 0,
   fraisReelsExonere: number | null = null,
   remunerationsActionnariat = 0,
+  remunerationsExonereesRFR = 0,
 ): RevenuSalairesDeclarantDetail {
   const baseApresAbattementSpecifique = remunerationsBrutes;
   const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif
@@ -286,7 +294,15 @@ export function calculerDeclarant(
     netImposableActionnariat = netTotal * ratioActionnariat;
   }
 
+  const exonere = Math.max(0, remunerationsExonereesRFR);
+  const poolRFR = baseTotale + exonere;
+  const abattementPoolRFR = poolRFR <= 0
+    ? 0
+    : Math.min(ABATTEMENT_PLAFOND, Math.max(ABATTEMENT_PLANCHER, poolRFR * ABATTEMENT_TAUX), poolRFR);
+  const exonereRetenuRFR = exonere <= 0 ? 0 : utiliseFraisReels ? exonere : exonere * (1 - abattementPoolRFR / poolRFR);
+
   return {
+    exonereRetenuRFR,
     remunerationsBrutes,
     abattementSpecifique,
     baseApresAbattementSpecifique,
@@ -370,13 +386,18 @@ export function calculerRevenuSalaires(
     + (input.case1hb ?? 0) + (input.case1qm ?? 0)
     + surplus1hh + surplus1bd;
 
+  const exonereRFR1 = Math.min(input.case1gh ?? 0, PLAFOND_EXONERATION_1GH) + Math.min(input.case1ad ?? 0, seuil1ad)
+    + (input.case1aq ?? 0) + (input.case1dy ?? 0) + (input.case1sm ?? 0) + (input.case1pb ?? 0);
+  const exonereRFR2 = Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH) + Math.min(input.case1bd ?? 0, seuil1bd)
+    + (input.case1bq ?? 0) + (input.case1ey ?? 0) + (input.case1dn ?? 0) + (input.case1pc ?? 0);
+
   const declarant1 = calculerDeclarant(
     remunerations1, input.case1ga ?? 0, input.case1ak ?? null, input.case1af ?? 0, exoneres?.case1ac ?? 0,
-    exoneres?.case1ae ?? null, basesGains.declarant1,
+    exoneres?.case1ae ?? null, basesGains.declarant1, exonereRFR1,
   );
   const declarant2 = calculerDeclarant(
     remunerations2, input.case1ha ?? 0, input.case1bk ?? null, input.case1bf ?? 0, exoneres?.case1bc ?? 0,
-    exoneres?.case1be ?? null, basesGains.declarant2,
+    exoneres?.case1be ?? null, basesGains.declarant2, exonereRFR2,
   );
 
   const indemnitesPrejudiceMoral = (input.case1pm ?? 0) + (input.case1qm ?? 0);
@@ -384,14 +405,7 @@ export function calculerRevenuSalaires(
   const revenuCreditImpotEgalImpotFrancais = declarant1.netImposableCreditImpot + declarant2.netImposableCreditImpot;
   const salairesNetImposablesExoneresTauxEffectif = declarant1.netImposableExonereTauxEffectif
     + declarant2.netImposableExonereTauxEffectif;
-  const revenuExonereRetenuPourRFR = Math.min(input.case1gh ?? 0, PLAFOND_EXONERATION_1GH)
-    + Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH)
-    + Math.min(input.case1ad ?? 0, seuil1ad)
-    + Math.min(input.case1bd ?? 0, seuil1bd)
-    + (input.case1aq ?? 0) + (input.case1bq ?? 0)
-    + (input.case1dy ?? 0) + (input.case1ey ?? 0)
-    + (input.case1sm ?? 0) + (input.case1dn ?? 0)
-    + (input.case1pb ?? 0) + (input.case1pc ?? 0);
+  const revenuExonereRetenuPourRFR = declarant1.exonereRetenuRFR + declarant2.exonereRetenuRFR;
 
   return {
     declarant1,

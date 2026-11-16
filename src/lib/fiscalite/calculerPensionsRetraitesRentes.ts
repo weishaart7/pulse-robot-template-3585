@@ -77,6 +77,8 @@ export interface PensionsRetraitesRentesResult {
    * `totalNetImposable`.
    */
   pensionsExonereesTauxEffectifNettes: number;
+  /** 1AT/1BT après abattement de 10 % (non plafonné), retenus au RFR (art. 1417 IV c, art. 163 bis II). */
+  revenuExonereRetenuPourRFR: number;
   casesExclues: readonly string[];
 }
 
@@ -195,6 +197,7 @@ export function calculerPensionsRetraitesRentes(
     rentesViageresImposables,
     totalNetImposable,
     impotForfaitaire,
+    revenuExonereRetenuPourRFR: capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX),
     revenuCreditImpotEgalImpotFrancais,
     pensionsExonereesTauxEffectifNettes,
     casesExclues: CASES_PENSIONS_EXCLUES_DU_CALCUL,

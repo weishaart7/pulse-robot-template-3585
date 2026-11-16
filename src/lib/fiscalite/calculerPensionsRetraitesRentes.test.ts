@@ -203,3 +203,10 @@ describe('calculerPensionsRetraitesRentes — total net imposable', () => {
     expect(result.totalNetImposable).toBeCloseTo(18000 + 5000 + 700, 6);
   });
 });
+
+describe('calculerPensionsRetraitesRentes — 1AT/1BT au RFR (simulateur officiel 2026)', () => {
+  it('90 % du capital, sans le plafond des pensions : 5 000 → 4 500, 100 000 + 10 000 → 99 000', () => {
+    expect(calculerPensionsRetraitesRentes(makeInput({ case1at: 5000 })).revenuExonereRetenuPourRFR).toBeCloseTo(4500);
+    expect(calculerPensionsRetraitesRentes(makeInput({ case1as: 40000, case1at: 100000, case1bt: 10000 })).revenuExonereRetenuPourRFR).toBeCloseTo(99000);
+  });
+});

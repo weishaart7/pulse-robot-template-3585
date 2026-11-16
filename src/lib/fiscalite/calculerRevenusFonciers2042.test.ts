@@ -30,10 +30,10 @@ describe('calculerRevenusFonciers2042', () => {
     expect(calculerRevenusFonciers2042({ ...VIDE, case4bl: 3000 }, null).deductionReel4BL).toBe(0);
   });
 
-  it('4EA + 70 % de 4EB au taux effectif ; 4BY au RFR', () => {
+  it('4EA + 70 % de 4EB au taux effectif ; 4BY hors RFR (simulateur officiel 2026)', () => {
     const r = calculerRevenusFonciers2042({ ...VIDE, case4ea: 1000, case4eb: 2000, case4by: 500 }, null);
     expect(r.revenuExonereTauxEffectif).toBe(2400);
-    expect(r.revenuExonereRetenuPourRFR).toBe(500);
+    expect(r.revenuExonereRetenuPourRFR).toBe(0);
     expect(r.totalNetImposable).toBe(0);
   });
 

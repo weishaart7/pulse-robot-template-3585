@@ -133,3 +133,10 @@ describe('calculerGainsActionnariatSalarie — impôt à taux forfaitaire', () =
     expect(result.totalNetImposable).toBe(500);
   });
 });
+
+describe('calculerGainsActionnariatSalarie — RFR (simulateur officiel 2026)', () => {
+  it('1UZ/1WZ/1VZ et 3VD/3VI/3VF retenus pour leur montant', () => {
+    expect(calculerGainsActionnariatSalarie(makeInput({ case1tz: 10000, case1uz: 5000 }), 0).revenuExonereRetenuPourRFR).toBe(5000);
+    expect(calculerGainsActionnariatSalarie(makeInput({ case1wz: 1000, case1vz: 2000, case3vd: 3000, case3vi: 4000, case3vf: 5000 }), 0).revenuExonereRetenuPourRFR).toBe(15000);
+  });
+});

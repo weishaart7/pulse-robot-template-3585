@@ -471,7 +471,8 @@ export function useFiscalOverview(): FiscalOverview {
         revenuCapitauxMobiliers.creditImpotValeursEtrangeres2CK,
         revenuSalaires.revenuExonereRetenuPourRFR + revenuCapitauxMobiliers.revenuExonereRetenuPourRFR
           + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
-          + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR,
+          + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
+          + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions,
         reductionsCreditsImpot.creditServicesPersonne,
         creditEtranger,

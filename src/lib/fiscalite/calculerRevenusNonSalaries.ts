@@ -308,7 +308,8 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
     taxeAgentsGeneraux: taxeAgentGeneral(v('case5qm')) + taxeAgentGeneral(v('case5rm')),
     revenuCreditImpotEgalImpotFrancais: somme(input, ['case5ak', 'case5bk', 'case5df', 'case5ef', 'case5ur', 'case5vr',
       'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys']),
-    revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + plusValuesRetraite + revenuImposableTauxMarginal
+    // 5HG/5IG (art. 151 septies A) hors RFR : absentes de l'art. 1417 IV, comme sur le simulateur officiel 2026.
+    revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + revenuImposableTauxMarginal
       + somme(input, ['case5ql', 'case5rl', 'case5sv', 'case5sw']),
     revenuExonereTauxEffectif,
     basePrelevementsSociaux,

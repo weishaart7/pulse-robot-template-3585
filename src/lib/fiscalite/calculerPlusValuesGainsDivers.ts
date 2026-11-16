@@ -151,7 +151,10 @@ export function calculerPlusValuesGainsDivers(
     totalNetImposable: bareme,
     impotForfaitaire: basePFU * TAUX_PFU + bspceMoinsDeTroisAns * TAUX_BSPCE_MOINS_DE_3_ANS
       + bspceAvant2018 * TAUX_BSPCE_AVANT_2018 + instrumentsFinanciers * TAUX_3PI,
-    revenuExonereRetenuPourRFR: Math.max(0, rfrHorsBareme + basePFU - moinsValueImpatries),
+    // 3SB hors RFR, au PFU comme au barème (simulateur officiel 2026, choix retenu contre l'art. 1417 IV 1°) :
+    // au barème, il est retiré du RFR alors qu'il figure dans le revenu imposable.
+    revenuExonereRetenuPourRFR: Math.max(0, rfrHorsBareme + basePFU - moinsValueImpatries - (optionBareme ? 0 : (input.case3sb ?? 0)))
+      - (optionBareme ? (input.case3sb ?? 0) : 0),
     basePrelevementsSociaux,
     prelevementsSociaux: basePrelevementsSociaux * TAUX_PS_PLUS_VALUES,
     casesExclues: CASES_PLUS_VALUES_EXCLUES_DU_CALCUL,

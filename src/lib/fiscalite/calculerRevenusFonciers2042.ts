@@ -107,7 +107,8 @@ export function calculerRevenusFonciers2042(
     revenuCreditImpotEgalImpotFrancais: brutEtranger - imputeEtranger + deductionReel4BL,
     deficitAnterieurImpute: imputeBareme + imputeEtranger,
     revenuExonereTauxEffectif: (input.case4ea ?? 0) + netMicro(recettesMicroExonerees),
-    revenuExonereRetenuPourRFR: input.case4by ?? 0,
+    // 4BY (Robien) hors RFR : absent de l'art. 1417 IV, comme sur le simulateur officiel 2026.
+    revenuExonereRetenuPourRFR: 0,
     prelevementsSociaux: Math.round((brutBareme - imputeBareme) * TAUX_PRELEVEMENTS_SOCIAUX),
     neutralisationPS2044: Math.round(deductionReel4BL * TAUX_PRELEVEMENTS_SOCIAUX),
     alertes,
