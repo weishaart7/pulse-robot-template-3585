@@ -316,8 +316,9 @@ export function calculerImpot(
   const estCoupleImpositionCommune = COUPLE_IMPOSITION_COMMUNE.includes(situationFamille);
   const seuilDecote = estCoupleImpositionCommune ? DECOTE_SEUIL_COUPLE : DECOTE_SEUIL_CELIBATAIRE;
   const montantDecoteBase = estCoupleImpositionCommune ? DECOTE_MONTANT_COUPLE : DECOTE_MONTANT_CELIBATAIRE;
+  // Plafonnée à l'impôt, comme sur l'avis (droits simples 132 € → décote 132 €, jamais au-delà).
   const decote = impotApresReductionOutreMer < seuilDecote
-    ? Math.max(0, montantDecoteBase - impotApresReductionOutreMer * DECOTE_TAUX)
+    ? Math.min(impotApresReductionOutreMer, Math.max(0, montantDecoteBase - impotApresReductionOutreMer * DECOTE_TAUX))
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));

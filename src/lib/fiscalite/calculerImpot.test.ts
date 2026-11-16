@@ -522,3 +522,18 @@ describe('calculerImpot — crédit égal à l\'impôt français', () => {
     expect(r.impotNet).toBe(r.impotApresDecote - r.creditImpotFrancais);
   });
 });
+
+describe('calculerImpot — décote plafonnée à l\'impôt', () => {
+  it('RNI 12 600 € seul : droits 110 €, décote affichée 110 € (simulateur officiel), pas 847 €', () => {
+    const r = calculerImpot(12600, makeParts(), 'celibataire');
+    expect(Math.round(r.impotApresReductionOutreMer)).toBe(110);
+    expect(Math.round(r.decote)).toBe(110);
+    expect(r.impotApresDecote).toBe(0);
+  });
+
+  it('décote inférieure à l\'impôt inchangée : RNI 18 000 €, 578 € pour 704 € de droits', () => {
+    const r = calculerImpot(18000, makeParts(), 'celibataire');
+    expect(Math.round(r.decote)).toBe(578);
+    expect(r.impotApresDecote).toBe(126);
+  });
+});
