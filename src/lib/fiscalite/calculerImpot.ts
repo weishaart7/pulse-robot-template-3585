@@ -258,6 +258,9 @@ function calculerImpotApresQuotientFamilial(
  * lui), sans décote ni plafonnement ; ajouté comme l'impôt forfaitaire.
  * `taxesAnnexes` (taxe sur l'indemnité des agents généraux, art. 719) : taxe
  * distincte mise en recouvrement avec l'IR, ajoutée à l'impôt net hors réductions.
+ * `revenuMondialImpose` (8ZR, 0 par défaut) : s'il est saisi, remplace le revenu mondial fictif
+ * (revenu imposable + revenus exonérés retenus pour le taux effectif) dans le taux effectif et le RFR ;
+ * les revenus au quotient (0XX) s'y ajoutent.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -278,12 +281,16 @@ export function calculerImpot(
   revenuTauxMarginal = 0,
   taxesAnnexes = 0,
   revenuCreditImpotFrancais = 0,
+  revenuMondialImpose = 0,
 ): ImpotResult {
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
   const revenuExceptionnel = Math.max(0, revenuExceptionnelQuotient);
   const revenuCredit = Math.max(0, revenuCreditImpotFrancais);
-  const revenuMondialFictifOrdinaire = revenu + revenuCredit + revenuExonere;
+  // 8ZR (revenu net mondial associé à 8TI) remplace tout le revenu mondial ordinaire, pour le taux
+  // effectif comme pour le RFR (simulateur officiel 2026, y compris s'il est inférieur au revenu imposable).
+  const revenuMondialSaisi = Math.max(0, revenuMondialImpose);
+  const revenuMondialFictifOrdinaire = revenuMondialSaisi > 0 ? revenuMondialSaisi : revenu + revenuCredit + revenuExonere;
 
   const qfOrdinaire = calculerImpotApresQuotientFamilial(revenuMondialFictifOrdinaire, parts);
 
@@ -307,7 +314,7 @@ export function calculerImpot(
   const baseFrance = revenu + revenuCredit + revenuExceptionnel;
   const tauxEffectif = revenuMondialFictif > 0 ? impotApresPlafonnement / revenuMondialFictif : 0;
   // Arrondi à l'euro, comme l'avis (« impôt après application du taux effectif »).
-  const impotProportionnel = revenuExonere > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresPlafonnement;
+  const impotProportionnel = revenuExonere > 0 || revenuMondialSaisi > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresPlafonnement;
 
   const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = REDUCTION_OUTRE_MER[lieuResidence];
   const reductionOutreMer = Math.min(plafondReductionOutreMer, impotProportionnel * tauxReductionOutreMer);

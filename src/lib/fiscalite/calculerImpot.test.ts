@@ -537,3 +537,20 @@ describe('calculerImpot — décote plafonnée à l\'impôt', () => {
     expect(r.impotApresDecote).toBe(126);
   });
 });
+
+describe('calculerImpot — 8ZR, revenu net mondial (simulateur officiel 2026, célibataire, RNI 45 000)', () => {
+  const avec8ZR = (rni: number, zr: number, exonere = 0) => calculerImpot(
+    rni, makeParts(), 'celibataire', exonere, 'metropole', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, zr,
+  );
+  it.each([[100000, 11160], [60000, 8328], [50000, 7294], [40000, 5742]])('8ZR %i → impôt %i, RFR = 8ZR', (zr, ir) => {
+    const r = avec8ZR(45000, zr);
+    expect(r.impotNet).toBe(ir);
+    expect(r.revenuFiscalReference).toBe(zr);
+  });
+  it('8ZR remplace les autres revenus exonérés (1AC) : 11 160 €', () => {
+    expect(avec8ZR(45000, 100000, 4500).impotNet).toBe(11160);
+  });
+  it('décote après proratisation : RNI 13 500, 8ZR 30 000 → 479 €', () => {
+    expect(avec8ZR(13500, 30000).impotNet).toBe(479);
+  });
+});

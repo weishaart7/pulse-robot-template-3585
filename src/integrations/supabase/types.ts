@@ -2646,6 +2646,7 @@ export type Database = {
           case_8tf: number | null
           case_8th: number | null
           case_8ti: number | null
+          case_8zr: number | null
           case_8tk: number | null
           case_8tk172: number | null
           case_8tk186: number | null
@@ -2712,6 +2713,7 @@ export type Database = {
           case_8tf?: number | null
           case_8th?: number | null
           case_8ti?: number | null
+          case_8zr?: number | null
           case_8tk?: number | null
           case_8tk172?: number | null
           case_8tk186?: number | null
@@ -2778,6 +2780,7 @@ export type Database = {
           case_8tf?: number | null
           case_8th?: number | null
           case_8ti?: number | null
+          case_8zr?: number | null
           case_8tk?: number | null
           case_8tk172?: number | null
           case_8tk186?: number | null

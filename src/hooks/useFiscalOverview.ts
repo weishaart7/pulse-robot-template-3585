@@ -480,6 +480,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenusNonSalaries.revenuImposableTauxMarginal,
         revenusNonSalaries.taxeAgentsGeneraux,
         revenuCreditImpotFrancais,
+        prelevementSourceDivers.revenuMondial8ZR,
       );
       const impotSansCreditEtranger = calculer(0);
       const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));

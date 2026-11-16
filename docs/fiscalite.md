@@ -1499,7 +1499,11 @@ cadre 8 est enregistré).
   contributions 8TQ…8SB sont aussi arrondies une à une.
 - **Solde** : impôt net − (`8HV`…`8KV` + `8HW`…`8KW`) + `8HY`…`8KY` + `8EA` ; PS calculés −
   `8HX`…`8KX` + `8HZ`…`8KZ`. Positif : reste à payer ; négatif : à rembourser.
-- **Taux effectif** : `8TI` ajouté au revenu retenu pour le taux effectif. `8TK` (déjà déclaré dans sa
+- **Taux effectif** : `8TI` ajouté au revenu retenu pour le taux effectif ; s'il est accompagné de
+  `8ZR` (revenu net mondial), `8ZR` remplace tout le revenu mondial — impôt = barème(8ZR) / 8ZR × revenu
+  imposable, RFR = 8ZR + ajouts habituels (PFU, salaires exonérés…), autres revenus exonérés (1AC…)
+  ignorés car compris dans 8ZR, RFR possiblement inférieur au revenu imposable (simulateur officiel
+  2026 ; alerte si 8TI ou 8ZR est saisi seul). `8TK` (déjà déclaré dans sa
   catégorie, brochure p. 323) est retiré de la base imposée en France et ajouté au revenu retenu pour le
   taux effectif, comme 1AF : équivaut au crédit impôt × 8TK / revenu imposable ; RFR inchangé.
 - **PS sur 8TK** : ventilation interne (colonnes `case_8tk186`, `case_8tk172`, aucune case officielle)

@@ -783,6 +783,8 @@ export interface PrelevementSourceDiversInput {
   case8ut: number | null;
   /** Revenus exonérés retenus pour le taux effectif (autres que salaires, pensions, fonciers) */
   case8ti: number | null;
+  /** 8ZR : revenu net mondial associé à 8TI ; remplace tout le revenu mondial du taux effectif et du RFR. */
+  case8zr: number | null;
   /** Revenus de capitaux mobiliers et plus-values étrangers ouvrant droit à un crédit égal à l'impôt étranger */
   case8pl: number | null;
   /** Impôt payé à l'étranger sur ces revenus */

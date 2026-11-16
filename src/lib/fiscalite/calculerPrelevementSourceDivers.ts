@@ -18,7 +18,7 @@ export function exonerationTotaleCsgCrds(input: PrelevementSourceDiversInput, co
 
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
-  case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,
+  case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8zr: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,
   case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null, case8tk186: null, case8tk172: null,
 };
 
@@ -33,6 +33,10 @@ const somme = (...v: (number | null)[]) => v.reduce<number>((s, x) => s + montan
 export interface PrelevementSourceDiversResult {
   /** 8TI : ajouté au revenu retenu pour le taux effectif. */
   revenuTauxEffectif: number;
+  /** 8ZR : revenu net mondial associé à 8TI ; s'il est saisi, il remplace tout le revenu mondial (0 sinon). */
+  revenuMondial8ZR: number;
+  /** 8TI saisi sans 8ZR, ou l'inverse (le simulateur officiel exige les deux). */
+  incoherence8TI8ZR: boolean;
   /**
    * 8TK : revenus déjà déclarés dans leur catégorie, ouvrant droit à un crédit
    * égal à l'impôt français. L'appelant les retire de la base imposée en France
@@ -81,6 +85,8 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
   const assiettePS8TK186 = Math.min(montant(input.case8tk186), montant(input.case8tk));
   return {
     revenuTauxEffectif: montant(input.case8ti),
+    revenuMondial8ZR: montant(input.case8zr),
+    incoherence8TI8ZR: (montant(input.case8ti) > 0) !== (montant(input.case8zr) > 0),
     revenuCreditImpotEgalImpotFrancais: montant(input.case8tk),
     assiettePS8TK186,
     assiettePS8TK172: Math.min(montant(input.case8tk172), montant(input.case8tk) - assiettePS8TK186),

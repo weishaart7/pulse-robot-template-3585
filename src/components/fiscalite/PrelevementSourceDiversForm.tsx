@@ -104,6 +104,10 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
 
         <SousGroupe titre="Revenus de source étrangère et taux effectif">
           <SingleMontantLigne label="Revenus exonérés retenus pour le calcul du taux effectif" extra="autres que salaires, pensions et revenus fonciers" code="8TI" value={ps.case8ti} onChange={v => update('case8ti', v)} />
+          <SingleMontantLigne label="Revenu net mondial" extra="associé à 8TI" aide="Revenu mondial du foyer : il remplace l'ensemble des revenus retenus pour le taux effectif et pour le revenu fiscal de référence." code="8ZR" value={ps.case8zr} onChange={v => update('case8zr', v)} />
+          {calculerPrelevementSourceDivers(ps).incoherence8TI8ZR && (
+            <p className="py-2 text-[13px] text-muted-foreground">8TI et 8ZR vont ensemble : renseignez les deux.</p>
+          )}
           <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" aide="Montant avant impôt étranger, également déclaré dans sa catégorie : l'impôt français correspondant est annulé." value={ps.case8tk} onChange={v => update('case8tk', v)} />
           <SingleMontantLigne label="Dont revenus du patrimoine · PS 18,6 %" extra="ventilation interne, non déclarée" aide="Capitaux mobiliers et plus-values de valeurs mobilières compris dans 8TK : leurs prélèvements sociaux sont neutralisés par le crédit égal à l'impôt français." code="8TK" value={ps.case8tk186} onChange={v => update('case8tk186', v)} />
           <SingleMontantLigne label="Dont revenus du patrimoine · PS 17,2 %" extra="ventilation interne, hors foncier (4BK/4BL)" aide="Revenus restés à 17,2 % après la LFSS 2026, compris dans 8TK. Taux des BIC non professionnels à confirmer." code="8TK" value={ps.case8tk172} onChange={v => update('case8tk172', v)} />
