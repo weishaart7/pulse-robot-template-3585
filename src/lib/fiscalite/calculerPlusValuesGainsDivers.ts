@@ -102,7 +102,10 @@ export function calculerPlusValuesGainsDivers(
   input: PlusValuesGainsDiversInput,
   optionBareme: boolean,
 ): PlusValuesGainsDiversResult {
-  const droitCommun = (input.case3vg ?? 0) + (input.case3we ?? 0);
+  const droitCommun = input.case3vg ?? 0;
+  // 3WE : complément de prix d'une plus-value en report (art. 150-0 D bis) — pas d'IR, RFR et PS 18,6 %
+  // (simulateur officiel 2026 : 5 000 € → impôt inchangé, RFR +5 000, PS 930 €).
+  const complementPrixReport = input.case3we ?? 0;
   const abattementDroitCommun = Math.min(input.case3sg ?? 0, input.case3vg ?? 0);
   const renforce = input.case3ua ?? 0;
   const abattementFixe = Math.min(input.case3va ?? 0, renforce);
@@ -129,7 +132,7 @@ export function calculerPlusValuesGainsDivers(
   let basePFU = 0;
   let rfrHorsBareme = plusValuesImmobilieres + abattementFixe
     + abattementBspceAncien + abattementBspceCession2025 + (input.case3vq ?? 0) + capitalRisque
-    + (input.case3ex ?? 0) + bspceMoinsDeTroisAns + instrumentsFinanciers + bspceAvant2018;
+    + (input.case3ex ?? 0) + bspceMoinsDeTroisAns + instrumentsFinanciers + bspceAvant2018 + complementPrixReport;
 
   if (optionBareme) {
     bareme += droitCommun - abattementDroitCommun + renforceApresFixe - abattementRenforce
@@ -143,7 +146,7 @@ export function calculerPlusValuesGainsDivers(
   if (input.case3cn) bareme += actifsNumeriques;
   else basePFU += actifsNumeriques;
 
-  const basePrelevementsSociaux = Math.max(0, droitCommun + renforce + actifsNumeriques + (input.case3sz ?? 0)
+  const basePrelevementsSociaux = Math.max(0, droitCommun + complementPrixReport + renforce + actifsNumeriques + (input.case3sz ?? 0)
     + bspceAvant2018 + bspceAncien + bspceCession2025 + gainExerciceBspce
     + bspceMoinsDeTroisAns + (input.case3vq ?? 0) + pea + instrumentsFinanciers - moinsValueImpatries);
   // 3VT (PEA avant 5 ans) et 3PI (instruments à 50 %) soumis à 18,6 % (simulateur officiel 2026 : 5 000 € → 930 €).

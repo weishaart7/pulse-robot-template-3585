@@ -134,3 +134,22 @@ describe('controlerSaisiePlusValues', () => {
     expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 400000, case3va: 400000, case3tk: 150000 })).toHaveLength(1);
   });
 });
+
+describe('calculerPlusValuesGainsDivers — 3WE (simulateur officiel 2026)', () => {
+  it('pas d\'impôt au PFU ni au barème, RFR et PS 18,6 % sur le montant', () => {
+    for (const option of [false, true]) {
+      const r = calculerPlusValuesGainsDivers({ ...VIDE, case3we: 5000 }, option);
+      expect(r.impotForfaitaire).toBe(0);
+      expect(r.totalNetImposable).toBe(0);
+      expect(r.revenuExonereRetenuPourRFR).toBe(5000);
+      expect(r.prelevementsSociaux).toBeCloseTo(930);
+    }
+  });
+
+  it('avec 3VG 10 000 : seul 3VG est taxé (1 280 €), RFR 15 000, PS 2 790 €', () => {
+    const r = calculerPlusValuesGainsDivers({ ...VIDE, case3vg: 10000, case3we: 5000 }, false);
+    expect(r.impotForfaitaire).toBeCloseTo(1280);
+    expect(r.revenuExonereRetenuPourRFR).toBe(15000);
+    expect(r.prelevementsSociaux).toBeCloseTo(2790);
+  });
+});

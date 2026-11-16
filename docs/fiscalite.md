@@ -1266,7 +1266,9 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
 - **Option barème** : la case `2OP` du cadre 2 vaut pour les capitaux mobiliers ET les plus-values
   mobilières (option globale, art. 200 A CGI) ; elle n'est pas dupliquée au cadre 3. `3AN` suit sa
   propre option `3CN` (art. 150 VH bis CGI).
-- **PFU (défaut)** : `3VG + 3WE`, `3UA − 3VA`, `3VT`, `3SB` et `3SZ` taxés à 12,8 % ; les
+- **`3WE`** (complément de prix d'une plus-value en report, art. 150-0 D bis) : pas d'IR, ni au PFU ni
+  au barème ; retenu au RFR et soumis aux PS 18,6 % pour son montant (simulateur officiel 2026).
+- **PFU (défaut)** : `3VG`, `3UA − 3VA`, `3VT`, `3SB` et `3SZ` taxés à 12,8 % ; les
   abattements pour durée de détention `3SG`/`3SL` ne s'appliquent pas, l'abattement fixe `3VA` si.
 - **Barème (2OP)** : les mêmes montants, nets de `3SG`/`3SL`/`3VA`, rejoignent le revenu imposable.
 - **`3PI`** : profits sur instruments financiers à terme (teneur de compte en ETNC) taxés à 50 %
