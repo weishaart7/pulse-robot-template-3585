@@ -1321,6 +1321,10 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 `useFiscalOverview.ts`, `FiscalOverviewCard.tsx` (ligne « Revenus fonciers » réel + micro, ligne
 « Prélèvements sociaux (fonciers hors 2044) ») et `Dashboard.tsx`.
 
+- **4BC saisi sans 2044** (`deficitImputableRevenuGlobal`) : retranché du revenu brut global (RNI et
+  RFR), pas de la base des PS. Plafond légal de 10 700 € non appliqué, comme sur le simulateur officiel
+  2026 (15 000 € retranchés en entier). Avec une 2044, la saisie est ignorée (`4bc_ignore_2044`).
+  Le simulateur refuse `4BC` avec `4BA` ; non contrôlé ici.
 - **4BE (micro-foncier)** : abattement de 30 % (art. 32 CGI), 70 % au barème ; PS 17,2 % sur ce net
   (revenus fonciers non concernés par la hausse de CSG de la LFSS 2026). Avertissement non bloquant si
   4BE dépasse 15 000 €. Si une 2044 est ouverte pour l'année, le micro-foncier est exclu : 4BE, 4BK et
@@ -1549,7 +1553,12 @@ cadre 8 est enregistré).
     rappel dans le formulaire) ; conventions excluant la CSG-CRDS (Royaume-Uni, Inde, Bahreïn…).
   - Approximation : prorata sur le revenu imposable, et non sur le revenu de la catégorie après
     abattements.
-- **8TF** : ajouté à l'impôt net.
+- **8TF**, **8TP** (reprise du crédit Corse) : ajoutés à l'impôt net.
+- **Crédits et réductions** (simulateur officiel 2026, 1 000 € chacun) : restituables `8TB`, `8WK`,
+  `8UZ`, `8CV`, `8TS`, `8WC`, `8WR`, `8UY`, `8WA`, `8WH`, `8WT` (`creditsRestituables`, ajoutés aux
+  crédits du cadre 7) ; non restituables `8TC`, `8TG`, `8TO` (`creditsNonRestituables`, imputés avec le
+  crédit égal à l'impôt étranger) ; réductions `8PY`, `8PZ` (ajoutées à celles du cadre 7). Les
+  prérequis du simulateur (bénéfice BIC ou agricole) ne sont pas contrôlés.
 - **Exonération CSG-CRDS** (`8RF` à 9,7 %, `8RV`/`8RC`/`8RM` à 11,1 %), plafonnée aux PS du patrimoine
   calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. **Exonération
   totale** (`exonerationTotaleCsgCrds`) si `8SH` seule (personne seule) ou `8SH` + `8SI` (couple) : les

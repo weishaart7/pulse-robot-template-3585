@@ -2680,6 +2680,23 @@ export type Database = {
       }
       prelevement_source_divers: {
         Row: {
+          case_8tb: number | null
+          case_8tc: number | null
+          case_8wk: number | null
+          case_8uz: number | null
+          case_8cv: number | null
+          case_8ts: number | null
+          case_8tg: number | null
+          case_8to: number | null
+          case_8tp: number | null
+          case_8wa: number | null
+          case_8wc: number | null
+          case_8wh: number | null
+          case_8wr: number | null
+          case_8wt: number | null
+          case_8uy: number | null
+          case_8py: number | null
+          case_8pz: number | null
           case_8ea: number | null
           case_8hr: number | null
           case_8hs: number | null
@@ -2747,6 +2764,23 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_8tb?: number | null
+          case_8tc?: number | null
+          case_8wk?: number | null
+          case_8uz?: number | null
+          case_8cv?: number | null
+          case_8ts?: number | null
+          case_8tg?: number | null
+          case_8to?: number | null
+          case_8tp?: number | null
+          case_8wa?: number | null
+          case_8wc?: number | null
+          case_8wh?: number | null
+          case_8wr?: number | null
+          case_8wt?: number | null
+          case_8uy?: number | null
+          case_8py?: number | null
+          case_8pz?: number | null
           case_8ea?: number | null
           case_8hr?: number | null
           case_8hs?: number | null
@@ -2814,6 +2848,23 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_8tb?: number | null
+          case_8tc?: number | null
+          case_8wk?: number | null
+          case_8uz?: number | null
+          case_8cv?: number | null
+          case_8ts?: number | null
+          case_8tg?: number | null
+          case_8to?: number | null
+          case_8tp?: number | null
+          case_8wa?: number | null
+          case_8wc?: number | null
+          case_8wh?: number | null
+          case_8wr?: number | null
+          case_8wt?: number | null
+          case_8uy?: number | null
+          case_8py?: number | null
+          case_8pz?: number | null
           case_8ea?: number | null
           case_8hr?: number | null
           case_8hs?: number | null
@@ -3572,6 +3623,7 @@ export type Database = {
       }
       revenus_fonciers_2042: {
         Row: {
+          case_4bc: number | null
           case_4ba: number | null
           case_4bd: number | null
           case_4be: number | null
@@ -3588,6 +3640,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_4bc?: number | null
           case_4ba?: number | null
           case_4bd?: number | null
           case_4be?: number | null
@@ -3604,6 +3657,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_4bc?: number | null
           case_4ba?: number | null
           case_4bd?: number | null
           case_4be?: number | null

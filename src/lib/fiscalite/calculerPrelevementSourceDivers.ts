@@ -27,8 +27,8 @@ export const TAUX_CRDS = 0.005;
 /** CASA sur les pensions et préretraites soumises à la CSG au taux de 8,3 % ou 6,6 % (art. L14-10-4 CASF). */
 export const TAUX_CASA = 0.003;
 
-const montant = (v: number | null) => Math.max(0, v ?? 0);
-const somme = (...v: (number | null)[]) => v.reduce<number>((s, x) => s + montant(x), 0);
+const montant = (v: number | null | undefined) => Math.max(0, v ?? 0);
+const somme = (...v: (number | null | undefined)[]) => v.reduce<number>((s, x) => s + montant(x), 0);
 
 export interface PrelevementSourceDiversResult {
   /** 8TI : ajouté au revenu retenu pour le taux effectif. */
@@ -53,8 +53,14 @@ export interface PrelevementSourceDiversResult {
   assiettePS8TK172: number;
   /** Ventilation 8TK supérieure à 8TK : l'excédent est écarté. */
   ventilation8TKSuperieure: boolean;
-  /** 8TF : reprises ajoutées à l'impôt net. */
+  /** 8TF et 8TP : reprises ajoutées à l'impôt net. */
   reprises: number;
+  /** Crédits restituables du cadre 8 (8TB, 8WK, 8UZ, 8CV, 8TS, 8WC, 8WR, 8UY, 8WA, 8WH, 8WT). */
+  creditsRestituables: number;
+  /** Crédits non restituables du cadre 8 (8TC, 8TG, 8TO), imputés sans remboursement. */
+  creditsNonRestituables: number;
+  /** Réductions du cadre 8 (8PY, 8PZ), non restituables. */
+  reductions: number;
   /**
    * CSG et CRDS non dues sur 8RF/8RV/8RC/8RM (affiliés EEE, Royaume-Uni, Suisse) :
    * à retrancher des prélèvements sociaux calculés, plafonnée à ceux-ci par l'appelant.
@@ -91,7 +97,12 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
     assiettePS8TK186,
     assiettePS8TK172: Math.min(montant(input.case8tk172), montant(input.case8tk) - assiettePS8TK186),
     ventilation8TKSuperieure: somme(input.case8tk186, input.case8tk172) > montant(input.case8tk),
-    reprises: montant(input.case8tf),
+    reprises: somme(input.case8tf, input.case8tp),
+    // Simulateur officiel 2026 (1 000 € chacun) : restitués si l'impôt est nul, sauf 8TC/8TG/8TO et 8PY/8PZ.
+    creditsRestituables: somme(input.case8tb, input.case8wk, input.case8uz, input.case8cv, input.case8ts, input.case8wc,
+      input.case8wr, input.case8uy, input.case8wa, input.case8wh, input.case8wt),
+    creditsNonRestituables: somme(input.case8tc, input.case8tg, input.case8to),
+    reductions: somme(input.case8py, input.case8pz),
     reductionPrelevementsSociaux: Math.round(
       montant(input.case8rf) * TAUX_CSG_CRDS_FONCIER
       + somme(input.case8rv, input.case8rc, input.case8rm) * TAUX_CSG_CRDS_PATRIMOINE,

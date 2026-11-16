@@ -186,6 +186,32 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           <SingleMontantLigne label="Plus-values de cession de valeurs mobilières et gains assimilés" code="8RM" value={ps.case8rm} onChange={v => update('case8rm', v)} />
         </SousGroupe>
 
+        <SousGroupe titre="Crédits d'impôt d'entreprise et divers" aide="Restitués si l'impôt est insuffisant. Les crédits d'entreprise supposent un bénéfice BIC, BNC ou agricole déclaré au cadre 5.">
+          <SingleMontantLigne label="Crédit d'impôt recherche, restitution immédiate" code="8TB" value={ps.case8tb ?? null} onChange={v => update('case8tb', v)} />
+          <SingleMontantLigne label="Crédit d'impôt collaboration de recherche" code="8WK" value={ps.case8wk ?? null} onChange={v => update('case8wk', v)} />
+          <SingleMontantLigne label="Crédit d'impôt famille" code="8UZ" value={ps.case8uz ?? null} onChange={v => update('case8uz', v)} />
+          <SingleMontantLigne label="Investissements dans l'industrie verte" code="8CV" value={ps.case8cv ?? null} onChange={v => update('case8cv', v)} />
+          <SingleMontantLigne label="Investissement en Corse, restitution immédiate" code="8TS" value={ps.case8ts ?? null} onChange={v => update('case8ts', v)} />
+          <SingleMontantLigne label="Prêts sans intérêt" code="8WC" value={ps.case8wc ?? null} onChange={v => update('case8wc', v)} />
+          <SingleMontantLigne label="Crédit métiers d'art" code="8WR" value={ps.case8wr ?? null} onChange={v => update('case8wr', v)} />
+          <SingleMontantLigne label="Micro-entrepreneur : versements libératoires dont le remboursement est demandé" code="8UY" value={ps.case8uy ?? null} onChange={v => update('case8uy', v)} />
+          <SingleMontantLigne label="Crédit agriculture biologique" extra="bénéfice agricole requis" code="8WA" value={ps.case8wa ?? null} onChange={v => update('case8wa', v)} />
+          <SingleMontantLigne label="Exploitation agricole à haute valeur environnementale" extra="bénéfice agricole requis" code="8WH" value={ps.case8wh ?? null} onChange={v => update('case8wh', v)} />
+          <SingleMontantLigne label="Remplacement pour congé des agriculteurs" extra="bénéfice agricole requis" code="8WT" value={ps.case8wt ?? null} onChange={v => update('case8wt', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Crédits d'impôt non restituables" aide="Imputés sur l'impôt, sans remboursement de l'excédent.">
+          <SingleMontantLigne label="Crédit d'impôt recherche, autres entreprises" code="8TC" value={ps.case8tc ?? null} onChange={v => update('case8tc', v)} />
+          <SingleMontantLigne label="Investissement en Corse, autres entreprises" code="8TG" value={ps.case8tg ?? null} onChange={v => update('case8tg', v)} />
+          <SingleMontantLigne label="Investissement en Corse, report du crédit non imputé" code="8TO" value={ps.case8to ?? null} onChange={v => update('case8to', v)} />
+          <SingleMontantLigne label="Investissement en Corse, reprise du crédit" extra="ajoutée à l'impôt" code="8TP" value={ps.case8tp ?? null} onChange={v => update('case8tp', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Réductions d'impôt" aide="Non restituables.">
+          <SingleMontantLigne label="Report de réduction d'impôt non imputée de 2024" code="8PY" value={ps.case8py ?? null} onChange={v => update('case8py', v)} />
+          <SingleMontantLigne label="Prêt à taux zéro mobilité" code="8PZ" value={ps.case8pz ?? null} onChange={v => update('case8pz', v)} />
+        </SousGroupe>
+
         <SousGroupe titre="Divers">
           <SingleMontantLigne label="Reprises de réductions ou de crédits d'impôt" code="8TF" value={ps.case8tf} onChange={v => update('case8tf', v)} />
           <SingleMontantLigne label="Plus-values en report d'imposition non expiré" extra="informatif" code="8UT" value={ps.case8ut} onChange={v => update('case8ut', v)} />

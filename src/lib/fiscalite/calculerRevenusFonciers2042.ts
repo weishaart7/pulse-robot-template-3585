@@ -13,11 +13,17 @@ export type AlerteRevenusFonciers2042 =
   | 'micro_et_parts_sci'
   | '4ba_ignore_2044'
   | '4bd_ignore_2044'
+  | '4bc_ignore_2044'
   | '4bk_superieur_4be'
   | '4bl_sans_reel'
   | '4bl_superieur_4ba';
 
 export interface RevenusFonciers2042Result {
+  /**
+   * 4BC saisi sans 2044 : retranché du revenu global (RNI et RFR), pas de la base des PS. Le plafond
+   * légal de 10 700 € n'est pas appliqué, comme sur le simulateur officiel 2026 (15 000 € retranchés).
+   */
+  deficitImputableRevenuGlobal: number;
   /**
    * Foncier net imposable au barème hors 2044 : 70 % de 4BE et 4BA saisi
    * directement, hors fractions 4BK/4BL, après imputation de 4BD.
@@ -95,6 +101,7 @@ export function calculerRevenusFonciers2042(
   if (recettesMicro > 0 && reelSaisi > 0) alertes.push('micro_et_parts_sci');
   if (avec2044 && (input.case4ba ?? 0) > 0) alertes.push('4ba_ignore_2044');
   if (avec2044 && (input.case4bd ?? 0) > 0) alertes.push('4bd_ignore_2044');
+  if (avec2044 && (input.case4bc ?? 0) > 0) alertes.push('4bc_ignore_2044');
   // 4BK/4BL sont des fractions : au-delà de leur case mère, l'excédent est écarté.
   if (recettesMicroEtrangeres > recettesMicro) alertes.push('4bk_superieur_4be');
   const baseReel = avec2044 ? Math.max(0, revenuFoncierReel) : reelSaisi;
@@ -102,6 +109,7 @@ export function calculerRevenusFonciers2042(
   else if ((input.case4bl ?? 0) > baseReel) alertes.push('4bl_superieur_4ba');
 
   return {
+    deficitImputableRevenuGlobal: avec2044 ? 0 : Math.max(0, input.case4bc ?? 0),
     totalNetImposable: brutBareme - imputeBareme,
     deductionReel4BL,
     revenuCreditImpotEgalImpotFrancais: brutEtranger - imputeEtranger + deductionReel4BL,

@@ -427,6 +427,7 @@ export function useFiscalOverview(): FiscalOverview {
         + plusValuesGainsDivers.totalNetImposable
         + (revenusFonciers?.incidenceRevenuImposable ?? 0)
         + revenusFonciers2042.totalNetImposable - revenusFonciers2042.deductionReel4BL
+        - revenusFonciers2042.deficitImputableRevenuGlobal
         + revenusNonSalaries.totalNetImposable;
       // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
       const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= SEUIL_DEFICIT_AGRICOLE ? revenusNonSalaries.deficitAgricole : 0;
@@ -481,8 +482,8 @@ export function useFiscalOverview(): FiscalOverview {
           + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
           + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
-        reductionsCreditsImpot.totalReductions,
-        reductionsCreditsImpot.totalCredits,
+        reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions,
+        reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables,
         creditEtranger,
         prelevementSourceDivers.reprises,
         revenusNonSalaries.revenuImposableTauxMarginal,
@@ -499,7 +500,8 @@ export function useFiscalOverview(): FiscalOverview {
         optionBareme: capitauxMobiliersInput.case2op,
         exonerationCsgCrds: exonerationTotale,
       });
-      const impot = calculer(creditEtranger.creditImpot);
+      // 8TC/8TG/8TO : non restituables, imputés avec le crédit égal à l'impôt étranger.
+      const impot = calculer(creditEtranger.creditImpot + prelevementSourceDivers.creditsNonRestituables);
       const somme = (...v: (number | null)[]) => v.reduce<number>((t, x) => t + Math.max(0, x ?? 0), 0);
       // Bases du foyer par contribution, arrondies une seule fois (voir arrondirPrelevementsSociaux.ts).
       // 2044 hors fraction 4BL (crédit égal à l'impôt français, qui neutralise aussi les PS).

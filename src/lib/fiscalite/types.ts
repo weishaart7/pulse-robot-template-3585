@@ -349,6 +349,8 @@ export interface RevenusFonciers2042Input {
   case4by: number | null;
   case4ea: number | null;
   case4eb: number | null;
+  /** Déficit foncier imputable sur le revenu global (sans 2044 ; avec une 2044, celle-ci le calcule) */
+  case4bc?: number | null;
 }
 
 /**
@@ -938,4 +940,28 @@ export interface PrelevementSourceDiversInput {
   case8tk186: number | null;
   /** Ventilation interne de 8TK : dont revenus du patrimoine à PS 17,2 %, hors foncier (4BK/4BL) */
   case8tk172: number | null;
+  /** Crédits restituables : recherche à restitution immédiate (8TB), collaboration de recherche (8WK), famille (8UZ),
+   *  industrie verte (8CV), Corse à restitution immédiate (8TS), prêts sans intérêt (8WC), métiers d'art (8WR),
+   *  versements libératoires des micro-entrepreneurs (8UY), agriculture biologique (8WA), haute valeur
+   *  environnementale (8WH), remplacement pour congé des agriculteurs (8WT) */
+  case8tb?: number | null;
+  case8wk?: number | null;
+  case8uz?: number | null;
+  case8cv?: number | null;
+  case8ts?: number | null;
+  case8wc?: number | null;
+  case8wr?: number | null;
+  case8uy?: number | null;
+  case8wa?: number | null;
+  case8wh?: number | null;
+  case8wt?: number | null;
+  /** Crédits non restituables : recherche autres entreprises (8TC), Corse autres entreprises (8TG), report Corse (8TO) */
+  case8tc?: number | null;
+  case8tg?: number | null;
+  case8to?: number | null;
+  /** Reprise du crédit d'investissement en Corse, ajoutée à l'impôt */
+  case8tp?: number | null;
+  /** Réductions : report de réduction non imputée de 2024 (8PY), prêt à taux zéro mobilité (8PZ) */
+  case8py?: number | null;
+  case8pz?: number | null;
 }

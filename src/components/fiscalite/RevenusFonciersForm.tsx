@@ -22,6 +22,7 @@ const TEXTE_ALERTE = {
   micro_et_parts_sci: "4BA direct est réservé aux seuls revenus de parts de sociétés immobilières : avec une location en direct, ces revenus vont en 4BE (micro) ou dans une 2044.",
   '4ba_ignore_2044': 'Une 2044 est ouverte pour 2025 : le 4BA saisi est ignoré, celui de la 2044 est retenu.',
   '4bd_ignore_2044': 'Une 2044 est ouverte pour 2025 : les déficits antérieurs saisis sont ignorés, la 2044 les impute.',
+  '4bc_ignore_2044': 'Une 2044 est ouverte pour 2025 : le 4BC saisi est ignoré, celui de la 2044 est retenu.',
   '4bk_superieur_4be': '4BK est une fraction de 4BE : le montant excédant 4BE est ignoré.',
   '4bl_sans_reel': 'Sans revenu foncier au régime réel (4BA), 4BL est ignoré.',
   '4bl_superieur_4ba': '4BL est une fraction de 4BA : le montant excédant 4BA est ignoré.',
@@ -37,6 +38,7 @@ const CASES_IGNOREES: Partial<Record<Alerte, readonly (keyof RevenusFonciers2042
   micro_et_reel: ['case4be', 'case4bk', 'case4eb'],
   '4ba_ignore_2044': ['case4ba'],
   '4bd_ignore_2044': ['case4bd'],
+  '4bc_ignore_2044': ['case4bc'],
 };
 
 interface RevenusFonciersFormProps {
@@ -118,7 +120,9 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
             : <SingleMontantLigne label="Revenus fonciers imposables" extra="parts de sociétés immobilières seulement" code="4BA" value={rf.case4ba} onChange={v => update('case4ba', v)} />}
           <SingleMontantLigne label="Dont revenus de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" aide="Crédit égal à l'impôt français : IR et prélèvements sociaux neutralisés. Ne pas utiliser pour les PS si la convention exclut la CSG-CRDS (Royaume-Uni, Inde, Bahreïn, Monaco)." code="4BL" value={rf.case4bl} onChange={v => update('case4bl', v)} />
           <LectureLigne label="Déficit imputable sur les revenus fonciers" code="4BB" value={declaration2044?.case4BB ?? null} />
-          <LectureLigne label="Déficit imputable sur le revenu global" code="4BC" value={declaration2044?.case4BC ?? null} />
+          {declaration2044
+            ? <LectureLigne label="Déficit imputable sur le revenu global" code="4BC" value={declaration2044.case4BC} />
+            : <SingleMontantLigne label="Déficit imputable sur le revenu global" extra="retranché du revenu imposable" code="4BC" value={rf.case4bc ?? null} onChange={v => update('case4bc', v)} />}
           {declaration2044
             ? <LectureLigne label="Déficits antérieurs non encore imputés" code="4BD" value={declaration2044.case4BD} />
             : <SingleMontantLigne label="Déficits antérieurs non encore imputés" extra="existants au 1er janvier de la première année au micro-foncier" code="4BD" value={rf.case4bd} onChange={v => update('case4bd', v)} />}
