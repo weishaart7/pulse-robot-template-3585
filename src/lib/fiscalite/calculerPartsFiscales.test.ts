@@ -114,14 +114,14 @@ describe('calculerPartsFiscales — enfants à charge (progression 0,5 / 1)', ()
 });
 
 describe('calculerPartsFiscales — résidence alternée', () => {
-  it('1 enfant en résidence alternée au rang 1 : +0,25, plafond 904€', () => {
+  it('1 enfant en résidence alternée au rang 1 : +0,25, plafond 903,5€', () => {
     const result = calculerPartsFiscales(makeInput({ enfantsCharge: [enfant({ residenceAlternee: true })] }));
     expect(result.majorations).toEqual([
       {
         type: 'enfant_rang_1',
         libelle: '1er enfant à charge (résidence alternée)',
         parts: 0.25,
-        plafondUnitaire: 904,
+        plafondUnitaire: 903.5,
       },
     ]);
     expect(result.nombreParts).toBe(1.25);
@@ -182,7 +182,7 @@ describe('calculerPartsFiscales — enfant invalide', () => {
         type: 'enfant_rang_1',
         libelle: '1er enfant à charge (résidence alternée)',
         parts: 0.25,
-        plafondUnitaire: 904,
+        plafondUnitaire: 903.5,
       },
       {
         type: 'enfant_rang_1_invalidite',

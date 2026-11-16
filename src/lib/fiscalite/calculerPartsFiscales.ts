@@ -3,7 +3,6 @@ import { FoyerFiscalInput, MajorationDetail, MajorationNonRetenue, PartsFiscales
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
 const PLAFOND_DEMI_PART_STANDARD = 1807;
-const PLAFOND_QUART_PART_ALTERNEE = 904;
 const PLAFOND_COMPLEMENTAIRE_STANDARD = 1801;
 // Plafond global des deux premières demi-parts au-delà de 1 part (enfant n°1 + case T), dont la
 // demi-part de l'enfant n°1 consomme déjà PLAFOND_DEMI_PART_STANDARD : reste pour la case T.
@@ -55,9 +54,9 @@ function construireEnfantsRang(input: FoyerFiscalInput): EnfantRang[] {
   return [...exclusifs, ...majeursRattaches, ...alternes];
 }
 
-/** 1 807 € par demi-part (un quart de part : 904 €, soit 1 807 € / 2 arrondi). */
+/** 1 807 € par demi-part, au prorata (un quart de part : 903,5 €, non arrondi — simulateur officiel : 2 quarts = 1 807 €). */
 function plafondPourParts(parts: number): number {
-  return parts === 0.25 ? PLAFOND_QUART_PART_ALTERNEE : (parts / 0.5) * PLAFOND_DEMI_PART_STANDARD;
+  return (parts / 0.5) * PLAFOND_DEMI_PART_STANDARD;
 }
 
 function majorationsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: number): MajorationDetail[] {
