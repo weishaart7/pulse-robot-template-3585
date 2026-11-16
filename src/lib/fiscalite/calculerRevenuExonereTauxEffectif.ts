@@ -49,7 +49,7 @@ export function calculerRevenuExonereTauxEffectif(
 ): RevenuExonereTauxEffectifResult {
   const salairesNetImposables = salairesNetImposablesExoneresTauxEffectif;
 
-  const pensionsBrutes = (input.case1ah ?? 0) + (input.case1bh ?? 0);
+  const pensionsBrutes = (input.case1ah ?? 0) + (input.case1bh ?? 0) + (input.case1ch ?? 0) + (input.case1dh ?? 0);
   const pensionsNettes = pensionsNettesExonereesTauxEffectif;
   const abattementPension = pensionsBrutes - pensionsNettes;
 

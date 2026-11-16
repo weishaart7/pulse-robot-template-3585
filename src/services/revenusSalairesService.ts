@@ -52,6 +52,26 @@ interface RevenusSalairesRow {
   case_1ey: number | string | null;
   case_1sm: number | string | null;
   case_1dn: number | string | null;
+  case_1cj: number | string | null;
+  case_1dj: number | string | null;
+  case_1ca: number | string | null;
+  case_1da: number | string | null;
+  case_1cp: number | string | null;
+  case_1dp: number | string | null;
+  case_1cg: number | string | null;
+  case_1dg: number | string | null;
+  case_1ib: number | string | null;
+  case_1jb: number | string | null;
+  case_1if: number | string | null;
+  case_1jf: number | string | null;
+  case_1ck: number | string | null;
+  case_1dk: number | string | null;
+  case_1cd: number | string | null;
+  case_1dd: number | string | null;
+  case_1ih: number | string | null;
+  case_1jh: number | string | null;
+  case_1pd: number | string | null;
+  case_1pe: number | string | null;
 }
 
 function toNumberOrNull(value: number | string | null): number | null {
@@ -100,6 +120,26 @@ function rowToRevenusSalaires(row: RevenusSalairesRow): RevenusSalaires {
     case1ey: toNumberOrNull(row.case_1ey),
     case1sm: toNumberOrNull(row.case_1sm),
     case1dn: toNumberOrNull(row.case_1dn),
+    case1cj: toNumberOrNull(row.case_1cj),
+    case1dj: toNumberOrNull(row.case_1dj),
+    case1ca: toNumberOrNull(row.case_1ca),
+    case1da: toNumberOrNull(row.case_1da),
+    case1cp: toNumberOrNull(row.case_1cp),
+    case1dp: toNumberOrNull(row.case_1dp),
+    case1cg: toNumberOrNull(row.case_1cg),
+    case1dg: toNumberOrNull(row.case_1dg),
+    case1ib: toNumberOrNull(row.case_1ib),
+    case1jb: toNumberOrNull(row.case_1jb),
+    case1if: toNumberOrNull(row.case_1if),
+    case1jf: toNumberOrNull(row.case_1jf),
+    case1ck: toNumberOrNull(row.case_1ck),
+    case1dk: toNumberOrNull(row.case_1dk),
+    case1cd: toNumberOrNull(row.case_1cd),
+    case1dd: toNumberOrNull(row.case_1dd),
+    case1ih: toNumberOrNull(row.case_1ih),
+    case1jh: toNumberOrNull(row.case_1jh),
+    case1pd: toNumberOrNull(row.case_1pd),
+    case1pe: toNumberOrNull(row.case_1pe),
   };
 }
 
@@ -144,6 +184,26 @@ function revenusSalairesToRow(revenus: RevenusSalaires, userId: string) {
     case_1ey: revenus.case1ey,
     case_1sm: revenus.case1sm,
     case_1dn: revenus.case1dn,
+    case_1cj: revenus.case1cj ?? null,
+    case_1dj: revenus.case1dj ?? null,
+    case_1ca: revenus.case1ca ?? null,
+    case_1da: revenus.case1da ?? null,
+    case_1cp: revenus.case1cp ?? null,
+    case_1dp: revenus.case1dp ?? null,
+    case_1cg: revenus.case1cg ?? null,
+    case_1dg: revenus.case1dg ?? null,
+    case_1ib: revenus.case1ib ?? null,
+    case_1jb: revenus.case1jb ?? null,
+    case_1if: revenus.case1if ?? null,
+    case_1jf: revenus.case1jf ?? null,
+    case_1ck: revenus.case1ck ?? null,
+    case_1dk: revenus.case1dk ?? null,
+    case_1cd: revenus.case1cd ?? null,
+    case_1dd: revenus.case1dd ?? null,
+    case_1ih: revenus.case1ih ?? null,
+    case_1jh: revenus.case1jh ?? null,
+    case_1pd: revenus.case1pd ?? null,
+    case_1pe: revenus.case1pe ?? null,
   };
 }
 

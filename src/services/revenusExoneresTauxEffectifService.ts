@@ -22,6 +22,12 @@ interface RevenusExoneresTauxEffectifRow {
   case_1be: number | string | null;
   case_1ah: number | string | null;
   case_1bh: number | string | null;
+  case_1cc: number | string | null;
+  case_1dc: number | string | null;
+  case_1ce: number | string | null;
+  case_1de: number | string | null;
+  case_1ch: number | string | null;
+  case_1dh: number | string | null;
   case_rse: string | null;
   case_rsf: string | null;
 }
@@ -42,6 +48,12 @@ function rowToRevenusExoneresTauxEffectif(row: RevenusExoneresTauxEffectifRow): 
     case1be: toNumberOrNull(row.case_1be),
     case1ah: toNumberOrNull(row.case_1ah),
     case1bh: toNumberOrNull(row.case_1bh),
+    case1cc: toNumberOrNull(row.case_1cc),
+    case1dc: toNumberOrNull(row.case_1dc),
+    case1ce: toNumberOrNull(row.case_1ce),
+    case1de: toNumberOrNull(row.case_1de),
+    case1ch: toNumberOrNull(row.case_1ch),
+    case1dh: toNumberOrNull(row.case_1dh),
     caseRse: row.case_rse,
     caseRsf: row.case_rsf,
   };
@@ -58,6 +70,12 @@ function revenusExoneresTauxEffectifToRow(revenus: RevenusExoneresTauxEffectif, 
     case_1be: revenus.case1be,
     case_1ah: revenus.case1ah,
     case_1bh: revenus.case1bh,
+    case_1cc: revenus.case1cc ?? null,
+    case_1dc: revenus.case1dc ?? null,
+    case_1ce: revenus.case1ce ?? null,
+    case_1de: revenus.case1de ?? null,
+    case_1ch: revenus.case1ch ?? null,
+    case_1dh: revenus.case1dh ?? null,
     case_rse: revenus.caseRse,
     case_rsf: revenus.caseRsf,
   };

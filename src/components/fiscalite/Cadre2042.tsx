@@ -43,6 +43,21 @@ export const Cadre2042Chargement = ({ texte }: { texte: string }) => (
 export const SeparateurCadre = () => <div aria-hidden className="h-6" />;
 
 /** Intertitre d'un bloc de lignes, sans bande (ex. « Rentes viagères à titre onéreux »). */
+/**
+ * Bloc repliable des personnes à charge (colonnes C/D, I/J de la 2042) : replié
+ * par défaut, ouvert d'office dès qu'un montant est saisi.
+ */
+export const PersonnesAChargeCadre = ({ ouvert, children }: { ouvert: boolean; children: ReactNode }) => (
+  <details open={ouvert} className="group pt-6">
+    <summary className="cursor-pointer list-none pb-2 text-[13px] font-medium text-foreground">
+      <span className="mr-1.5 inline-block transition-transform group-open:rotate-90">›</span>
+      Personnes à charge
+      <span className="ml-1.5 text-[12.5px] font-normal text-muted-foreground">même règle que pour les déclarants, abattement propre à chaque personne</span>
+    </summary>
+    {children}
+  </details>
+);
+
 export const IntertitreCadre = ({ titre, children }: { titre: string; children?: ReactNode }) => (
   <div className="pb-2 pt-6">
     <p className="text-[13px] font-medium text-foreground">{titre}</p>

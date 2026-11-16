@@ -4,7 +4,7 @@ import { GainsActionnariatSalarieInput, RevenusExoneresTauxEffectifInput, Revenu
 /** Sous-ensemble de `RevenusExoneresTauxEffectifInput` utile au pool 1AJ/1AC par déclarant. */
 export type RevenusExoneresPourPoolSalaires = Pick<
   RevenusExoneresTauxEffectifInput,
-  'case1ac' | 'case1bc' | 'case1ae' | 'case1be'
+  'case1ac' | 'case1bc' | 'case1ae' | 'case1be' | 'case1cc' | 'case1dc' | 'case1ce' | 'case1de'
 >;
 
 const ABATTEMENT_TAUX = 0.10;
@@ -108,6 +108,14 @@ export interface RevenuSalairesDeclarantDetail {
 export interface RevenuSalairesResult {
   declarant1: RevenuSalairesDeclarantDetail;
   declarant2: RevenuSalairesDeclarantDetail;
+  /**
+   * Personnes à charge (colonnes C/D, I/J) : chacune a son propre abattement de
+   * 10 % (plancher 509 €, plafond 14 555 €) ou ses frais réels (1CK/1DK), comme
+   * un déclarant — vérifié sur le simulateur officiel 2026 (1CJ 200 000 € →
+   * plafond 14 555 € propre ; 1CJ + 1DJ → deux abattements).
+   */
+  pac1: RevenuSalairesDeclarantDetail;
+  pac2: RevenuSalairesDeclarantDetail;
   /**
    * 1PM/1QM bruts (avant abattement), à titre informatif : le montant est
    * déjà intégré au pool abattement 10 %/frais réels de son déclarant (voir
@@ -391,6 +399,23 @@ export function calculerRevenuSalaires(
   const exonereRFR2 = Math.min(input.case1hh ?? 0, PLAFOND_EXONERATION_1GH) + Math.min(input.case1bd ?? 0, seuil1bd)
     + (input.case1bq ?? 0) + (input.case1ey ?? 0) + (input.case1dn ?? 0) + (input.case1pc ?? 0);
 
+  // Personnes à charge : jumelles du déclarant 1 (1CJ ↔ 1AJ, 1CA ↔ 1AA, 1CP ↔ 1AP, 1CG ↔ 1AG,
+  // 1IB ↔ 1GB, 1IF ↔ 1GF, 1CK ↔ 1AK, 1CD ↔ 1AD, 1IH ↔ 1GH, 1PD ↔ 1PB), seuil PPV standard.
+  const pac = (j: number | null | undefined, a: number | null | undefined, p: number | null | undefined,
+    g: number | null | undefined, b: number | null | undefined, f: number | null | undefined,
+    k: number | null | undefined, d: number | null | undefined, h: number | null | undefined,
+    pb: number | null | undefined, cc: number | null | undefined, ce: number | null | undefined) => {
+    const surplusH = Math.max(0, (h ?? 0) - PLAFOND_EXONERATION_1GH);
+    const surplusD = Math.max(0, (d ?? 0) - PLAFOND_EXONERATION_1AD);
+    const remunerations = (j ?? 0) + (a ?? 0) + (p ?? 0) + (g ?? 0) + (b ?? 0) + (f ?? 0) + surplusH + surplusD;
+    const exonereRFR = Math.min(h ?? 0, PLAFOND_EXONERATION_1GH) + Math.min(d ?? 0, PLAFOND_EXONERATION_1AD) + (pb ?? 0);
+    return calculerDeclarant(remunerations, 0, k ?? null, 0, cc ?? 0, ce ?? null, 0, exonereRFR);
+  };
+  const pac1 = pac(input.case1cj, input.case1ca, input.case1cp, input.case1cg, input.case1ib, input.case1if,
+    input.case1ck, input.case1cd, input.case1ih, input.case1pd, exoneres?.case1cc, exoneres?.case1ce);
+  const pac2 = pac(input.case1dj, input.case1da, input.case1dp, input.case1dg, input.case1jb, input.case1jf,
+    input.case1dk, input.case1dd, input.case1jh, input.case1pe, exoneres?.case1dc, exoneres?.case1de);
+
   const declarant1 = calculerDeclarant(
     remunerations1, input.case1ga ?? 0, input.case1ak ?? null, input.case1af ?? 0, exoneres?.case1ac ?? 0,
     exoneres?.case1ae ?? null, basesGains.declarant1, exonereRFR1,
@@ -404,14 +429,17 @@ export function calculerRevenuSalaires(
 
   const revenuCreditImpotEgalImpotFrancais = declarant1.netImposableCreditImpot + declarant2.netImposableCreditImpot;
   const salairesNetImposablesExoneresTauxEffectif = declarant1.netImposableExonereTauxEffectif
-    + declarant2.netImposableExonereTauxEffectif;
-  const revenuExonereRetenuPourRFR = declarant1.exonereRetenuRFR + declarant2.exonereRetenuRFR;
+    + declarant2.netImposableExonereTauxEffectif + pac1.netImposableExonereTauxEffectif + pac2.netImposableExonereTauxEffectif;
+  const revenuExonereRetenuPourRFR = declarant1.exonereRetenuRFR + declarant2.exonereRetenuRFR
+    + pac1.exonereRetenuRFR + pac2.exonereRetenuRFR;
 
   return {
     declarant1,
     declarant2,
+    pac1,
+    pac2,
     indemnitesPrejudiceMoral,
-    totalNetImposable: declarant1.netImposable + declarant2.netImposable,
+    totalNetImposable: declarant1.netImposable + declarant2.netImposable + pac1.netImposable + pac2.netImposable,
     revenuCreditImpotEgalImpotFrancais,
     salairesNetImposablesExoneresTauxEffectif,
     gainsActionnariatNetImposable: declarant1.netImposableActionnariat + declarant2.netImposableActionnariat,

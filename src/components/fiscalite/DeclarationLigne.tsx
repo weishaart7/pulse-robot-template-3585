@@ -24,11 +24,11 @@ export const AideTooltip = ({ texte }: { texte: string }) => (
 );
 
 /** En-tête de colonnes « Déclarant 1 / Déclarant 2 », affiché une fois au-dessus de la liste des lignes. */
-export const DeclarantsHeader = () => (
+export const DeclarantsHeader = ({ colonne1 = 'Déclarant 1', colonne2 = 'Déclarant 2' }: { colonne1?: string; colonne2?: string } = {}) => (
   <div className={cn('hidden gap-x-4 border-b border-foreground/20 pb-2.5 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground sm:grid', GRILLE_DECLARANTS)}>
     <span>Case</span>
-    <span className="text-right">Déclarant 1</span>
-    <span className="text-right">Déclarant 2</span>
+    <span className="text-right">{colonne1}</span>
+    <span className="text-right">{colonne2}</span>
   </div>
 );
 

@@ -2386,6 +2386,18 @@ export type Database = {
       }
       pensions_retraites_rentes: {
         Row: {
+          case_1cs: number | null
+          case_1ds: number | null
+          case_1ct: number | null
+          case_1dt: number | null
+          case_1ci: number | null
+          case_1di: number | null
+          case_1cz: number | null
+          case_1dz: number | null
+          case_1co: number | null
+          case_1do: number | null
+          case_1cm: number | null
+          case_1dm: number | null
           case_1ai: number | null
           case_1al: number | null
           case_1am: number | null
@@ -2416,6 +2428,18 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_1cs?: number | null
+          case_1ds?: number | null
+          case_1ct?: number | null
+          case_1dt?: number | null
+          case_1ci?: number | null
+          case_1di?: number | null
+          case_1cz?: number | null
+          case_1dz?: number | null
+          case_1co?: number | null
+          case_1do?: number | null
+          case_1cm?: number | null
+          case_1dm?: number | null
           case_1ai?: number | null
           case_1al?: number | null
           case_1am?: number | null
@@ -2446,6 +2470,18 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_1cs?: number | null
+          case_1ds?: number | null
+          case_1ct?: number | null
+          case_1dt?: number | null
+          case_1ci?: number | null
+          case_1di?: number | null
+          case_1cz?: number | null
+          case_1dz?: number | null
+          case_1co?: number | null
+          case_1do?: number | null
+          case_1cm?: number | null
+          case_1dm?: number | null
           case_1ai?: number | null
           case_1al?: number | null
           case_1am?: number | null
@@ -3368,6 +3404,12 @@ export type Database = {
       }
       revenus_exoneres_taux_effectif: {
         Row: {
+          case_1cc: number | null
+          case_1dc: number | null
+          case_1ce: number | null
+          case_1de: number | null
+          case_1ch: number | null
+          case_1dh: number | null
           case_1ac: number | null
           case_1ae: number | null
           case_1ah: number | null
@@ -3384,6 +3426,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_1cc?: number | null
+          case_1dc?: number | null
+          case_1ce?: number | null
+          case_1de?: number | null
+          case_1ch?: number | null
+          case_1dh?: number | null
           case_1ac?: number | null
           case_1ae?: number | null
           case_1ah?: number | null
@@ -3400,6 +3448,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_1cc?: number | null
+          case_1dc?: number | null
+          case_1ce?: number | null
+          case_1de?: number | null
+          case_1ch?: number | null
+          case_1dh?: number | null
           case_1ac?: number | null
           case_1ae?: number | null
           case_1ah?: number | null
@@ -4079,6 +4133,26 @@ export type Database = {
       }
       revenus_salaires: {
         Row: {
+          case_1cj: number | null
+          case_1dj: number | null
+          case_1ca: number | null
+          case_1da: number | null
+          case_1cp: number | null
+          case_1dp: number | null
+          case_1cg: number | null
+          case_1dg: number | null
+          case_1ib: number | null
+          case_1jb: number | null
+          case_1if: number | null
+          case_1jf: number | null
+          case_1ck: number | null
+          case_1dk: number | null
+          case_1cd: number | null
+          case_1dd: number | null
+          case_1ih: number | null
+          case_1jh: number | null
+          case_1pd: number | null
+          case_1pe: number | null
           case_1aa: number | null
           case_1ad: number | null
           case_1af: number | null
@@ -4123,6 +4197,26 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_1cj?: number | null
+          case_1dj?: number | null
+          case_1ca?: number | null
+          case_1da?: number | null
+          case_1cp?: number | null
+          case_1dp?: number | null
+          case_1cg?: number | null
+          case_1dg?: number | null
+          case_1ib?: number | null
+          case_1jb?: number | null
+          case_1if?: number | null
+          case_1jf?: number | null
+          case_1ck?: number | null
+          case_1dk?: number | null
+          case_1cd?: number | null
+          case_1dd?: number | null
+          case_1ih?: number | null
+          case_1jh?: number | null
+          case_1pd?: number | null
+          case_1pe?: number | null
           case_1aa?: number | null
           case_1ad?: number | null
           case_1af?: number | null
@@ -4167,6 +4261,26 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_1cj?: number | null
+          case_1dj?: number | null
+          case_1ca?: number | null
+          case_1da?: number | null
+          case_1cp?: number | null
+          case_1dp?: number | null
+          case_1cg?: number | null
+          case_1dg?: number | null
+          case_1ib?: number | null
+          case_1jb?: number | null
+          case_1if?: number | null
+          case_1jf?: number | null
+          case_1ck?: number | null
+          case_1dk?: number | null
+          case_1cd?: number | null
+          case_1dd?: number | null
+          case_1ih?: number | null
+          case_1jh?: number | null
+          case_1pd?: number | null
+          case_1pe?: number | null
           case_1aa?: number | null
           case_1ad?: number | null
           case_1af?: number | null

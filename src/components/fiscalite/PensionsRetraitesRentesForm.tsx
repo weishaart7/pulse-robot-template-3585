@@ -4,7 +4,7 @@ import { usePensionsRetraitesRentes } from '@/hooks/usePensionsRetraitesRentes';
 import { PensionsRetraitesRentes } from '@/services/pensionsRetraitesRentesService';
 import { PensionsRetraitesRentesInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne, MontantParTrancheAgeLigne } from './DeclarationLigne';
-import { Cadre2042, Cadre2042Chargement, IntertitreCadre, SeparateurCadre } from './Cadre2042';
+import { Cadre2042, Cadre2042Chargement, IntertitreCadre, PersonnesAChargeCadre, SeparateurCadre } from './Cadre2042';
 
 const PENSIONS_VIDE: PensionsRetraitesRentesInput = {
   case1as: null,
@@ -128,6 +128,45 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
           checked1={pensions.case1hk} checked2={pensions.case1hl}
           onChange1={v => update('case1hk', v)} onChange2={v => update('case1hl', v)}
         />
+        <PersonnesAChargeCadre ouvert={(pensions.case1cs ?? 0) > 0 || (pensions.case1ds ?? 0) > 0 || (pensions.case1ct ?? 0) > 0 || (pensions.case1dt ?? 0) > 0 || (pensions.case1ci ?? 0) > 0 || (pensions.case1di ?? 0) > 0 || (pensions.case1cz ?? 0) > 0 || (pensions.case1dz ?? 0) > 0 || (pensions.case1co ?? 0) > 0 || (pensions.case1do ?? 0) > 0 || (pensions.case1cm ?? 0) > 0 || (pensions.case1dm ?? 0) > 0}>
+          <DeclarantsHeader colonne1="Personne 1" colonne2="Personne 2" />
+          <MontantLigne
+            label="Pensions, retraites et rentes"
+            code1="1CS" code2="1DS"
+            value1={pensions.case1cs ?? null} value2={pensions.case1ds ?? null}
+            onChange1={v => update('case1cs', v)} onChange2={v => update('case1ds', v)}
+          />
+          <MontantLigne
+            label="Pensions de retraite en capital (7,5 %)"
+            code1="1CT" code2="1DT"
+            value1={pensions.case1ct ?? null} value2={pensions.case1dt ?? null}
+            onChange1={v => update('case1ct', v)} onChange2={v => update('case1dt', v)}
+          />
+          <MontantLigne
+            label="Pensions en capital des plans d'épargne retraite"
+            code1="1CI" code2="1DI"
+            value1={pensions.case1ci ?? null} value2={pensions.case1di ?? null}
+            onChange1={v => update('case1ci', v)} onChange2={v => update('case1di', v)}
+          />
+          <MontantLigne
+            label="Pensions d'invalidité"
+            code1="1CZ" code2="1DZ"
+            value1={pensions.case1cz ?? null} value2={pensions.case1dz ?? null}
+            onChange1={v => update('case1cz', v)} onChange2={v => update('case1dz', v)}
+          />
+          <MontantLigne
+            label="Pensions alimentaires perçues"
+            code1="1CO" code2="1DO"
+            value1={pensions.case1co ?? null} value2={pensions.case1do ?? null}
+            onChange1={v => update('case1co', v)} onChange2={v => update('case1do', v)}
+          />
+          <MontantLigne
+            label="Autres pensions imposables de source étrangère"
+            code1="1CM" code2="1DM"
+            value1={pensions.case1cm ?? null} value2={pensions.case1dm ?? null}
+            onChange1={v => update('case1cm', v)} onChange2={v => update('case1dm', v)}
+          />
+        </PersonnesAChargeCadre>
 
         <SeparateurCadre />
 

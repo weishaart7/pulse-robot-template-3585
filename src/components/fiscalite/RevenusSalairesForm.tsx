@@ -3,7 +3,7 @@ import { useRevenusSalaires } from '@/hooks/useRevenusSalaires';
 import { RevenusSalaires } from '@/services/revenusSalairesService';
 import { RevenusSalairesInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne } from './DeclarationLigne';
-import { Cadre2042, Cadre2042Chargement, SeparateurCadre } from './Cadre2042';
+import { Cadre2042, Cadre2042Chargement, PersonnesAChargeCadre, SeparateurCadre } from './Cadre2042';
 
 const REVENUS_VIDE: RevenusSalairesInput = {
   case1aj: null,
@@ -222,6 +222,69 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           checked1={revenus.case1gk} checked2={revenus.case1gl}
           onChange1={v => update('case1gk', v)} onChange2={v => update('case1gl', v)}
         />
+        <PersonnesAChargeCadre ouvert={(revenus.case1cj ?? 0) > 0 || (revenus.case1dj ?? 0) > 0 || (revenus.case1ca ?? 0) > 0 || (revenus.case1da ?? 0) > 0 || (revenus.case1ih ?? 0) > 0 || (revenus.case1jh ?? 0) > 0 || (revenus.case1pd ?? 0) > 0 || (revenus.case1pe ?? 0) > 0 || (revenus.case1cd ?? 0) > 0 || (revenus.case1dd ?? 0) > 0 || (revenus.case1cp ?? 0) > 0 || (revenus.case1dp ?? 0) > 0 || (revenus.case1cg ?? 0) > 0 || (revenus.case1dg ?? 0) > 0 || (revenus.case1ib ?? 0) > 0 || (revenus.case1jb ?? 0) > 0 || (revenus.case1if ?? 0) > 0 || (revenus.case1jf ?? 0) > 0 || (revenus.case1ck ?? 0) > 0 || (revenus.case1dk ?? 0) > 0}>
+          <DeclarantsHeader colonne1="Personne 1" colonne2="Personne 2" />
+          <MontantLigne
+            label="Traitements et salaires"
+            code1="1CJ" code2="1DJ"
+            value1={revenus.case1cj ?? null} value2={revenus.case1dj ?? null}
+            onChange1={v => update('case1cj', v)} onChange2={v => update('case1dj', v)}
+          />
+          <MontantLigne
+            label="Revenus des salariés des particuliers employeurs"
+            code1="1CA" code2="1DA"
+            value1={revenus.case1ca ?? null} value2={revenus.case1da ?? null}
+            onChange1={v => update('case1ca', v)} onChange2={v => update('case1da', v)}
+          />
+          <MontantLigne
+            label="Heures supplémentaires et RTT exonérés"
+            code1="1IH" code2="1JH"
+            value1={revenus.case1ih ?? null} value2={revenus.case1jh ?? null}
+            onChange1={v => update('case1ih', v)} onChange2={v => update('case1jh', v)}
+          />
+          <MontantLigne
+            label="Pourboires exonérés"
+            code1="1PD" code2="1PE"
+            value1={revenus.case1pd ?? null} value2={revenus.case1pe ?? null}
+            onChange1={v => update('case1pd', v)} onChange2={v => update('case1pe', v)}
+          />
+          <MontantLigne
+            label="Prime de partage de la valeur"
+            code1="1CD" code2="1DD"
+            value1={revenus.case1cd ?? null} value2={revenus.case1dd ?? null}
+            onChange1={v => update('case1cd', v)} onChange2={v => update('case1dd', v)}
+          />
+          <MontantLigne
+            label="Autres revenus imposables (chômage, préretraite)"
+            code1="1CP" code2="1DP"
+            value1={revenus.case1cp ?? null} value2={revenus.case1dp ?? null}
+            onChange1={v => update('case1cp', v)} onChange2={v => update('case1dp', v)}
+          />
+          <MontantLigne
+            label="Autres salaires imposables de source étrangère"
+            code1="1CG" code2="1DG"
+            value1={revenus.case1cg ?? null} value2={revenus.case1dg ?? null}
+            onChange1={v => update('case1cg', v)} onChange2={v => update('case1dg', v)}
+          />
+          <MontantLigne
+            label="Revenus des associés et gérants (article 62)"
+            code1="1IB" code2="1JB"
+            value1={revenus.case1ib ?? null} value2={revenus.case1jb ?? null}
+            onChange1={v => update('case1ib', v)} onChange2={v => update('case1jb', v)}
+          />
+          <MontantLigne
+            label="Droits d'auteur, fonctionnaires chercheurs"
+            code1="1IF" code2="1JF"
+            value1={revenus.case1if ?? null} value2={revenus.case1jf ?? null}
+            onChange1={v => update('case1if', v)} onChange2={v => update('case1jf', v)}
+          />
+          <MontantLigne
+            label="Frais réels"
+            code1="1CK" code2="1DK"
+            value1={revenus.case1ck ?? null} value2={revenus.case1dk ?? null}
+            onChange1={v => update('case1ck', v)} onChange2={v => update('case1dk', v)}
+          />
+        </PersonnesAChargeCadre>
     </Cadre2042>
   );
 };

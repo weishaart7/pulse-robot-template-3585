@@ -16,7 +16,9 @@ export function abattementPensionDeclarant(pension: number): number {
   return Math.min(pension, Math.max(PENSION_ABATTEMENT_PLANCHER, pension * PENSION_ABATTEMENT_TAUX));
 }
 
-const PENSIONS_EXONEREES_VIDES: Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh'> = {
+type PensionsExonerees = Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh' | 'case1ch' | 'case1dh'>;
+
+const PENSIONS_EXONEREES_VIDES: PensionsExonerees = {
   case1ah: null,
   case1bh: null,
 };
@@ -139,11 +141,15 @@ export interface PensionsRetraitesRentesResult {
  */
 export function calculerPensionsRetraitesRentes(
   input: PensionsRetraitesRentesInput,
-  pensionsExonerees: Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh'> = PENSIONS_EXONEREES_VIDES,
+  pensionsExonerees: PensionsExonerees = PENSIONS_EXONEREES_VIDES,
 ): PensionsRetraitesRentesResult {
   const pensionDeclarant1 = (input.case1as ?? 0) + (input.case1az ?? 0) + (input.case1ao ?? 0) + (input.case1am ?? 0);
   const pensionDeclarant2 = (input.case1bs ?? 0) + (input.case1bz ?? 0) + (input.case1bo ?? 0) + (input.case1bm ?? 0);
-  const pensionsBrutes = pensionDeclarant1 + pensionDeclarant2;
+  // Personnes à charge (jumelles 1CS/1CZ/1CO/1CM ↔ 1AS/1AZ/1AO/1AM, 1CH ↔ 1AH) : abattement de 10 %
+  // propre, mais le plafond de 4 439 € reste commun à tout le foyer (simulateur officiel 2026).
+  const pensionPac1 = (input.case1cs ?? 0) + (input.case1cz ?? 0) + (input.case1co ?? 0) + (input.case1cm ?? 0);
+  const pensionPac2 = (input.case1ds ?? 0) + (input.case1dz ?? 0) + (input.case1do ?? 0) + (input.case1dm ?? 0);
+  const pensionsBrutes = pensionDeclarant1 + pensionDeclarant2 + pensionPac1 + pensionPac2;
 
   const pensionEtrangere1 = input.case1al ?? 0;
   const pensionEtrangere2 = input.case1bl ?? 0;
@@ -153,7 +159,13 @@ export function calculerPensionsRetraitesRentes(
   const baseAbattement2 = pensionDeclarant2 + pensionEtrangere2 + pensionExoneree2;
   const abattementBrut1 = abattementPensionDeclarant(baseAbattement1);
   const abattementBrut2 = abattementPensionDeclarant(baseAbattement2);
-  const abattementBrutTotal = abattementBrut1 + abattementBrut2;
+  const exonereePac1 = pensionsExonerees.case1ch ?? 0;
+  const exonereePac2 = pensionsExonerees.case1dh ?? 0;
+  const baseAbattementPac1 = pensionPac1 + exonereePac1;
+  const baseAbattementPac2 = pensionPac2 + exonereePac2;
+  const abattementBrutPac1 = abattementPensionDeclarant(baseAbattementPac1);
+  const abattementBrutPac2 = abattementPensionDeclarant(baseAbattementPac2);
+  const abattementBrutTotal = abattementBrut1 + abattementBrut2 + abattementBrutPac1 + abattementBrutPac2;
   const abattementCombine = Math.min(PENSION_ABATTEMENT_PLAFOND_FOYER, abattementBrutTotal);
   const facteurPlafond = abattementBrutTotal > 0 ? abattementCombine / abattementBrutTotal : 0;
 
@@ -164,13 +176,19 @@ export function calculerPensionsRetraitesRentes(
   const ratioExonere1 = baseAbattement1 > 0 ? pensionExoneree1 / baseAbattement1 : 0;
   const ratioExonere2 = baseAbattement2 > 0 ? pensionExoneree2 / baseAbattement2 : 0;
   const pensionEtrangereNette = netDeclarant1 * ratioEtranger1 + netDeclarant2 * ratioEtranger2;
-  const pensionsExonereesTauxEffectifNettes = netDeclarant1 * ratioExonere1 + netDeclarant2 * ratioExonere2;
+  const netPac1 = baseAbattementPac1 - abattementBrutPac1 * facteurPlafond;
+  const netPac2 = baseAbattementPac2 - abattementBrutPac2 * facteurPlafond;
+  const ratioExonerePac1 = baseAbattementPac1 > 0 ? exonereePac1 / baseAbattementPac1 : 0;
+  const ratioExonerePac2 = baseAbattementPac2 > 0 ? exonereePac2 / baseAbattementPac2 : 0;
+  const pensionsExonereesTauxEffectifNettes = netDeclarant1 * ratioExonere1 + netDeclarant2 * ratioExonere2
+    + netPac1 * ratioExonerePac1 + netPac2 * ratioExonerePac2;
 
   const pensionsNettes = netDeclarant1 * (1 - ratioEtranger1 - ratioExonere1)
-    + netDeclarant2 * (1 - ratioEtranger2 - ratioExonere2);
+    + netDeclarant2 * (1 - ratioEtranger2 - ratioExonere2)
+    + netPac1 * (1 - ratioExonerePac1) + netPac2 * (1 - ratioExonerePac2);
   const abattementPension = pensionsBrutes - pensionsNettes;
 
-  const capitalPER = (input.case1ai ?? 0) + (input.case1bi ?? 0);
+  const capitalPER = (input.case1ai ?? 0) + (input.case1bi ?? 0) + (input.case1ci ?? 0) + (input.case1di ?? 0);
 
   const rentesViageresImposables = (input.case1aw ?? 0) * FRACTION_IMPOSABLE_RENTE.moins50
     + (input.case1bw ?? 0) * FRACTION_IMPOSABLE_RENTE.de50a59
@@ -179,7 +197,7 @@ export function calculerPensionsRetraitesRentes(
 
   const totalNetImposable = pensionsNettes + capitalPER + rentesViageresImposables;
 
-  const capitalRetraite = (input.case1at ?? 0) + (input.case1bt ?? 0);
+  const capitalRetraite = (input.case1at ?? 0) + (input.case1bt ?? 0) + (input.case1ct ?? 0) + (input.case1dt ?? 0);
   const impotForfaitaire = capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX) * CAPITAL_RETRAITE_TAUX_FORFAITAIRE;
 
   const rentesEtrangeresImposables = (input.case1ar ?? 0) * FRACTION_IMPOSABLE_RENTE.moins50

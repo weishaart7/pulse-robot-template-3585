@@ -3,7 +3,7 @@ import { useRevenusExoneresTauxEffectif } from '@/hooks/useRevenusExoneresTauxEf
 import { RevenusExoneresTauxEffectif } from '@/services/revenusExoneresTauxEffectifService';
 import { RevenusExoneresTauxEffectifInput } from '@/lib/fiscalite';
 import { CaseLigne, DeclarantsHeader, MontantLigne, TexteLigne } from './DeclarationLigne';
-import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
+import { Cadre2042, Cadre2042Chargement, PersonnesAChargeCadre } from './Cadre2042';
 
 const REVENUS_VIDE: RevenusExoneresTauxEffectifInput = {
   case1ac: null,
@@ -89,6 +89,27 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
           value1={revenus.caseRse} value2={revenus.caseRsf}
           onChange1={v => update('caseRse', v)} onChange2={v => update('caseRsf', v)}
         />
+        <PersonnesAChargeCadre ouvert={(revenus.case1cc ?? 0) > 0 || (revenus.case1dc ?? 0) > 0 || (revenus.case1ce ?? 0) > 0 || (revenus.case1de ?? 0) > 0 || (revenus.case1ch ?? 0) > 0 || (revenus.case1dh ?? 0) > 0}>
+          <DeclarantsHeader colonne1="Personne 1" colonne2="Personne 2" />
+          <MontantLigne
+            label="Salaires exonérés retenus pour le taux effectif"
+            code1="1CC" code2="1DC"
+            value1={revenus.case1cc ?? null} value2={revenus.case1dc ?? null}
+            onChange1={v => update('case1cc', v)} onChange2={v => update('case1dc', v)}
+          />
+          <MontantLigne
+            label="Frais réels sur ces salaires"
+            code1="1CE" code2="1DE"
+            value1={revenus.case1ce ?? null} value2={revenus.case1de ?? null}
+            onChange1={v => update('case1ce', v)} onChange2={v => update('case1de', v)}
+          />
+          <MontantLigne
+            label="Pensions de source étrangère"
+            code1="1CH" code2="1DH"
+            value1={revenus.case1ch ?? null} value2={revenus.case1dh ?? null}
+            onChange1={v => update('case1ch', v)} onChange2={v => update('case1dh', v)}
+          />
+        </PersonnesAChargeCadre>
     </Cadre2042>
   );
 };

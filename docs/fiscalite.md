@@ -2046,9 +2046,14 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   - Le choix entre abattement forfaitaire de 10 % (`1AJ`/`1BJ`) et frais réels (`1AK`/`1BK`) est
     désormais arbitré par `calculerRevenuSalaires.ts` (le plus favorable des deux est retenu
     automatiquement).
-  - **Traitements et salaires — colonnes C/D (Phase 2.1, dette assumée)** : les revenus propres des
-    personnes à charge (ex. enfants majeurs rattachés ayant leurs propres salaires) ne sont pas
-    saisis — cas rare, traité dans une session ultérieure.
+  - **Résolu — revenus des personnes à charge (cadre 1, colonnes C/D et I/J)** : les 38 cases
+    (salaires 1CJ…1JF, frais réels 1CK/1DK, exonérés 1CC/1CE/1CD/1IH/1PD et symétriques, pensions
+    1CS…1DM, 1CH/1DH) sont saisies sous un bloc « Personnes à charge » replié de chaque formulaire.
+    Chaque case suit la règle de sa jumelle du déclarant 1 (1CJ ↔ 1AJ, 1IB ↔ 1GB, 1CS ↔ 1AS…),
+    vérifié case par case sur le simulateur officiel 2026. Salaires : `calculerDeclarant` appelé pour
+    PAC 1 et PAC 2 (abattement 10 %, plancher/plafond et frais réels propres à chacune). Pensions :
+    abattement de 10 % propre, plafond de 4 439 € commun au foyer. Seuil PPV 1CD/1DD fixé à
+    3 000 € (pas de case de majoration PAC saisie). Tests : `personnesACharge.test.ts`.
   - **Résolu — plafonnement du quotient familial pour la personne invalide à charge** : cette
     majoration (`calculerPartsFiscales.ts`) porte désormais un `plafondUnitaire` chiffré (scission en 2
     demi-parts, voir §2/§3). Reste non appliqué par `calculerImpot.ts` : le cumul de plusieurs

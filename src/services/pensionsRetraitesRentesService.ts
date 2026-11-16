@@ -36,6 +36,18 @@ interface PensionsRetraitesRentesRow {
   case_1br: number | string | null;
   case_1cr: number | string | null;
   case_1dr: number | string | null;
+  case_1cs: number | string | null;
+  case_1ds: number | string | null;
+  case_1ct: number | string | null;
+  case_1dt: number | string | null;
+  case_1ci: number | string | null;
+  case_1di: number | string | null;
+  case_1cz: number | string | null;
+  case_1dz: number | string | null;
+  case_1co: number | string | null;
+  case_1do: number | string | null;
+  case_1cm: number | string | null;
+  case_1dm: number | string | null;
   case_1hk: boolean;
   case_1hl: boolean;
 }
@@ -70,6 +82,18 @@ function rowToPensionsRetraitesRentes(row: PensionsRetraitesRentesRow): Pensions
     case1br: toNumberOrNull(row.case_1br),
     case1cr: toNumberOrNull(row.case_1cr),
     case1dr: toNumberOrNull(row.case_1dr),
+    case1cs: toNumberOrNull(row.case_1cs),
+    case1ds: toNumberOrNull(row.case_1ds),
+    case1ct: toNumberOrNull(row.case_1ct),
+    case1dt: toNumberOrNull(row.case_1dt),
+    case1ci: toNumberOrNull(row.case_1ci),
+    case1di: toNumberOrNull(row.case_1di),
+    case1cz: toNumberOrNull(row.case_1cz),
+    case1dz: toNumberOrNull(row.case_1dz),
+    case1co: toNumberOrNull(row.case_1co),
+    case1do: toNumberOrNull(row.case_1do),
+    case1cm: toNumberOrNull(row.case_1cm),
+    case1dm: toNumberOrNull(row.case_1dm),
     case1hk: row.case_1hk,
     case1hl: row.case_1hl,
   };
@@ -100,6 +124,18 @@ function pensionsRetraitesRentesToRow(pensions: PensionsRetraitesRentes, userId:
     case_1br: pensions.case1br,
     case_1cr: pensions.case1cr,
     case_1dr: pensions.case1dr,
+    case_1cs: pensions.case1cs ?? null,
+    case_1ds: pensions.case1ds ?? null,
+    case_1ct: pensions.case1ct ?? null,
+    case_1dt: pensions.case1dt ?? null,
+    case_1ci: pensions.case1ci ?? null,
+    case_1di: pensions.case1di ?? null,
+    case_1cz: pensions.case1cz ?? null,
+    case_1dz: pensions.case1dz ?? null,
+    case_1co: pensions.case1co ?? null,
+    case_1do: pensions.case1do ?? null,
+    case_1cm: pensions.case1cm ?? null,
+    case_1dm: pensions.case1dm ?? null,
     case_1hk: pensions.case1hk,
     case_1hl: pensions.case1hl,
   };

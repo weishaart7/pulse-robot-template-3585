@@ -92,6 +92,27 @@ export interface RevenusSalairesInput {
   case1ey: number | null;
   case1sm: number | null;
   case1dn: number | null;
+  /** Personnes à charge (colonnes C/D = PAC 1/PAC 2, I/J pour 1GB/1GF/1GH) : même règle que la case jumelle du déclarant 1 (1CJ ↔ 1AJ, 1IB ↔ 1GB, 1PD ↔ 1PB…), vérifié sur le simulateur officiel 2026. */
+  case1cj?: number | null;
+  case1dj?: number | null;
+  case1ca?: number | null;
+  case1da?: number | null;
+  case1cp?: number | null;
+  case1dp?: number | null;
+  case1cg?: number | null;
+  case1dg?: number | null;
+  case1ib?: number | null;
+  case1jb?: number | null;
+  case1if?: number | null;
+  case1jf?: number | null;
+  case1ck?: number | null;
+  case1dk?: number | null;
+  case1cd?: number | null;
+  case1dd?: number | null;
+  case1ih?: number | null;
+  case1jh?: number | null;
+  case1pd?: number | null;
+  case1pe?: number | null;
 }
 
 export interface GainsActionnariatSalarieInput {
@@ -148,6 +169,19 @@ export interface PensionsRetraitesRentesInput {
   /** "Ne perçoit plus de pensions 1AO, 1AM" (case à cocher, purement informative). */
   case1hk: boolean;
   case1hl: boolean;
+  /** Personnes à charge (C = PAC 1, D = PAC 2) : jumelles de 1AS/1AT/1AI/1AZ/1AO/1AM, vérifié sur le simulateur officiel 2026. */
+  case1cs?: number | null;
+  case1ds?: number | null;
+  case1ct?: number | null;
+  case1dt?: number | null;
+  case1ci?: number | null;
+  case1di?: number | null;
+  case1cz?: number | null;
+  case1dz?: number | null;
+  case1co?: number | null;
+  case1do?: number | null;
+  case1cm?: number | null;
+  case1dm?: number | null;
 }
 
 export interface RevenusExoneresTauxEffectifInput {
@@ -161,6 +195,13 @@ export interface RevenusExoneresTauxEffectifInput {
   case1bh: number | null;
   caseRse: string | null;
   caseRsf: string | null;
+  /** Personnes à charge (C = PAC 1, D = PAC 2) : jumelles de 1AC/1AE/1AH, vérifié sur le simulateur officiel 2026. */
+  case1cc?: number | null;
+  case1dc?: number | null;
+  case1ce?: number | null;
+  case1de?: number | null;
+  case1ch?: number | null;
+  case1dh?: number | null;
 }
 
 /**
