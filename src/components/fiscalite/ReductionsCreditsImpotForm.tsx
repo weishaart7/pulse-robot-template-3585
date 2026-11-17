@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useReductionsCreditsImpot } from '@/hooks/useReductionsCreditsImpot';
 import { ReductionsCreditsImpot } from '@/services/reductionsCreditsImpotService';
-import { ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel } from '@/lib/fiscalite';
+import { ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel, REGLES_SCELLIER, RegleScellier } from '@/lib/fiscalite';
 import { SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -18,6 +18,14 @@ const GROUPES_PINEL: { titre: string; aide: string; natures: ReglePinel['nature'
   { titre: 'Pinel, Pinel+ et Denormandie achevés en 2025', aide: "Prix de revient. Réduction de l'année (1/6 ou 1/9), plafond de 300 000 € commun.", natures: ['inv'] },
   { titre: 'Pinel, Denormandie et Duflot : reports', aide: 'Montant de la réduction reportée (1/6, 1/9 ou 1/3), plafonné selon le dispositif.', natures: ['rep', 'sans_effet'] },
   { titre: 'Pinel et Denormandie : compléments de prorogation', aide: "Prix de revient. 2 % ou 1 % pour l'année, plafond de 300 000 € par case.", natures: ['comp'] },
+];
+
+const casesScellier = (nature: RegleScellier['nature']) =>
+  (Object.entries(REGLES_SCELLIER) as [keyof ReductionsCreditsImpotInput, RegleScellier][])
+    .filter(([, r]) => r.nature === nature);
+const GROUPES_SCELLIER: { titre: string; aide: string; nature: RegleScellier['nature'] }[] = [
+  { titre: 'Scellier : reports de réduction', aide: "Montant de la réduction reportée (1/9, solde, 1/3 de complément). Plafonnement global de l'année d'investissement appliqué par l'outil.", nature: 'rep' },
+  { titre: 'Scellier : compléments de prorogation 2025', aide: "Prix de revient (300 000 € maximum). 4 %, 5 % ou 6 % sur 3 ans selon l'année d'investissement.", nature: 'comp' },
 ];
 
 interface ReductionsCreditsImpotFormProps {
@@ -198,6 +206,15 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
         {GROUPES_PINEL.map(g => (
           <SousGroupe key={g.titre} titre={g.titre} aide={g.aide}>
             {casesPinel(g.natures).map(([cle, r]) => (
+              <SingleMontantLigne key={cle} label={r.libelle} code={cle.slice(4).toUpperCase()}
+                value={(rc[cle] as number | null | undefined) ?? null} onChange={v => update(cle, v)} />
+            ))}
+          </SousGroupe>
+        ))}
+
+        {GROUPES_SCELLIER.map(g => (
+          <SousGroupe key={g.titre} titre={g.titre} aide={g.aide}>
+            {casesScellier(g.nature).map(([cle, r]) => (
               <SingleMontantLigne key={cle} label={r.libelle} code={cle.slice(4).toUpperCase()}
                 value={(rc[cle] as number | null | undefined) ?? null} onChange={v => update(cle, v)} />
             ))}

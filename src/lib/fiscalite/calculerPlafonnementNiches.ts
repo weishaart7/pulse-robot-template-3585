@@ -28,7 +28,20 @@ export interface AvantagesPlafonnes {
   outreMer: number;
   /** Réductions SOFICA (7EN, 7GN, 7FN) : majoration de 8 000 € partagée avec l'outre-mer. */
   sofica?: number;
+  /** Avantages Scellier par année d'investissement (plafonds historiques, voir PLAFONDS_MILLESIMES). */
+  millesimes?: Partial<Record<2009 | 2010 | 2011 | 2012, number>>;
+  /** Revenu net imposable : base de la part proportionnelle des plafonds historiques. */
+  revenuNetImposable?: number;
 }
+
+/**
+ * Plafonds de l'année d'investissement (art. 200-0 A, versions 2009 à 2012), relevés sur le
+ * simulateur officiel 2026 (RNI 470 890 € → 72 089 / 57 671 / 46 253 / 36 836 €). Emboîtés de
+ * l'année courante vers la plus ancienne : retenu = min(retenu + avantages de l'année, plafond).
+ */
+export const PLAFONDS_MILLESIMES: [2012 | 2011 | 2010 | 2009, number, number][] = [
+  [2012, 18_000, 0.04], [2011, 18_000, 0.06], [2010, 20_000, 0.08], [2009, 25_000, 0.10],
+];
 
 export interface PlafonnementNichesResult {
   avantagesRetenus: number;
@@ -42,12 +55,23 @@ export function calculerPlafonnementNiches(a: AvantagesPlafonnes): PlafonnementN
   const esus = Math.max(0, a.esus);
   const outreMer = Math.max(0, a.outreMer);
   const sofica = Math.max(0, a.sofica ?? 0);
-  const avantagesRetenus = courants + esus + outreMer + sofica;
-  const plafond = PLAFOND_NICHES + Math.min(MAJORATION_PLAFOND_ESUS, esus)
+  const actuels = courants + esus + outreMer + sofica;
+  const plafondActuel = PLAFOND_NICHES + Math.min(MAJORATION_PLAFOND_ESUS, esus)
     + Math.min(MAJORATION_PLAFOND_OUTRE_MER, outreMer + sofica);
+  let avantagesRetenus = actuels;
+  let retenus = Math.min(actuels, plafondActuel);
+  let plafond = plafondActuel;
+  const rni = Math.max(0, a.revenuNetImposable ?? 0);
+  for (const [annee, fixe, taux] of PLAFONDS_MILLESIMES) {
+    const avantages = Math.max(0, a.millesimes?.[annee] ?? 0);
+    if (avantages === 0) continue;
+    avantagesRetenus += avantages;
+    plafond = Math.round(fixe + taux * rni);
+    retenus = Math.min(retenus + avantages, plafond);
+  }
   return {
     avantagesRetenus,
     plafond,
-    excedent: Math.round(Math.max(0, avantagesRetenus - plafond)),
+    excedent: Math.round(Math.max(0, avantagesRetenus - retenus)),
   };
 }

@@ -25,3 +25,4 @@ export * from './calculerSouscriptionsCapital';
 export * from './calculerInvestissementsForestiers';
 export * from './calculerInvestissementsLocatifs';
 export * from './calculerInvestissementsPinel';
+export * from './calculerInvestissementsScellier';

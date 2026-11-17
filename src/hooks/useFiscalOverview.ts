@@ -43,6 +43,7 @@ import {
   calculerInvestissementsForestiers,
   calculerInvestissementsLocatifs,
   calculerInvestissementsPinel,
+  calculerInvestissementsScellier,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -489,7 +490,10 @@ export function useFiscalOverview(): FiscalOverview {
       );
       const investissementsLocatifs = calculerInvestissementsLocatifs(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const investissementsPinel = calculerInvestissementsPinel(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
+      const investissementsScellier = calculerInvestissementsScellier(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const plafonnementNiches = calculerPlafonnementNiches({
+        millesimes: investissementsScellier.millesimes,
+        revenuNetImposable: revenuImposableTotal,
         courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants
           + investissementsForestiers.credit + investissementsLocatifs.avantagesPlafonnesCourants
           + investissementsPinel.avantagesPlafonnesCourants,
@@ -515,7 +519,7 @@ export function useFiscalOverview(): FiscalOverview {
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions
           + souscriptionsCapital.reductions + investissementsLocatifs.reductions
-          + investissementsPinel.reductions,
+          + investissementsPinel.reductions + investissementsScellier.reductions,
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit
           + investissementsForestiers.credit + investissementsLocatifs.credits,
         creditEtranger,

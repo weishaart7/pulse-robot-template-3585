@@ -1554,6 +1554,12 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   et les reports de compléments. Compléments de prorogation : 2 % ou 1 % du prix de revient, 300 000 €
   par case. `7JM`, `7LM` sans effet. Plafonnement : métropole en courants, outre-mer dans la
   majoration de 8 000 € (avec IOM et SOFICA).
+- **Scellier** (175 cases, `calculerInvestissementsScellier.ts`, table `REGLES_SCELLIER` ; formulaire
+  généré). Reports saisis en montant de réduction : 1/9 (`7RT` 16 000 €, `7RU` 12 000 €), soldes non
+  imputés (sans plafond), 1/3 de compléments (8 000 / 10 000 / 6 000 / 12 000 € selon l'année
+  d'investissement). Compléments de prorogation 2025 : prix de revient, 300 000 € par case,
+  4 / 5 / 6 % sur 3 ans. Chaque case porte son millésime (2009-2012, déduit du libellé ou du plafond
+  mesuré) : voir plafonnement.
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
@@ -1564,6 +1570,10 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
   venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, `7WR`, Malraux, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
   une réduction non imputée faute d'impôt compte pour son montant entier.
+  **Millésimes Scellier** : plafonds historiques 2012 (18 000 € + 4 % du RNI), 2011 (18 000 € + 6 %),
+  2010 (20 000 € + 8 %), 2009 (25 000 € + 10 %), emboîtés depuis l'année courante :
+  retenu = min(retenu + avantages du millésime, plafond du millésime). Mesuré : 7MO (2009) 10 000 € +
+  7MR (2012) 50 000 € → 46 836 € ; 7MR 50 000 € + crédit 7DB 10 000 € → 36 836 €.
 - **Hors périmètre (acté)** : 2042-RICI hors souscriptions au capital (lots suivants), report des dons excédentaires des années antérieures.
 
 ### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)
