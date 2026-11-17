@@ -6,6 +6,7 @@ export interface RevenusNonSalaries extends RevenusNonSalariesInput {
 }
 
 const CASES_NUMERIQUES = [
+  'case5ja', 'case5jb', 'case5jc', 'case5jd', 'case5je', 'case5jf', 'case5jp', 'case5jq', 'case5jr', 'case5jv', 'case5jw', 'case5jx', 'case5jy', 'case5lk', 'case5mb', 'case5mc', 'case5me', 'case5mf', 'case5mj', 'case5mn', 'case5mo', 'case5mp', 'case5mq', 'case5mu', 'case5mv', 'case5mx', 'case5my', 'case5mz', 'case5ot', 'case5pa', 'case5pb', 'case5pc', 'case5pe', 'case5pg', 'case5ph', 'case5pi', 'case5pj', 'case5pk', 'case5pl', 'case5pm', 'case5pn', 'case5po', 'case5pp', 'case5pq', 'case5px', 'case5sa', 'case5sb', 'case5sc', 'case5sd', 'case5se', 'case5sf', 'case5sj', 'case5sl', 'case5sx', 'case5va', 'case5vb', 'case5vc', 'case5ve', 'case5vf', 'case5vh', 'case5wi', 'case5za', 'case5zb', 'case5zo',
   'case5ta', 'case5ua', 'case5tb', 'case5ub', 'case5te', 'case5ue', 'case5ko', 'case5lo',
   'case5kp', 'case5lp', 'case5no', 'case5oo', 'case5np', 'case5op', 'case5ng', 'case5og',
   'case5nh', 'case5oh', 'case5ni', 'case5oi', 'case5nj', 'case5oj', 'case5nk', 'case5ok',

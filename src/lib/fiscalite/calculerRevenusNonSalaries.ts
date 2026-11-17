@@ -94,34 +94,106 @@ export const REVENUS_NON_SALARIES_VIDE: RevenusNonSalariesInput = {
 };
 
 type Cle = keyof RevenusNonSalariesInput;
+
+/**
+ * Colonnes « personnes à charge » du cadre 5 et leur jumelle déclarant 1 (ordre des champs du simulateur
+ * officiel 2026) : chaque case PAC rejoint les mêmes agrégats que sa jumelle — 63 paires vérifiées à
+ * l'identique (RNI, RFR, impôt et PS), 5JY avec un bénéfice agricole PAC (= 5HG).
+ */
+export const JUMELLES_PAC_CADRE_5: Record<string, string> = {
+  case5ja: 'case5ha',
+  case5jb: 'case5hb',
+  case5jc: 'case5hc',
+  case5jd: 'case5hd',
+  case5je: 'case5he',
+  case5jf: 'case5hf',
+  case5jp: 'case5hp',
+  case5jq: 'case5hq',
+  case5jr: 'case5hr',
+  case5jv: 'case5hv',
+  case5jw: 'case5hw',
+  case5jx: 'case5hx',
+  case5jy: 'case5hg',
+  case5lk: 'case5hk',
+  case5mb: 'case5kb',
+  case5mc: 'case5kc',
+  case5me: 'case5ke',
+  case5mf: 'case5kf',
+  case5mj: 'case5kj',
+  case5mn: 'case5kn',
+  case5mo: 'case5ko',
+  case5mp: 'case5kp',
+  case5mq: 'case5kq',
+  case5mu: 'case5ku',
+  case5mv: 'case5kv',
+  case5mx: 'case5kx',
+  case5my: 'case5ky',
+  case5mz: 'case5kz',
+  case5ot: 'case5so',
+  case5pa: 'case5na',
+  case5pb: 'case5nb',
+  case5pc: 'case5nc',
+  case5pe: 'case5ne',
+  case5pg: 'case5ng',
+  case5ph: 'case5nh',
+  case5pi: 'case5ni',
+  case5pj: 'case5nj',
+  case5pk: 'case5nk',
+  case5pl: 'case5nl',
+  case5pm: 'case5nm',
+  case5pn: 'case5nn',
+  case5po: 'case5no',
+  case5pp: 'case5np',
+  case5pq: 'case5nq',
+  case5px: 'case5nx',
+  case5sa: 'case5qa',
+  case5sb: 'case5qb',
+  case5sc: 'case5qc',
+  case5sd: 'case5qd',
+  case5se: 'case5qe',
+  case5sf: 'case5jg',
+  case5sj: 'case5qj',
+  case5sl: 'case5ql',
+  case5sx: 'case5sv',
+  case5va: 'case5ta',
+  case5vb: 'case5tb',
+  case5vc: 'case5tc',
+  case5ve: 'case5te',
+  case5vf: 'case5tf',
+  case5vh: 'case5th',
+  case5wi: 'case5ui',
+  case5za: 'case5xa',
+  case5zb: 'case5xb',
+  case5zo: 'case5xo',
+};
 type Imposition = 'bareme' | 'versement_liberatoire';
 
 interface Categorie {
-  cles: [Cle, Cle];
+  cles: Cle[];
   taux: number;
   imposition: Imposition;
 }
 
 const CATEGORIES: Categorie[] = [
   // Micro-entrepreneur ayant opté pour le versement libératoire
-  { cles: ['case5ta', 'case5ua'], taux: 0.71, imposition: 'versement_liberatoire' },
-  { cles: ['case5tb', 'case5ub'], taux: 0.50, imposition: 'versement_liberatoire' },
-  { cles: ['case5te', 'case5ue'], taux: 0.34, imposition: 'versement_liberatoire' },
+  { cles: ['case5ta', 'case5va', 'case5ua'], taux: 0.71, imposition: 'versement_liberatoire' },
+  { cles: ['case5tb', 'case5vb', 'case5ub'], taux: 0.50, imposition: 'versement_liberatoire' },
+  { cles: ['case5te', 'case5ve', 'case5ue'], taux: 0.34, imposition: 'versement_liberatoire' },
   // Micro-BIC professionnel et non professionnel
-  { cles: ['case5ko', 'case5lo'], taux: 0.71, imposition: 'bareme' },
-  { cles: ['case5kp', 'case5lp'], taux: 0.50, imposition: 'bareme' },
-  { cles: ['case5no', 'case5oo'], taux: 0.71, imposition: 'bareme' },
-  { cles: ['case5np', 'case5op'], taux: 0.50, imposition: 'bareme' },
+  { cles: ['case5ko', 'case5mo', 'case5lo'], taux: 0.71, imposition: 'bareme' },
+  { cles: ['case5kp', 'case5mp', 'case5lp'], taux: 0.50, imposition: 'bareme' },
+  { cles: ['case5no', 'case5po', 'case5oo'], taux: 0.71, imposition: 'bareme' },
+  { cles: ['case5np', 'case5pp', 'case5op'], taux: 0.50, imposition: 'bareme' },
   // Locations meublées non professionnelles
-  { cles: ['case5ng', 'case5og'], taux: 0.50, imposition: 'bareme' },
-  { cles: ['case5nh', 'case5oh'], taux: 0.30, imposition: 'bareme' },
-  { cles: ['case5ni', 'case5oi'], taux: 0.50, imposition: 'bareme' },
-  { cles: ['case5nj', 'case5oj'], taux: 0.50, imposition: 'bareme' },
-  { cles: ['case5nk', 'case5ok'], taux: 0.30, imposition: 'bareme' },
-  { cles: ['case5nl', 'case5ol'], taux: 0.50, imposition: 'bareme' },
+  { cles: ['case5ng', 'case5pg', 'case5og'], taux: 0.50, imposition: 'bareme' },
+  { cles: ['case5nh', 'case5ph', 'case5oh'], taux: 0.30, imposition: 'bareme' },
+  { cles: ['case5ni', 'case5pi', 'case5oi'], taux: 0.50, imposition: 'bareme' },
+  { cles: ['case5nj', 'case5pj', 'case5oj'], taux: 0.50, imposition: 'bareme' },
+  { cles: ['case5nk', 'case5pk', 'case5ok'], taux: 0.30, imposition: 'bareme' },
+  { cles: ['case5nl', 'case5pl', 'case5ol'], taux: 0.50, imposition: 'bareme' },
   // Micro-BNC professionnel et non professionnel
-  { cles: ['case5hq', 'case5iq'], taux: 0.34, imposition: 'bareme' },
-  { cles: ['case5ku', 'case5lu'], taux: 0.34, imposition: 'bareme' },
+  { cles: ['case5hq', 'case5jq', 'case5iq'], taux: 0.34, imposition: 'bareme' },
+  { cles: ['case5ku', 'case5mu', 'case5lu'], taux: 0.34, imposition: 'bareme' },
 ];
 
 /** Revenu net après abattement forfaitaire, avec le minimum de 305 €. */
@@ -232,77 +304,78 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
   const micro = (cles: Cle[]) => cles.reduce((t, c) => t + (netParCle.get(c) ?? 0), 0);
 
   // Professionnels : déficits et moins-values à court terme imputables sur le revenu global.
-  const bicPro = micro(['case5ko', 'case5lo', 'case5kp', 'case5lp'])
-    + somme(input, ['case5kx', 'case5lx', 'case5kc', 'case5lc'])
-    - somme(input, ['case5kj', 'case5lj', 'case5kf', 'case5lf']);
-  const bncPro = micro(['case5hq', 'case5iq'])
-    + somme(input, ['case5hv', 'case5iv', 'case5qc', 'case5rc'])
-    - somme(input, ['case5kz', 'case5lz', 'case5qe', 'case5re']);
+  const bicPro = micro(['case5ko', 'case5mo', 'case5lo', 'case5kp', 'case5mp', 'case5lp'])
+    + somme(input, ['case5kx', 'case5mx', 'case5lx', 'case5kc', 'case5mc', 'case5lc'])
+    - somme(input, ['case5kj', 'case5mj', 'case5lj', 'case5kf', 'case5mf', 'case5lf']);
+  const bncPro = micro(['case5hq', 'case5jq', 'case5iq'])
+    + somme(input, ['case5hv', 'case5jv', 'case5iv', 'case5qc', 'case5sc', 'case5rc'])
+    - somme(input, ['case5kz', 'case5mz', 'case5lz', 'case5qe', 'case5se', 'case5re']);
 
   // Non professionnels : déficits imputables seulement sur la même catégorie (plancher 0).
-  const bicNonPro = Math.max(0, micro(['case5no', 'case5oo', 'case5np', 'case5op'])
-    + somme(input, ['case5nx', 'case5ox', 'case5nc', 'case5oc'])
+  const bicNonPro = Math.max(0, micro(['case5no', 'case5po', 'case5oo', 'case5np', 'case5pp', 'case5op'])
+    + somme(input, ['case5nx', 'case5px', 'case5ox', 'case5nc', 'case5pc', 'case5oc'])
     - somme(input, ['case5iu', 'case5rz', 'case5nf', 'case5of', 'case5rn', 'case5ro', 'case5rp', 'case5rq', 'case5rr', 'case5rw']));
-  const bncNonPro = Math.max(0, micro(['case5ku', 'case5lu'])
-    + somme(input, ['case5ky', 'case5ly', 'case5jg', 'case5rf'])
+  const bncNonPro = Math.max(0, micro(['case5ku', 'case5mu', 'case5lu'])
+    + somme(input, ['case5ky', 'case5my', 'case5ly', 'case5jg', 'case5sf', 'case5rf'])
     - somme(input, ['case5ju', 'case5ld', 'case5jj', 'case5rg', 'case5ht', 'case5it', 'case5jt', 'case5kt', 'case5lt', 'case5mt']));
 
   // LMNP : déficits imputables sur les seuls revenus LMNP (10 ans).
-  const lmnpSansCotisations = micro(['case5ng', 'case5og', 'case5nh', 'case5oh', 'case5ni', 'case5oi'])
-    + somme(input, ['case5na', 'case5oa']);
-  const lmnpCotisations = micro(['case5nj', 'case5oj', 'case5nk', 'case5ok', 'case5nl', 'case5ol'])
-    + somme(input, ['case5nm', 'case5om']);
+  const lmnpSansCotisations = micro(['case5ng', 'case5pg', 'case5og', 'case5nh', 'case5ph', 'case5oh', 'case5ni', 'case5pi', 'case5oi'])
+    + somme(input, ['case5na', 'case5pa', 'case5oa']);
+  const lmnpCotisations = micro(['case5nj', 'case5pj', 'case5oj', 'case5nk', 'case5pk', 'case5ok', 'case5nl', 'case5pl', 'case5ol'])
+    + somme(input, ['case5nm', 'case5pm', 'case5om']);
   const deficitsLmnp = somme(input, ['case5ny', 'case5oy', 'case5ga', 'case5gb', 'case5gc', 'case5gd', 'case5ge', 'case5gf', 'case5gg', 'case5gh', 'case5gi', 'case5gj']);
   const lmnpSansCotisationsNet = Math.max(0, lmnpSansCotisations - deficitsLmnp);
   const lmnp = Math.max(0, lmnpSansCotisations + lmnpCotisations - deficitsLmnp - somme(input, ['case5we', 'case5xe']));
 
   // Bénéfices agricoles : déficits antérieurs sur les seuls BA ; déficit de l'année traité par l'appelant.
   const baBenefice = netMicro(v('case5xb'), ABATTEMENT_MICRO_BA) + netMicro(v('case5yb'), ABATTEMENT_MICRO_BA)
-    + somme(input, ['case5hw', 'case5iw', 'case5hc', 'case5ic', 'case5hd', 'case5id'])
-    - somme(input, ['case5xo', 'case5yo']);
+    + netMicro(v('case5zb'), ABATTEMENT_MICRO_BA)
+    + somme(input, ['case5hw', 'case5jw', 'case5iw', 'case5hc', 'case5jc', 'case5ic', 'case5hd', 'case5jd', 'case5id'])
+    - somme(input, ['case5xo', 'case5zo', 'case5yo']);
   // Les moins-values à court terme du micro-BA (5XO/5YO) s'imputent sur le revenu global : un BA négatif est conservé.
   const ba = baBenefice > 0
     ? Math.max(0, baBenefice - somme(input, ['case5qf', 'case5qg', 'case5qn', 'case5qo', 'case5qp', 'case5qq']))
     : baBenefice;
 
-  const plusValuesLongTerme = somme(input, ['case5hx', 'case5ix', 'case5he', 'case5ie', 'case5kq', 'case5lq', 'case5ke', 'case5le',
-    'case5nq', 'case5oq', 'case5ne', 'case5oe', 'case5hr', 'case5ir', 'case5qd', 'case5rd', 'case5kv', 'case5lv', 'case5so', 'case5nt']);
-  const inventeursAvecPS = somme(input, ['case5qj', 'case5rj']);
-  const brevets = somme(input, ['case5ha', 'case5ia', 'case5ui', 'case5vi', 'case5qa', 'case5ra', 'case5tc', 'case5uc', 'case5tf', 'case5uf'])
+  const plusValuesLongTerme = somme(input, ['case5hx', 'case5jx', 'case5ix', 'case5he', 'case5je', 'case5ie', 'case5kq', 'case5mq', 'case5lq', 'case5ke', 'case5me', 'case5le',
+    'case5nq', 'case5pq', 'case5oq', 'case5ne', 'case5pe', 'case5oe', 'case5hr', 'case5jr', 'case5ir', 'case5qd', 'case5sd', 'case5rd', 'case5kv', 'case5mv', 'case5lv', 'case5so', 'case5ot', 'case5nt']);
+  const inventeursAvecPS = somme(input, ['case5qj', 'case5sj', 'case5rj']);
+  const brevets = somme(input, ['case5ha', 'case5ja', 'case5ia', 'case5ui', 'case5wi', 'case5vi', 'case5qa', 'case5sa', 'case5ra', 'case5tc', 'case5vc', 'case5uc', 'case5tf', 'case5vf', 'case5uf'])
     + inventeursAvecPS;
-  const plusValuesRetraite = somme(input, ['case5hg', 'case5ig']);
+  const plusValuesRetraite = somme(input, ['case5hg', 'case5jy', 'case5ig']);
   const revenuImposableTauxMarginal = somme(input, ['case5xt', 'case5xu']);
-  const exoneresZones = somme(input, ['case5xa', 'case5ya', 'case5hb', 'case5ib', 'case5kn', 'case5ln', 'case5kb', 'case5lb',
-    'case5nn', 'case5on', 'case5nb', 'case5ob', 'case5hp', 'case5ip', 'case5qb', 'case5rb', 'case5th', 'case5uh', 'case5hk', 'case5jk']);
+  const exoneresZones = somme(input, ['case5xa', 'case5za', 'case5ya', 'case5hb', 'case5jb', 'case5ib', 'case5kn', 'case5mn', 'case5ln', 'case5kb', 'case5mb', 'case5lb',
+    'case5nn', 'case5pn', 'case5on', 'case5nb', 'case5pb', 'case5ob', 'case5hp', 'case5jp', 'case5ip', 'case5qb', 'case5sb', 'case5rb', 'case5th', 'case5vh', 'case5uh', 'case5hk', 'case5lk', 'case5jk']);
 
   const basePrelevementsSociaux = lmnpSansCotisationsNet + plusValuesLongTerme + inventeursAvecPS + plusValuesRetraite
     + somme(input, ['case5hy', 'case5iy']);
 
   const alertes: AlerteRevenusNonSalaries[] = [];
-  const parDeclarant = (cles: [Cle[], Cle[]]) => [somme(input, cles[0]), somme(input, cles[1])];
-  const ventes = parDeclarant([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo']]);
-  const services = parDeclarant([['case5tb', 'case5kp', 'case5np'], ['case5ub', 'case5lp', 'case5op']]);
-  const bnc = parDeclarant([['case5te', 'case5hq', 'case5ku'], ['case5ue', 'case5iq', 'case5lu']]);
+  const parDeclarant = (cles: Cle[][]) => cles.map(c => somme(input, c));
+  const ventes = parDeclarant([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo'], ['case5va', 'case5mo', 'case5po']]);
+  const services = parDeclarant([['case5tb', 'case5kp', 'case5np'], ['case5ub', 'case5lp', 'case5op'], ['case5vb', 'case5mp', 'case5pp']]);
+  const bnc = parDeclarant([['case5te', 'case5hq', 'case5ku'], ['case5ue', 'case5iq', 'case5lu'], ['case5ve', 'case5jq', 'case5mu']]);
   if (ventes.some((x, d) => x + services[d] > SEUIL_MICRO_VENTES)) alertes.push('ventes_au_dela_du_seuil');
   if (services.some(x => x > SEUIL_MICRO_SERVICES)) alertes.push('services_au_dela_du_seuil');
   if (bnc.some(x => x > SEUIL_MICRO_SERVICES)) alertes.push('bnc_au_dela_du_seuil');
-  if ((['case5ql', 'case5rl', 'case5sv', 'case5sw'] as Cle[]).some(c => v(c) > PLAFOND_ABATTEMENT_JEUNES_CREATEURS)) {
+  if ((['case5ql', 'case5sl', 'case5rl', 'case5sv', 'case5sx', 'case5sw'] as Cle[]).some(c => v(c) > PLAFOND_ABATTEMENT_JEUNES_CREATEURS)) {
     alertes.push('jeunes_createurs_au_dela_du_plafond');
   }
-  const courteDuree = parDeclarant([['case5ng', 'case5nh'], ['case5og', 'case5oh']]);
+  const courteDuree = parDeclarant([['case5ng', 'case5nh'], ['case5og', 'case5oh'], ['case5pg', 'case5ph']]);
   if (courteDuree.some(x => x > SEUIL_COTISATIONS_MEUBLES_COURTE_DUREE)
-    || (['case5ng', 'case5og'] as Cle[]).some(c => (netParCle.get(c) ?? 0) > SEUIL_COTISATIONS_CHAMBRES_HOTES)) {
+    || (['case5ng', 'case5pg', 'case5og'] as Cle[]).some(c => (netParCle.get(c) ?? 0) > SEUIL_COTISATIONS_CHAMBRES_HOTES)) {
     alertes.push('meubles_cotisations_a_verifier');
   }
-  const meublesNonClasses = somme(input, ['case5nh', 'case5oh', 'case5nk', 'case5ok']);
-  const meubles = meublesNonClasses + somme(input, ['case5ng', 'case5og', 'case5ni', 'case5oi', 'case5nj', 'case5oj', 'case5nl', 'case5ol']);
+  const meublesNonClasses = somme(input, ['case5nh', 'case5ph', 'case5oh', 'case5nk', 'case5pk', 'case5ok']);
+  const meubles = meublesNonClasses + somme(input, ['case5ng', 'case5pg', 'case5og', 'case5ni', 'case5pi', 'case5oi', 'case5nj', 'case5pj', 'case5oj', 'case5nl', 'case5pl', 'case5ol']);
   if (meubles > SEUIL_MICRO_MEUBLES) alertes.push('meubles_au_dela_du_seuil');
   if (meublesNonClasses > SEUIL_MICRO_MEUBLES_NON_CLASSES) alertes.push('meubles_non_classes_au_dela_du_seuil');
-  if (v('case5xb') > SEUIL_MICRO_BA || v('case5yb') > SEUIL_MICRO_BA) alertes.push('ba_micro_au_dela_du_seuil');
+  if (v('case5xb') > SEUIL_MICRO_BA || v('case5yb') > SEUIL_MICRO_BA || v('case5zb') > SEUIL_MICRO_BA) alertes.push('ba_micro_au_dela_du_seuil');
 
   return {
     totalNetImposable: bicPro + bncPro + bicNonPro + bncNonPro + lmnp + ba,
-    deficitAgricole: somme(input, ['case5hf', 'case5if']),
+    deficitAgricole: somme(input, ['case5hf', 'case5jf', 'case5if']),
     impotForfaitaire: plusValuesLongTerme * TAUX_PLUS_VALUES_LONG_TERME + brevets * TAUX_BREVETS,
     revenuImposableTauxMarginal,
     taxeAgentsGeneraux: taxeAgentGeneral(v('case5qm')) + taxeAgentGeneral(v('case5rm')),
@@ -310,7 +383,7 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
       'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys']),
     // 5HG/5IG (art. 151 septies A) hors RFR : absentes de l'art. 1417 IV, comme sur le simulateur officiel 2026.
     revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + revenuImposableTauxMarginal
-      + somme(input, ['case5ql', 'case5rl', 'case5sv', 'case5sw']),
+      + somme(input, ['case5ql', 'case5sl', 'case5rl', 'case5sv', 'case5sx', 'case5sw']),
     revenuExonereTauxEffectif,
     basePrelevementsSociaux,
     prelevementsSociaux: Math.round(basePrelevementsSociaux * TAUX_PS_NON_SALARIES),

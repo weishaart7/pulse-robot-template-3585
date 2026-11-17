@@ -3677,6 +3677,70 @@ export type Database = {
       }
       revenus_non_salaries: {
         Row: {
+          case_5ja: number | null
+          case_5jb: number | null
+          case_5jc: number | null
+          case_5jd: number | null
+          case_5je: number | null
+          case_5jf: number | null
+          case_5jp: number | null
+          case_5jq: number | null
+          case_5jr: number | null
+          case_5jv: number | null
+          case_5jw: number | null
+          case_5jx: number | null
+          case_5jy: number | null
+          case_5lk: number | null
+          case_5mb: number | null
+          case_5mc: number | null
+          case_5me: number | null
+          case_5mf: number | null
+          case_5mj: number | null
+          case_5mn: number | null
+          case_5mo: number | null
+          case_5mp: number | null
+          case_5mq: number | null
+          case_5mu: number | null
+          case_5mv: number | null
+          case_5mx: number | null
+          case_5my: number | null
+          case_5mz: number | null
+          case_5ot: number | null
+          case_5pa: number | null
+          case_5pb: number | null
+          case_5pc: number | null
+          case_5pe: number | null
+          case_5pg: number | null
+          case_5ph: number | null
+          case_5pi: number | null
+          case_5pj: number | null
+          case_5pk: number | null
+          case_5pl: number | null
+          case_5pm: number | null
+          case_5pn: number | null
+          case_5po: number | null
+          case_5pp: number | null
+          case_5pq: number | null
+          case_5px: number | null
+          case_5sa: number | null
+          case_5sb: number | null
+          case_5sc: number | null
+          case_5sd: number | null
+          case_5se: number | null
+          case_5sf: number | null
+          case_5sj: number | null
+          case_5sl: number | null
+          case_5sx: number | null
+          case_5va: number | null
+          case_5vb: number | null
+          case_5vc: number | null
+          case_5ve: number | null
+          case_5vf: number | null
+          case_5vh: number | null
+          case_5wi: number | null
+          case_5za: number | null
+          case_5zb: number | null
+          case_5zo: number | null
           case_5ak: number | null
           case_5bk: number | null
           case_5df: number | null
@@ -3879,6 +3943,70 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_5ja?: number | null
+          case_5jb?: number | null
+          case_5jc?: number | null
+          case_5jd?: number | null
+          case_5je?: number | null
+          case_5jf?: number | null
+          case_5jp?: number | null
+          case_5jq?: number | null
+          case_5jr?: number | null
+          case_5jv?: number | null
+          case_5jw?: number | null
+          case_5jx?: number | null
+          case_5jy?: number | null
+          case_5lk?: number | null
+          case_5mb?: number | null
+          case_5mc?: number | null
+          case_5me?: number | null
+          case_5mf?: number | null
+          case_5mj?: number | null
+          case_5mn?: number | null
+          case_5mo?: number | null
+          case_5mp?: number | null
+          case_5mq?: number | null
+          case_5mu?: number | null
+          case_5mv?: number | null
+          case_5mx?: number | null
+          case_5my?: number | null
+          case_5mz?: number | null
+          case_5ot?: number | null
+          case_5pa?: number | null
+          case_5pb?: number | null
+          case_5pc?: number | null
+          case_5pe?: number | null
+          case_5pg?: number | null
+          case_5ph?: number | null
+          case_5pi?: number | null
+          case_5pj?: number | null
+          case_5pk?: number | null
+          case_5pl?: number | null
+          case_5pm?: number | null
+          case_5pn?: number | null
+          case_5po?: number | null
+          case_5pp?: number | null
+          case_5pq?: number | null
+          case_5px?: number | null
+          case_5sa?: number | null
+          case_5sb?: number | null
+          case_5sc?: number | null
+          case_5sd?: number | null
+          case_5se?: number | null
+          case_5sf?: number | null
+          case_5sj?: number | null
+          case_5sl?: number | null
+          case_5sx?: number | null
+          case_5va?: number | null
+          case_5vb?: number | null
+          case_5vc?: number | null
+          case_5ve?: number | null
+          case_5vf?: number | null
+          case_5vh?: number | null
+          case_5wi?: number | null
+          case_5za?: number | null
+          case_5zb?: number | null
+          case_5zo?: number | null
           case_5ak?: number | null
           case_5bk?: number | null
           case_5df?: number | null
@@ -4081,6 +4209,70 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_5ja?: number | null
+          case_5jb?: number | null
+          case_5jc?: number | null
+          case_5jd?: number | null
+          case_5je?: number | null
+          case_5jf?: number | null
+          case_5jp?: number | null
+          case_5jq?: number | null
+          case_5jr?: number | null
+          case_5jv?: number | null
+          case_5jw?: number | null
+          case_5jx?: number | null
+          case_5jy?: number | null
+          case_5lk?: number | null
+          case_5mb?: number | null
+          case_5mc?: number | null
+          case_5me?: number | null
+          case_5mf?: number | null
+          case_5mj?: number | null
+          case_5mn?: number | null
+          case_5mo?: number | null
+          case_5mp?: number | null
+          case_5mq?: number | null
+          case_5mu?: number | null
+          case_5mv?: number | null
+          case_5mx?: number | null
+          case_5my?: number | null
+          case_5mz?: number | null
+          case_5ot?: number | null
+          case_5pa?: number | null
+          case_5pb?: number | null
+          case_5pc?: number | null
+          case_5pe?: number | null
+          case_5pg?: number | null
+          case_5ph?: number | null
+          case_5pi?: number | null
+          case_5pj?: number | null
+          case_5pk?: number | null
+          case_5pl?: number | null
+          case_5pm?: number | null
+          case_5pn?: number | null
+          case_5po?: number | null
+          case_5pp?: number | null
+          case_5pq?: number | null
+          case_5px?: number | null
+          case_5sa?: number | null
+          case_5sb?: number | null
+          case_5sc?: number | null
+          case_5sd?: number | null
+          case_5se?: number | null
+          case_5sf?: number | null
+          case_5sj?: number | null
+          case_5sl?: number | null
+          case_5sx?: number | null
+          case_5va?: number | null
+          case_5vb?: number | null
+          case_5vc?: number | null
+          case_5ve?: number | null
+          case_5vf?: number | null
+          case_5vh?: number | null
+          case_5wi?: number | null
+          case_5za?: number | null
+          case_5zb?: number | null
+          case_5zo?: number | null
           case_5ak?: number | null
           case_5bk?: number | null
           case_5df?: number | null

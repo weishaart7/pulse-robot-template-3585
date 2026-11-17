@@ -1416,6 +1416,15 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Revenus exonérés zonés** (`5XA`, `5HB`, `5KN`, `5KB`, `5NN`, `5NB`, `5HP`, `5QB`, `5TH`, `5HK`) : RFR.
 - **Source étrangère avec crédit d'impôt égal à l'impôt français** (`5AK`, `5DF`, `5UR`, `5EY`, `5XJ`,
   `5XS`) : hors barème, retenus pour le taux effectif (comme 1AF).
+- **Colonnes « personnes à charge »** (64 cases : `5JA`…`5JY`, `5MB`…`5MZ`, `5PA`…`5PX`, `5SA`…`5SX`,
+  `5VA`…`5VH`, `5WI`, `5ZA`/`5ZB`/`5ZO`, `5LK`, `5OT`) : chaque case rejoint les mêmes agrégats que sa
+  jumelle déclarant 1 (`JUMELLES_PAC_CADRE_5`, appariement par l'ordre des champs du simulateur
+  officiel 2026). 63 paires vérifiées à l'identique (RNI, RFR, impôt et PS) ; `5JY` (= `5HG`) exige un
+  bénéfice agricole PAC. Abattement micro, minimum de 305 € et seuils micro appréciés par personne.
+- **Cases « dont » du réel** (30 cases : `5AQ`/`5BQ`/`5CU`, `5AY`/`5BY`/`5CV`, `5DK`/`5EK`/`5FK`,
+  `5DM`/`5EM`/`5FM`, `5UT`/`5VT`/`5VQ`, `5UY`/`5VY`/`5VV`, `5XP`/`5YP`/`5ZP`, `5XH`/`5YH`/`5ZH`,
+  `5XY`/`5YY`/`5ZY`, `5VM`/`5WM`/`5ZM`) : déjà comprises dans le bénéfice, sans effet sur le simulateur
+  officiel 2026 quand elles accompagnent un bénéfice ; non saisies.
 - **Hors périmètre (acté)** : abattement jeunes agriculteurs (`5HM`, sans effet : plafond épargne retraite
   saisi depuis l'avis), paiement fractionné (`5EA`, `5FA`), durée d'exercice et cessation, ECF, cases
   « dont » du réel (prélèvement à la source), colonne personne à charge, moyenne triennale du micro-BA
