@@ -9,6 +9,8 @@
  * - ESUS (7DC) : seul 25 000 € → 13 000 € ;
  * - outre-mer : 100 %, 44 % (rétrocession 56 %), 34 % (rétrocession 66 %) ou 30 % (logement social)
  *   du montant, selon la case — parts appliquées par l'appelant ;
+ * - SOFICA : majoration de 8 000 € partagée avec l'outre-mer ; PME, ESUS 2025, FCPI/FIP dans `courants`
+ *   (sans majoration ESUS) ; JEI/JEIR hors plafond ;
  * - hors plafond : dons, cotisations syndicales, scolarité, prestations compensatoires, cadre 8.
  *
  * Hypothèse : une réduction non imputée faute d'impôt compte pour son montant entier.
@@ -24,6 +26,8 @@ export interface AvantagesPlafonnes {
   esus: number;
   /** Avantages outre-mer, déjà multipliés par leur part retenue. */
   outreMer: number;
+  /** Réductions SOFICA (7EN, 7GN, 7FN) : majoration de 8 000 € partagée avec l'outre-mer. */
+  sofica?: number;
 }
 
 export interface PlafonnementNichesResult {
@@ -37,8 +41,10 @@ export function calculerPlafonnementNiches(a: AvantagesPlafonnes): PlafonnementN
   const courants = Math.max(0, a.courants);
   const esus = Math.max(0, a.esus);
   const outreMer = Math.max(0, a.outreMer);
-  const avantagesRetenus = courants + esus + outreMer;
-  const plafond = PLAFOND_NICHES + Math.min(MAJORATION_PLAFOND_ESUS, esus) + Math.min(MAJORATION_PLAFOND_OUTRE_MER, outreMer);
+  const sofica = Math.max(0, a.sofica ?? 0);
+  const avantagesRetenus = courants + esus + outreMer + sofica;
+  const plafond = PLAFOND_NICHES + Math.min(MAJORATION_PLAFOND_ESUS, esus)
+    + Math.min(MAJORATION_PLAFOND_OUTRE_MER, outreMer + sofica);
   return {
     avantagesRetenus,
     plafond,

@@ -876,6 +876,28 @@ export interface ReductionsCreditsImpotInput {
   case7uh?: number | null;
   /** Report des versements ESUS effectués du 9.5 au 31.12.2021 */
   case7dc?: number | null;
+  /** Souscriptions au capital (2042-RICI) : montants versés, voir calculerSouscriptionsCapital. */
+  case7ci?: number | null;
+  case7co?: number | null;
+  case7cr?: number | null;
+  case7dz?: number | null;
+  case7gw?: number | null;
+  case7ct?: number | null;
+  case7cu?: number | null;
+  case7cw?: number | null;
+  case7cp?: number | null;
+  case7cq?: number | null;
+  case7cv?: number | null;
+  case7do?: number | null;
+  case7dp?: number | null;
+  case7ca?: number | null;
+  case7gq?: number | null;
+  case7gr?: number | null;
+  case7fm?: number | null;
+  case7fl?: number | null;
+  case7fn?: number | null;
+  case7gn?: number | null;
+  case7en?: number | null;
   /** Investissements outre-mer (2042-IOM) : montants de réduction (crédit pour HJA), voir calculerInvestissementsOutreMer. */
   caseHqa?: number | null;
   caseHyj?: number | null;

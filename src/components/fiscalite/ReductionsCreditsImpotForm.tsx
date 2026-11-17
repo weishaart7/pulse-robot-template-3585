@@ -95,6 +95,39 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Report des versements effectués du 9.5 au 31.12.2021" code="7DC" value={rc.case7dc ?? null} onChange={v => update('case7dc', v)} />
         </SousGroupe>
 
+        <SousGroupe titre="Souscriptions au capital de PME, ESUS et SFS" aide="Montants versés. 18 % ou 25 %, plafond commun de 50 000 € (100 000 € pour un couple), plafonnement global de 10 000 €.">
+          <SingleMontantLigne label="Versements PME en 2025" code="7CI" value={rc.case7ci ?? null} onChange={v => update('case7ci', v)} />
+          <SingleMontantLigne label="Versements ESUS en 2025" code="7CO" value={rc.case7co ?? null} onChange={v => update('case7co', v)} />
+          <SingleMontantLigne label="Versements SFS en 2025" code="7GW" value={rc.case7gw ?? null} onChange={v => update('case7gw', v)} />
+          <SingleMontantLigne label="Report de versements PME et ESUS du 1.1 au 8.5.2021" code="7CT" value={rc.case7ct ?? null} onChange={v => update('case7ct', v)} />
+          <SingleMontantLigne label="Report de versements PME du 9.5 au 31.12.2021" code="7CA" value={rc.case7ca ?? null} onChange={v => update('case7ca', v)} />
+          <SingleMontantLigne label="Report de versements PME et ESUS du 1.1 au 17.3.2022" code="7CU" value={rc.case7cu ?? null} onChange={v => update('case7cu', v)} />
+          <SingleMontantLigne label="Report de versements PME et ESUS du 18.3 au 31.12.2022" code="7CW" value={rc.case7cw ?? null} onChange={v => update('case7cw', v)} />
+          <SingleMontantLigne label="Report de versements PME et ESUS du 1.1 au 11.3.2023" code="7CP" value={rc.case7cp ?? null} onChange={v => update('case7cp', v)} />
+          <SingleMontantLigne label="Report de versements PME et ESUS du 12.3 au 31.12.2023" code="7CQ" value={rc.case7cq ?? null} onChange={v => update('case7cq', v)} />
+          <SingleMontantLigne label="Report de versements PME en 2024" code="7CV" value={rc.case7cv ?? null} onChange={v => update('case7cv', v)} />
+          <SingleMontantLigne label="Report de versements ESUS du 1.1 au 27.6.2024" code="7DO" value={rc.case7do ?? null} onChange={v => update('case7do', v)} />
+          <SingleMontantLigne label="Report de versements ESUS du 28.6 au 31.12.2024" code="7DP" value={rc.case7dp ?? null} onChange={v => update('case7dp', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Jeunes entreprises innovantes" aide="Montants versés, hors plafonnement global. JEI/JEU/JEIC : 30 %, 75 000 € (150 000 € pour un couple) ; JEIR : 50 %, 50 000 € (100 000 €).">
+          <SingleMontantLigne label="Versements JEI, JEU, JEIC" code="7CR" value={rc.case7cr ?? null} onChange={v => update('case7cr', v)} />
+          <SingleMontantLigne label="Versements JEI de rupture (JEIR)" code="7DZ" value={rc.case7dz ?? null} onChange={v => update('case7dz', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="FCPI et FIP" aide="Montants versés, 12 000 € (24 000 € pour un couple) par catégorie.">
+          <SingleMontantLigne label="FCPI, versements du 1.1 au 27.9.2025 (18 %)" code="7GQ" value={rc.case7gq ?? null} onChange={v => update('case7gq', v)} />
+          <SingleMontantLigne label="FCPI, versements du 28.9 au 31.12.2025 (25 %)" code="7GR" value={rc.case7gr ?? null} onChange={v => update('case7gr', v)} />
+          <SingleMontantLigne label="FIP en Corse (30 %)" code="7FM" value={rc.case7fm ?? null} onChange={v => update('case7fm', v)} />
+          <SingleMontantLigne label="FIP investis en outre-mer (30 %)" code="7FL" value={rc.case7fl ?? null} onChange={v => update('case7fl', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="SOFICA" aide="Montants versés, dans la limite de 25 % du revenu net imposable et de 18 000 €. Plafonnement global porté à 18 000 €.">
+          <SingleMontantLigne label="Taux de 48 %" code="7EN" value={rc.case7en ?? null} onChange={v => update('case7en', v)} />
+          <SingleMontantLigne label="Taux de 36 %" code="7GN" value={rc.case7gn ?? null} onChange={v => update('case7gn', v)} />
+          <SingleMontantLigne label="Taux de 30 %" code="7FN" value={rc.case7fn ?? null} onChange={v => update('case7fn', v)} />
+        </SousGroupe>
+
         <SousGroupe titre="Investissements outre-mer dans une entreprise (2020-2025)" aide="Montant de la réduction (crédit pour HJA). Plafonds propres et plafonnement global appliqués par l'outil.">
           <SingleMontantLigne label="Réalisés en 2025, location à une entreprise exploitante, rétrocession 56 %" code="HLS" value={rc.caseHls ?? null} onChange={v => update('caseHls', v)} />
           <SingleMontantLigne label="Réalisés en 2025, rétrocession 66 %" code="HLT" value={rc.caseHlt ?? null} onChange={v => update('caseHlt', v)} />

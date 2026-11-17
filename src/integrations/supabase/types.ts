@@ -3109,6 +3109,27 @@ export type Database = {
           case_7wm: number | null
           case_7uh: number | null
           case_7dc: number | null
+          case_7ci: number | null
+          case_7co: number | null
+          case_7cr: number | null
+          case_7dz: number | null
+          case_7gw: number | null
+          case_7ct: number | null
+          case_7cu: number | null
+          case_7cw: number | null
+          case_7cp: number | null
+          case_7cq: number | null
+          case_7cv: number | null
+          case_7do: number | null
+          case_7dp: number | null
+          case_7ca: number | null
+          case_7gq: number | null
+          case_7gr: number | null
+          case_7fm: number | null
+          case_7fl: number | null
+          case_7fn: number | null
+          case_7gn: number | null
+          case_7en: number | null
           case_7db: number | null
           case_7dg: boolean | null
           case_7dl: number | null
@@ -3237,6 +3258,27 @@ export type Database = {
           case_7wm?: number | null
           case_7uh?: number | null
           case_7dc?: number | null
+          case_7ci?: number | null
+          case_7co?: number | null
+          case_7cr?: number | null
+          case_7dz?: number | null
+          case_7gw?: number | null
+          case_7ct?: number | null
+          case_7cu?: number | null
+          case_7cw?: number | null
+          case_7cp?: number | null
+          case_7cq?: number | null
+          case_7cv?: number | null
+          case_7do?: number | null
+          case_7dp?: number | null
+          case_7ca?: number | null
+          case_7gq?: number | null
+          case_7gr?: number | null
+          case_7fm?: number | null
+          case_7fl?: number | null
+          case_7fn?: number | null
+          case_7gn?: number | null
+          case_7en?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null
@@ -3365,6 +3407,27 @@ export type Database = {
           case_7wm?: number | null
           case_7uh?: number | null
           case_7dc?: number | null
+          case_7ci?: number | null
+          case_7co?: number | null
+          case_7cr?: number | null
+          case_7dz?: number | null
+          case_7gw?: number | null
+          case_7ct?: number | null
+          case_7cu?: number | null
+          case_7cw?: number | null
+          case_7cp?: number | null
+          case_7cq?: number | null
+          case_7cv?: number | null
+          case_7do?: number | null
+          case_7dp?: number | null
+          case_7ca?: number | null
+          case_7gq?: number | null
+          case_7gr?: number | null
+          case_7fm?: number | null
+          case_7fl?: number | null
+          case_7fn?: number | null
+          case_7gn?: number | null
+          case_7en?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null

@@ -1519,16 +1519,24 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   `HQA`, `HKC`, `HLV` sans effet. Écart connu : `HGU` 20 000 € + `HOB` 30 000 € → 40 000 € sur le
   simulateur, 30 600 € ici (règle de cumul entre investissements d'entreprise et immobilier agréé
   ancien non élucidée).
+- **Souscriptions au capital** (2042-RICI, 21 cases, `calculerSouscriptionsCapital.ts`) : montants
+  versés saisis. PME/ESUS/SFS et reports (`7CI`, `7CO`, `7GW`, `7CT`, `7CA`, `7CU`, `7CW`, `7CP`, `7CQ`,
+  `7CV`, `7DO`, `7DP`) : 18 % ou 25 %, plafond de versements commun 50 000 € (100 000 € couple), cases
+  à 25 % imputées d'abord. JEI/JEU/JEIC `7CR` 30 % (75 000 / 150 000 €) et JEIR `7DZ` 50 %
+  (50 000 / 100 000 €), plafonds propres. FCPI `7GR` 25 % puis `7GQ` 18 %, 12 000 € (24 000 €) en
+  commun ; FIP Corse `7FM` et outre-mer `7FL` 30 %, 12 000 € (24 000 €) chacun. SOFICA `7EN` 48 %,
+  `7GN` 36 %, `7FN` 30 % dans cet ordre, versements ≤ min(25 % du RNI, 18 000 €). Non restituables.
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
-  avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu) ; l'excédent
+  avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu + SOFICA) ; l'excédent
   s'ajoute à l'impôt (avec les reprises), ce qui limite aussi le remboursement d'un foyer non imposable.
-  Courants : `7DB`, `7GA`…`7GG` ; ESUS : `7DC` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
+  Courants : `7DB`, `7GA`…`7GG`, PME/ESUS/SFS 2021-2025 et FCPI/FIP (sans majoration ESUS : `7CO`
+  40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS : `7DC` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
-  venir). Hors plafond (vérifié) : dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
+  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
   une réduction non imputée faute d'impôt compte pour son montant entier.
-- **Hors périmètre (acté)** : 2042-RICI, report des dons excédentaires des années antérieures.
+- **Hors périmètre (acté)** : 2042-RICI hors souscriptions au capital (lots suivants), report des dons excédentaires des années antérieures.
 
 ### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)
 

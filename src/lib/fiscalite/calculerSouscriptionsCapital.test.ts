@@ -1,0 +1,77 @@
+import { describe, expect, it } from 'vitest';
+import { calculerSouscriptionsCapital } from './calculerSouscriptionsCapital';
+import { calculerPlafonnementNiches } from './calculerPlafonnementNiches';
+import { calculerReductionsCreditsImpot } from './calculerReductionsCreditsImpot';
+import { calculerImpot } from './calculerImpot';
+import { calculerPartsFiscales } from './calculerPartsFiscales';
+import { FoyerFiscalInput, ReductionsCreditsImpotInput } from './types';
+
+/** Valeurs relevées sur le simulateur officiel 2026 (couple, RNI 470 890 €, sauf mention). */
+const RNI = 470890;
+const r = (o: Partial<ReductionsCreditsImpotInput>, couple = true, rni = RNI) =>
+  calculerSouscriptionsCapital(o as ReductionsCreditsImpotInput, couple, rni);
+
+describe('calculerSouscriptionsCapital', () => {
+  it.each([
+    ['case7ci', 180], ['case7co', 250], ['case7cr', 300], ['case7dz', 500], ['case7gw', 250],
+    ['case7ct', 180], ['case7cu', 180], ['case7cw', 250], ['case7cp', 180], ['case7cq', 250],
+    ['case7cv', 180], ['case7do', 180], ['case7dp', 250], ['case7ca', 250], ['case7gq', 180],
+    ['case7gr', 250], ['case7fm', 300], ['case7fl', 300], ['case7fn', 300], ['case7gn', 360], ['case7en', 480],
+  ])('%s 1 000 € → %i €', (cle, attendu) => {
+    expect(r({ [cle]: 1000 }).reductions).toBe(attendu);
+  });
+  it('plafond commun PME/ESUS, 25 % imputé en premier', () => {
+    expect(r({ case7ci: 60000, case7ct: 60000 }).reductions).toBe(18000);
+    expect(r({ case7ci: 60000, case7co: 60000 }).reductions).toBe(22200);
+  });
+  it('JEI et JEIR : plafonds propres, hors plafond global', () => {
+    expect(r({ case7cr: 200000 }).horsPlafond).toBe(45000);
+    expect(r({ case7dz: 200000 }).horsPlafond).toBe(50000);
+    expect(r({ case7cr: 100000, case7dz: 100000 }, false).horsPlafond).toBe(47500);
+    expect(r({ case7dz: 100000, case7cr: 10000 }, false).horsPlafond).toBe(28000);
+  });
+  it('FCPI commun, FIP Corse séparé', () => {
+    expect(r({ case7gq: 20000, case7gr: 20000 }).reductions).toBe(5720);
+    expect(r({ case7gq: 30000, case7fm: 30000 }).reductions).toBe(11520);
+  });
+  it('SOFICA : 18 000 € ou 25 % du revenu, 48 % puis 36 % puis 30 %', () => {
+    expect(r({ case7en: 100000 }).sofica).toBe(8640);
+    expect(r({ case7fn: 10000, case7gn: 10000, case7en: 10000 }).sofica).toBe(7680);
+    expect(r({ case7en: 18000 }, false, 36000).sofica).toBe(4320);
+  });
+});
+
+describe('souscriptions branchées sur le plafonnement global', () => {
+  const FOYER = {
+    situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
+    enfantsMajeursRattaches: 0, parentIsole: false, ancienParentIsole: false, invaliditeDeclarant1: false,
+    invaliditeDeclarant2: false, ancienCombattantDeclarant1: false, ancienCombattantDeclarant2: false,
+    veufAncienCombattant: false, veuveDeGuerre: false,
+  } as FoyerFiscalInput;
+  const parts = calculerPartsFiscales(FOYER);
+  const impotNet = (o: Partial<ReductionsCreditsImpotInput>, outreMer = 0) => {
+    const input = o as ReductionsCreditsImpotInput;
+    const c = calculerReductionsCreditsImpot(input, FOYER, RNI);
+    const s = calculerSouscriptionsCapital(input, true, RNI);
+    const p = calculerPlafonnementNiches({
+      courants: c.avantagesPlafonnesCourants + s.avantagesPlafonnesCourants,
+      esus: c.reductionEsus, outreMer, sofica: s.sofica,
+    });
+    return calculerImpot(RNI, parts, 'marie', 0, 'metropole', 0, 0, 0, 0, 0, 0,
+      c.totalReductions + s.reductions + outreMer, c.totalCredits, 0, p.excedent).impotNet;
+  };
+  const base = impotNet({});
+  it.each<[Partial<ReductionsCreditsImpotInput>, number]>([
+    [{ case7ci: 100000 }, 10000],
+    [{ case7co: 40000 }, 10000],
+    [{ case7cr: 200000 }, 45000],
+    [{ case7cr: 60000, case7ci: 60000 }, 28000],
+    [{ case7en: 40000, case7db: 20000, case7dg: true }, 18000],
+    [{ case7dc: 40000, case7co: 40000 }, 13000],
+  ])('%o → baisse de %i €', (o, baisse) => {
+    expect(base - impotNet(o)).toBe(baisse);
+  });
+  it('majoration de 8 000 € partagée entre SOFICA et outre-mer', () => {
+    expect(base - impotNet({ case7en: 40000, case7db: 20000, case7dg: true }, 8000)).toBe(18000);
+  });
+});

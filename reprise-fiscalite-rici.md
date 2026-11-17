@@ -17,16 +17,19 @@ case par case. Tout est commité sur `main`, **rien n'est poussé**.
 | 5a | `bc3267f` | Cadre 5, colonnes PAC (64 cases) ; 30 cases « dont » sans effet, non saisies |
 | 5b | `0d2d429` | Plafonnement global des avantages fiscaux (art. 200-0 A) ; corrige 7DC |
 | 5c | `a4202de` | Investissements outre-mer 2042-IOM (93 cases) |
+| 6a | (ce commit) | RICI : souscriptions au capital PME/ESUS/JEI/FCPI/FIP/SOFICA (21 cases) |
 
 Migrations appliquées en base (MCP Supabase, projet `npypkocowjkszxtecxzq`). Types Supabase complétés
 à la main par script (pas de régénération complète, pour ne pas lire les 4 500 lignes).
 
-## Reste : 2042-RICI (environ 430 cases du cadre 7)
+## Reste : 2042-RICI (environ 410 cases du cadre 7)
 
 Pinel, Denormandie, Censi-Bouvard, FCPI/FIP, PME/IR-PME, Malraux, monuments historiques, SOFICA,
 forêts, tourisme, transition énergétique, etc. Liste exacte et libellés : annexe du document, tableau
 « cadre 7 ». Aurevia gère déjà : 7UD, 7UQ, 7UJ, 7UF, 7UH, 7DB, 7DR, 7DL, 7DQ, 7DG, 7GA…7GG, 7EA…7EG,
-7AC, 7AE, 7WN/7WO/7WM, 7DC.
+7AC, 7AE, 7WN/7WO/7WM, 7DC, et depuis 6a 7CI 7CO 7CR 7DZ 7GW 7CT 7CU 7CW 7CP 7CQ 7CV 7DO 7DP 7CA
+7GQ 7GR 7FM 7FL 7FN 7GN 7EN (`calculerSouscriptionsCapital.ts`). Plafonnement : SOFICA partage la
+majoration de 8 000 € avec l'outre-mer (mesuré) ; ESUS 2025 sans majoration de 3 000 € ; JEI/JEIR hors plafond.
 
 À découper en sous-lots par famille (une famille = des cases au même mécanisme), et pour chacune :
 1. Mesurer chaque case sur le simulateur (1 000 €, gros montant, foyer non imposable).

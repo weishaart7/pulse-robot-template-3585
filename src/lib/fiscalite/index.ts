@@ -21,3 +21,4 @@ export * from './calculerPrelevementSourceDivers';
 export * from './calculerDeclarationIFI';
 export * from './calculerPlafonnementNiches';
 export * from './calculerInvestissementsOutreMer';
+export * from './calculerSouscriptionsCapital';

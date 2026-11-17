@@ -39,6 +39,7 @@ import {
   calculerReductionsCreditsImpot,
   calculerPlafonnementNiches,
   calculerInvestissementsOutreMer,
+  calculerSouscriptionsCapital,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -473,8 +474,14 @@ export function useFiscalOverview(): FiscalOverview {
       );
       // Plafonnement global des avantages fiscaux (art. 200-0 A) : l'excédent s'ajoute à l'impôt.
       const investissementsOutreMer = calculerInvestissementsOutreMer(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
+      const souscriptionsCapital = calculerSouscriptionsCapital(
+        reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT,
+        COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
+        revenuImposableTotal,
+      );
       const plafonnementNiches = calculerPlafonnementNiches({
-        courants: reductionsCreditsImpot.avantagesPlafonnesCourants,
+        courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants,
+        sofica: souscriptionsCapital.sofica,
         esus: reductionsCreditsImpot.reductionEsus,
         outreMer: investissementsOutreMer.avantagesPlafonnes,
       });
@@ -494,7 +501,8 @@ export function useFiscalOverview(): FiscalOverview {
           + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
           + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
-        reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions,
+        reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions
+          + souscriptionsCapital.reductions,
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit,
         creditEtranger,
         prelevementSourceDivers.reprises + plafonnementNiches.excedent,
