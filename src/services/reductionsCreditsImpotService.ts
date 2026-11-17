@@ -10,10 +10,11 @@ const CASES_NUMERIQUES = [
   'case7ga', 'case7gb', 'case7gc', 'case7ge', 'case7gf', 'case7gg',
   'case7ea', 'case7eb', 'case7ec', 'case7ed', 'case7ef', 'case7eg',
   'case7ac', 'case7ae', 'case7wn', 'case7wo', 'case7wm', 'case7uh', 'case7dc',
+  'caseHqa', 'caseHyj', 'caseHye', 'caseHyf', 'caseHyg', 'caseHyh', 'caseHyi', 'caseHoa', 'caseHob', 'caseHoc', 'caseHoh', 'caseHoi', 'caseHoj', 'caseHok', 'caseHol', 'caseHom', 'caseHon', 'caseHoo', 'caseHop', 'caseHoq', 'caseHor', 'caseHos', 'caseHot', 'caseHou', 'caseHov', 'caseHow', 'caseHod', 'caseHoe', 'caseHof', 'caseHog', 'caseHox', 'caseHoy', 'caseHoz', 'caseHua', 'caseHub', 'caseHuc', 'caseHud', 'caseHue', 'caseHuf', 'caseHug', 'caseHuh', 'caseHui', 'caseHuj', 'caseHuk', 'caseHul', 'caseHum', 'caseHun', 'caseHuo', 'caseHup', 'caseHuq', 'caseHur', 'caseHus', 'caseHut', 'caseHuu', 'caseHkc', 'caseHva', 'caseHvb', 'caseHvc', 'caseHvd', 'caseHve', 'caseHvf', 'caseHvg', 'caseHvk', 'caseHvl', 'caseHvm', 'caseHvn', 'caseHvo', 'caseHls', 'caseHlt', 'caseHlu', 'caseHlv', 'caseHlw', 'caseHgs', 'caseHgt', 'caseHgu', 'caseHgw', 'caseHhs', 'caseHht', 'caseHhu', 'caseHhw', 'caseHis', 'caseHit', 'caseHiu', 'caseHiw', 'caseHjs', 'caseHjt', 'caseHju', 'caseHjw', 'caseHks', 'caseHkt', 'caseHku', 'caseHkw', 'caseHja',
 ] as const;
 
 /** case7ud → case_7ud (colonne Supabase). */
-const colonne = (cle: string) => cle.replace(/^case/, 'case_');
+const colonne = (cle: string) => cle.replace(/^case/, 'case_').toLowerCase();
 
 /**
  * Les colonnes `numeric` sont sérialisées en chaîne par PostgREST : coercées en

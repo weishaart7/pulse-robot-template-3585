@@ -38,6 +38,7 @@ import {
   alertesChargesDeductibles,
   calculerReductionsCreditsImpot,
   calculerPlafonnementNiches,
+  calculerInvestissementsOutreMer,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -471,10 +472,11 @@ export function useFiscalOverview(): FiscalOverview {
         },
       );
       // Plafonnement global des avantages fiscaux (art. 200-0 A) : l'excédent s'ajoute à l'impôt.
+      const investissementsOutreMer = calculerInvestissementsOutreMer(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const plafonnementNiches = calculerPlafonnementNiches({
         courants: reductionsCreditsImpot.avantagesPlafonnesCourants,
         esus: reductionsCreditsImpot.reductionEsus,
-        outreMer: 0,
+        outreMer: investissementsOutreMer.avantagesPlafonnes,
       });
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
       const calculer = (creditEtranger: number) => calculerImpot(
@@ -492,8 +494,8 @@ export function useFiscalOverview(): FiscalOverview {
           + plusValuesGainsDivers.revenuExonereRetenuPourRFR + revenusFonciers2042.revenuExonereRetenuPourRFR
           + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
-        reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions,
-        reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables,
+        reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions,
+        reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit,
         creditEtranger,
         prelevementSourceDivers.reprises + plafonnementNiches.excedent,
         revenusNonSalaries.revenuImposableTauxMarginal,

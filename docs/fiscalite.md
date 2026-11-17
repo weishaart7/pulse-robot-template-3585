@@ -1510,6 +1510,15 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   `7WN × 30 500 / 7WO` si `7WO` dépasse 30 500 €. `7WM` est saisie mais sans effet, comme sur le
   simulateur officiel 2026.
 - **Report ESUS 2021** (`7DC`) : réduction de 25 %, plafond 50 000 € (100 000 € pour un couple).
+- **Investissements outre-mer** (2042-IOM, 93 cases `H…` dans `reductions_credits_impot`,
+  `calculerInvestissementsOutreMer.ts`) : montant saisi = réduction (crédit restituable pour `HJA`).
+  Table `REGLES_OUTRE_MER` mesurée case par case sur le simulateur officiel 2026 : plafond propre
+  (40 000 € / 36 000 € / 30 600 €, 69 545 € et 90 000 € pour les rétrocessions de 56 % et 66 %, aucun
+  pour les régimes avant 2009, l'exploitation directe et le logement social) ; cases à plafond commun
+  limitées ensemble au plus bas plafond présent ; part au plafonnement global 100 / 44 / 34 / 30 / 0 %.
+  `HQA`, `HKC`, `HLV` sans effet. Écart connu : `HGU` 20 000 € + `HOB` 30 000 € → 40 000 € sur le
+  simulateur, 30 600 € ici (règle de cumul entre investissements d'entreprise et immobilier agréé
+  ancien non élucidée).
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
