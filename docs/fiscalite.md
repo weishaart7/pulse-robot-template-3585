@@ -1546,12 +1546,20 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   technologiques `7WR`, crédit restituable de 40 % sans plafond (le simulateur n'applique pas les
   30 000 € par logement), hors plafond global ; Malraux `7TX` 30 % puis `7TY` 22 %, 400 000 € en commun,
   reports `7KW`, `7KY`, `7KX` en montant de réduction, hors plafond global.
+- **Pinel, Pinel+, Denormandie, Duflot** (122 cases, `calculerInvestissementsPinel.ts`, table
+  `REGLES_PINEL` mesurée case par case ; formulaire généré depuis la table). Achevés en 2025 : prix de
+  revient, taux total / 6 ou / 9 (12/18/23/29 % ; Pinel 2023 10,5/15/21,5/26 % ; Pinel 2024 9/12/20/23 %),
+  plafond de 300 000 € commun imputé par taux annuel décroissant. Reports : annuité saisie, plafonnée à
+  6 000 / 11 500 / 9 667 € (Denormandie, Pinel 2019-2024, Duflot), sans plafond pour Pinel 2017-2018
+  et les reports de compléments. Compléments de prorogation : 2 % ou 1 % du prix de revient, 300 000 €
+  par case. `7JM`, `7LM` sans effet. Plafonnement : métropole en courants, outre-mer dans la
+  majoration de 8 000 € (avec IOM et SOFICA).
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
-  avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu + SOFICA) ; l'excédent
+  avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu + Pinel outre-mer + SOFICA) ; l'excédent
   s'ajoute à l'impôt (avec les reprises), ce qui limite aussi le remboursement d'un foyer non imposable.
-  Courants : `7DB`, `7GA`…`7GG`, forêts, bornes, Loc'Avantages, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
+  Courants : `7DB`, `7GA`…`7GG`, forêts, bornes, Loc'Avantages, Pinel métropole, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
   ESUS : `7CO` 40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS majorant : `7DC`, `7BS`, `7EK` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
   venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, `7WR`, Malraux, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :

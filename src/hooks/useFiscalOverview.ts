@@ -42,6 +42,7 @@ import {
   calculerSouscriptionsCapital,
   calculerInvestissementsForestiers,
   calculerInvestissementsLocatifs,
+  calculerInvestissementsPinel,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -487,12 +488,14 @@ export function useFiscalOverview(): FiscalOverview {
         COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
       );
       const investissementsLocatifs = calculerInvestissementsLocatifs(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
+      const investissementsPinel = calculerInvestissementsPinel(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const plafonnementNiches = calculerPlafonnementNiches({
         courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants
-          + investissementsForestiers.credit + investissementsLocatifs.avantagesPlafonnesCourants,
+          + investissementsForestiers.credit + investissementsLocatifs.avantagesPlafonnesCourants
+          + investissementsPinel.avantagesPlafonnesCourants,
         sofica: souscriptionsCapital.sofica,
         esus: souscriptionsCapital.esus,
-        outreMer: investissementsOutreMer.avantagesPlafonnes,
+        outreMer: investissementsOutreMer.avantagesPlafonnes + investissementsPinel.outreMer,
       });
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
       const calculer = (creditEtranger: number) => calculerImpot(
@@ -511,7 +514,8 @@ export function useFiscalOverview(): FiscalOverview {
           + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions
-          + souscriptionsCapital.reductions + investissementsLocatifs.reductions,
+          + souscriptionsCapital.reductions + investissementsLocatifs.reductions
+          + investissementsPinel.reductions,
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit
           + investissementsForestiers.credit + investissementsLocatifs.credits,
         creditEtranger,

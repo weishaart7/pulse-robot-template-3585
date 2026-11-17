@@ -20,12 +20,13 @@ case par case. Tout est commité sur `main`, **rien n'est poussé**.
 | 6a | `b09aa33` | RICI : souscriptions au capital PME/ESUS/JEI/FCPI/FIP/SOFICA (21 cases) |
 | 6b | `aed76ce` | RICI : reports SFS/ESUS, reports plafonnement global, presse, 7NZ, 7UC, 7FH (15 cases) ; ordre d'imputation PME corrigé, 7DC dans le plafond commun |
 | 6c | `d08cd91` | RICI : investissements forestiers, crédits restituables (24 cases) |
-| 6d | (ce commit) | RICI : haut du cadre 7 — dons européens et Mayotte, reports de dons, 7AG, 7WP, bornes, Loc'Avantages, 7WR, Malraux (26 cases) |
+| 6d | `441ca06` | RICI : haut du cadre 7 — dons européens et Mayotte, reports de dons, 7AG, 7WP, bornes, Loc'Avantages, 7WR, Malraux (26 cases) |
+| 6e | (ce commit) | RICI : Pinel, Pinel+, Denormandie, Duflot (122 cases) |
 
 Migrations appliquées en base (MCP Supabase, projet `npypkocowjkszxtecxzq`). Types Supabase complétés
 à la main par script (pas de régénération complète, pour ne pas lire les 4 500 lignes).
 
-## Reste : 2042-RICI (environ 345 cases du cadre 7)
+## Reste : 2042-RICI (environ 225 cases du cadre 7)
 
 Pinel, Denormandie, Censi-Bouvard, FCPI/FIP, PME/IR-PME, Malraux, monuments historiques, SOFICA,
 forêts, tourisme, transition énergétique, etc. Liste exacte et libellés : annexe du document, tableau
@@ -35,8 +36,9 @@ forêts, tourisme, transition énergétique, etc. Liste exacte et libellés : an
 (`calculerSouscriptionsCapital.ts`, qui porte aussi 7DC) ; 7US non mesurable.
 Depuis 6c : forêts 7UN 7UL 7UP 7UT et reports 7TR…7TK, 7VQ…7VT (`calculerInvestissementsForestiers.ts`).
 Depuis 6d : 7UO 7VA 7VM 7VC 7XS…7XY 7AG 7WP (cadre 7 courant) ; 7ZQ…7ZT 7BK…7BO 7WR 7TX 7TY 7KW 7KY 7KX
-(`calculerInvestissementsLocatifs.ts`). Prochaine famille suggérée : Pinel/Denormandie (7NM… à 7LX, 7JB…,
-reports), puis Censi-Bouvard, monuments historiques et le reste du bas du cadre. Plafonnement : SOFICA partage la
+(`calculerInvestissementsLocatifs.ts`). Depuis 6e : Pinel/Denormandie/Duflot, 122 cases de 7NM à 7FX (`calculerInvestissementsPinel.ts`).
+Prochaine famille : Scellier (7RT, 7RU — semblent hors plafond global : crédit + 7RT 100 000 € → 26 000 €,
+à vérifier — puis 7MO… et suivants), Censi-Bouvard, monuments historiques, le reste du bas du cadre. Plafonnement : SOFICA partage la
 majoration de 8 000 € avec l'outre-mer (mesuré) ; ESUS 2025 sans majoration de 3 000 € ; JEI/JEIR hors plafond.
 
 À découper en sous-lots par famille (une famille = des cases au même mécanisme), et pour chacune :

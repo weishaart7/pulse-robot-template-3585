@@ -24,3 +24,4 @@ export * from './calculerInvestissementsOutreMer';
 export * from './calculerSouscriptionsCapital';
 export * from './calculerInvestissementsForestiers';
 export * from './calculerInvestissementsLocatifs';
+export * from './calculerInvestissementsPinel';
