@@ -28,7 +28,16 @@ export const PLAFOND_PRESTATION_COMPENSATOIRE = 30500;
 export const PLAFOND_DONS_PARTIS = 15000;
 /** Dons pour Mayotte (cyclone Chido, 7UO) : 75 % dans la limite propre de 2 000 €, excédent à 66 %. */
 export const PLAFOND_DONS_MAYOTTE = 2000;
+/** Bas du cadre 7, relevé sur le simulateur officiel 2026. */
+export const PLAFOND_PPRT = 20000;
+export const PLAFOND_RENTE_SURVIE = 1525;
+export const MAJORATION_RENTE_SURVIE_ENFANT = 300;
+export const PLAFOND_DEPENDANCE_PAR_PERSONNE = 10000;
+export const PLAFOND_AUTONOMIE = 5000;
+/** Seuils de RFR de 7WI (1, 2 personnes, puis par personne en plus) ; 2023 ou 2024 au choix. */
+export const SEUILS_RFR_AUTONOMIE = { une: 31393, deux: 49995, parPersonne: 6976 } as const;
 /** Reports de dons excédentaires 2020-2024. */
+const COUPLES_AUTONOMIE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 const REPORTS_DONS = ['case7xs', 'case7xt', 'case7xu', 'case7xw', 'case7xy'] as const;
 
 const montant = (v: number | null | undefined) => Math.max(0, v ?? 0);
@@ -62,6 +71,10 @@ export interface ReductionsCreditsImpotResult {
   creditGardeEnfants: number;
   /** Cotisations syndicales 7AC/7AE (crédit restituable). */
   creditCotisationsSyndicales: number;
+  /** Rente survie 7GZ, dépendance 7CD/7CE (réductions hors plafond global). */
+  reductionRenteSurvieDependance: number;
+  /** Travaux PPRT 7WL et perte d'autonomie 7WI (crédits restituables hors plafond global). */
+  creditsTravauxLogement: number;
   /** Crédits restituables du cadre 7 : services à la personne, garde, cotisations syndicales. */
   totalCredits: number;
   /** Avantages soumis au plafonnement global de 10 000 € (services à la personne, garde) — voir calculerPlafonnementNiches. */
@@ -145,18 +158,42 @@ export function calculerReductionsCreditsImpot(
   const reductionPrestationCompensatoire = Math.round(
     (versementsRetenus + Math.min(montant(input.case7wp), PLAFOND_PRESTATION_COMPENSATOIRE)) * 0.25);
 
+  // 7GZ : 25 % de 1 525 € + 300 € par enfant à charge (150 € en résidence alternée, non mesuré).
+  const plafondRente = PLAFOND_RENTE_SURVIE + foyer.enfantsCharge.reduce(
+    (s, e) => s + (e.residenceAlternee ? MAJORATION_RENTE_SURVIE_ENFANT / 2 : MAJORATION_RENTE_SURVIE_ENFANT), 0);
+  const reductionRenteSurvieDependance = Math.round(0.25 * (Math.min(montant(input.case7gz), plafondRente)
+    + Math.min(montant(input.case7cd), PLAFOND_DEPENDANCE_PAR_PERSONNE)
+    + Math.min(montant(input.case7ce), PLAFOND_DEPENDANCE_PAR_PERSONNE)));
+
+  // 7WI : crédit de 25 % si le RFR 2023 ou 2024 ne dépasse pas le seuil du foyer ; plafond de 5 000 €
+  // (10 000 € couple) diminué des dépenses retenues 2021-2024 (loi ; « calcul impossible » sur le simulateur).
+  const couple = COUPLES_AUTONOMIE.includes(foyer.situationFamille);
+  const personnes = (couple ? 2 : 1) + foyer.enfantsCharge.length + foyer.personnesInvalidesCharge.length
+    + foyer.enfantsMajeursRattaches;
+  const seuilRfr = personnes === 1 ? SEUILS_RFR_AUTONOMIE.une
+    : SEUILS_RFR_AUTONOMIE.deux + (personnes - 2) * SEUILS_RFR_AUTONOMIE.parPersonne;
+  const rfrs = [input.case8ys, input.case8yu].filter((v): v is number => typeof v === 'number' && v > 0);
+  const eligibleAutonomie = rfrs.some(v => v <= seuilRfr);
+  const anterieures = montant(input.case7zz) + montant(input.case7zy) + montant(input.case7zx) + montant(input.case7zw);
+  const plafondAutonomie = Math.max(0, PLAFOND_AUTONOMIE * (couple ? 2 : 1) - anterieures);
+  const creditAutonomie = eligibleAutonomie ? Math.min(montant(input.case7wi), plafondAutonomie) * 0.25 : 0;
+  const creditsTravauxLogement = Math.round(Math.min(montant(input.case7wl), PLAFOND_PPRT) * 0.40 + creditAutonomie);
+
   return {
+    reductionRenteSurvieDependance,
+    creditsTravauxLogement,
     reductionDons75,
     reductionDons66,
     donsExcedentaires: base66 - retenus66,
-    totalReductions: reductionDons75 + reductionDons66 + reductionScolarite + reductionPrestationCompensatoire,
+    totalReductions: reductionDons75 + reductionDons66 + reductionScolarite + reductionPrestationCompensatoire
+      + reductionRenteSurvieDependance,
     plafondServicesPersonne,
     creditServicesPersonne,
     reductionScolarite,
     reductionPrestationCompensatoire,
     creditGardeEnfants,
     creditCotisationsSyndicales,
-    totalCredits: creditServicesPersonne + creditGardeEnfants + creditCotisationsSyndicales,
+    totalCredits: creditServicesPersonne + creditGardeEnfants + creditCotisationsSyndicales + creditsTravauxLogement,
     avantagesPlafonnesCourants: creditServicesPersonne + creditGardeEnfants,
   };
 }

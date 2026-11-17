@@ -23,12 +23,13 @@ case par case. Tout est commité sur `main`, **rien n'est poussé**.
 | 6d | `441ca06` | RICI : haut du cadre 7 — dons européens et Mayotte, reports de dons, 7AG, 7WP, bornes, Loc'Avantages, 7WR, Malraux (26 cases) |
 | 6e | `8eb1f28` | RICI : Pinel, Pinel+, Denormandie, Duflot (122 cases) |
 | 6f | `1e839be` | RICI : Scellier (175 cases) ; plafonnement global par millésime 2009-2012 |
-| 6g | (ce commit) | RICI : Censi-Bouvard (45 cases) |
+| 6g | `8e8d2dc` | RICI : Censi-Bouvard (45 cases) |
+| 6h | (ce commit) | RICI : bas du cadre 7 — 7WL, 7GZ, 7CD/7CE, perte d'autonomie 7WI (11 champs) |
 
 Migrations appliquées en base (MCP Supabase, projet `npypkocowjkszxtecxzq`). Types Supabase complétés
 à la main par script (pas de régénération complète, pour ne pas lire les 4 500 lignes).
 
-## Reste : 2042-RICI (quelques cases du bas du cadre 7)
+## 2042-RICI terminée
 
 Pinel, Denormandie, Censi-Bouvard, FCPI/FIP, PME/IR-PME, Malraux, monuments historiques, SOFICA,
 forêts, tourisme, transition énergétique, etc. Liste exacte et libellés : annexe du document, tableau
@@ -42,8 +43,9 @@ Depuis 6d : 7UO 7VA 7VM 7VC 7XS…7XY 7AG 7WP (cadre 7 courant) ; 7ZQ…7ZT 7BK�
 Depuis 6f : Scellier, 175 cases de 7RT à 7VP (`calculerInvestissementsScellier.ts`) ; plafonnement
 par millésime dans `calculerPlafonnementNiches` (`millesimes`, `revenuNetImposable`).
 Depuis 6g : Censi-Bouvard, 45 cases 7MN…7PX (`calculerInvestissementsCensiBouvard.ts`).
-Reste : bas du cadre 7 (7ZZ, 7ZY, 7ZX, 7ZW, 7WI, 7WL, 7GZ : perte d'autonomie ; 7CD/7CE déjà gérées ?
-à vérifier ; 7US non mesurable). Plafonnement : SOFICA partage la
+Depuis 6h : bas du cadre 7 (7WL, 7GZ, 7CD, 7CE, 7WI, 7ZZ…7ZW, 8YS, 8YU). Seule 7US reste non saisie
+(« calcul impossible » sur le simulateur). Prochaines étapes possibles : vérifier les formulaires dans
+le navigateur, mettre à jour le document de suivi en ligne, pousser `main`. Plafonnement : SOFICA partage la
 majoration de 8 000 € avec l'outre-mer (mesuré) ; ESUS 2025 sans majoration de 3 000 € ; JEI/JEIR hors plafond.
 
 À découper en sous-lots par famille (une famille = des cases au même mécanisme), et pour chacune :

@@ -1565,6 +1565,13 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   arrondi par case ; reports 1/9 et soldes saisis en montant de réduction (plafonds propres `7SO`/`7SB`
   6 000 €, `7SC` 6 667 €). Millésime 2009-2012 pour les soldes `7HT`…`7PW` et les reports `7SO`, `7SB`
   (2012), `7SC` (2011) ; les autres au plafond courant.
+- **Bas du cadre 7** (`calculerReductionsCreditsImpot.ts`) : `7WL` crédit restituable de 40 %, 20 000 €
+  par foyer ; `7GZ` 25 % de 1 525 € + 300 € par enfant (150 € en alternée, non mesuré) ; `7CD`/`7CE`
+  25 %, 10 000 € par personne ; `7WI` crédit restituable de 25 %, 5 000 € (10 000 € couple) moins les
+  dépenses retenues `7ZZ`…`7ZW` (loi ; « calcul impossible » sur le simulateur), si le RFR 2023 (`8YS`)
+  ou 2024 (`8YU`) ne dépasse pas 31 393 € (1 personne), 49 995 € (2), + 6 976 € par personne en plus
+  (déclarants, enfants, invalides, majeurs rattachés) ; case Île-de-France sans effet sur le simulateur,
+  non saisie. Tous hors plafonnement global.
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
@@ -1573,13 +1580,13 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   Courants : `7DB`, `7GA`…`7GG`, forêts, bornes, Loc'Avantages, Pinel métropole, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
   ESUS : `7CO` 40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS majorant : `7DC`, `7BS`, `7EK` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
-  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, `7WR`, Malraux, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
+  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, `7WR`, `7WL`, `7WI`, `7GZ`, `7CD`/`7CE`, Malraux, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
   une réduction non imputée faute d'impôt compte pour son montant entier.
   **Millésimes Scellier** : plafonds historiques 2012 (18 000 € + 4 % du RNI), 2011 (18 000 € + 6 %),
   2010 (20 000 € + 8 %), 2009 (25 000 € + 10 %), emboîtés depuis l'année courante :
   retenu = min(retenu + avantages du millésime, plafond du millésime). Mesuré : 7MO (2009) 10 000 € +
   7MR (2012) 50 000 € → 46 836 € ; 7MR 50 000 € + crédit 7DB 10 000 € → 36 836 €.
-- **Hors périmètre (acté)** : 2042-RICI hors souscriptions au capital (lots suivants), report des dons excédentaires des années antérieures.
+- **Hors périmètre (acté)** : `7US` (mécénat d'entreprise, non mesurable sur le simulateur), report des dons excédentaires des années antérieures.
 
 ### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)
 

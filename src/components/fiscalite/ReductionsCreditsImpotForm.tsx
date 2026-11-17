@@ -228,6 +228,20 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           ))}
         </SousGroupe>
 
+        <SousGroupe titre="Autonomie, dépendance, rente survie, risques technologiques" aide="7WI : crédit de 25 % (5 000 €, 10 000 € pour un couple, moins les dépenses retenues 2021-2024), si le RFR 2023 ou 2024 ne dépasse pas le seuil du foyer.">
+          <SingleMontantLigne label="Équipements pour la perte d'autonomie ou le handicap, dépenses 2025" extra="crédit 25 %" code="7WI" value={rc.case7wi ?? null} onChange={v => update('case7wi', v)} />
+          <SingleMontantLigne label="Dépenses antérieures retenues en 2021" code="7ZZ" value={rc.case7zz ?? null} onChange={v => update('case7zz', v)} />
+          <SingleMontantLigne label="Dépenses antérieures retenues en 2022" code="7ZY" value={rc.case7zy ?? null} onChange={v => update('case7zy', v)} />
+          <SingleMontantLigne label="Dépenses antérieures retenues en 2023" code="7ZX" value={rc.case7zx ?? null} onChange={v => update('case7zx', v)} />
+          <SingleMontantLigne label="Dépenses antérieures retenues en 2024" code="7ZW" value={rc.case7zw ?? null} onChange={v => update('case7zw', v)} />
+          <SingleMontantLigne label="Revenu fiscal de référence 2023" extra="condition de 7WI" code="8YS" value={rc.case8ys ?? null} onChange={v => update('case8ys', v)} />
+          <SingleMontantLigne label="Revenu fiscal de référence 2024" extra="condition de 7WI" code="8YU" value={rc.case8yu ?? null} onChange={v => update('case8yu', v)} />
+          <SingleMontantLigne label="Travaux prescrits par un plan de prévention des risques technologiques, dépenses 2025" extra="crédit 40 %, maximum 20 000 €" code="7WL" value={rc.case7wl ?? null} onChange={v => update('case7wl', v)} />
+          <SingleMontantLigne label="Primes de rente survie, contrats d'épargne handicap" extra="25 %, 1 525 € + 300 € par enfant" code="7GZ" value={rc.case7gz ?? null} onChange={v => update('case7gz', v)} />
+          <SingleMontantLigne label="Accueil en établissement pour personnes dépendantes, 1re personne" extra="25 %, maximum 10 000 €" code="7CD" value={rc.case7cd ?? null} onChange={v => update('case7cd', v)} />
+          <SingleMontantLigne label="Accueil en établissement pour personnes dépendantes, 2e personne" extra="25 %, maximum 10 000 €" code="7CE" value={rc.case7ce ?? null} onChange={v => update('case7ce', v)} />
+        </SousGroupe>
+
         <SousGroupe titre="Logement : bornes, Loc'Avantages, risques technologiques, Malraux" aide="Bornes : crédit de 75 %, 500 € par système. Loc'Avantages : montant servant de base au taux. 7WR : crédit de 40 %. Malraux : dépenses, 400 000 € en commun ; reports en montant de réduction.">
           <SingleMontantLigne label="Borne de recharge, habitation principale, 1er système" code="7ZQ" value={rc.case7zq ?? null} onChange={v => update('case7zq', v)} />
           <SingleMontantLigne label="Borne de recharge, habitation principale, 2nd système" code="7ZR" value={rc.case7zr ?? null} onChange={v => update('case7zr', v)} />

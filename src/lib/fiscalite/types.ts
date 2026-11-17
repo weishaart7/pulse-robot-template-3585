@@ -1310,6 +1310,22 @@ export interface ReductionsCreditsImpotInput {
   case7oe?: number | null;
   case7ps?: number | null;
   case7px?: number | null;
+  /** Travaux PPRT 2025 : crédit de 40 %, 20 000 € par foyer. */
+  case7wl?: number | null;
+  /** Rente survie, épargne handicap : 25 % de 1 525 € + 300 € par enfant à charge. */
+  case7gz?: number | null;
+  /** Accueil en établissement pour personnes dépendantes : 25 %, 10 000 € par personne. */
+  case7cd?: number | null;
+  case7ce?: number | null;
+  /** Équipements perte d'autonomie 2025 (crédit 25 %) et dépenses retenues 2021-2024. */
+  case7wi?: number | null;
+  case7zz?: number | null;
+  case7zy?: number | null;
+  case7zx?: number | null;
+  case7zw?: number | null;
+  /** Revenu fiscal de référence 2023 et 2024 (condition de 7WI). */
+  case8ys?: number | null;
+  case8yu?: number | null;
   /** Investissements outre-mer (2042-IOM) : montants de réduction (crédit pour HJA), voir calculerInvestissementsOutreMer. */
   caseHqa?: number | null;
   caseHyj?: number | null;
