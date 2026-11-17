@@ -26,3 +26,4 @@ export * from './calculerInvestissementsForestiers';
 export * from './calculerInvestissementsLocatifs';
 export * from './calculerInvestissementsPinel';
 export * from './calculerInvestissementsScellier';
+export * from './calculerInvestissementsCensiBouvard';

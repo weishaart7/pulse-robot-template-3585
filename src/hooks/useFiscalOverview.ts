@@ -44,6 +44,7 @@ import {
   calculerInvestissementsLocatifs,
   calculerInvestissementsPinel,
   calculerInvestissementsScellier,
+  calculerInvestissementsCensiBouvard,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -491,12 +492,17 @@ export function useFiscalOverview(): FiscalOverview {
       const investissementsLocatifs = calculerInvestissementsLocatifs(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const investissementsPinel = calculerInvestissementsPinel(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const investissementsScellier = calculerInvestissementsScellier(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
+      const investissementsCensiBouvard = calculerInvestissementsCensiBouvard(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
+      const millesimes = { ...investissementsScellier.millesimes };
+      for (const [annee, v] of Object.entries(investissementsCensiBouvard.millesimes)) {
+        millesimes[Number(annee) as keyof typeof millesimes] += v;
+      }
       const plafonnementNiches = calculerPlafonnementNiches({
-        millesimes: investissementsScellier.millesimes,
+        millesimes,
         revenuNetImposable: revenuImposableTotal,
         courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants
           + investissementsForestiers.credit + investissementsLocatifs.avantagesPlafonnesCourants
-          + investissementsPinel.avantagesPlafonnesCourants,
+          + investissementsPinel.avantagesPlafonnesCourants + investissementsCensiBouvard.avantagesPlafonnesCourants,
         sofica: souscriptionsCapital.sofica,
         esus: souscriptionsCapital.esus,
         outreMer: investissementsOutreMer.avantagesPlafonnes + investissementsPinel.outreMer,
@@ -519,7 +525,8 @@ export function useFiscalOverview(): FiscalOverview {
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions
           + souscriptionsCapital.reductions + investissementsLocatifs.reductions
-          + investissementsPinel.reductions + investissementsScellier.reductions,
+          + investissementsPinel.reductions + investissementsScellier.reductions
+          + investissementsCensiBouvard.reductions,
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit
           + investissementsForestiers.credit + investissementsLocatifs.credits,
         creditEtranger,

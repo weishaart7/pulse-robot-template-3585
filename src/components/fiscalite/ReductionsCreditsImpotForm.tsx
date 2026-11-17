@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useReductionsCreditsImpot } from '@/hooks/useReductionsCreditsImpot';
 import { ReductionsCreditsImpot } from '@/services/reductionsCreditsImpotService';
-import { ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel, REGLES_SCELLIER, RegleScellier } from '@/lib/fiscalite';
+import { ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel, REGLES_SCELLIER, RegleScellier, REGLES_CENSI_BOUVARD } from '@/lib/fiscalite';
 import { SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -220,6 +220,13 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
             ))}
           </SousGroupe>
         ))}
+
+        <SousGroupe titre="Censi-Bouvard (location meublée non professionnelle)" aide="Investissements : prix de revient (11 % sur 9 ans, 300 000 € par case). Reports et soldes : montant de la réduction.">
+          {(Object.entries(REGLES_CENSI_BOUVARD) as [keyof ReductionsCreditsImpotInput, { libelle: string }][]).map(([cle, r]) => (
+            <SingleMontantLigne key={cle} label={r.libelle} code={cle.slice(4).toUpperCase()}
+              value={(rc[cle] as number | null | undefined) ?? null} onChange={v => update(cle, v)} />
+          ))}
+        </SousGroupe>
 
         <SousGroupe titre="Logement : bornes, Loc'Avantages, risques technologiques, Malraux" aide="Bornes : crédit de 75 %, 500 € par système. Loc'Avantages : montant servant de base au taux. 7WR : crédit de 40 %. Malraux : dépenses, 400 000 € en commun ; reports en montant de réduction.">
           <SingleMontantLigne label="Borne de recharge, habitation principale, 1er système" code="7ZQ" value={rc.case7zq ?? null} onChange={v => update('case7zq', v)} />

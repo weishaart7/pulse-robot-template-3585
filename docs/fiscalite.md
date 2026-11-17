@@ -1560,6 +1560,11 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   d'investissement). Compléments de prorogation 2025 : prix de revient, 300 000 € par case,
   4 / 5 / 6 % sur 3 ans. Chaque case porte son millésime (2009-2012, déduit du libellé ou du plafond
   mesuré) : voir plafonnement.
+- **Censi-Bouvard** (45 cases, `calculerInvestissementsCensiBouvard.ts`, table `REGLES_CENSI_BOUVARD`) :
+  investissements 2019-2022 (`7MN`, `7MW`, `7MZ`, `7PZ`), prix de revient × 11 % / 9, 300 000 € par case,
+  arrondi par case ; reports 1/9 et soldes saisis en montant de réduction (plafonds propres `7SO`/`7SB`
+  6 000 €, `7SC` 6 667 €). Millésime 2009-2012 pour les soldes `7HT`…`7PW` et les reports `7SO`, `7SB`
+  (2012), `7SC` (2011) ; les autres au plafond courant.
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
