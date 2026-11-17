@@ -3130,6 +3130,21 @@ export type Database = {
           case_7fn: number | null
           case_7gn: number | null
           case_7en: number | null
+          case_7bs: number | null
+          case_7bt: number | null
+          case_7bu: number | null
+          case_7bw: number | null
+          case_7ek: number | null
+          case_7cy: number | null
+          case_7dy: number | null
+          case_7ey: number | null
+          case_7fy: number | null
+          case_7gy: number | null
+          case_7mx: number | null
+          case_7my: number | null
+          case_7nz: number | null
+          case_7uc: number | null
+          case_7fh: number | null
           case_7db: number | null
           case_7dg: boolean | null
           case_7dl: number | null
@@ -3279,6 +3294,21 @@ export type Database = {
           case_7fn?: number | null
           case_7gn?: number | null
           case_7en?: number | null
+          case_7bs?: number | null
+          case_7bt?: number | null
+          case_7bu?: number | null
+          case_7bw?: number | null
+          case_7ek?: number | null
+          case_7cy?: number | null
+          case_7dy?: number | null
+          case_7ey?: number | null
+          case_7fy?: number | null
+          case_7gy?: number | null
+          case_7mx?: number | null
+          case_7my?: number | null
+          case_7nz?: number | null
+          case_7uc?: number | null
+          case_7fh?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null
@@ -3428,6 +3458,21 @@ export type Database = {
           case_7fn?: number | null
           case_7gn?: number | null
           case_7en?: number | null
+          case_7bs?: number | null
+          case_7bt?: number | null
+          case_7bu?: number | null
+          case_7bw?: number | null
+          case_7ek?: number | null
+          case_7cy?: number | null
+          case_7dy?: number | null
+          case_7ey?: number | null
+          case_7fy?: number | null
+          case_7gy?: number | null
+          case_7mx?: number | null
+          case_7my?: number | null
+          case_7nz?: number | null
+          case_7uc?: number | null
+          case_7fh?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null

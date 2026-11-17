@@ -2,7 +2,6 @@ import { FoyerFiscalInput, ReductionsCreditsImpotInput } from './types';
 
 /** Dons aux personnes en difficulté à 75 % (art. 200 1 ter CGI) : 1 000 € jusqu'au 13.10.2025, 2 000 € sur l'année. */
 export const PLAFOND_DONS_75_AVANT_14_10 = 1000;
-const COUPLES: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 export const PLAFOND_DONS_75_ANNEE = 2000;
 /** Dons pour le patrimoine religieux à 75 % (art. 200 1 quater CGI). */
 export const PLAFOND_DONS_PATRIMOINE_RELIGIEUX = 1000;
@@ -27,8 +26,6 @@ export const LIMITE_COTISATIONS_SYNDICALES = 0.01;
 export const PLAFOND_PRESTATION_COMPENSATOIRE = 30500;
 /** Dons aux partis politiques (art. 200 3 CGI) : 66 %, 15 000 € par foyer, dans la limite commune de 20 % avec 7UF. */
 export const PLAFOND_DONS_PARTIS = 15000;
-/** Report ESUS 2021 (7DC) : 25 % ; plafond 50 000 € (100 000 € pour un couple). */
-export const PLAFOND_ESUS = 50000;
 
 const montant = (v: number | null | undefined) => Math.max(0, v ?? 0);
 
@@ -55,8 +52,6 @@ export interface ReductionsCreditsImpotResult {
   reductionScolarite: number;
   /** Prestations compensatoires 7WN/7WO (réduction). */
   reductionPrestationCompensatoire: number;
-  /** Report ESUS 7DC (réduction). */
-  reductionEsus: number;
   /** Frais de garde 7GA…7GG (crédit restituable). */
   creditGardeEnfants: number;
   /** Cotisations syndicales 7AC/7AE (crédit restituable). */
@@ -135,20 +130,15 @@ export function calculerReductionsCreditsImpot(
     : Math.min(versements, PLAFOND_PRESTATION_COMPENSATOIRE);
   const reductionPrestationCompensatoire = Math.round(versementsRetenus * 0.25);
 
-  // Plafond propre de 7DC ; le plafonnement global (13 000 € avec ESUS) est appliqué par calculerPlafonnementNiches.
-  const plafondEsus = COUPLES.includes(foyer.situationFamille) ? PLAFOND_ESUS * 2 : PLAFOND_ESUS;
-  const reductionEsus = Math.round(Math.min(montant(input.case7dc), plafondEsus) * 0.25);
-
   return {
     reductionDons75,
     reductionDons66,
     donsExcedentaires: base66 - retenus66,
-    totalReductions: reductionDons75 + reductionDons66 + reductionScolarite + reductionPrestationCompensatoire + reductionEsus,
+    totalReductions: reductionDons75 + reductionDons66 + reductionScolarite + reductionPrestationCompensatoire,
     plafondServicesPersonne,
     creditServicesPersonne,
     reductionScolarite,
     reductionPrestationCompensatoire,
-    reductionEsus,
     creditGardeEnfants,
     creditCotisationsSyndicales,
     totalCredits: creditServicesPersonne + creditGardeEnfants + creditCotisationsSyndicales,

@@ -91,11 +91,8 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Capital fixé en substitution de rente" extra="sans effet sur le calcul" code="7WM" value={rc.case7wm ?? null} onChange={v => update('case7wm', v)} />
         </SousGroupe>
 
-        <SousGroupe titre="Entreprises solidaires d'utilité sociale (ESUS)" aide="Réduction de 25 %, dans la limite de 50 000 € (100 000 € pour un couple).">
-          <SingleMontantLigne label="Report des versements effectués du 9.5 au 31.12.2021" code="7DC" value={rc.case7dc ?? null} onChange={v => update('case7dc', v)} />
-        </SousGroupe>
 
-        <SousGroupe titre="Souscriptions au capital de PME, ESUS et SFS" aide="Montants versés. 18 % ou 25 %, plafond commun de 50 000 € (100 000 € pour un couple), plafonnement global de 10 000 €.">
+        <SousGroupe titre="Souscriptions au capital de PME, ESUS et SFS" aide="Montants versés. 18 % ou 25 %, plafond commun de 50 000 € (100 000 € pour un couple), plafonnement global de 10 000 € (13 000 € avec 7DC, 7BS, 7EK).">
           <SingleMontantLigne label="Versements PME en 2025" code="7CI" value={rc.case7ci ?? null} onChange={v => update('case7ci', v)} />
           <SingleMontantLigne label="Versements ESUS en 2025" code="7CO" value={rc.case7co ?? null} onChange={v => update('case7co', v)} />
           <SingleMontantLigne label="Versements SFS en 2025" code="7GW" value={rc.case7gw ?? null} onChange={v => update('case7gw', v)} />
@@ -108,6 +105,11 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Report de versements PME en 2024" code="7CV" value={rc.case7cv ?? null} onChange={v => update('case7cv', v)} />
           <SingleMontantLigne label="Report de versements ESUS du 1.1 au 27.6.2024" code="7DO" value={rc.case7do ?? null} onChange={v => update('case7do', v)} />
           <SingleMontantLigne label="Report de versements ESUS du 28.6 au 31.12.2024" code="7DP" value={rc.case7dp ?? null} onChange={v => update('case7dp', v)} />
+          <SingleMontantLigne label="Report des versements ESUS du 9.5 au 31.12.2021" code="7DC" value={rc.case7dc ?? null} onChange={v => update('case7dc', v)} />
+          <SingleMontantLigne label="Report de versements SFS en 2021" code="7BS" value={rc.case7bs ?? null} onChange={v => update('case7bs', v)} />
+          <SingleMontantLigne label="Report de versements SFS en 2022" code="7BT" value={rc.case7bt ?? null} onChange={v => update('case7bt', v)} />
+          <SingleMontantLigne label="Report de versements SFS en 2023" code="7BU" value={rc.case7bu ?? null} onChange={v => update('case7bu', v)} />
+          <SingleMontantLigne label="Report de versements SFS en 2024" code="7BW" value={rc.case7bw ?? null} onChange={v => update('case7bw', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Jeunes entreprises innovantes" aide="Montants versés, hors plafonnement global. JEI/JEU/JEIC : 30 %, 75 000 € (150 000 € pour un couple) ; JEIR : 50 %, 50 000 € (100 000 €).">
@@ -126,6 +128,23 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Taux de 48 %" code="7EN" value={rc.case7en ?? null} onChange={v => update('case7en', v)} />
           <SingleMontantLigne label="Taux de 36 %" code="7GN" value={rc.case7gn ?? null} onChange={v => update('case7gn', v)} />
           <SingleMontantLigne label="Taux de 30 %" code="7FN" value={rc.case7fn ?? null} onChange={v => update('case7fn', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Presse, objets classés, forêts, reprise de société" aide="Montants versés. Presse : 50 % puis 30 %, 10 000 € (20 000 € pour un couple) ; objets MH : 18 %, 20 000 € ; DFCI : 50 %, 1 000 € ; reprise de société : 25 %, 20 000 € (40 000 €), hors plafonnement global comme la DFCI.">
+          <SingleMontantLigne label="Entreprises de presse, versements du 15.2 au 31.12.2025 (50 %)" code="7MY" value={rc.case7my ?? null} onChange={v => update('case7my', v)} />
+          <SingleMontantLigne label="Entreprises de presse, versements du 15.2 au 31.12.2025 (30 %)" code="7MX" value={rc.case7mx ?? null} onChange={v => update('case7mx', v)} />
+          <SingleMontantLigne label="Travaux de conservation ou de restauration d'objets classés monuments historiques" code="7NZ" value={rc.case7nz ?? null} onChange={v => update('case7nz', v)} />
+          <SingleMontantLigne label="Cotisations pour la défense des forêts contre l'incendie" code="7UC" value={rc.case7uc ?? null} onChange={v => update('case7uc', v)} />
+          <SingleMontantLigne label="Intérêts d'emprunt pour reprise de société" code="7FH" value={rc.case7fh ?? null} onChange={v => update('case7fh', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Reports de réductions d'impôt" aide="Montant de la réduction reportée.">
+          <SingleMontantLigne label="Report de réduction ESUS (versements du 9.5 au 31.12.2021) et SFS 2021" code="7EK" value={rc.case7ek ?? null} onChange={v => update('case7ek', v)} />
+          <SingleMontantLigne label="Report de réduction 2020 au titre du plafonnement global" code="7CY" value={rc.case7cy ?? null} onChange={v => update('case7cy', v)} />
+          <SingleMontantLigne label="Report de réduction 2021 au titre du plafonnement global" code="7DY" value={rc.case7dy ?? null} onChange={v => update('case7dy', v)} />
+          <SingleMontantLigne label="Report de réduction 2022 au titre du plafonnement global" code="7EY" value={rc.case7ey ?? null} onChange={v => update('case7ey', v)} />
+          <SingleMontantLigne label="Report de réduction 2023 au titre du plafonnement global" code="7FY" value={rc.case7fy ?? null} onChange={v => update('case7fy', v)} />
+          <SingleMontantLigne label="Report de réduction 2024 au titre du plafonnement global" code="7GY" value={rc.case7gy ?? null} onChange={v => update('case7gy', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Investissements outre-mer dans une entreprise (2020-2025)" aide="Montant de la réduction (crédit pour HJA). Plafonds propres et plafonnement global appliqués par l'outil.">

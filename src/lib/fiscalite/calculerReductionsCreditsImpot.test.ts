@@ -92,11 +92,7 @@ describe('cadre 7 courant (lot 2)', () => {
     expect(r({ case7uh: 20000 }, 470890).reductionDons66).toBe(9900);
     expect(r({ case7uh: 8000, case7uf: 8000 }, 54000, FOYER).reductionDons66).toBe(7128);
   });
-  it('report ESUS 7DC : 25 %, plafond 100 000 € pour un couple, hors plafond global des niches', () => {
-    expect(r({ case7dc: 1000 }).reductionEsus).toBe(250);
-    expect(r({ case7dc: 200000 }).reductionEsus).toBe(25000);
-  });
   it('les réductions s’additionnent', () => {
-    expect(r({ case7ea: 1, case7dc: 1000, case7uh: 1000 }, 470890).totalReductions).toBe(971);
+    expect(r({ case7ea: 1, case7uh: 1000 }, 470890).totalReductions).toBe(721);
   });
 });

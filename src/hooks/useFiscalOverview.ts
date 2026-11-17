@@ -482,7 +482,7 @@ export function useFiscalOverview(): FiscalOverview {
       const plafonnementNiches = calculerPlafonnementNiches({
         courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants,
         sofica: souscriptionsCapital.sofica,
-        esus: reductionsCreditsImpot.reductionEsus,
+        esus: souscriptionsCapital.esus,
         outreMer: investissementsOutreMer.avantagesPlafonnes,
       });
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.

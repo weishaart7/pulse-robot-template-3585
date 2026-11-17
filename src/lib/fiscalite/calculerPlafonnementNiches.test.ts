@@ -38,16 +38,13 @@ describe('plafonnement branché sur le cadre 7', () => {
   const parts = calculerPartsFiscales(FOYER);
   const impotNet = (revenu: number, o: Partial<ReductionsCreditsImpotInput>) => {
     const r = calculerReductionsCreditsImpot({ ...VIDE, ...o }, FOYER, revenu);
-    const p = calculerPlafonnementNiches({ courants: r.avantagesPlafonnesCourants, esus: r.reductionEsus, outreMer: 0 });
+    const p = calculerPlafonnementNiches({ courants: r.avantagesPlafonnesCourants, esus: 0, outreMer: 0 });
     return calculerImpot(revenu, parts, 'marie', 0, 'metropole', 0, 0, 0, 0, 0, 0,
       r.totalReductions, r.totalCredits, 0, p.excedent).impotNet;
   };
   const base = impotNet(450000, {});
   it('7DB 10 000 € + 7GA 1 750 € → baisse de 10 000 €', () => {
     expect(base - impotNet(450000, { case7db: 20000, case7dg: true, case7ga: 3500 })).toBe(10000);
-  });
-  it('7DC 100 000 € → baisse de 13 000 € (et non 25 000 €)', () => {
-    expect(base - impotNet(450000, { case7dc: 100000 })).toBe(13000);
   });
   it('foyer non imposable : remboursement limité à 10 000 €', () => {
     expect(impotNet(13500, { case7db: 20000, case7dg: true, case7ga: 3500 })).toBe(-10000);

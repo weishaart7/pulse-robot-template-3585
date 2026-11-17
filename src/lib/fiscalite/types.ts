@@ -898,6 +898,21 @@ export interface ReductionsCreditsImpotInput {
   case7fn?: number | null;
   case7gn?: number | null;
   case7en?: number | null;
+  case7bs?: number | null;
+  case7bt?: number | null;
+  case7bu?: number | null;
+  case7bw?: number | null;
+  case7ek?: number | null;
+  case7cy?: number | null;
+  case7dy?: number | null;
+  case7ey?: number | null;
+  case7fy?: number | null;
+  case7gy?: number | null;
+  case7mx?: number | null;
+  case7my?: number | null;
+  case7nz?: number | null;
+  case7uc?: number | null;
+  case7fh?: number | null;
   /** Investissements outre-mer (2042-IOM) : montants de réduction (crédit pour HJA), voir calculerInvestissementsOutreMer. */
   caseHqa?: number | null;
   caseHyj?: number | null;

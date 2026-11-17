@@ -1509,7 +1509,6 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
 - **Prestations compensatoires** (`7WN`/`7WO`) : réduction de 25 % de `7WN`, ramené à
   `7WN × 30 500 / 7WO` si `7WO` dépasse 30 500 €. `7WM` est saisie mais sans effet, comme sur le
   simulateur officiel 2026.
-- **Report ESUS 2021** (`7DC`) : réduction de 25 %, plafond 50 000 € (100 000 € pour un couple).
 - **Investissements outre-mer** (2042-IOM, 93 cases `H…` dans `reductions_credits_impot`,
   `calculerInvestissementsOutreMer.ts`) : montant saisi = réduction (crédit restituable pour `HJA`).
   Table `REGLES_OUTRE_MER` mesurée case par case sur le simulateur officiel 2026 : plafond propre
@@ -1521,20 +1520,26 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   ancien non élucidée).
 - **Souscriptions au capital** (2042-RICI, 21 cases, `calculerSouscriptionsCapital.ts`) : montants
   versés saisis. PME/ESUS/SFS et reports (`7CI`, `7CO`, `7GW`, `7CT`, `7CA`, `7CU`, `7CW`, `7CP`, `7CQ`,
-  `7CV`, `7DO`, `7DP`) : 18 % ou 25 %, plafond de versements commun 50 000 € (100 000 € couple), cases
-  à 25 % imputées d'abord. JEI/JEU/JEIC `7CR` 30 % (75 000 / 150 000 €) et JEIR `7DZ` 50 %
+  `7CV`, `7DO`, `7DP`, `7DC`, SFS `7BS`…`7BW`) : 18 % ou 25 %, plafond de versements commun 50 000 €
+  (100 000 € couple), imputé dans l'ordre relevé par paires sur le simulateur (`GROUPE_PME`, ni le
+  taux ni la date). Écart connu : `7DO` + `7CO`/`7GW`/`7BS` au-delà du plafond (60 000 € chacune) →
+  10 800 € sur le simulateur, 20 800 € ici. JEI/JEU/JEIC `7CR` 30 % (75 000 / 150 000 €) et JEIR `7DZ` 50 %
   (50 000 / 100 000 €), plafonds propres. FCPI `7GR` 25 % puis `7GQ` 18 %, 12 000 € (24 000 €) en
   commun ; FIP Corse `7FM` et outre-mer `7FL` 30 %, 12 000 € (24 000 €) chacun. SOFICA `7EN` 48 %,
-  `7GN` 36 %, `7FN` 30 % dans cet ordre, versements ≤ min(25 % du RNI, 18 000 €). Non restituables.
+  `7GN` 36 %, `7FN` 30 % dans cet ordre, versements ≤ min(25 % du RNI, 18 000 €). Presse `7MY` 50 %
+  puis `7MX` 30 %, 10 000 € (20 000 €) en commun ; objets classés `7NZ` 18 %, 20 000 € par foyer ;
+  DFCI `7UC` 50 %, 1 000 € par foyer ; reprise de société `7FH` 25 %, 20 000 € (40 000 €). Reports
+  saisis en montant de réduction : `7EK`, `7CY`…`7GY`. `7US` non saisie (« calcul impossible » sur le
+  simulateur). Non restituables.
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
   avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu + SOFICA) ; l'excédent
   s'ajoute à l'impôt (avec les reprises), ce qui limite aussi le remboursement d'un foyer non imposable.
-  Courants : `7DB`, `7GA`…`7GG`, PME/ESUS/SFS 2021-2025 et FCPI/FIP (sans majoration ESUS : `7CO`
-  40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS : `7DC` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
+  Courants : `7DB`, `7GA`…`7GG`, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
+  ESUS : `7CO` 40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS majorant : `7DC`, `7BS`, `7EK` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
-  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
+  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
   une réduction non imputée faute d'impôt compte pour son montant entier.
 - **Hors périmètre (acté)** : 2042-RICI hors souscriptions au capital (lots suivants), report des dons excédentaires des années antérieures.
 
