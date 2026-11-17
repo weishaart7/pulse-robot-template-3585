@@ -147,6 +147,33 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Report de réduction 2024 au titre du plafonnement global" code="7GY" value={rc.case7gy ?? null} onChange={v => update('case7gy', v)} />
         </SousGroupe>
 
+        <SousGroupe titre="Investissements forestiers" aide="Dépenses. Crédits restituables : acquisition 25 % et assurance 76 %, plafonds propres ; travaux 18 % ou 25 %, plafond commun ; 6 250 € (12 500 € pour un couple) chacun. Compris dans le plafonnement global de 10 000 €.">
+          <SingleMontantLigne label="Acquisition, dépenses 2025 (25 %)" code="7UN" value={rc.case7un ?? null} onChange={v => update('case7un', v)} />
+          <SingleMontantLigne label="Assurance, dépenses 2025 (76 %)" code="7UL" value={rc.case7ul ?? null} onChange={v => update('case7ul', v)} />
+          <SingleMontantLigne label="Travaux, dépenses 2025" code="7UP" value={rc.case7up ?? null} onChange={v => update('case7up', v)} />
+          <SingleMontantLigne label="Travaux consécutifs à un sinistre, dépenses 2025" code="7UT" value={rc.case7ut ?? null} onChange={v => update('case7ut', v)} />
+          <SingleMontantLigne label="Report travaux 2017 après sinistre" code="7TR" value={rc.case7tr ?? null} onChange={v => update('case7tr', v)} />
+          <SingleMontantLigne label="Report travaux 2017 après sinistre avec organisation de producteurs" code="7TS" value={rc.case7ts ?? null} onChange={v => update('case7ts', v)} />
+          <SingleMontantLigne label="Report travaux 2018 après sinistre" code="7TT" value={rc.case7tt ?? null} onChange={v => update('case7tt', v)} />
+          <SingleMontantLigne label="Report travaux 2018 après sinistre avec organisation de producteurs" code="7TU" value={rc.case7tu ?? null} onChange={v => update('case7tu', v)} />
+          <SingleMontantLigne label="Report travaux 2019 après sinistre" code="7TV" value={rc.case7tv ?? null} onChange={v => update('case7tv', v)} />
+          <SingleMontantLigne label="Report travaux 2019 après sinistre avec organisation de producteurs" code="7TW" value={rc.case7tw ?? null} onChange={v => update('case7tw', v)} />
+          <SingleMontantLigne label="Report travaux 2020 après sinistre" code="7TA" value={rc.case7ta ?? null} onChange={v => update('case7ta', v)} />
+          <SingleMontantLigne label="Report travaux 2020 après sinistre avec organisation de producteurs" code="7TB" value={rc.case7tb ?? null} onChange={v => update('case7tb', v)} />
+          <SingleMontantLigne label="Report travaux 2021 hors sinistre" code="7VQ" value={rc.case7vq ?? null} onChange={v => update('case7vq', v)} />
+          <SingleMontantLigne label="Report travaux 2021 après sinistre" code="7TE" value={rc.case7te ?? null} onChange={v => update('case7te', v)} />
+          <SingleMontantLigne label="Report travaux 2021 hors sinistre avec organisation de producteurs" code="7VR" value={rc.case7vr ?? null} onChange={v => update('case7vr', v)} />
+          <SingleMontantLigne label="Report travaux 2021 après sinistre avec organisation de producteurs" code="7TF" value={rc.case7tf ?? null} onChange={v => update('case7tf', v)} />
+          <SingleMontantLigne label="Report travaux 2022 hors sinistre" code="7VS" value={rc.case7vs ?? null} onChange={v => update('case7vs', v)} />
+          <SingleMontantLigne label="Report travaux 2022 après sinistre" code="7TH" value={rc.case7th ?? null} onChange={v => update('case7th', v)} />
+          <SingleMontantLigne label="Report travaux 2022 hors sinistre avec organisation de producteurs" code="7VU" value={rc.case7vu ?? null} onChange={v => update('case7vu', v)} />
+          <SingleMontantLigne label="Report travaux 2022 après sinistre avec organisation de producteurs" code="7TI" value={rc.case7ti ?? null} onChange={v => update('case7ti', v)} />
+          <SingleMontantLigne label="Report travaux 2023 hors sinistre" code="7VV" value={rc.case7vv ?? null} onChange={v => update('case7vv', v)} />
+          <SingleMontantLigne label="Report travaux 2023 après sinistre" code="7TJ" value={rc.case7tj ?? null} onChange={v => update('case7tj', v)} />
+          <SingleMontantLigne label="Report travaux 2024 hors sinistre" code="7VT" value={rc.case7vt ?? null} onChange={v => update('case7vt', v)} />
+          <SingleMontantLigne label="Report travaux 2024 après sinistre" code="7TK" value={rc.case7tk ?? null} onChange={v => update('case7tk', v)} />
+        </SousGroupe>
+
         <SousGroupe titre="Investissements outre-mer dans une entreprise (2020-2025)" aide="Montant de la réduction (crédit pour HJA). Plafonds propres et plafonnement global appliqués par l'outil.">
           <SingleMontantLigne label="Réalisés en 2025, location à une entreprise exploitante, rétrocession 56 %" code="HLS" value={rc.caseHls ?? null} onChange={v => update('caseHls', v)} />
           <SingleMontantLigne label="Réalisés en 2025, rétrocession 66 %" code="HLT" value={rc.caseHlt ?? null} onChange={v => update('caseHlt', v)} />

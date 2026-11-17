@@ -18,12 +18,13 @@ case par case. Tout est commité sur `main`, **rien n'est poussé**.
 | 5b | `0d2d429` | Plafonnement global des avantages fiscaux (art. 200-0 A) ; corrige 7DC |
 | 5c | `a4202de` | Investissements outre-mer 2042-IOM (93 cases) |
 | 6a | `b09aa33` | RICI : souscriptions au capital PME/ESUS/JEI/FCPI/FIP/SOFICA (21 cases) |
-| 6b | (ce commit) | RICI : reports SFS/ESUS, reports plafonnement global, presse, 7NZ, 7UC, 7FH (15 cases) ; ordre d'imputation PME corrigé, 7DC dans le plafond commun |
+| 6b | `aed76ce` | RICI : reports SFS/ESUS, reports plafonnement global, presse, 7NZ, 7UC, 7FH (15 cases) ; ordre d'imputation PME corrigé, 7DC dans le plafond commun |
+| 6c | (ce commit) | RICI : investissements forestiers, crédits restituables (24 cases) |
 
 Migrations appliquées en base (MCP Supabase, projet `npypkocowjkszxtecxzq`). Types Supabase complétés
 à la main par script (pas de régénération complète, pour ne pas lire les 4 500 lignes).
 
-## Reste : 2042-RICI (environ 395 cases du cadre 7)
+## Reste : 2042-RICI (environ 370 cases du cadre 7)
 
 Pinel, Denormandie, Censi-Bouvard, FCPI/FIP, PME/IR-PME, Malraux, monuments historiques, SOFICA,
 forêts, tourisme, transition énergétique, etc. Liste exacte et libellés : annexe du document, tableau
@@ -31,7 +32,9 @@ forêts, tourisme, transition énergétique, etc. Liste exacte et libellés : an
 7AC, 7AE, 7WN/7WO/7WM, 7DC, et depuis 6a 7CI 7CO 7CR 7DZ 7GW 7CT 7CU 7CW 7CP 7CQ 7CV 7DO 7DP 7CA
 7GQ 7GR 7FM 7FL 7FN 7GN 7EN, depuis 6b 7BS 7BT 7BU 7BW 7EK 7CY 7DY 7EY 7FY 7GY 7MX 7MY 7NZ 7UC 7FH
 (`calculerSouscriptionsCapital.ts`, qui porte aussi 7DC) ; 7US non mesurable.
-Prochaine famille suggérée : ventes de biens (7UN…7VT, forêts) ou Pinel/Denormandie. Plafonnement : SOFICA partage la
+Depuis 6c : forêts 7UN 7UL 7UP 7UT et reports 7TR…7TK, 7VQ…7VT (`calculerInvestissementsForestiers.ts`).
+Prochaine famille suggérée : Pinel/Denormandie, ou les petites familles du haut du cadre 7
+(7XS…7XY, 7ZQ…7ZT, 7BK…7BO, 7WR/7TX/7TY). Plafonnement : SOFICA partage la
 majoration de 8 000 € avec l'outre-mer (mesuré) ; ESUS 2025 sans majoration de 3 000 € ; JEI/JEIR hors plafond.
 
 À découper en sous-lots par famille (une famille = des cases au même mécanisme), et pour chacune :

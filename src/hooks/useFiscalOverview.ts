@@ -40,6 +40,7 @@ import {
   calculerPlafonnementNiches,
   calculerInvestissementsOutreMer,
   calculerSouscriptionsCapital,
+  calculerInvestissementsForestiers,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -479,8 +480,13 @@ export function useFiscalOverview(): FiscalOverview {
         COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
         revenuImposableTotal,
       );
+      const investissementsForestiers = calculerInvestissementsForestiers(
+        reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT,
+        COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
+      );
       const plafonnementNiches = calculerPlafonnementNiches({
-        courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants,
+        courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants
+          + investissementsForestiers.credit,
         sofica: souscriptionsCapital.sofica,
         esus: souscriptionsCapital.esus,
         outreMer: investissementsOutreMer.avantagesPlafonnes,
@@ -503,7 +509,8 @@ export function useFiscalOverview(): FiscalOverview {
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions
           + souscriptionsCapital.reductions,
-        reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit,
+        reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit
+          + investissementsForestiers.credit,
         creditEtranger,
         prelevementSourceDivers.reprises + plafonnementNiches.excedent,
         revenusNonSalaries.revenuImposableTauxMarginal,

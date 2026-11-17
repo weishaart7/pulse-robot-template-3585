@@ -913,6 +913,31 @@ export interface ReductionsCreditsImpotInput {
   case7nz?: number | null;
   case7uc?: number | null;
   case7fh?: number | null;
+  /** Investissements forestiers : dépenses, voir calculerInvestissementsForestiers. */
+  case7un?: number | null;
+  case7ul?: number | null;
+  case7up?: number | null;
+  case7ut?: number | null;
+  case7tr?: number | null;
+  case7ts?: number | null;
+  case7tt?: number | null;
+  case7tu?: number | null;
+  case7tv?: number | null;
+  case7tw?: number | null;
+  case7ta?: number | null;
+  case7tb?: number | null;
+  case7vq?: number | null;
+  case7te?: number | null;
+  case7vr?: number | null;
+  case7tf?: number | null;
+  case7vs?: number | null;
+  case7th?: number | null;
+  case7vu?: number | null;
+  case7ti?: number | null;
+  case7vv?: number | null;
+  case7tj?: number | null;
+  case7vt?: number | null;
+  case7tk?: number | null;
   /** Investissements outre-mer (2042-IOM) : montants de réduction (crédit pour HJA), voir calculerInvestissementsOutreMer. */
   caseHqa?: number | null;
   caseHyj?: number | null;

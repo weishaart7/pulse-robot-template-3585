@@ -1531,12 +1531,17 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   DFCI `7UC` 50 %, 1 000 € par foyer ; reprise de société `7FH` 25 %, 20 000 € (40 000 €). Reports
   saisis en montant de réduction : `7EK`, `7CY`…`7GY`. `7US` non saisie (« calcul impossible » sur le
   simulateur). Non restituables.
+- **Investissements forestiers** (24 cases, `calculerInvestissementsForestiers.ts`) : dépenses saisies,
+  crédits restituables. Acquisition `7UN` 25 % et assurance `7UL` 76 %, plafonds propres ; travaux
+  `7UP`, `7UT` et reports 2017-2024 (`7TR`…`7TK`, `7VQ`…`7VT`) à 25 % ou 18 %, plafond commun, reports
+  d'abord du plus ancien au plus récent, 25 % avant 18 % dans une même année (vérifié sur 2017
+  seulement). Plafonds 6 250 € (12 500 € couple). Comptés en entier au plafonnement global (courants).
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
   avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu + SOFICA) ; l'excédent
   s'ajoute à l'impôt (avec les reprises), ce qui limite aussi le remboursement d'un foyer non imposable.
-  Courants : `7DB`, `7GA`…`7GG`, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
+  Courants : `7DB`, `7GA`…`7GG`, forêts, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
   ESUS : `7CO` 40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS majorant : `7DC`, `7BS`, `7EK` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
   venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
