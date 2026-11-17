@@ -51,6 +51,15 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Sauvegarde du patrimoine religieux" extra="75 %, maximum 1 000 €" code="7UJ" value={rc.case7uj} onChange={v => update('case7uj', v)} />
           <SingleMontantLigne label="Autres organismes d'intérêt général, associations d'utilité publique, candidats aux élections" extra="66 %" code="7UF" value={rc.case7uf} onChange={v => update('case7uf', v)} />
           <SingleMontantLigne label="Dons et cotisations aux partis politiques" extra="66 %, maximum 15 000 € par foyer" code="7UH" value={rc.case7uh ?? null} onChange={v => update('case7uh', v)} />
+          <SingleMontantLigne label="Aide aux victimes du cyclone Chido à Mayotte, du 1.1 au 17.5.2025" extra="75 %, maximum 2 000 €" code="7UO" value={rc.case7uo ?? null} onChange={v => update('case7uo', v)} />
+          <SingleMontantLigne label="Report des dons de 2020" extra="66 %" code="7XS" value={rc.case7xs ?? null} onChange={v => update('case7xs', v)} />
+          <SingleMontantLigne label="Report des dons de 2021" extra="66 %" code="7XT" value={rc.case7xt ?? null} onChange={v => update('case7xt', v)} />
+          <SingleMontantLigne label="Report des dons de 2022" extra="66 %" code="7XU" value={rc.case7xu ?? null} onChange={v => update('case7xu', v)} />
+          <SingleMontantLigne label="Report des dons de 2023" extra="66 %" code="7XW" value={rc.case7xw ?? null} onChange={v => update('case7xw', v)} />
+          <SingleMontantLigne label="Report des dons de 2024" extra="66 %" code="7XY" value={rc.case7xy ?? null} onChange={v => update('case7xy', v)} />
+          <SingleMontantLigne label="Organisme européen, aide aux personnes en difficulté, du 1.1 au 13.10.2025" extra="avec 7UD" code="7VA" value={rc.case7va ?? null} onChange={v => update('case7va', v)} />
+          <SingleMontantLigne label="Organisme européen, aide aux personnes en difficulté, du 14.10 au 31.12.2025" extra="avec 7UQ" code="7VM" value={rc.case7vm ?? null} onChange={v => update('case7vm', v)} />
+          <SingleMontantLigne label="Autre organisme européen" extra="66 %, avec 7UF" code="7VC" value={rc.case7vc ?? null} onChange={v => update('case7vc', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Services à la personne" aide="Crédit restituable de 50 % des dépenses nettes des aides, dans la limite du plafond.">
@@ -83,12 +92,14 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
         <SousGroupe titre="Cotisations syndicales" aide="Crédit restituable de 66 %, dans la limite de 1 % des salaires et pensions bruts du déclarant.">
           <SingleMontantLigne label="Déclarant 1" code="7AC" value={rc.case7ac ?? null} onChange={v => update('case7ac', v)} />
           <SingleMontantLigne label="Déclarant 2" code="7AE" value={rc.case7ae ?? null} onChange={v => update('case7ae', v)} />
+          <SingleMontantLigne label="Personnes à charge" extra="1 % de leurs salaires" code="7AG" value={rc.case7ag ?? null} onChange={v => update('case7ag', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Prestations compensatoires" aide="Réduction de 25 % des sommes versées, retenues dans la limite de 30 500 € (au prorata si le total fixé par jugement dépasse ce montant).">
           <SingleMontantLigne label="Sommes versées en 2025" code="7WN" value={rc.case7wn ?? null} onChange={v => update('case7wn', v)} />
           <SingleMontantLigne label="Sommes totales décidées par jugement en 2025 ou capital reconstitué" code="7WO" value={rc.case7wo ?? null} onChange={v => update('case7wo', v)} />
           <SingleMontantLigne label="Capital fixé en substitution de rente" extra="sans effet sur le calcul" code="7WM" value={rc.case7wm ?? null} onChange={v => update('case7wm', v)} />
+          <SingleMontantLigne label="Report des sommes décidées en 2024" extra="25 %, maximum 30 500 €" code="7WP" value={rc.case7wp ?? null} onChange={v => update('case7wp', v)} />
         </SousGroupe>
 
 
@@ -172,6 +183,24 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Report travaux 2023 après sinistre" code="7TJ" value={rc.case7tj ?? null} onChange={v => update('case7tj', v)} />
           <SingleMontantLigne label="Report travaux 2024 hors sinistre" code="7VT" value={rc.case7vt ?? null} onChange={v => update('case7vt', v)} />
           <SingleMontantLigne label="Report travaux 2024 après sinistre" code="7TK" value={rc.case7tk ?? null} onChange={v => update('case7tk', v)} />
+        </SousGroupe>
+
+        <SousGroupe titre="Logement : bornes, Loc'Avantages, risques technologiques, Malraux" aide="Bornes : crédit de 75 %, 500 € par système. Loc'Avantages : montant servant de base au taux. 7WR : crédit de 40 %. Malraux : dépenses, 400 000 € en commun ; reports en montant de réduction.">
+          <SingleMontantLigne label="Borne de recharge, habitation principale, 1er système" code="7ZQ" value={rc.case7zq ?? null} onChange={v => update('case7zq', v)} />
+          <SingleMontantLigne label="Borne de recharge, habitation principale, 2nd système" code="7ZR" value={rc.case7zr ?? null} onChange={v => update('case7zr', v)} />
+          <SingleMontantLigne label="Borne de recharge, habitation secondaire, 1er système" code="7ZS" value={rc.case7zs ?? null} onChange={v => update('case7zs', v)} />
+          <SingleMontantLigne label="Borne de recharge, habitation secondaire, 2nd système" code="7ZT" value={rc.case7zt ?? null} onChange={v => update('case7zt', v)} />
+          <SingleMontantLigne label="Loc'Avantages, location intermédiaire (15 %)" code="7BK" value={rc.case7bk ?? null} onChange={v => update('case7bk', v)} />
+          <SingleMontantLigne label="Loc'Avantages, location intermédiaire avec intermédiation (20 %)" code="7BL" value={rc.case7bl ?? null} onChange={v => update('case7bl', v)} />
+          <SingleMontantLigne label="Loc'Avantages, location sociale (35 %)" code="7BM" value={rc.case7bm ?? null} onChange={v => update('case7bm', v)} />
+          <SingleMontantLigne label="Loc'Avantages, location sociale avec intermédiation (40 %)" code="7BN" value={rc.case7bn ?? null} onChange={v => update('case7bn', v)} />
+          <SingleMontantLigne label="Loc'Avantages, location très sociale (65 %)" code="7BO" value={rc.case7bo ?? null} onChange={v => update('case7bo', v)} />
+          <SingleMontantLigne label="Travaux de prévention des risques technologiques (2041 GR)" code="7WR" value={rc.case7wr ?? null} onChange={v => update('case7wr', v)} />
+          <SingleMontantLigne label="Malraux, site patrimonial avec PSMV, quartier ancien dégradé ou NPNRU (30 %)" code="7TX" value={rc.case7tx ?? null} onChange={v => update('case7tx', v)} />
+          <SingleMontantLigne label="Malraux, site patrimonial sans PSMV (22 %)" code="7TY" value={rc.case7ty ?? null} onChange={v => update('case7ty', v)} />
+          <SingleMontantLigne label="Malraux, report du solde de 2020" code="7KW" value={rc.case7kw ?? null} onChange={v => update('case7kw', v)} />
+          <SingleMontantLigne label="Malraux, report du solde de 2022" code="7KY" value={rc.case7ky ?? null} onChange={v => update('case7ky', v)} />
+          <SingleMontantLigne label="Malraux, report du solde de 2023" code="7KX" value={rc.case7kx ?? null} onChange={v => update('case7kx', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Investissements outre-mer dans une entreprise (2020-2025)" aide="Montant de la réduction (crédit pour HJA). Plafonds propres et plafonnement global appliqués par l'outil.">

@@ -1495,7 +1495,9 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
 - **Dons** : 75 % sur `7UD` (maximum 1 000 €) et `7UD + 7UQ` (maximum 2 000 €), 75 % sur `7UJ`
   (maximum 1 000 €) ; l'excédent rejoint `7UF` à 66 %, dans la limite de 20 % du revenu imposable.
   `7UH` (partis politiques) : 66 %, maximum 15 000 € par foyer, dans la même limite de 20 %.
-  Le reliquat (`donsExcedentaires`, reportable 5 ans) n'a pas d'effet sur l'année.
+  Organismes européens : `7VA` avec `7UD`, `7VM` avec `7UQ`, `7VC` avec `7UF`. Mayotte `7UO` : 75 %
+  dans sa propre limite de 2 000 €, excédent à 66 %. Reports 2020-2024 `7XS`…`7XY` : 66 % dans la
+  même limite de 20 %. Le reliquat (`donsExcedentaires`, reportable 5 ans) n'a pas d'effet sur l'année.
 - **Services à la personne** : crédit de 50 % de `7DB − 7DR` dans un plafond de 12 000 €, majoré de
   1 500 € par enfant à charge (750 € en résidence alternée), enfant majeur rattaché et personne
   invalide (repris du Ménage), ascendant `7DL` et membre de plus de 65 ans, maximum 15 000 € ;
@@ -1504,10 +1506,12 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   plafond 3 500 € par enfant (1 750 € en alternée).
 - **Scolarité** (`7EA`/`7EC`/`7EF`, nombre d'enfants) : réduction de 61 / 153 / 183 € par enfant,
   moitié pour `7EB`/`7ED`/`7EG` (résidence alternée), arrondie une fois à l'euro.
-- **Cotisations syndicales** (`7AC`/`7AE`) : crédit restituable de 66 %, dans la limite de 1 % des
-  salaires et pensions bruts du déclarant (1AJ 50 000 € → 500 € retenus, simulateur).
+- **Cotisations syndicales** (`7AC`/`7AE`/`7AG`) : crédit restituable de 66 %, dans la limite de 1 % des
+  salaires et pensions bruts du déclarant (1AJ 50 000 € → 500 € retenus, simulateur) ; pour `7AG`,
+  1 % des salaires bruts des personnes à charge (1CJ 30 000 € → 198 €).
 - **Prestations compensatoires** (`7WN`/`7WO`) : réduction de 25 % de `7WN`, ramené à
-  `7WN × 30 500 / 7WO` si `7WO` dépasse 30 500 €. `7WM` est saisie mais sans effet, comme sur le
+  `7WN × 30 500 / 7WO` si `7WO` dépasse 30 500 €. Report 2024 `7WP` : 25 %, maximum 30 500 € (au-delà,
+  ou avec `7WN`, « calcul impossible » sur le simulateur). `7WM` est saisie mais sans effet, comme sur le
   simulateur officiel 2026.
 - **Investissements outre-mer** (2042-IOM, 93 cases `H…` dans `reductions_credits_impot`,
   `calculerInvestissementsOutreMer.ts`) : montant saisi = réduction (crédit restituable pour `HJA`).
@@ -1536,15 +1540,21 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   `7UP`, `7UT` et reports 2017-2024 (`7TR`…`7TK`, `7VQ`…`7VT`) à 25 % ou 18 %, plafond commun, reports
   d'abord du plus ancien au plus récent, 25 % avant 18 % dans une même année (vérifié sur 2017
   seulement). Plafonds 6 250 € (12 500 € couple). Comptés en entier au plafonnement global (courants).
+- **Logement** (`calculerInvestissementsLocatifs.ts`) : bornes de recharge `7ZQ`…`7ZT`, crédit
+  restituable de 75 %, 500 € par système, au plafonnement global ; Loc'Avantages `7BK` 15 %, `7BL` 20 %,
+  `7BM` 35 %, `7BN` 40 %, `7BO` 65 % du montant saisi, au plafonnement global ; risques
+  technologiques `7WR`, crédit restituable de 40 % sans plafond (le simulateur n'applique pas les
+  30 000 € par logement), hors plafond global ; Malraux `7TX` 30 % puis `7TY` 22 %, 400 000 € en commun,
+  reports `7KW`, `7KY`, `7KX` en montant de réduction, hors plafond global.
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
 - **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
   avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu + SOFICA) ; l'excédent
   s'ajoute à l'impôt (avec les reprises), ce qui limite aussi le remboursement d'un foyer non imposable.
-  Courants : `7DB`, `7GA`…`7GG`, forêts, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
+  Courants : `7DB`, `7GA`…`7GG`, forêts, bornes, Loc'Avantages, PME/ESUS/SFS, FCPI/FIP, presse, `7NZ`, `7CY`…`7GY` (sans majoration
   ESUS : `7CO` 40 000 € → baisse de 10 000 € sur le simulateur) ; ESUS majorant : `7DC`, `7BS`, `7EK` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
   n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
-  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
+  venir). Hors plafond (vérifié) : JEI/JEIR (`7CR`, `7DZ`), `7FH`, `7UC`, `7WR`, Malraux, dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
   une réduction non imputée faute d'impôt compte pour son montant entier.
 - **Hors périmètre (acté)** : 2042-RICI hors souscriptions au capital (lots suivants), report des dons excédentaires des années antérieures.
 

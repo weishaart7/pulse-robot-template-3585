@@ -41,6 +41,7 @@ import {
   calculerInvestissementsOutreMer,
   calculerSouscriptionsCapital,
   calculerInvestissementsForestiers,
+  calculerInvestissementsLocatifs,
   PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
@@ -471,6 +472,7 @@ export function useFiscalOverview(): FiscalOverview {
             + (pensionsInput.case1az ?? 0) + (pensionsInput.case1ao ?? 0) + (pensionsInput.case1am ?? 0),
           declarant2: revenuSalaires.declarant2.remunerationsBrutes + (pensionsInput.case1bs ?? 0)
             + (pensionsInput.case1bz ?? 0) + (pensionsInput.case1bo ?? 0) + (pensionsInput.case1bm ?? 0),
+          personnesCharge: revenuSalaires.pac1.remunerationsBrutes + revenuSalaires.pac2.remunerationsBrutes,
         },
       );
       // Plafonnement global des avantages fiscaux (art. 200-0 A) : l'excédent s'ajoute à l'impôt.
@@ -484,9 +486,10 @@ export function useFiscalOverview(): FiscalOverview {
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT,
         COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
       );
+      const investissementsLocatifs = calculerInvestissementsLocatifs(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
       const plafonnementNiches = calculerPlafonnementNiches({
         courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants
-          + investissementsForestiers.credit,
+          + investissementsForestiers.credit + investissementsLocatifs.avantagesPlafonnesCourants,
         sofica: souscriptionsCapital.sofica,
         esus: souscriptionsCapital.esus,
         outreMer: investissementsOutreMer.avantagesPlafonnes,
@@ -508,9 +511,9 @@ export function useFiscalOverview(): FiscalOverview {
           + revenusNonSalaries.revenuExonereRetenuPourRFR + chargesDeductibles.epargneRetraiteRetenuePourRFR
           + pensionsRetraitesRentes.revenuExonereRetenuPourRFR + gainsActionnariat.revenuExonereRetenuPourRFR,
         reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions + investissementsOutreMer.reductions
-          + souscriptionsCapital.reductions,
+          + souscriptionsCapital.reductions + investissementsLocatifs.reductions,
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit
-          + investissementsForestiers.credit,
+          + investissementsForestiers.credit + investissementsLocatifs.credits,
         creditEtranger,
         prelevementSourceDivers.reprises + plafonnementNiches.excedent,
         revenusNonSalaries.revenuImposableTauxMarginal,

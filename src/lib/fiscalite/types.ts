@@ -938,6 +938,33 @@ export interface ReductionsCreditsImpotInput {
   case7tj?: number | null;
   case7vt?: number | null;
   case7tk?: number | null;
+  /** Haut du cadre 7 : dons, 7AG, 7WP, investissements locatifs (voir calculerInvestissementsLocatifs). */
+  case7uo?: number | null;
+  case7xs?: number | null;
+  case7xt?: number | null;
+  case7xu?: number | null;
+  case7xw?: number | null;
+  case7xy?: number | null;
+  case7va?: number | null;
+  case7vm?: number | null;
+  case7vc?: number | null;
+  case7ag?: number | null;
+  case7wp?: number | null;
+  case7zq?: number | null;
+  case7zr?: number | null;
+  case7zs?: number | null;
+  case7zt?: number | null;
+  case7bk?: number | null;
+  case7bl?: number | null;
+  case7bm?: number | null;
+  case7bn?: number | null;
+  case7bo?: number | null;
+  case7wr?: number | null;
+  case7tx?: number | null;
+  case7ty?: number | null;
+  case7kw?: number | null;
+  case7ky?: number | null;
+  case7kx?: number | null;
   /** Investissements outre-mer (2042-IOM) : montants de réduction (crédit pour HJA), voir calculerInvestissementsOutreMer. */
   caseHqa?: number | null;
   caseHyj?: number | null;

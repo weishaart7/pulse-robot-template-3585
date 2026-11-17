@@ -26,6 +26,10 @@ export const LIMITE_COTISATIONS_SYNDICALES = 0.01;
 export const PLAFOND_PRESTATION_COMPENSATOIRE = 30500;
 /** Dons aux partis politiques (art. 200 3 CGI) : 66 %, 15 000 € par foyer, dans la limite commune de 20 % avec 7UF. */
 export const PLAFOND_DONS_PARTIS = 15000;
+/** Dons pour Mayotte (cyclone Chido, 7UO) : 75 % dans la limite propre de 2 000 €, excédent à 66 %. */
+export const PLAFOND_DONS_MAYOTTE = 2000;
+/** Reports de dons excédentaires 2020-2024. */
+const REPORTS_DONS = ['case7xs', 'case7xt', 'case7xu', 'case7xw', 'case7xy'] as const;
 
 const montant = (v: number | null | undefined) => Math.max(0, v ?? 0);
 
@@ -33,6 +37,8 @@ const montant = (v: number | null | undefined) => Math.max(0, v ?? 0);
 export interface RevenusActiviteDeclarants {
   declarant1: number;
   declarant2: number;
+  /** Salaires des personnes à charge (base de 7AG). */
+  personnesCharge?: number;
 }
 
 export interface ReductionsCreditsImpotResult {
@@ -79,20 +85,26 @@ export function calculerReductionsCreditsImpot(
   revenuImposable: number,
   revenusActivite: RevenusActiviteDeclarants = { declarant1: 0, declarant2: 0 },
 ): ReductionsCreditsImpotResult {
-  const dons1 = montant(input.case7ud);
-  const dons2 = montant(input.case7uq);
+  // Dons à un organisme européen : 7VA avec 7UD, 7VM avec 7UQ, 7VC avec 7UF (simulateur officiel 2026).
+  const dons1 = montant(input.case7ud) + montant(input.case7va);
+  const dons2 = montant(input.case7uq) + montant(input.case7vm);
   const retenus1 = Math.min(dons1, PLAFOND_DONS_75_AVANT_14_10);
   const retenusDifficulte = Math.min(retenus1 + dons2, PLAFOND_DONS_75_ANNEE);
   const religieux = montant(input.case7uj);
   const retenusReligieux = Math.min(religieux, PLAFOND_DONS_PATRIMOINE_RELIGIEUX);
-  const excedent75 = dons1 + dons2 - retenusDifficulte + religieux - retenusReligieux;
+  const mayotte = montant(input.case7uo);
+  const retenusMayotte = Math.min(mayotte, PLAFOND_DONS_MAYOTTE);
+  const excedent75 = dons1 + dons2 - retenusDifficulte + religieux - retenusReligieux + mayotte - retenusMayotte;
 
   // 7UH entre dans la même limite de 20 % que 7UF (simulateur officiel 2026 : 7UH 8 000 € + 7UF 8 000 €, RNI 54 000 € → 7 128 €).
-  const base66 = montant(input.case7uf) + excedent75 + Math.min(montant(input.case7uh), PLAFOND_DONS_PARTIS);
+  // Reports de dons 7XS…7XY : 66 % dans la même limite.
+  const base66 = montant(input.case7uf) + montant(input.case7vc) + excedent75
+    + Math.min(montant(input.case7uh), PLAFOND_DONS_PARTIS)
+    + REPORTS_DONS.reduce((s, cle) => s + montant(input[cle]), 0);
   const limite66 = Math.max(0, revenuImposable) * LIMITE_DONS_66_REVENU;
   const retenus66 = Math.min(base66, limite66);
 
-  const reductionDons75 = Math.round((retenusDifficulte + retenusReligieux) * 0.75);
+  const reductionDons75 = Math.round((retenusDifficulte + retenusReligieux + retenusMayotte) * 0.75);
   const reductionDons66 = Math.round(retenus66 * 0.66);
 
   const majorations = foyer.enfantsCharge.reduce((s, e) => s + (e.residenceAlternee ? MAJORATION_SERVICES_PERSONNE / 2 : MAJORATION_SERVICES_PERSONNE), 0)
@@ -120,7 +132,8 @@ export function calculerReductionsCreditsImpot(
   const syndicats = (v: number | null | undefined, revenus: number) =>
     Math.min(montant(v), Math.max(0, revenus) * LIMITE_COTISATIONS_SYNDICALES);
   const creditCotisationsSyndicales = Math.round(0.66 * (syndicats(input.case7ac, revenusActivite.declarant1)
-    + syndicats(input.case7ae, revenusActivite.declarant2)));
+    + syndicats(input.case7ae, revenusActivite.declarant2)
+    + syndicats(input.case7ag, revenusActivite.personnesCharge ?? 0)));
 
   // 7WM (capital en substitution de rente) n'a aucun effet sur le simulateur officiel 2026 (6 combinaisons testées).
   const versements = montant(input.case7wn);
@@ -128,7 +141,9 @@ export function calculerReductionsCreditsImpot(
   const versementsRetenus = totalJugement > PLAFOND_PRESTATION_COMPENSATOIRE
     ? versements * PLAFOND_PRESTATION_COMPENSATOIRE / totalJugement
     : Math.min(versements, PLAFOND_PRESTATION_COMPENSATOIRE);
-  const reductionPrestationCompensatoire = Math.round(versementsRetenus * 0.25);
+  // 7WP (report 2024) : 25 % dans la limite de 30 500 € ; au-delà, ou avec 7WN, « calcul impossible » sur le simulateur.
+  const reductionPrestationCompensatoire = Math.round(
+    (versementsRetenus + Math.min(montant(input.case7wp), PLAFOND_PRESTATION_COMPENSATOIRE)) * 0.25);
 
   return {
     reductionDons75,

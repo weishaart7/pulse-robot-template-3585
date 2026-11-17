@@ -3169,6 +3169,32 @@ export type Database = {
           case_7tj: number | null
           case_7vt: number | null
           case_7tk: number | null
+          case_7uo: number | null
+          case_7xs: number | null
+          case_7xt: number | null
+          case_7xu: number | null
+          case_7xw: number | null
+          case_7xy: number | null
+          case_7va: number | null
+          case_7vm: number | null
+          case_7vc: number | null
+          case_7ag: number | null
+          case_7wp: number | null
+          case_7zq: number | null
+          case_7zr: number | null
+          case_7zs: number | null
+          case_7zt: number | null
+          case_7bk: number | null
+          case_7bl: number | null
+          case_7bm: number | null
+          case_7bn: number | null
+          case_7bo: number | null
+          case_7wr: number | null
+          case_7tx: number | null
+          case_7ty: number | null
+          case_7kw: number | null
+          case_7ky: number | null
+          case_7kx: number | null
           case_7db: number | null
           case_7dg: boolean | null
           case_7dl: number | null
@@ -3357,6 +3383,32 @@ export type Database = {
           case_7tj?: number | null
           case_7vt?: number | null
           case_7tk?: number | null
+          case_7uo?: number | null
+          case_7xs?: number | null
+          case_7xt?: number | null
+          case_7xu?: number | null
+          case_7xw?: number | null
+          case_7xy?: number | null
+          case_7va?: number | null
+          case_7vm?: number | null
+          case_7vc?: number | null
+          case_7ag?: number | null
+          case_7wp?: number | null
+          case_7zq?: number | null
+          case_7zr?: number | null
+          case_7zs?: number | null
+          case_7zt?: number | null
+          case_7bk?: number | null
+          case_7bl?: number | null
+          case_7bm?: number | null
+          case_7bn?: number | null
+          case_7bo?: number | null
+          case_7wr?: number | null
+          case_7tx?: number | null
+          case_7ty?: number | null
+          case_7kw?: number | null
+          case_7ky?: number | null
+          case_7kx?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null
@@ -3545,6 +3597,32 @@ export type Database = {
           case_7tj?: number | null
           case_7vt?: number | null
           case_7tk?: number | null
+          case_7uo?: number | null
+          case_7xs?: number | null
+          case_7xt?: number | null
+          case_7xu?: number | null
+          case_7xw?: number | null
+          case_7xy?: number | null
+          case_7va?: number | null
+          case_7vm?: number | null
+          case_7vc?: number | null
+          case_7ag?: number | null
+          case_7wp?: number | null
+          case_7zq?: number | null
+          case_7zr?: number | null
+          case_7zs?: number | null
+          case_7zt?: number | null
+          case_7bk?: number | null
+          case_7bl?: number | null
+          case_7bm?: number | null
+          case_7bn?: number | null
+          case_7bo?: number | null
+          case_7wr?: number | null
+          case_7tx?: number | null
+          case_7ty?: number | null
+          case_7kw?: number | null
+          case_7ky?: number | null
+          case_7kx?: number | null
           case_7db?: number | null
           case_7dg?: boolean | null
           case_7dl?: number | null
