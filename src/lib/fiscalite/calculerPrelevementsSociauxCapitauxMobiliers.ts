@@ -34,6 +34,9 @@ export const TAUX_CSG_CRDS_2DI = 0.111;
  * Produits d'assurance-vie et de capitalisation : 18,6 %, comme les autres revenus du capital
  * (simulateur officiel 2026 : 2CH = 5 000 € → 930 €). Choix aligné sur le simulateur, alors que
  * ClickImpôts donnait 17,2 % (2CH = 50 000 € → 8 600 €) en lisant la LFSS 2026 comme les excluant.
+ * Propre au module fiscalité : la loi n° 2025-1403 (LFSS 2026) exclut l'assurance-vie de la hausse
+ * de CSG, et les modules de projection (patrimoine, transmission, retraite) gardent le taux légal
+ * de 17,2 % (`AV_PS_RATE`, `regimeFiscalAssuranceVie.ts`).
  */
 export const TAUX_PS_ASSURANCE_VIE = TAUX_PS_CAPITAUX_MOBILIERS;
 

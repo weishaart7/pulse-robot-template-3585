@@ -14,6 +14,7 @@ import { getAgeAtDate, getDemembrementPct, getDecedentRole } from '@/lib/transmi
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import { isDetenteurSpouse } from '@/lib/patrimoine/utils';
 import { psDecesAssuranceVie } from '@/lib/patrimoine/regimeFiscalAssuranceVie';
+import { TAUX_PS_CAPITAUX_MOBILIERS } from '@/lib/fiscalite/calculerPrelevementsSociauxCapitauxMobiliers';
 import { isRegimeCommunautaire } from '@/lib/patrimoine/qualification';
 import { getFractionDemembrement, DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { AssetDemembrement } from '@/services/assetDemembrementService';
@@ -566,7 +567,7 @@ export function buildAVContracts(
       const estPERAssurantiel = isPERAssurantiel({ nature: row.nature, sous_type_per: row.sousTypePer });
       const psDeces = (isAssuranceVieHorsSuccession(row.nature) || estPERAssurantiel || row.nature === NATURE_ARTICLE_82)
         && row.operations.length > 0
-        ? psDecesAssuranceVie(capitalAvantPS, primesNettes, row.partUniteCompte, estPERAssurantiel ? 0.186 : undefined)
+        ? psDecesAssuranceVie(capitalAvantPS, primesNettes, row.partUniteCompte, estPERAssurantiel ? TAUX_PS_CAPITAUX_MOBILIERS : undefined)
         : 0;
       const capitalDeces = capitalAvantPS - psDeces;
       // Prévoyance décès : assiette 990 I fixée ici (fraction rachetable +

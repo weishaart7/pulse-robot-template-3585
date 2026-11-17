@@ -2,6 +2,9 @@ import React from 'react';
 import { Chip } from '@/components/layout/workspace-panel';
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
 import { AlertTriangle, Check } from 'lucide-react';
+import { AV_PS_RATE } from '@/lib/patrimoine/regimeFiscalAssuranceVie';
+
+const PS_AV = `${(AV_PS_RATE * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`;
 
 interface AVFiscalInfoProps {
   fiscalRegime: string;
@@ -33,7 +36,7 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
             </div>
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
-              <span className="text-sm">Prélèvements sociaux : <strong>17,2%</strong> sur les gains</span>
+              <span className="text-sm">Prélèvements sociaux : <strong>{PS_AV}</strong> sur les gains</span>
             </div>
           </div>
         );
@@ -47,13 +50,13 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
             {contractAge < 8 ? (
               <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
                 <li>IR : {contractAge < 4 ? '35%' : '15%'} (ou TMI sur option)</li>
-                <li>PS : 17,2%</li>
+                <li>PS : {PS_AV}</li>
               </ul>
             ) : (
               <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
                 <li>Abattement : {abattement} {isCouple ? '(couple marié/pacsé)' : '(célibataire)'}</li>
                 <li>IR : 7,5% sur l'excédent</li>
-                <li>PS : 17,2%</li>
+                <li>PS : {PS_AV}</li>
               </ul>
             )}
           </div>
@@ -68,7 +71,7 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
             {contractAge < 8 ? (
               <ul className="text-sm space-y-1 text-muted-foreground list-disc list-inside">
                 <li>PFU (flat tax) : 12,8%</li>
-                <li>PS : 17,2%</li>
+                <li>PS : {PS_AV}</li>
                 <li>Total : <strong>30%</strong></li>
               </ul>
             ) : (
@@ -76,7 +79,7 @@ export const AVFiscalInfo: React.FC<AVFiscalInfoProps> = ({ fiscalRegime, contra
                 <li>Abattement : {abattement} {isCouple ? '(couple marié/pacsé)' : '(célibataire)'}</li>
                 <li>Versements ≤ 150 000 € : IR à 7,5%</li>
                 <li>Versements &gt; 150 000 € : IR à 12,8% sur l'excédent</li>
-                <li>PS : 17,2%</li>
+                <li>PS : {PS_AV}</li>
               </ul>
             )}
           </div>
