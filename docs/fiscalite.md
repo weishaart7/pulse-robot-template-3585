@@ -1512,9 +1512,13 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
 - **Report ESUS 2021** (`7DC`) : réduction de 25 %, plafond 50 000 € (100 000 € pour un couple).
 - **Champ hors CERFA** : `membres_plus_65_ans` (code affiché « +65 »), l'âge des déclarants n'étant
   pas connu du Ménage.
-- **Plafonnement global des niches (10 000 €)** : non appliqué. Le simulateur officiel 2026 ne
-  l'applique pas non plus à `7DC` (100 000 € → 25 000 € de réduction) ; Aurevia suit le simulateur.
-  À revoir quand la 2042-RICI sera couverte.
+- **Plafonnement global des avantages fiscaux** (art. 200-0 A, `calculerPlafonnementNiches.ts`) :
+  avantages retenus ≤ 10 000 € + min(3 000 €, ESUS) + min(8 000 €, outre-mer retenu) ; l'excédent
+  s'ajoute à l'impôt (avec les reprises), ce qui limite aussi le remboursement d'un foyer non imposable.
+  Courants : `7DB`, `7GA`…`7GG` ; ESUS : `7DC` (7DC seul → 13 000 €, la réduction affichée de 25 000 €
+  n'est pas la baisse réelle). Outre-mer : parts de 100 %, 44 %, 34 % ou 30 % selon la case (lot à
+  venir). Hors plafond (vérifié) : dons, `7AC`/`7AE`, scolarité, `7WN`, tout le cadre 8. Hypothèse :
+  une réduction non imputée faute d'impôt compte pour son montant entier.
 - **Hors périmètre (acté)** : 2042-RICI, report des dons excédentaires des années antérieures.
 
 ### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)

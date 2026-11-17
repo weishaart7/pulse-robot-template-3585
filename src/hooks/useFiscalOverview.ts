@@ -37,6 +37,8 @@ import {
   csgDeductibleAnticipee,
   alertesChargesDeductibles,
   calculerReductionsCreditsImpot,
+  calculerPlafonnementNiches,
+  PlafonnementNichesResult,
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
   exonerationTotaleCsgCrds,
@@ -285,6 +287,8 @@ export interface FiscalOverview {
   alertesChargesDeductibles: string[];
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
+  /** Plafonnement global des avantages fiscaux (art. 200-0 A) : excédent ajouté à l'impôt. */
+  plafonnementNiches: PlafonnementNichesResult;
   /** Cadre 8 (8TI/8TK, 8TF, PAS déjà payé, exonération CSG-CRDS) — voir calculerPrelevementSourceDivers.ts. */
   prelevementSourceDivers: PrelevementSourceDiversResult;
   /** Exonération de CSG-CRDS (8RF…8RM) effectivement retranchée, plafonnée aux PS du patrimoine calculés. */
@@ -466,6 +470,12 @@ export function useFiscalOverview(): FiscalOverview {
             + (pensionsInput.case1bz ?? 0) + (pensionsInput.case1bo ?? 0) + (pensionsInput.case1bm ?? 0),
         },
       );
+      // Plafonnement global des avantages fiscaux (art. 200-0 A) : l'excédent s'ajoute à l'impôt.
+      const plafonnementNiches = calculerPlafonnementNiches({
+        courants: reductionsCreditsImpot.avantagesPlafonnesCourants,
+        esus: reductionsCreditsImpot.reductionEsus,
+        outreMer: 0,
+      });
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
       const calculer = (creditEtranger: number) => calculerImpot(
         revenuImposableTotal - revenuCredit8TK,
@@ -485,7 +495,7 @@ export function useFiscalOverview(): FiscalOverview {
         reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions,
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables,
         creditEtranger,
-        prelevementSourceDivers.reprises,
+        prelevementSourceDivers.reprises + plafonnementNiches.excedent,
         revenusNonSalaries.revenuImposableTauxMarginal,
         revenusNonSalaries.taxeAgentsGeneraux,
         revenuCreditImpotFrancais,
@@ -563,6 +573,7 @@ export function useFiscalOverview(): FiscalOverview {
         abattementsSpeciaux,
         alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput),
         reductionsCreditsImpot,
+        plafonnementNiches,
         prelevementSourceDivers,
         reductionPrelevementsSociaux,
         prelevementsSociauxTotal,

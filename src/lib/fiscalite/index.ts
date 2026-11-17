@@ -19,3 +19,4 @@ export * from './alertesChargesDeductibles';
 export * from './calculerReductionsCreditsImpot';
 export * from './calculerPrelevementSourceDivers';
 export * from './calculerDeclarationIFI';
+export * from './calculerPlafonnementNiches';

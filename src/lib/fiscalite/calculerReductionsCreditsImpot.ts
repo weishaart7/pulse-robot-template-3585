@@ -63,6 +63,8 @@ export interface ReductionsCreditsImpotResult {
   creditCotisationsSyndicales: number;
   /** Crédits restituables du cadre 7 : services à la personne, garde, cotisations syndicales. */
   totalCredits: number;
+  /** Avantages soumis au plafonnement global de 10 000 € (services à la personne, garde) — voir calculerPlafonnementNiches. */
+  avantagesPlafonnesCourants: number;
 }
 
 /**
@@ -133,7 +135,7 @@ export function calculerReductionsCreditsImpot(
     : Math.min(versements, PLAFOND_PRESTATION_COMPENSATOIRE);
   const reductionPrestationCompensatoire = Math.round(versementsRetenus * 0.25);
 
-  // Plafond global de 10 000 € des niches non appliqué : le simulateur officiel 2026 accorde 25 000 € sur 7DC 100 000 €.
+  // Plafond propre de 7DC ; le plafonnement global (13 000 € avec ESUS) est appliqué par calculerPlafonnementNiches.
   const plafondEsus = COUPLES.includes(foyer.situationFamille) ? PLAFOND_ESUS * 2 : PLAFOND_ESUS;
   const reductionEsus = Math.round(Math.min(montant(input.case7dc), plafondEsus) * 0.25);
 
@@ -150,5 +152,6 @@ export function calculerReductionsCreditsImpot(
     creditGardeEnfants,
     creditCotisationsSyndicales,
     totalCredits: creditServicesPersonne + creditGardeEnfants + creditCotisationsSyndicales,
+    avantagesPlafonnesCourants: creditServicesPersonne + creditGardeEnfants,
   };
 }

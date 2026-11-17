@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -82,7 +82,8 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const noteImpot = [
     impot.decote > 0 ? `après décote de ${formatEuros(impot.decote)}` : null,
     impot.reductionsImpot > 0 ? `réductions ${formatEuros(impot.reductionsImpot)}` : null,
-    impot.creditsImpotCadre7 > 0 ? `crédit services à la personne ${formatEuros(impot.creditsImpotCadre7)}` : null,
+    impot.creditsImpotCadre7 > 0 ? `crédits d'impôt ${formatEuros(impot.creditsImpotCadre7)}` : null,
+    plafonnementNiches.excedent > 0 ? `plafonnement global des avantages fiscaux +${formatEuros(plafonnementNiches.excedent)}` : null,
   ].filter(Boolean).join(' · ') || undefined;
 
   const impots: Ligne[] = [
