@@ -1526,8 +1526,9 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   versés saisis. PME/ESUS/SFS et reports (`7CI`, `7CO`, `7GW`, `7CT`, `7CA`, `7CU`, `7CW`, `7CP`, `7CQ`,
   `7CV`, `7DO`, `7DP`, `7DC`, SFS `7BS`…`7BW`) : 18 % ou 25 %, plafond de versements commun 50 000 €
   (100 000 € couple), imputé dans l'ordre relevé par paires sur le simulateur (`GROUPE_PME`, ni le
-  taux ni la date). Écart connu : `7DO` + `7CO`/`7GW`/`7BS` au-delà du plafond (60 000 € chacune) →
-  10 800 € sur le simulateur, 20 800 € ici. JEI/JEU/JEIC `7CR` 30 % (75 000 / 150 000 €) et JEIR `7DZ` 50 %
+  taux ni la date). Comme le simulateur, `7DO` est déduite deux fois du plafond restant pour les cases
+  imputées après elle (`7CV`, `7CO`, `7CI`, `7GW`, `7BS`…) : célibataire 7DO 20 000 € + 7CO 20 000 € →
+  6 100 € ; couple 7DO 50 000 € + 7CO 4 000 € → 9 000 €. `7DC`, `7DP`, `7CA`, imputées avant, ne sont pas touchées. JEI/JEU/JEIC `7CR` 30 % (75 000 / 150 000 €) et JEIR `7DZ` 50 %
   (50 000 / 100 000 €), plafonds propres. FCPI `7GR` 25 % puis `7GQ` 18 %, 12 000 € (24 000 €) en
   commun ; FIP Corse `7FM` et outre-mer `7FL` 30 %, 12 000 € (24 000 €) chacun. SOFICA `7EN` 48 %,
   `7GN` 36 %, `7FN` 30 % dans cet ordre, versements ≤ min(25 % du RNI, 18 000 €). Presse `7MY` 50 %

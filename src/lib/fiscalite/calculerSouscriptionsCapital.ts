@@ -7,8 +7,8 @@ import { ReductionsCreditsImpotInput } from './types';
  * - PME, ESUS, SFS et leurs reports (7DC compris) : plafond de versements commun de 50 000 €
  *   (100 000 € pour un couple), imputé dans l'ordre de `GROUPE_PME` (relevé par paires : ni le taux ni
  *   la date). Plafonnement global à 10 000 €, majoré de 3 000 € pour la seule part de 7DC, 7BS et 7EK.
- *   Écart connu : 7DO avec 7CO, 7GW ou 7BS au-delà du plafond (60 000 € + 60 000 €) → le simulateur ne
- *   retient que 7DO (10 800 €), ici 20 800 € ;
+ *   7DO est déduite deux fois du plafond restant pour les cases imputées après elle (7CV, 7CO, 7CI,
+ *   7GW, 7BS…), comme sur le simulateur (célibataire, 7DO 20 000 € + 7CO 20 000 € → 6 100 €) ;
  * - JEI/JEU/JEIC (7CR) : 30 %, 75 000 € (150 000 €) ; JEIR (7DZ) : 50 %, 50 000 € (100 000 €) ;
  *   reprise de société (7FH) : 25 %, 20 000 € (40 000 €) ; DFCI (7UC) : 50 %, 1 000 € par foyer ;
  *   plafonds propres, hors plafonnement global ;
@@ -37,10 +37,10 @@ export const PLAFOND_REPRISE_SOCIETE = 20_000;
 type Cle = keyof ReductionsCreditsImpotInput;
 type Tranche = [Cle, number][];
 
-/** Groupe PME/ESUS/SFS, dans l'ordre d'imputation du simulateur. */
+/** Groupe PME/ESUS/SFS, dans l'ordre d'imputation du simulateur (7CV après 7DO : touchée par son double décompte). */
 const GROUPE_PME: Tranche = [
   ['case7dc', 0.25], ['case7ca', 0.25], ['case7ct', 0.18], ['case7cw', 0.25], ['case7cu', 0.18],
-  ['case7cq', 0.25], ['case7cp', 0.18], ['case7dp', 0.25], ['case7cv', 0.18], ['case7do', 0.18],
+  ['case7cq', 0.25], ['case7cp', 0.18], ['case7dp', 0.25], ['case7do', 0.18], ['case7cv', 0.18],
   ['case7co', 0.25], ['case7ci', 0.18], ['case7gw', 0.25], ['case7bs', 0.25], ['case7bt', 0.25],
   ['case7bu', 0.25], ['case7bw', 0.25],
 ];
@@ -50,6 +50,9 @@ const GROUPE_FCPI: Tranche = [['case7gr', 0.25], ['case7gq', 0.18]];
 const GROUPE_SOFICA: Tranche = [['case7en', 0.48], ['case7gn', 0.36], ['case7fn', 0.30]];
 const GROUPE_PRESSE: Tranche = [['case7my', 0.50], ['case7mx', 0.30]];
 const REPORTS_PLAFONNEMENT: Cle[] = ['case7cy', 'case7dy', 'case7ey', 'case7fy', 'case7gy'];
+
+/** Case retirée deux fois du plafond restant (simulateur officiel 2026). */
+const DOUBLE_DECOMPTE: Cle = 'case7do';
 
 const montant = (v: unknown) => Math.max(0, typeof v === 'number' ? v : 0);
 
@@ -61,6 +64,7 @@ function imputer(input: ReductionsCreditsImpotInput, groupe: Tranche, plafond: n
   for (const [cle, taux] of groupe) {
     const retenu = Math.min(montant(input[cle]), reste);
     reste -= retenu;
+    if (cle === DOUBLE_DECOMPTE) reste = Math.max(0, reste - retenu);
     reduction += retenu * taux;
     if (majorantes.includes(cle)) majorante += retenu * taux;
   }

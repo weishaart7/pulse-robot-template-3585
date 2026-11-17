@@ -37,6 +37,16 @@ describe('calculerSouscriptionsCapital', () => {
     expect(r({ case7cv: 60000, case7co: 60000 }).reductions).toBe(20800);
     expect(r({ case7bs: 60000, case7dc: 60000 }).reductions).toBe(25000);
   });
+  it('7DO déduite deux fois du plafond pour les cases imputées après elle (simulateur)', () => {
+    expect(r({ case7do: 20000, case7co: 20000 }, false).reductions).toBe(6100);
+    expect(r({ case7do: 10000, case7co: 30000 }, false).reductions).toBe(9300);
+    expect(r({ case7do: 49000, case7co: 4000 }).reductions).toBe(9320);
+    expect(r({ case7do: 48000, case7co: 8000 }).reductions).toBe(9640);
+    expect(r({ case7do: 50000, case7co: 4000 }).reductions).toBe(9000);
+    expect(r({ case7do: 55000, case7co: 4000 }).reductions).toBe(9900);
+    expect(r({ case7do: 60000, case7co: 60000 }).reductions).toBe(10800);
+    expect(r({ case7do: 50000, case7dp: 4000 }).reductions).toBe(10000);
+  });
   it('plafonds propres : presse, objets MH, DFCI, reprise de société', () => {
     expect(r({ case7mx: 15000, case7my: 15000 }).reductions).toBe(9000);
     expect(r({ case7mx: 100000 }, false).reductions).toBe(3000);
