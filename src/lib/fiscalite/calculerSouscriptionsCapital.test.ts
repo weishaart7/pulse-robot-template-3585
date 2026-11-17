@@ -3,6 +3,7 @@ import { calculerSouscriptionsCapital } from './calculerSouscriptionsCapital';
 import { calculerPlafonnementNiches } from './calculerPlafonnementNiches';
 import { calculerReductionsCreditsImpot } from './calculerReductionsCreditsImpot';
 import { calculerImpot } from './calculerImpot';
+import { aRevenuProfessionnelReel, REVENUS_NON_SALARIES_VIDE } from './calculerRevenusNonSalaries';
 import { calculerPartsFiscales } from './calculerPartsFiscales';
 import { FoyerFiscalInput, ReductionsCreditsImpotInput } from './types';
 
@@ -102,5 +103,27 @@ describe('souscriptions branchées sur le plafonnement global', () => {
   });
   it('majoration de 8 000 € partagée entre SOFICA et outre-mer', () => {
     expect(base - impotNet({ case7en: 40000, case7db: 20000, case7dg: true }, 8000)).toBe(18000);
+  });
+});
+
+describe("mécénat d'entreprise (7US)", () => {
+  it('retenu en entier, hors plafonnement global, avec un revenu au réel', () => {
+    const r = calculerSouscriptionsCapital({ case7us: 15000 } as ReductionsCreditsImpotInput, true, 200000, true);
+    expect(r.reductions).toBe(15000);
+    expect(r.horsPlafond).toBe(15000);
+    expect(r.avantagesPlafonnesCourants).toBe(0);
+  });
+  it('ignoré sans revenu professionnel au réel', () => {
+    expect(calculerSouscriptionsCapital({ case7us: 15000 } as ReductionsCreditsImpotInput, true, 200000).reductions).toBe(0);
+  });
+  it('prérequis : réel des déclarants ou des personnes à charge, pas le micro', () => {
+    const v = { ...REVENUS_NON_SALARIES_VIDE };
+    expect(aRevenuProfessionnelReel(v)).toBe(false);
+    expect(aRevenuProfessionnelReel({ ...v, case5kp: 50000 })).toBe(false);
+    expect(aRevenuProfessionnelReel({ ...v, case5kc: 50000 })).toBe(true);
+    expect(aRevenuProfessionnelReel({ ...v, case5qc: 50000 })).toBe(true);
+    expect(aRevenuProfessionnelReel({ ...v, case5jg: 50000 })).toBe(true);
+    expect(aRevenuProfessionnelReel({ ...v, case5mc: 50000 })).toBe(true);
+    expect(aRevenuProfessionnelReel({ ...v, case5mp: 50000 })).toBe(false);
   });
 });

@@ -3144,6 +3144,7 @@ export type Database = {
           case_7my: number | null
           case_7nz: number | null
           case_7uc: number | null
+          case_7us: number | null
           case_7fh: number | null
           case_7un: number | null
           case_7ul: number | null
@@ -3711,6 +3712,7 @@ export type Database = {
           case_7my?: number | null
           case_7nz?: number | null
           case_7uc?: number | null
+          case_7us?: number | null
           case_7fh?: number | null
           case_7un?: number | null
           case_7ul?: number | null
@@ -4278,6 +4280,7 @@ export type Database = {
           case_7my?: number | null
           case_7nz?: number | null
           case_7uc?: number | null
+          case_7us?: number | null
           case_7fh?: number | null
           case_7un?: number | null
           case_7ul?: number | null

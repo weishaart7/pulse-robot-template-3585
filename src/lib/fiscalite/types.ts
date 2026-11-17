@@ -913,6 +913,8 @@ export interface ReductionsCreditsImpotInput {
   case7nz?: number | null;
   case7uc?: number | null;
   case7fh?: number | null;
+  /** Mécénat d'entreprise : montant de la réduction (2069-RS), exige un revenu professionnel au réel. */
+  case7us?: number | null;
   /** Investissements forestiers : dépenses, voir calculerInvestissementsForestiers. */
   case7un?: number | null;
   case7ul?: number | null;

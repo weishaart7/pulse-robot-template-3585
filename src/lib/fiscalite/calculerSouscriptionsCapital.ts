@@ -19,7 +19,9 @@ import { ReductionsCreditsImpotInput } from './types';
  * - SOFICA : 7EN (48 %), 7GN (36 %), 7FN (30 %) dans cet ordre, versements limités à
  *   min(25 % du revenu net imposable, 18 000 €) ; retenues au plafonnement global avec la majoration
  *   de 8 000 € partagée avec l'outre-mer (7EN 40 000 € + HOZ 8 000 € + crédit 7DB → 18 000 €).
- * 7US (mécénat d'entreprise) non saisie : « calcul impossible » sur le simulateur.
+ * - mécénat d'entreprise (7US) : montant de la réduction issu de la 2069-RS, imputé euro pour euro,
+ *   hors plafonnement global ; retenu seulement avec un revenu professionnel au réel (BA, BIC, BNC),
+ *   le simulateur refusant 7US avec des revenus micro ou sans revenu professionnel.
  */
 export const PLAFOND_PME = 50_000;
 export const PLAFOND_JEI = 75_000;
@@ -76,7 +78,7 @@ export interface SouscriptionsCapitalResult {
   esus: number;
   /** SOFICA : plafond de 10 000 € majoré de 8 000 € partagés avec l'outre-mer. */
   sofica: number;
-  /** JEI/JEIR, reprise de société, DFCI : hors plafonnement global. */
+  /** JEI/JEIR, reprise de société, DFCI, mécénat d'entreprise (7US) : hors plafonnement global. */
   horsPlafond: number;
 }
 
@@ -84,6 +86,7 @@ export function calculerSouscriptionsCapital(
   input: ReductionsCreditsImpotInput,
   couple: boolean,
   revenuImposable: number,
+  revenuProfessionnelReel = false,
 ): SouscriptionsCapitalResult {
   const k = couple ? 2 : 1;
   const pme = imputer(input, GROUPE_PME, PLAFOND_PME * k, CASES_ESUS_MAJORANTES);
@@ -98,7 +101,8 @@ export function calculerSouscriptionsCapital(
   const horsPlafond = Math.round(plafonne(input.case7cr, PLAFOND_JEI * k, 0.30)
     + plafonne(input.case7dz, PLAFOND_JEIR * k, 0.50)
     + plafonne(input.case7fh, PLAFOND_REPRISE_SOCIETE * k, 0.25)
-    + plafonne(input.case7uc, PLAFOND_DFCI, 0.50));
+    + plafonne(input.case7uc, PLAFOND_DFCI, 0.50)
+    + (revenuProfessionnelReel ? montant(input.case7us) : 0));
   const courants = pme.reduction - pme.majorante + fcpi + fip + presse + objetsMH + reports;
   return {
     reductions: courants + esus + sofica + horsPlafond,

@@ -165,6 +165,7 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Travaux de conservation ou de restauration d'objets classés monuments historiques" code="7NZ" value={rc.case7nz ?? null} onChange={v => update('case7nz', v)} />
           <SingleMontantLigne label="Cotisations pour la défense des forêts contre l'incendie" code="7UC" value={rc.case7uc ?? null} onChange={v => update('case7uc', v)} />
           <SingleMontantLigne label="Intérêts d'emprunt pour reprise de société" code="7FH" value={rc.case7fh ?? null} onChange={v => update('case7fh', v)} />
+          <SingleMontantLigne label="Mécénat d'entreprise : montant de la réduction (2069-RS)" code="7US" aide="Réduction imputée telle quelle, hors plafonnement global, non restituable. Retenue seulement avec un revenu BA, BIC ou BNC au régime réel." value={rc.case7us ?? null} onChange={v => update('case7us', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Reports de réductions d'impôt" aide="Montant de la réduction reportée.">

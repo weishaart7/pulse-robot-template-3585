@@ -1533,8 +1533,11 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   `7GN` 36 %, `7FN` 30 % dans cet ordre, versements ≤ min(25 % du RNI, 18 000 €). Presse `7MY` 50 %
   puis `7MX` 30 %, 10 000 € (20 000 €) en commun ; objets classés `7NZ` 18 %, 20 000 € par foyer ;
   DFCI `7UC` 50 %, 1 000 € par foyer ; reprise de société `7FH` 25 %, 20 000 € (40 000 €). Reports
-  saisis en montant de réduction : `7EK`, `7CY`…`7GY`. `7US` non saisie (« calcul impossible » sur le
-  simulateur). Non restituables.
+  saisis en montant de réduction : `7EK`, `7CY`…`7GY`. Mécénat d'entreprise `7US` : montant de la
+  réduction (2069-RS), imputé euro pour euro, hors plafonnement global, retenu seulement avec un revenu
+  BA, BIC ou BNC au réel (`aRevenuProfessionnelReel`, le simulateur refuse 7US en micro ou sans revenu
+  professionnel). Mesuré : 5KC 150 000 € + 7US 15 000 € → −15 000 € ; + 7DO 60 000 € → −25 800 €.
+  Non restituables.
 - **Investissements forestiers** (24 cases, `calculerInvestissementsForestiers.ts`) : dépenses saisies,
   crédits restituables. Acquisition `7UN` 25 % et assurance `7UL` 76 %, plafonds propres ; travaux
   `7UP`, `7UT` et reports 2017-2024 (`7TR`…`7TK`, `7VQ`…`7VT`) à 25 % ou 18 %, plafond commun, reports
@@ -1586,7 +1589,7 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   2010 (20 000 € + 8 %), 2009 (25 000 € + 10 %), emboîtés depuis l'année courante :
   retenu = min(retenu + avantages du millésime, plafond du millésime). Mesuré : 7MO (2009) 10 000 € +
   7MR (2012) 50 000 € → 46 836 € ; 7MR 50 000 € + crédit 7DB 10 000 € → 36 836 €.
-- **Hors périmètre (acté)** : `7US` (mécénat d'entreprise, non mesurable sur le simulateur), report des dons excédentaires des années antérieures.
+- **Hors périmètre (acté)** : report des dons excédentaires des années antérieures ; report sur cinq ans de la réduction 7US non imputée (suivi sur la 2069-RS).
 
 ### Prélèvement à la source et divers (cadre 8, phases 8.1 et 8.2)
 

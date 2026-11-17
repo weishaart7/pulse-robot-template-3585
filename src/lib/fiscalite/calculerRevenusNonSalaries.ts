@@ -390,3 +390,30 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
     alertes,
   };
 }
+
+/**
+ * Cases des régimes réels (BA, BIC pro et non pro, LMNP, BNC pro et non pro : revenus imposables ou
+ * exonérés, déficits, plus-values, brevets, moyenne triennale), colonnes déclarants 1 et 2.
+ */
+const CASES_REGIME_REEL = [
+  'case5hb', 'case5ib', 'case5hc', 'case5ic', 'case5ak', 'case5bk', 'case5ha', 'case5ia', 'case5hf', 'case5if', 'case5he', 'case5ie',
+  'case5kb', 'case5lb', 'case5kc', 'case5lc', 'case5df', 'case5ef', 'case5ui', 'case5vi', 'case5kf', 'case5lf', 'case5ke', 'case5le',
+  'case5nb', 'case5ob', 'case5nc', 'case5oc', 'case5ur', 'case5vr', 'case5nf', 'case5of', 'case5ne', 'case5oe',
+  'case5na', 'case5oa', 'case5ey', 'case5fy', 'case5nm', 'case5om', 'case5ny', 'case5oy', 'case5we', 'case5xe',
+  'case5qb', 'case5rb', 'case5qc', 'case5rc', 'case5xj', 'case5yj', 'case5qa', 'case5ra', 'case5qe', 'case5re', 'case5qd', 'case5rd',
+  'case5hk', 'case5jk', 'case5jg', 'case5rf', 'case5xs', 'case5ys', 'case5jj', 'case5rg', 'case5so', 'case5nt',
+  'case5xt', 'case5xu', 'case5tf', 'case5uf',
+];
+
+/**
+ * Le foyer déclare-t-il un revenu professionnel au régime réel (déclarants ou personnes à charge) ?
+ * Prérequis de 7US (mécénat d'entreprise) : le simulateur officiel 2026 la refuse sans revenu
+ * correspondant, ou avec des revenus micro seulement.
+ */
+export function aRevenuProfessionnelReel(input: RevenusNonSalariesInput): boolean {
+  const reel = new Set(CASES_REGIME_REEL);
+  const cles = [...CASES_REGIME_REEL,
+    ...Object.entries(JUMELLES_PAC_CADRE_5).filter(([, jumelle]) => reel.has(jumelle)).map(([cle]) => cle)];
+  const valeurs = input as unknown as Record<string, number | null | undefined>;
+  return cles.some(cle => (valeurs[cle] ?? 0) !== 0);
+}

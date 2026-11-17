@@ -40,6 +40,7 @@ import {
   calculerPlafonnementNiches,
   calculerInvestissementsOutreMer,
   calculerSouscriptionsCapital,
+  aRevenuProfessionnelReel,
   calculerInvestissementsForestiers,
   calculerInvestissementsLocatifs,
   calculerInvestissementsPinel,
@@ -484,6 +485,7 @@ export function useFiscalOverview(): FiscalOverview {
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT,
         COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
         revenuImposableTotal,
+        aRevenuProfessionnelReel(nonSalaries ?? REVENUS_NON_SALARIES_VIDE),
       );
       const investissementsForestiers = calculerInvestissementsForestiers(
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT,

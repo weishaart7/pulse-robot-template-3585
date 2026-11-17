@@ -2,7 +2,7 @@
 
 Nov 17, 2026 · @Titouan
 
-Les deux chantiers ouverts après la campagne de comparaison du moteur IR d'Aurevia avec le simulateur officiel sont terminés et poussés sur `main` : les cases non gérées qui changent l'impôt (sauf 7US, que le simulateur ne sait pas calculer) et le taux de PS de l'assurance-vie hors fiscalité (gardé à 17,2 %).
+Les deux chantiers ouverts après la campagne de comparaison du moteur IR d'Aurevia avec le simulateur officiel sont terminés et poussés sur `main` : les cases non gérées qui changent l'impôt (7US comprise depuis le 18 nov. 2026) et le taux de PS de l'assurance-vie hors fiscalité (gardé à 17,2 %).
 
 ## Contexte
 
@@ -41,9 +41,9 @@ Décisions prises : quand le simulateur et la loi ou ClickImpôts divergent, Aur
 | 2 | Cadre 7 courant : garde, scolarité, syndicats, pension compensatoire, partis | 22 | Fait (commit a938e13, 16 nov. 2026) ; 19 cases, pas 22 |
 | 3 | Cadre 3 : reports d'imposition et plus-values 2012, quotient | 14 | Fait (commit 1d394ba, 16 nov. 2026) |
 | 4 | 4BC, crédits du cadre 8 | 18 | Fait (commit 4ca9844, 16 nov. 2026) |
-| 5 | Cadre 5 réel, outre-mer (H), reste du cadre 7 (RICI) | 611 | Cadre 5 fait le 17 nov. 2026 (64 cases PAC ; 30 cases « dont » sans effet) ; plafonnement global et outre-mer faits le 17 nov. 2026 ; 2042-RICI faite le 17 nov. 2026 (sauf 7US) |
+| 5 | Cadre 5 réel, outre-mer (H), reste du cadre 7 (RICI) | 611 | Cadre 5 fait le 17 nov. 2026 (64 cases PAC ; 30 cases « dont » sans effet) ; plafonnement global et outre-mer faits le 17 nov. 2026 ; 2042-RICI faite le 17 nov. 2026, 7US le 18 nov. 2026 |
 
-La 2042-RICI est couverte en huit sous-lots, tous commités et poussés sur `main` le 17 nov. 2026 ; seule 7US reste non saisie (« calcul impossible » sur le simulateur).
+La 2042-RICI est couverte en huit sous-lots, tous commités et poussés sur `main` le 17 nov. 2026 ; 7US (mécénat d'entreprise) a suivi le 18 nov. 2026 : le « calcul impossible » venait d'un prérequis, un revenu BA, BIC ou BNC au réel.
 
 | Sous-lot | Commit | Contenu | Cases |
 | --- | --- | --- | --- |
@@ -88,7 +88,7 @@ Règle déjà connue : chaque personne à charge a son propre abattement de 10 %
 
 - Cadre 5, régimes réels et déficits (94) : 5AQ 5AY 5BQ 5BY 5CU 5CV 5DK 5DM 5EK 5EM 5FK 5FM 5JA 5JB 5JC 5JD 5JE 5JF 5JP 5JQ 5JR 5JV 5JW 5JX 5JY 5LK 5MB 5MC 5ME 5MF 5MJ 5MN 5MO 5MP 5MQ 5MU 5MV 5MX 5MY 5MZ 5OT 5PA 5PB 5PC 5PE 5PG 5PH 5PI 5PJ 5PK 5PL 5PM 5PN 5PO 5PP 5PQ 5PX 5SA 5SB 5SC 5SD 5SE 5SF 5SJ 5SL 5SX 5UT 5UY 5VA 5VB 5VC 5VE 5VF 5VH 5VM 5VQ 5VT 5VV 5VY 5WI 5WM 5XH 5XP 5XY 5YH 5YP 5YY 5ZA 5ZB 5ZH 5ZM 5ZO 5ZP 5ZY. Beaucoup sont des colonnes « 3e personne » (J, M, P, S, V, Z) de cases déjà gérées pour les deux déclarants.
 - Investissements outre-mer (96) : HGS à HYJ (familles HG, HH, HI, HJ, HK, HL, HO, HU, HV, HY).
-- Reste du cadre 7 (2042-RICI) : fait en huit sous-lots (6a à 6h, voir le tableau ci-dessus), sauf 7US.
+- Reste du cadre 7 (2042-RICI) : fait en huit sous-lots (6a à 6h, voir le tableau ci-dessus), puis 7US.
 
 Les 703 codes avec leur libellé officiel : Annexe — 703 cases.
 
