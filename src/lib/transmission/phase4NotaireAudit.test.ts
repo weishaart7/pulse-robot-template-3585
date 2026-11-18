@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Phase 4 de l'audit « résultat notaire » du 2026-09-29 :
  * R11 réduction pour charges de famille (art. 780 CGI), R12 Dutreil
@@ -18,7 +19,7 @@ function run(family: FamilyGraph, rawAssets: RawAssetInput[], liberalites: Liber
   const biens = rawAssets.reduce((s, a) => s + (a.valeur_estimee || 0), 0);
   return computeTransmission({
     family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites,
-    params: {} as any, referenceDate: REF, rawAssets, societesDutreil, dutreilPartsNonAffectees,
+    params: {} as TransmissionParams, referenceDate: REF, rawAssets, societesDutreil, dutreilPartsNonAffectees,
   });
 }
 

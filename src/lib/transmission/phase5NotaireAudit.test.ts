@@ -1,3 +1,4 @@
+import type { ConjointOption, TransmissionParams } from './types';
 /**
  * Phase 5 (contre-audit « résultat notaire » du 2026-09-29) : legs sur part
  * successorale, adoption simple (art. 786 CGI), abattement des représentants
@@ -11,8 +12,8 @@ const REF = '2026-09-29';
 const compte = (valeur: number): RawAssetInput[] => valeur > 0
   ? [{ id: 'c', denomination: 'Compte', valeur_estimee: valeur, nature: 'Compte courant', qualification_bien: 'Bien propre', detenteur: 'user' }]
   : [];
-const run = (family: FamilyGraph, biens: number, liberalites: Liberalite[] = [], conjointOption: any = 'quart_pp') => computeTransmission({
-  family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as any,
+const run = (family: FamilyGraph, biens: number, liberalites: Liberalite[] = [], conjointOption: ConjointOption = 'quart_pp') => computeTransmission({
+  family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as TransmissionParams,
   referenceDate: REF, conjointOption, rawAssets: compte(biens),
 });
 
@@ -89,7 +90,7 @@ describe('Phase 5 — contre-audit', () => {
   it('usufruit total + legs au conjoint : seule la valeur d\'usufruit est réunie aux nus-propriétaires', () => {
     const legs: Liberalite = { id: 'l', type: 'legs', beneficiaireId: 'conjoint', valeur: 50000, date: '2026-01-01', typeImputation: 'hors_part' };
     const ctx = (family: FamilyGraph, liberalites: Liberalite[]) => ({
-      family, patrimony: { date: REF, biensExistants: 400000, passifs: 0 }, liberalites, params: {} as any,
+      family, patrimony: { date: REF, biensExistants: 400000, passifs: 0 }, liberalites, params: {} as TransmissionParams,
       referenceDate: REF, conjointOption: 'usufruit_total' as const, rawAssets: compte(400000),
     });
     const chained = computeChainedTransmission({ firstDeath: ctx(famille(2, true), [legs]), secondDeath: ctx(famille(2, false), []) });

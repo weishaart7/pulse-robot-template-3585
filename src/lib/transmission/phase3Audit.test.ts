@@ -1,3 +1,5 @@
+import type { Asset } from '@/services/assetService';
+import type { TransmissionParams } from './types';
 /**
  * Correctifs de la phase 3 de l'audit Transmission (2026-09), donations :
  * 5. rappel fiscal sur la valeur déclarée dans l'acte (art. 784 CGI) ;
@@ -26,11 +28,11 @@ const family: FamilyGraph = {
 
 const rawAssets = [
   { id: 'a', denomination: 'Portefeuille', valeur_estimee: 300000, nature: 'valeur_mobiliere', qualification_bien: 'Bien propre' }
-] as any;
+] as (Asset & { id: string })[];
 
 function run(liberalites: Liberalite[]) {
   const patrimony = buildPatrimonySnapshot(rawAssets, [], 0);
-  return computeTransmission({ family, patrimony, liberalites, params: {} as any, referenceDate: REF, rawAssets });
+  return computeTransmission({ family, patrimony, liberalites, params: {} as TransmissionParams, referenceDate: REF, rawAssets });
 }
 
 const donation = (over: Partial<Liberalite>): Liberalite => ({
@@ -68,7 +70,7 @@ const don790G = (id: string, date: string, valeur: number): Donation => ({
 describe('Phase 3 — plafond 790 G unique', () => {
   it('deux dons de 20 000€ : 8 135€ consomment l\'abattement général', () => {
     const r = computeRecallAndAllowances({
-      beneficiary: { id: 'e1', lien: 'enfant' } as any,
+      beneficiary: { id: 'e1', lien: 'enfant' },
       donations15y: [don790G('a', '2020-01-01', 20000), don790G('b', '2022-01-01', 20000)],
       params: DEFAULT_DMTG_PARAMS
     });
@@ -80,7 +82,7 @@ describe('Phase 3 — plafond 790 G unique', () => {
     // Le filtrage 15 ans est fait en amont (filterDonations15Years) : seul le
     // don récent arrive ici, il bénéficie du plafond entier.
     const r = computeRecallAndAllowances({
-      beneficiary: { id: 'e1', lien: 'enfant' } as any,
+      beneficiary: { id: 'e1', lien: 'enfant' },
       donations15y: [don790G('b', '2022-01-01', 31865)],
       params: DEFAULT_DMTG_PARAMS
     });
@@ -113,7 +115,7 @@ describe('790 G — conditions d\'âge et de lien', () => {
 
   const runFamille = (f: FamilyGraph, libs: Liberalite[]) => {
     const patrimony = buildPatrimonySnapshot(rawAssets, [], 0);
-    return computeTransmission({ family: f, patrimony, liberalites: libs, params: {} as any, referenceDate: REF, rawAssets });
+    return computeTransmission({ family: f, patrimony, liberalites: libs, params: {} as TransmissionParams, referenceDate: REF, rawAssets });
   };
 
   it('conditions remplies : exonéré, abattement intact', () => {

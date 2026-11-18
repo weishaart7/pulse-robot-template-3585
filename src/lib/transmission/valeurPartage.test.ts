@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Valeurs au jour du partage (C. civ. art. 860, 924-2), règles R25 à R29
  * validées le 2026-09-29 — exemples chiffrés du référentiel Successions §9.9.
@@ -18,7 +19,7 @@ function enfants(n: number): FamilyGraph {
 }
 function run(family: FamilyGraph, biens: number, liberalites: Liberalite[], valeurBiensPartage?: number) {
   return computeTransmission({
-    family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as any,
+    family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as TransmissionParams,
     referenceDate: REF, valeurBiensPartage,
     rawAssets: [{ id: 'c', denomination: 'Biens', valeur_estimee: biens, nature: 'Compte courant', qualification_bien: 'Bien propre', detenteur: 'user' }],
   });

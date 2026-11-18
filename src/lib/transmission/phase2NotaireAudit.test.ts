@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Phase 2 de l'audit « résultat notaire » du 2026-09-29 :
  * - R6 : abattement de 20 % sur la résidence principale conditionné à son
@@ -36,7 +37,7 @@ function run(family: FamilyGraph, liberalites: Liberalite[] = [], nature = 'Rés
     family,
     patrimony: { date: REF, biensExistants: 500000, passifs: 0 },
     liberalites,
-    params: {} as any,
+    params: {} as TransmissionParams,
     referenceDate: REF,
     conjointOption: 'quart_pp',
     rawAssets: [{ id: 'rp', denomination: 'Maison', valeur_estimee: 500000, nature, qualification_bien: 'Bien propre', detenteur: 'user' }],

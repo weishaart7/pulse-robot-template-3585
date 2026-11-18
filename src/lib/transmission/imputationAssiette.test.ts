@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Imputation « en assiette » des libéralités en usufruit (Cass. civ. 1, 22 juin
  * 2022, n° 20-23.215 ; référentiel Successions §8.6.2), règles R21 à R24
@@ -25,7 +26,7 @@ const COUSIN: Person = { id: 'K', nom: 'K', prenom: 'Karim', lienFamilial: 'Cous
 
 function run(family: FamilyGraph, biens: number, liberalites: Liberalite[]) {
   return computeTransmission({
-    family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as any,
+    family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as TransmissionParams,
     referenceDate: REF,
     rawAssets: [{ id: 'c', denomination: 'Patrimoine', valeur_estimee: biens, nature: 'Compte courant', qualification_bien: 'Bien propre', detenteur: 'user' }],
   });

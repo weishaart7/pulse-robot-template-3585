@@ -1,3 +1,4 @@
+import type { ConjointOption } from '@/lib/transmission/types';
 /**
  * Ordre inversé du 2nd décès : le conjoint décède en premier, l'Utilisateur lui
  * survit. buildSpouseAsDecedentFamilyGraph({ utilisateurSurvivant: true }) doit
@@ -90,7 +91,7 @@ describe('Chaînage ordre inversé, bout en bout', () => {
       patrimony: { date: REF, biensExistants: 600000, passifs: 0, assuranceVieTotal: 0 },
       liberalites: [],
       params,
-      conjointOption: conjointOption as any,
+      conjointOption: conjointOption as ConjointOption,
       referenceDate: REF
     };
     const first = computeTransmission(firstDeath);

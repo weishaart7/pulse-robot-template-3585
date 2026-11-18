@@ -1,3 +1,5 @@
+import type { Asset } from '@/services/assetService';
+import type { TransmissionParams } from './types';
 /**
  * Correctifs de la phase 1 de l'audit Transmission (2026-09) :
  * 1. passif déduit de l'assiette DMTG (art. 768 CGI) ;
@@ -9,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { computeTransmission, FamilyGraph } from './index';
 import { buildPatrimonySnapshot } from '../../utils/transmissionHelpers';
 import { computeAssuranceVie, DEFAULT_DMTG_PARAMS, AVContract } from '../dmtg';
+import type { Beneficiary } from '../dmtg/types';
 
 const REF = '2026-09-23';
 
@@ -49,9 +52,9 @@ const actif = (valeur: number) => [
 ];
 
 function run(family: FamilyGraph, valeur: number, passif = 0) {
-  const rawAssets = actif(valeur) as any;
-  const patrimony = buildPatrimonySnapshot(rawAssets, passif ? [{ montant_du: passif, qualification_bien: 'Bien propre' }] as any : [], 0);
-  return computeTransmission({ family, patrimony, liberalites: [], params: {} as any, referenceDate: REF, rawAssets });
+  const rawAssets = actif(valeur) as (Asset & { id: string })[];
+  const patrimony = buildPatrimonySnapshot(rawAssets, passif ? [{ montant_du: passif, qualification_bien: 'Bien propre' }] : [], 0);
+  return computeTransmission({ family, patrimony, liberalites: [], params: {} as TransmissionParams, referenceDate: REF, rawAssets });
 }
 
 describe('Phase 1 — passif déduit de l\'assiette DMTG', () => {
@@ -84,9 +87,9 @@ const contrat = (id: string, primes: number, nature?: string): AVContract => ({
   primesApres70: 0,
   nature,
   niveaux: [{ beneficiaires: [{ beneficiaryId: 'e1', quotePart: 1, statut: 'accepte' }] }]
-} as any);
+} as AVContract);
 
-const enfant = [{ id: 'e1', lien: 'enfant' } as any];
+const enfant: Beneficiary[] = [{ id: 'e1', lien: 'enfant' }];
 
 describe('Phase 1 — 990 I', () => {
   it('deux contrats de 400 k€ : un seul abattement de 152 500€', () => {

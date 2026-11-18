@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Quotité disponible spéciale entre époux (art. 1094-1 C. civ.), règles R16 à
  * R20 validées le 2026-09-29. Conjoint né en 1955 : 71 ans au décès, usufruit
@@ -31,7 +32,7 @@ function famille(n: number, opts: { ddv?: boolean; nonCommun?: boolean; conjoint
 
 function ctx(family: FamilyGraph, biens: number, liberalites: Liberalite[], conjointOption: ConjointOption = 'quart_pp') {
   return {
-    family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as any,
+    family, patrimony: { date: REF, biensExistants: biens, passifs: 0 }, liberalites, params: {} as TransmissionParams,
     referenceDate: REF, conjointOption, rawAssets: compte(biens),
   };
 }

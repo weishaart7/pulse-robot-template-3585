@@ -1,3 +1,4 @@
+import type { Asset } from '@/services/assetService';
 import { describe, it, expect } from 'vitest';
 import { buildAVContracts, buildPatrimonySnapshot, splitPrimesAvantApres70, computeAVReintegrationCivile, AVDonneesInsuffisantesError } from './transmissionHelpers';
 import { FamilyGraph, TransmissionParams, PatrimonySnapshot } from '@/lib/transmission/types';
@@ -253,7 +254,7 @@ describe('buildAVContracts — "Bons & contrats de capitalisation" exclus (pas h
 describe('buildPatrimonySnapshot — "Bons & contrats de capitalisation" réintègre la succession civile classique', () => {
   it('"Contrat d\'assurance-vie" reste hors succession civile (biensExistants = 0)', () => {
     const patrimony = buildPatrimonySnapshot(
-      [{ id: 'av1', nature: "Contrat d'assurance-vie", valeur_estimee: 100000, qualification_bien: 'Bien propre', detenteur: 'user' } as any],
+      [{ id: 'av1', nature: "Contrat d'assurance-vie", valeur_estimee: 100000, qualification_bien: 'Bien propre', detenteur: 'user' } as Asset],
       []
     );
     expect(patrimony.biensExistants).toBe(0);
@@ -261,7 +262,7 @@ describe('buildPatrimonySnapshot — "Bons & contrats de capitalisation" réint�
 
   it('"Bons & contrats de capitalisation" intègre désormais la succession civile classique, comme n\'importe quel autre actif', () => {
     const patrimony = buildPatrimonySnapshot(
-      [{ id: 'bon-cap-1', nature: 'Bons & contrats de capitalisation', valeur_estimee: 100000, qualification_bien: 'Bien propre', detenteur: 'user' } as any],
+      [{ id: 'bon-cap-1', nature: 'Bons & contrats de capitalisation', valeur_estimee: 100000, qualification_bien: 'Bien propre', detenteur: 'user' } as Asset],
       []
     );
     expect(patrimony.biensExistants).toBeGreaterThan(0);

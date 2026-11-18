@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Phase 1 de l'audit « résultat notaire » du 2026-09-29 (docs/transmission.md) :
  * scénarios chiffrés reproduisant chaque écart constaté, avec le résultat
@@ -32,7 +33,7 @@ function run(family: FamilyGraph, biens: number, liberalites: Liberalite[]) {
     family,
     patrimony: { date: REF, biensExistants: biens, passifs: 0 },
     liberalites,
-    params: {} as any,
+    params: {} as TransmissionParams,
     referenceDate: REF,
     conjointOption: 'quart_pp',
     rawAssets: biens > 0

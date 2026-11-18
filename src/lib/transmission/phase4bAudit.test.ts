@@ -1,3 +1,5 @@
+import type { Asset } from '@/services/assetService';
+import type { TransmissionParams } from './types';
 /**
  * Phase 4b de l'audit Transmission (2026-09) : legs à un légataire qui
  * n'hérite pas — sorti du résiduel des héritiers et taxé selon son propre
@@ -31,7 +33,7 @@ function famille(extra: FamilyGraph['persons'] = [], spouse?: { id: string; mari
 
 const rawAssets = [
   { id: 'a', denomination: 'Portefeuille', valeur_estimee: 500000, nature: 'valeur_mobiliere', qualification_bien: 'Bien propre' }
-] as any;
+] as (Asset & { id: string })[];
 
 const legs = (beneficiaireId: string, valeur: number, id = 'l1'): Liberalite => ({
   id, type: 'legs', beneficiaireId, valeur, date: REF, typeImputation: 'hors_part', beneficiaireName: 'Légataire'
@@ -39,7 +41,7 @@ const legs = (beneficiaireId: string, valeur: number, id = 'l1'): Liberalite => 
 
 function run(family: FamilyGraph, liberalites: Liberalite[], partageEnvisage = false) {
   const patrimony = buildPatrimonySnapshot(rawAssets, [], 0);
-  return computeTransmission({ family, patrimony, liberalites, params: {} as any, referenceDate: REF, rawAssets, partageEnvisage });
+  return computeTransmission({ family, patrimony, liberalites, params: {} as TransmissionParams, referenceDate: REF, rawAssets, partageEnvisage });
 }
 
 describe('Phase 4b — legs à un non-héritier', () => {
@@ -117,9 +119,9 @@ describe('Phase 4b — legs à un non-héritier', () => {
 
   it('donation au conjoint marié (sentinelle \'conjoint\') : imputée sur ses droits (art. 758-6), jamais à un tiers', () => {
     const family = famille([], { id: 'cj', marie: true });
-    const sansDon = computeTransmission({ family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), liberalites: [], params: {} as any, referenceDate: REF, rawAssets, conjointOption: 'quart_pp' });
+    const sansDon = computeTransmission({ family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), liberalites: [], params: {} as TransmissionParams, referenceDate: REF, rawAssets, conjointOption: 'quart_pp' });
     const avecDon = computeTransmission({
-      family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), params: {} as any, referenceDate: REF, rawAssets, conjointOption: 'quart_pp',
+      family, patrimony: buildPatrimonySnapshot(rawAssets, [], 0), params: {} as TransmissionParams, referenceDate: REF, rawAssets, conjointOption: 'quart_pp',
       liberalites: [{ id: 'd', type: 'donation', beneficiaireId: 'conjoint', valeur: 50000, valeurFiscaleActe: 50000, date: '2020-01-01', typeImputation: 'hors_part' }]
     });
     const partConjoint = (r: typeof avecDon) => r.heirs.filter(h => h.personId === 'cj').reduce((sum, h) => sum + h.partFinale, 0);

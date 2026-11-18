@@ -1,3 +1,4 @@
+import type { Asset } from '@/services/assetService';
 /**
  * Tests d'intégration de bout en bout contre docs/Golden_Scenarios_Transmission.md
  * (v2, 5 scénarios calculés à la main selon le référentiel sourcé, forfait
@@ -101,7 +102,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
     // patrimony.biensExistants dérivé de buildPatrimonySnapshot (chemin civil, UI
     // réelle), à partir du MÊME patrimoine brut que rawAssets (chemin fiscal) —
     // preuve que les deux chemins retombent sur la même assiette pondérée.
-    const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(rawAssets as any, [], 250000);
+    const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(rawAssets as Asset[], [], 250000);
 
     const result = computeTransmission({
       family,
@@ -159,7 +160,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       hasDDV: false
     };
     const rawAssets = buildScenario123RawAssets();
-    const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(rawAssets as any, [], 250000);
+    const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(rawAssets as Asset[], [], 250000);
 
     const result = computeTransmission({
       family,
@@ -212,7 +213,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
       hasDDV: false
     };
     const rawAssets = buildScenario123RawAssets();
-    const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(rawAssets as any, [], 250000);
+    const patrimony: PatrimonySnapshot = buildPatrimonySnapshot(rawAssets as Asset[], [], 250000);
 
     const result = computeTransmission({
       family,
@@ -281,7 +282,7 @@ describe('Golden Scenarios — Transmission (docs/Golden_Scenarios_Transmission.
         ...buildScenario123RawAssets(),
         { id: 'av1', denomination: 'Contrat AV', valeur_estimee: 250000, nature: "Contrat d'assurance-vie" }
       ];
-      const patrimonyWithAV = buildPatrimonySnapshot(rawAssetsWithAV as any, [], 250000);
+      const patrimonyWithAV = buildPatrimonySnapshot(rawAssetsWithAV as Asset[], [], 250000);
 
       // Le contrat AV ne doit pas gonfler l'assiette civile : mêmes 305 500€
       // que le reste du scénario 3, alors que rawAssetsWithAV contient 250 000€

@@ -1,3 +1,4 @@
+import type { Asset } from '@/services/assetService';
 /**
  * Tests de branchement des emprunts dans le passif transmis.
  *
@@ -95,7 +96,7 @@ describe('Branchement — un emprunt seul réduit le patrimoine transmis', () =>
     ];
     const emprunts = [{ capital_restant_du: 100000, qualification_bien: 'Bien commun', societe_id: null }];
 
-    const patrimony = buildPatrimonySnapshot(rawAssets as any, buildPassifLines([], emprunts), 0);
+    const patrimony = buildPatrimonySnapshot(rawAssets as Asset[], buildPassifLines([], emprunts), 0);
     // Actif commun et emprunt commun tous deux pondérés à 50%.
     expect(patrimony.biensExistants).toBeCloseTo(250000, 0);
     expect(patrimony.passifs).toBe(50000);
@@ -121,8 +122,8 @@ describe('Branchement — un emprunt seul réduit le patrimoine transmis', () =>
     ];
     const passifs = [{ montant_du: 40000, qualification_bien: 'Bien commun' }];
 
-    const avant = buildPatrimonySnapshot(rawAssets as any, passifs, 0);
-    const apres = buildPatrimonySnapshot(rawAssets as any, buildPassifLines(passifs, []), 0);
+    const avant = buildPatrimonySnapshot(rawAssets as Asset[], passifs, 0);
+    const apres = buildPatrimonySnapshot(rawAssets as Asset[], buildPassifLines(passifs, []), 0);
 
     expect(apres.biensExistants).toBe(avant.biensExistants);
     expect(apres.passifs).toBe(avant.passifs);

@@ -1,3 +1,4 @@
+import type { TransmissionParams } from './types';
 /**
  * Phase 3 de l'audit « résultat notaire » du 2026-09-29 : net à recevoir
  * calculé sur la valeur civile reçue (R8), soulte signée et assurance-vie
@@ -34,7 +35,7 @@ describe('Phase 3 — net à recevoir sur la valeur civile reçue', () => {
     family.persons[2].dateNaissance = '2012-01-01';
     const r = computeTransmission({
       family, patrimony: { date: REF, biensExistants: 500000, passifs: 0 }, liberalites: [],
-      params: {} as any, referenceDate: REF,
+      params: {} as TransmissionParams, referenceDate: REF,
       rawAssets: [{ id: 'rp', denomination: 'Maison', valeur_estimee: 500000, nature: 'Résidence principale', qualification_bien: 'Bien propre', detenteur: 'user' }],
     });
     const h = r.netBreakdown.heirs.find(x => x.personId === 'E1')!;
@@ -45,7 +46,7 @@ describe('Phase 3 — net à recevoir sur la valeur civile reçue', () => {
   it('assurance-vie de 200 k€ versée après 70 ans : capital compté une seule fois', () => {
     const r = computeTransmission({
       family: famille(1), patrimony: { date: REF, biensExistants: 0, passifs: 0 }, liberalites: [],
-      params: {} as any, referenceDate: REF, rawAssets: [],
+      params: {} as TransmissionParams, referenceDate: REF, rawAssets: [],
       avContracts: [{ id: 'av', niveaux: [{ beneficiaires: [{ beneficiaryId: 'E1', quotePart: 1 }] }], capitalDeces: 200000, primesAvant70: 0, primesApres70: 200000, detenteur: 'user' }],
     });
     // Droits 757 B : 169 500 − 100 000 = 69 500 taxables → 12 094 €.
@@ -60,7 +61,7 @@ describe('Phase 3 — net à recevoir sur la valeur civile reçue', () => {
     const don: Liberalite = { id: 'd1', type: 'donation', beneficiaireId: 'E1', valeur: 200000, valeurFiscaleActe: 200000, date: '2020-01-01', typeImputation: 'avance_part' };
     const r = computeTransmission({
       family: famille(2), patrimony: { date: REF, biensExistants: 100000, passifs: 0 }, liberalites: [don],
-      params: {} as any, referenceDate: REF,
+      params: {} as TransmissionParams, referenceDate: REF,
       rawAssets: [{ id: 'cpt', denomination: 'Compte', valeur_estimee: 100000, nature: 'Compte courant', qualification_bien: 'Bien propre', detenteur: 'user' }],
     });
     expect(net(r, 'E1')).toBe(-50000);
