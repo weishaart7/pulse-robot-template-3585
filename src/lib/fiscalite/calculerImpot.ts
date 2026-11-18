@@ -245,8 +245,11 @@ function calculerImpotApresQuotientFamilial(
  * ces derniers d'une restitution à laquelle ils ont droit. **2CK est
  * restituable** (« l'excédent vous sera restitué ») : soustrait sans
  * plancher, comme `creditImpotAssuranceVie`.
- * `reductionsImpot` (cadre 7, non restituables) s'imputent les premières sur
- * l'impôt après décote augmenté de l'impôt forfaitaire, plancher 0 ;
+ * `reductionsImpot` (non restituables : cadres 7 et 8, outre-mer, souscriptions,
+ * investissements locatifs) s'imputent sur le seul impôt au barème après décote,
+ * diminué du crédit égal à l'impôt français ; les impositions proportionnelles
+ * (impôt forfaitaire, 5XT, taxes annexes) restent dues en entier, l'excédent
+ * de réductions est perdu (simulateur officiel 2026) ;
  * `creditsImpotCadre7` (services à la personne) sont restituables, sans plancher.
  * `creditImpotEtrangerCadre8` (8VL, 8VM…8UM) est non restituable, imputé avec 2AB ;
  * `reprisesImpot` (8TF) s'ajoute à l'impôt net.
@@ -340,7 +343,9 @@ export function calculerImpot(
   const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;
   // Crédit égal à l'impôt français : quote-part de l'impôt au barème, arrondie, imputée en premier.
   const creditImpotFrancais = baseFrance > 0 ? Math.round(impotApresDecote * revenuCredit / baseFrance) : 0;
-  const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotAvantReductions - creditImpotFrancais));
+  // Réductions imputées sur le seul impôt au barème après décote : PFU, taux proportionnels et 5XT restent dus
+  // en entier (simulateur officiel 2026) ; l'excédent est perdu.
+  const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotApresDecote - creditImpotFrancais));
   const impotAvantCreditsFinaux = impotAvantReductions - creditImpotFrancais - reductionsImpotAppliquees;
 
   // 2AB (non restituable) plafonné sur l'impôt restant dû, avant les crédits restituables (2CK, assurance-vie).

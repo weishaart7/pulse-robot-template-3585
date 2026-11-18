@@ -213,6 +213,13 @@ fonciers (§4).
   restent, tirés du millésime par défaut. Hors paramètres pour l'instant : codes et libellés de cases
   datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), projections
   retraite (millésime par défaut).
+- **Imputation des réductions sur le seul impôt au barème.** Les réductions non restituables (cadres 7 et 8,
+  outre-mer, souscriptions, investissements locatifs) s'imputent sur l'impôt au barème après décote, diminué
+  du crédit égal à l'impôt français ; le PFU, les impositions à taux proportionnel (gains d'actionnariat à taux
+  historique, capital retraite 7,5 %, plus-values à long terme, brevets), l'impôt 5XT au taux marginal et les
+  taxes annexes s'ajoutent ensuite, dus en entier ; l'excédent de réductions est perdu. Les crédits d'impôt,
+  restituables ou non (2AB, 8VL, services à la personne…), s'imputent sur l'impôt total. Établi sur 14 cas du
+  simulateur officiel 2026 (dividendes au PFU et dons : aucune réduction), cas S12 de la non-régression.
 - **Contribution différentielle sur les hauts revenus (CDHR, art. 224 CGI, BOI-IR-CDHR-10).**
   [calculerCDHR.ts](src/lib/fiscalite/calculerCDHR.ts) : CDHR = 20 % × RREF − décote − (IR1 + CEHR1 + PREL1
   + majorations), arrondie, due si le RREF dépasse 250 000 € (500 000 € en imposition commune). RREF : RFR
@@ -1953,10 +1960,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
-- **Réductions du cadre 7 imputées sur l'impôt à taux proportionnel (PFU).** Sur le simulateur officiel
-  2026, 7UF n'ouvre aucune réduction quand l'impôt vient du seul PFU (400 000 € de dividendes, 10 000 € de
-  dons : 0 €), alors que `calculerImpot.ts` impute les réductions sur l'impôt au barème augmenté de
-  l'impôt forfaitaire (6 600 € accordés). Impôt sous-estimé ; règle d'imputation à exposer avant correctif.
+- **Plafonnement global des niches : avantages déclarés, non imputés.** Une réduction perdue faute d'impôt
+  au barème (voir imputation des réductions, §2) reste comptée dans le plafond de 10 000 €
+  (`calculerPlafonnementNiches.ts`). Excédent de plafonnement possiblement surestimé ; non vérifié sur le
+  simulateur officiel.
 - **Quotient familial — complément de 2 011 € du veuf non modélisé.** Quand les deux premières
   demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
   par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €

@@ -58,7 +58,7 @@ export interface ReductionsCreditsImpotResult {
   reductionDons66: number;
   /** Fraction des dons à 66 % au-delà de 20 % du revenu imposable : reportable 5 ans, sans effet cette année. */
   donsExcedentaires: number;
-  /** Réductions non restituables, imputées sur l'impôt après décote (voir calculerImpot.ts). */
+  /** Réductions non restituables, imputées sur le seul impôt au barème après décote (voir calculerImpot.ts). */
   totalReductions: number;
   /** Plafond des dépenses de services à la personne retenu. */
   plafondServicesPersonne: number;

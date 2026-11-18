@@ -219,6 +219,17 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 1, revenuFiscalReference: 390000, droitsSimples: 20701, reductions: 6600, impotProportionnel: 38400,
       cehr: 4200, cdhr: 21299, impotNet: 78000, prelevementsSociaux: 55800, tmi: 0.41 },
   },
+  S12: {
+    description: 'réductions imputées sur le seul impôt au barème : PFU dû en entier malgré les dons',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 30000 },
+      rcm: { case2dc: 20000, case2op: false },
+      reductions: { case7uf: 3000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 47000, droitsSimples: 1694, decote: 130, reductions: 1564,
+      impotProportionnel: 2560, impotNet: 2560, prelevementsSociaux: 3720, tmi: 0.11 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {

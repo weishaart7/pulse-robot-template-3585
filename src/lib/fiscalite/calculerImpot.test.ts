@@ -136,6 +136,37 @@ describe('calculerImpot — plafonnement avec les parts réelles (non-régressio
   });
 });
 
+describe("calculerImpot — imputation des réductions sur le seul impôt au barème (simulateur officiel 2026)", () => {
+  // calculerImpot(revenu, parts, situation, exonéré, résidence, impôt forfaitaire, 0XX, crédit AV, 2AB, 2CK,
+  //   RFR, réductions, crédits cadre 7, crédit cadre 8, reprises, revenu au taux marginal)
+  const impot = (revenu: number, forfaitaire: number, reductions: number, credits = 0, tauxMarginal = 0) =>
+    calculerImpot(revenu, makeParts(), 'celibataire', 0, 'metropole', forfaitaire, 0, 0, 0, 0, 0, reductions, credits, 0, 0, tauxMarginal);
+
+  it('PFU seul : aucune réduction imputée, le PFU reste dû', () => {
+    const r = impot(0, 2560, 660);
+    expect(r.reductionsImpot).toBe(0);
+    expect(r.impotNet).toBe(2560);
+  });
+
+  it('PFU et barème : réduction plafonnée à l\'impôt au barème après décote (1 564 €)', () => {
+    const r = impot(27000, 2560, 1980);
+    expect(r.impotApresDecote).toBe(1564);
+    expect(r.reductionsImpot).toBe(1564);
+    expect(r.impotNet).toBe(2560);
+  });
+
+  it('5XT : impôt au taux marginal dû au-delà des réductions (6 000 €)', () => {
+    const r = impot(37000, 0, 6600, 0, 20000);
+    expect(r.reductionsImpot).toBe(4204);
+    expect(r.impotTauxMarginal).toBe(6000);
+    expect(r.impotNet).toBe(6000);
+  });
+
+  it("crédit d'impôt (emploi à domicile) toujours imputé sur le PFU", () => {
+    expect(impot(0, 2560, 0, 1000).impotNet).toBe(1560);
+  });
+});
+
 describe('calculerImpot — taux marginal sous plafonnement du quotient familial', () => {
   const foyer = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
     situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
