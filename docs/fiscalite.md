@@ -1908,7 +1908,14 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   `plafondComplementaire` (1 801 € par demi-part P/F/S/W/G et invalidité d'une personne ou d'un enfant à
   charge ; 2 011 € pour le veuf quand les deux premières demi-parts sont plafonnées) sont portés par
   `calculerPartsFiscales.ts` mais ignorés par `calculerImpot.ts` : impôt surestimé pour les foyers
-  plafonnés concernés (brochure IR 2026 p. 79, 81, 84-85).
+  plafonnés concernés (brochure IR 2026 p. 79, 81, 84-85). Mesuré sur le simulateur officiel 2026 :
+  cas S4 (conjoint invalide, enfant invalide alterné) 2 702 € manquants ; cas S5 (veuf invalide) 524 €
+  manquants, absorbés à tort par les dons. Écarts figés en `it.fails` dans
+  `useFiscalOverview.simulateurOfficiel.test.ts`.
+- **Taux marginal affiché sous plafonnement du quotient familial.** `calculerImpot.ts` mesure le TMI
+  sur le quotient toutes parts comprises ; le simulateur officiel le mesure sur les parts de base quand
+  le plafonnement joue (S4 et S9 : 41 % officiel contre 30 % ; S5 : 30 % contre 11 %). Impôt inchangé,
+  mais le gain de CSG déductible anticipée du comparatif 2OP est sous-évalué. Écart figé en `it.fails`.
 - **Quotient familial — veuf avec seulement une personne invalide à charge.** Le maintien du quotient
   conjugal (1 part de veuvage) n'est accordé qu'avec un enfant à charge ou rattaché : il manque 1 part
   dans ce cas (brochure IR 2026 p. 85).
