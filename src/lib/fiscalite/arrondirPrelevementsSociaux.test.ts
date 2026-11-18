@@ -43,7 +43,14 @@ describe('arrondirPrelevementsSociaux', () => {
     expect(r.reductionExoneration).toBe(2080);
   });
 
-  it('8TK réduit toutes les contributions, plafonné à la base', () => {
+  it('neutralisation 4BK/4BL arrondie contribution par contribution, puis retranchée (simulateur)', () => {
+    expect(arrondirPrelevementsSociaux(bases({ foncier: 7000, neutraliseFoncier: 3500 })).total).toBe(601);
+    expect(arrondirPrelevementsSociaux(bases({ foncier: 7000, neutraliseFoncier: 4900 })).total).toBe(361);
+    expect(arrondirPrelevementsSociaux(bases({ foncier: 6993, neutraliseFoncier: 2331 })).total).toBe(801);
+    expect(arrondirPrelevementsSociaux(bases({ foncier: 10010, neutraliseFoncier: 3333 })).total).toBe(1149);
+  });
+
+  it('neutralisation de toutes les contributions, plafonnée à la base', () => {
     const r = arrondirPrelevementsSociaux(bases({ patrimoine: 10000, neutralisePatrimoine: 15000 }));
     expect(r.total).toBe(0);
     expect(r.neutralisation8TK).toBe(1860);

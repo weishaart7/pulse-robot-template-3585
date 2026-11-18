@@ -29,7 +29,7 @@ Commits déjà faits sur `main` (poussés le 17 nov. 2026) :
 | `815e66d` | Abattement personnes âgées (art. 157 bis) |
 | `5d21a14` | Plafond quart de part en résidence alternée à 903,5 € |
 
-8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère) ; reste 2 € d'arrondi sur les PS de 4BK (603 € contre 601 €).
+8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère). L'arrondi des PS de 4BK/4BL est aligné aussi (PS du foncier entier, moins ceux de la fraction arrondis par contribution).
 
 Décisions prises : quand le simulateur et la loi ou ClickImpôts divergent, Aurevia suit le simulateur officiel 2026 (3SB hors RFR, assurance-vie à 18,6 %, 1NX sans PS).
 

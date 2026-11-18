@@ -1618,8 +1618,11 @@ cadre 8 est enregistré).
   exactement égale à leur total brut ; sinon ces revenus restent imposés sans crédit et une alerte
   s'affiche (1AF 5 000 € : 8TK 5 000 € → 8 619 €, 8TK 4 500 € ou 5 001 € → 9 158 €). Avec du foncier, le
   simulateur refuse le calcul si 8TK diffère. Les anciennes colonnes de ventilation `case_8tk186` et
-  `case_8tk172` ne sont plus lues (toujours en base). Écart connu : PS de 4BK arrondis à 603 € au lieu de
-  601 € (4BE 10 000 € + 4BK 5 000 €).
+  `case_8tk172` ne sont plus lues (toujours en base).
+- **PS de la fraction 4BK/4BL** : calculés sur le foncier entier, puis diminués des PS de la fraction,
+  arrondis contribution par contribution (CSG-CRDS 9,7 %, solidarité 7,5 %) — simulateur officiel
+  2026 : 4BE 10 000 € + 4BK 5 000 € → 1 204 − (340 + 263) = 601 € ; neutralisation seulement si le crédit
+  est accordé (8TK conforme).
 - **Crédit égal à l'impôt étranger** (`8PL`/`8VL`, `8PM`/`8VM`+`8WM`+`8UM`), non restituable, imputé
   avec 2AB : par catégorie, min(impôt étranger, impôt français correspondant), l'impôt français
   s'entendant de l'IR augmenté des PS (brochure IR 2026 p. 366). Imputé d'abord sur l'IR, le reliquat

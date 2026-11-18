@@ -21,7 +21,7 @@ export interface BasesPrelevementsSociaux {
   csgCrdsPatrimoineSeule: number;
   /** Revenus fonciers à 17,2 % (2044 et cadre 4). */
   foncier: number;
-  /** 8TK ventilé : fractions neutralisées par le crédit égal à l'impôt français. */
+  /** Fractions neutralisées par le crédit égal à l'impôt français (4BK/4BL), comprises dans les bases ci-dessus. */
   neutralisePatrimoine: number;
   neutraliseFoncier: number;
   /** 8SH/8SI : exonération de CSG-CRDS de tous les revenus du patrimoine. */
@@ -52,7 +52,7 @@ export interface PrelevementsSociauxArrondis {
   bruts: number;
   /** Retranché par l'exonération de CSG-CRDS (8SH/8SI, 8RF…8RM). */
   reductionExoneration: number;
-  /** Retranché par 8TK ventilé. */
+  /** Retranché par le crédit égal à l'impôt français (4BK/4BL). */
   neutralisation8TK: number;
   total: number;
 }
@@ -68,22 +68,28 @@ const arrondi = (v: number) => Math.round(Math.round(v * 100) / 100);
  * 5 487 €). La solidarité (7,5 %) porte sur le patrimoine et le foncier ensemble ; la CSG-CRDS
  * diffère (11,1 % contre 9,7 %). Le carried-interest non qualifiant (1NX) suit les mêmes taux que le
  * patrimoine et rejoint ses lignes ; sa contribution de 10 % rejoint celle de 1TT/3VN.
- * 8TK réduit la base de toutes les contributions, l'exonération celle de la CSG-CRDS seule.
+ * La neutralisation (crédit égal à l'impôt français, 4BK/4BL) est calculée et arrondie contribution
+ * par contribution, puis retranchée des contributions du foyer (simulateur officiel 2026 : 4BE 10 000 €
+ * + 4BK 5 000 € → 1 204 − (340 + 263) = 601 €) ; l'exonération réduit la base de la CSG-CRDS seule.
  */
 export function arrondirPrelevementsSociaux(b: BasesPrelevementsSociaux): PrelevementsSociauxArrondis {
   const historique = positif(b.historique155 ?? 0);
   const lignes = (neutralise: boolean, exonere: boolean) => {
-    const patrimoine = positif(b.patrimoine - (neutralise ? b.neutralisePatrimoine : 0));
-    const foncier = positif(b.foncier - (neutralise ? b.neutraliseFoncier : 0));
+    const patrimoine = positif(b.patrimoine);
+    const foncier = positif(b.foncier);
+    const nPatrimoine = neutralise ? Math.min(positif(b.neutralisePatrimoine), patrimoine) : 0;
+    const nFoncier = neutralise ? Math.min(positif(b.neutraliseFoncier), foncier) : 0;
     const csgCrdsPatrimoine = exonere && b.exonerationTotaleCsgCrds ? 0
-      : arrondi(positif(patrimoine + b.csgCrdsPatrimoineSeule - (exonere ? b.exonerePatrimoine : 0)) * TAUX_CSG_CRDS_PATRIMOINE
-        + historique * TAUX_CRDS_HISTORIQUE);
+      : positif(arrondi(positif(patrimoine + b.csgCrdsPatrimoineSeule - (exonere ? b.exonerePatrimoine : 0)) * TAUX_CSG_CRDS_PATRIMOINE
+        + historique * TAUX_CRDS_HISTORIQUE) - arrondi(nPatrimoine * TAUX_CSG_CRDS_PATRIMOINE));
     const csgCrdsFoncier = exonere && b.exonerationTotaleCsgCrds ? 0
-      : arrondi(positif(foncier - (exonere ? b.exonereFoncier : 0)) * TAUX_CSG_CRDS_FONCIER);
+      : positif(arrondi(positif(foncier - (exonere ? b.exonereFoncier : 0)) * TAUX_CSG_CRDS_FONCIER)
+        - arrondi(nFoncier * TAUX_CSG_CRDS_FONCIER));
     return {
       csgCrdsPatrimoine,
       csgCrdsFoncier,
-      solidarite: arrondi((patrimoine + foncier) * TAUX_PRELEVEMENT_SOLIDARITE + historique * TAUX_PS_HISTORIQUE),
+      solidarite: positif(arrondi((patrimoine + foncier) * TAUX_PRELEVEMENT_SOLIDARITE + historique * TAUX_PS_HISTORIQUE)
+        - arrondi((nPatrimoine + nFoncier) * TAUX_PRELEVEMENT_SOLIDARITE)),
     };
   };
   const somme = (l: ReturnType<typeof lignes>) => l.csgCrdsPatrimoine + l.csgCrdsFoncier + l.solidarite;

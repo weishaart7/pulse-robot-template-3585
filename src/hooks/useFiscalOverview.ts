@@ -563,7 +563,7 @@ export function useFiscalOverview(): FiscalOverview {
       const impot = calculer(creditEtranger.creditImpot + prelevementSourceDivers.creditsNonRestituables);
       const somme = (...v: (number | null)[]) => v.reduce<number>((t, x) => t + Math.max(0, x ?? 0), 0);
       // Bases du foyer par contribution, arrondies une seule fois (voir arrondirPrelevementsSociaux.ts).
-      // 2044 hors fraction 4BL (crédit égal à l'impôt français, qui neutralise aussi les PS).
+      // Fraction 4BK/4BL : crédit égal à l'impôt français, qui neutralise aussi ses PS.
       const ps = arrondirPrelevementsSociaux({
         patrimoine: prelevementsSociauxCapitauxMobiliers.baseImposable + prelevementsSociauxCapitauxMobiliers.baseAssuranceVie
           + prelevementsSociauxPensionsRetraitesRentes.baseImposableRentesViageres
@@ -572,12 +572,14 @@ export function useFiscalOverview(): FiscalOverview {
           + plusValuesGainsDivers.basePrelevementsSociaux
           + revenusNonSalaries.basePrelevementsSociaux,
         csgCrdsPatrimoineSeule: somme(capitauxMobiliersInput.case2di),
-        foncier: Math.max(0, (revenusFonciers?.revenuFoncierNetImposable ?? 0) - revenusFonciers2042.deductionReel4BL)
-          + revenusFonciers2042.totalNetImposable + plusValuesGainsDivers.basePrelevementsSociaux172,
+        // Foncier entier, fraction 4BK/4BL comprise : ses PS sont retranchés arrondis (neutraliseFoncier).
+        foncier: (revenusFonciers?.revenuFoncierNetImposable ?? 0) + revenusFonciers2042.totalNetImposable
+          + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais - revenusFonciers2042.deductionReel4BL
+          + plusValuesGainsDivers.basePrelevementsSociaux172,
         // 3XN (report, taux 2017 de 17,2 %) suit les lignes du foncier (simulateur officiel 2026).
         historique155: plusValuesGainsDivers.basePrelevementsSociaux155,
         neutralisePatrimoine: 0,
-        neutraliseFoncier: 0,
+        neutraliseFoncier: verification8TK.creditAccorde ? revenusFonciers2042.revenuCreditImpotEgalImpotFrancais : 0,
         exonerationTotaleCsgCrds: exonerationTotale,
         exonerePatrimoine: somme(prelevementSourceInput.case8rv, prelevementSourceInput.case8rc, prelevementSourceInput.case8rm),
         exonereFoncier: somme(prelevementSourceInput.case8rf),
