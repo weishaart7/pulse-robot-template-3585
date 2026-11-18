@@ -39,6 +39,10 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     tauxPremiereTranche: 0.03,
     tauxSecondeTranche: 0.04,
   },
+  abattementsDixPourCent: {
+    salaires: { plancher: 509, plafond: 14555 },
+    pensions: { plancher: 454, plafondFoyer: 4439 },
+  },
   abattementsSpeciaux: {
     personnesAgees: { seuilPlein: 17670, seuilReduit: 28430, montantPlein: 2822, montantReduit: 1411 },
     rattachement: 6855,

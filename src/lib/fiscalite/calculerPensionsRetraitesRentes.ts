@@ -1,9 +1,14 @@
 import { PensionsRetraitesRentesInput, RevenusExoneresTauxEffectifInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
+
+type AbattementPensions = ParametresFiscaux['abattementsDixPourCent']['pensions'];
 
 const PENSION_ABATTEMENT_TAUX = 0.10;
-const PENSION_ABATTEMENT_PLANCHER = 454;
-/** Plafond global par foyer de l'abattement de 10 % sur les pensions (art. 158-5-a CGI), commun à toutes les pensions du foyer y compris 1AH. */
-export const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
+/**
+ * Plafond global par foyer de l'abattement de 10 % sur les pensions (art. 158-5-a CGI), commun à toutes
+ * les pensions du foyer y compris 1AH — millésime par défaut (projections retraite).
+ */
+export const PENSION_ABATTEMENT_PLAFOND_FOYER = PARAMETRES_PAR_DEFAUT.abattementsDixPourCent.pensions.plafondFoyer;
 
 /**
  * Abattement de 10 % sur une pension (plancher 454 €, jamais supérieur à la
@@ -11,9 +16,12 @@ export const PENSION_ABATTEMENT_PLAFOND_FOYER = 4439;
  * des abattements du foyer, pas par pensionné — appliqué séparément sur le
  * total par l'appelant (voir calculerPensionsRetraitesRentes ci-dessous).
  */
-export function abattementPensionDeclarant(pension: number): number {
+export function abattementPensionDeclarant(
+  pension: number,
+  abattement: AbattementPensions = PARAMETRES_PAR_DEFAUT.abattementsDixPourCent.pensions,
+): number {
   if (pension <= 0) return 0;
-  return Math.min(pension, Math.max(PENSION_ABATTEMENT_PLANCHER, pension * PENSION_ABATTEMENT_TAUX));
+  return Math.min(pension, Math.max(abattement.plancher, pension * PENSION_ABATTEMENT_TAUX));
 }
 
 type PensionsExonerees = Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh' | 'case1ch' | 'case1dh'>;
@@ -141,7 +149,9 @@ export interface PensionsRetraitesRentesResult {
 export function calculerPensionsRetraitesRentes(
   input: PensionsRetraitesRentesInput,
   pensionsExonerees: PensionsExonerees = PENSIONS_EXONEREES_VIDES,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): PensionsRetraitesRentesResult {
+  const abattement = parametres.abattementsDixPourCent.pensions;
   const pensionDeclarant1 = (input.case1as ?? 0) + (input.case1az ?? 0) + (input.case1ao ?? 0) + (input.case1am ?? 0);
   const pensionDeclarant2 = (input.case1bs ?? 0) + (input.case1bz ?? 0) + (input.case1bo ?? 0) + (input.case1bm ?? 0);
   // Personnes à charge (jumelles 1CS/1CZ/1CO/1CM ↔ 1AS/1AZ/1AO/1AM, 1CH ↔ 1AH) : abattement de 10 %
@@ -156,16 +166,16 @@ export function calculerPensionsRetraitesRentes(
   const pensionExoneree2 = pensionsExonerees.case1bh ?? 0;
   const baseAbattement1 = pensionDeclarant1 + pensionEtrangere1 + pensionExoneree1;
   const baseAbattement2 = pensionDeclarant2 + pensionEtrangere2 + pensionExoneree2;
-  const abattementBrut1 = abattementPensionDeclarant(baseAbattement1);
-  const abattementBrut2 = abattementPensionDeclarant(baseAbattement2);
+  const abattementBrut1 = abattementPensionDeclarant(baseAbattement1, abattement);
+  const abattementBrut2 = abattementPensionDeclarant(baseAbattement2, abattement);
   const exonereePac1 = pensionsExonerees.case1ch ?? 0;
   const exonereePac2 = pensionsExonerees.case1dh ?? 0;
   const baseAbattementPac1 = pensionPac1 + exonereePac1;
   const baseAbattementPac2 = pensionPac2 + exonereePac2;
-  const abattementBrutPac1 = abattementPensionDeclarant(baseAbattementPac1);
-  const abattementBrutPac2 = abattementPensionDeclarant(baseAbattementPac2);
+  const abattementBrutPac1 = abattementPensionDeclarant(baseAbattementPac1, abattement);
+  const abattementBrutPac2 = abattementPensionDeclarant(baseAbattementPac2, abattement);
   const abattementBrutTotal = abattementBrut1 + abattementBrut2 + abattementBrutPac1 + abattementBrutPac2;
-  const abattementCombine = Math.min(PENSION_ABATTEMENT_PLAFOND_FOYER, abattementBrutTotal);
+  const abattementCombine = Math.min(abattement.plafondFoyer, abattementBrutTotal);
   const facteurPlafond = abattementBrutTotal > 0 ? abattementCombine / abattementBrutTotal : 0;
 
   const netDeclarant1 = baseAbattement1 - abattementBrut1 * facteurPlafond;

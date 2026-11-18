@@ -42,6 +42,13 @@ export interface ParametresFiscaux {
     readonly tauxPremiereTranche: number;
     readonly tauxSecondeTranche: number;
   };
+  /** Abattements de 10 % (art. 83 3° et 158-5-a CGI) : plancher et plafond revalorisés. */
+  readonly abattementsDixPourCent: {
+    /** Par déclarant ou personne à charge. */
+    readonly salaires: { readonly plancher: number; readonly plafond: number };
+    /** Plancher par pensionné, plafond commun au foyer. */
+    readonly pensions: { readonly plancher: number; readonly plafondFoyer: number };
+  };
   readonly abattementsSpeciaux: {
     /** Personnes âgées ou invalides (art. 157 bis CGI). */
     readonly personnesAgees: {

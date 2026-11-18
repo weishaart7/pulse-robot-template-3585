@@ -417,10 +417,10 @@ export function useFiscalOverview(): FiscalOverview {
     const simuler = (capitauxMobiliersInput: RevenusCapitauxMobiliersInput & { case2op: boolean }) => {
 
       // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
-      const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput);
+      const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput, PARAMETRES);
       const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput, revenuSalaires.gainsActionnariatNetImposable);
       // 1AH/1BH dans le pool d'abattement des pensions : plafond de 4 439 € unique pour le foyer.
-      const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput);
+      const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput, PARAMETRES);
       const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
         exoneresInput,
         revenuSalaires.salairesNetImposablesExoneresTauxEffectif,

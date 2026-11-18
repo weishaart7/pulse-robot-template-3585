@@ -1,5 +1,8 @@
 import { basesGainsSalariaux } from './calculerGainsActionnariatSalarie';
 import { GainsActionnariatSalarieInput, RevenusExoneresTauxEffectifInput, RevenusSalairesInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
+
+type AbattementSalaires = ParametresFiscaux['abattementsDixPourCent']['salaires'];
 
 /** Sous-ensemble de `RevenusExoneresTauxEffectifInput` utile au pool 1AJ/1AC par déclarant. */
 export type RevenusExoneresPourPoolSalaires = Pick<
@@ -8,8 +11,6 @@ export type RevenusExoneresPourPoolSalaires = Pick<
 >;
 
 const ABATTEMENT_TAUX = 0.10;
-const ABATTEMENT_PLANCHER = 509;
-const ABATTEMENT_PLAFOND = 14555;
 
 /**
  * Plafond annuel d'exonération des heures supplémentaires/complémentaires et
@@ -256,6 +257,7 @@ export function calculerDeclarant(
   fraisReelsExonere: number | null = null,
   remunerationsActionnariat = 0,
   remunerationsExonereesRFR = 0,
+  abattement: AbattementSalaires = PARAMETRES_PAR_DEFAUT.abattementsDixPourCent.salaires,
 ): RevenuSalairesDeclarantDetail {
   const baseApresAbattementSpecifique = remunerationsBrutes;
   const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif
@@ -264,8 +266,8 @@ export function calculerDeclarant(
   const abattementForfaitaire = baseTotale <= 0
     ? 0
     : Math.min(
-        ABATTEMENT_PLAFOND,
-        Math.max(ABATTEMENT_PLANCHER, baseTotale * ABATTEMENT_TAUX),
+        abattement.plafond,
+        Math.max(abattement.plancher, baseTotale * ABATTEMENT_TAUX),
         baseTotale,
       );
 
@@ -306,7 +308,7 @@ export function calculerDeclarant(
   const poolRFR = baseTotale + exonere;
   const abattementPoolRFR = poolRFR <= 0
     ? 0
-    : Math.min(ABATTEMENT_PLAFOND, Math.max(ABATTEMENT_PLANCHER, poolRFR * ABATTEMENT_TAUX), poolRFR);
+    : Math.min(abattement.plafond, Math.max(abattement.plancher, poolRFR * ABATTEMENT_TAUX), poolRFR);
   const exonereRetenuRFR = exonere <= 0 ? 0 : utiliseFraisReels ? exonere : exonere * (1 - abattementPoolRFR / poolRFR);
 
   return {
@@ -375,7 +377,9 @@ export function calculerRevenuSalaires(
   input: RevenusSalairesInput,
   exoneres?: RevenusExoneresPourPoolSalaires,
   gains?: GainsActionnariatSalarieInput,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): RevenuSalairesResult {
+  const abattement = parametres.abattementsDixPourCent.salaires;
   const basesGains = gains ? basesGainsSalariaux(gains) : { declarant1: 0, declarant2: 0 };
   const surplus1gh = Math.max(0, (input.case1gh ?? 0) - PLAFOND_EXONERATION_1GH);
   const surplus1hh = Math.max(0, (input.case1hh ?? 0) - PLAFOND_EXONERATION_1GH);
@@ -409,7 +413,7 @@ export function calculerRevenuSalaires(
     const surplusD = Math.max(0, (d ?? 0) - PLAFOND_EXONERATION_1AD);
     const remunerations = (j ?? 0) + (a ?? 0) + (p ?? 0) + (g ?? 0) + (b ?? 0) + (f ?? 0) + surplusH + surplusD;
     const exonereRFR = Math.min(h ?? 0, PLAFOND_EXONERATION_1GH) + Math.min(d ?? 0, PLAFOND_EXONERATION_1AD) + (pb ?? 0);
-    return calculerDeclarant(remunerations, 0, k ?? null, 0, cc ?? 0, ce ?? null, 0, exonereRFR);
+    return calculerDeclarant(remunerations, 0, k ?? null, 0, cc ?? 0, ce ?? null, 0, exonereRFR, abattement);
   };
   const pac1 = pac(input.case1cj, input.case1ca, input.case1cp, input.case1cg, input.case1ib, input.case1if,
     input.case1ck, input.case1cd, input.case1ih, input.case1pd, exoneres?.case1cc, exoneres?.case1ce);
@@ -418,11 +422,11 @@ export function calculerRevenuSalaires(
 
   const declarant1 = calculerDeclarant(
     remunerations1, input.case1ga ?? 0, input.case1ak ?? null, input.case1af ?? 0, exoneres?.case1ac ?? 0,
-    exoneres?.case1ae ?? null, basesGains.declarant1, exonereRFR1,
+    exoneres?.case1ae ?? null, basesGains.declarant1, exonereRFR1, abattement,
   );
   const declarant2 = calculerDeclarant(
     remunerations2, input.case1ha ?? 0, input.case1bk ?? null, input.case1bf ?? 0, exoneres?.case1bc ?? 0,
-    exoneres?.case1be ?? null, basesGains.declarant2, exonereRFR2,
+    exoneres?.case1be ?? null, basesGains.declarant2, exonereRFR2, abattement,
   );
 
   const indemnitesPrejudiceMoral = (input.case1pm ?? 0) + (input.case1qm ?? 0);
