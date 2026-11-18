@@ -40,6 +40,7 @@ Commits du 18 nov. 2026, poussés sur `main` :
 | `39eccaf` | 8TK : contrôle du crédit égal à l'impôt français ; rentes 1AR…1DR sans crédit |
 | `a0fb240` | Arrondi des PS de la fraction 4BK/4BL |
 | `c442801` | Colonnes `case_8tk186` et `case_8tk172` supprimées en base (table vide) |
+| `eb23a37` | 17 erreurs de typecheck préexistantes corrigées (transmission, immobilier, services) |
 
 8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère). L'arrondi des PS de 4BK/4BL est aligné aussi (PS du foncier entier, moins ceux de la fraction arrondis par contribution). Les anciennes colonnes de ventilation de 8TK sont supprimées en base.
 
@@ -133,6 +134,6 @@ Traiter un lot à la fois : exposer les règles vérifiées sur le simulateur et
 ### À savoir
 
 - Le simulateur 2027 (revenus 2026) change le sens de certains codes (7UQ, frais réels 1AE) : ne pas l'utiliser comme référence pour Aurevia.
-- Typecheck : 17 erreurs préexistantes hors fiscalité (transmission, immobilier, `societeService`, `foyerFiscalService`, `patrimoineAcquetsService`).
+- Typecheck : 0 erreur depuis `eb23a37` (18 nov. 2026). Lint : `any` préexistants, hors périmètre.
 - Les écritures en base passent par la MCP Supabase (projet `npypkocowjkszxtecxzq`) ; le projet était en pause et a été réactivé le 16 novembre 2026.
 - Aucun compte de test Aurevia n'existe : l'inscription a échoué (domaines de test refusés, quota d'e-mails Supabase). Les écrans n'ont donc pas été vérifiés dans le navigateur.
