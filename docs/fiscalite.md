@@ -452,8 +452,10 @@ fonciers (§4).
   l'arrondi, **hors quotient familial, plafonnement, réduction outre-mer et décote**, mécanismes propres
   au barème progressif (la décote est explicitement limitée par l'art. 197 I 4° CGI à la « cotisation
   résultant du barème »). Le TMI reflète la tranche du revenu mondial fictif (pas seulement la part
-  française, ni l'impôt forfaitaire qui n'entre dans aucun quotient), cohérent avec le taux marginal réel
-  du foyer sur la part barème. 45 tests couvrent le barème tranche par tranche, le quotient à plusieurs
+  française, ni l'impôt forfaitaire qui n'entre dans aucun quotient), divisé par les parts totales, ou
+  par `partsBase` quand le plafonnement joue (`quotientTauxMarginal`) : l'avantage étant figé, chaque
+  euro supplémentaire est taxé sur les parts de base (simulateur officiel 2026, y compris pour 5XT/5XU,
+  et y compris quand la réduction complémentaire absorbe le supplément de plafonnement). 45 tests couvrent le barème tranche par tranche, le quotient à plusieurs
   parts, le plafonnement (actif/inactif/désactivé), le taux effectif (progressivité, non-imposition de la
   part exonérée, TMI sur le revenu mondial, cas limites à zéro), la réduction outre-mer (métropole
   neutre, 30 %/40 % sous et au-delà du plafond, impact sur l'impôt net par rapport à la métropole),
@@ -1910,10 +1912,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
   par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €
   par demi-part est, elle, appliquée (voir §2).
-- **Taux marginal affiché sous plafonnement du quotient familial.** `calculerImpot.ts` mesure le TMI
-  sur le quotient toutes parts comprises ; le simulateur officiel le mesure sur les parts de base quand
-  le plafonnement joue (S4 et S9 : 41 % officiel contre 30 % ; S5 : 30 % contre 11 %). Impôt inchangé,
-  mais le gain de CSG déductible anticipée du comparatif 2OP est sous-évalué. Écart figé en `it.fails`.
 - **Quotient familial — veuf avec seulement une personne invalide à charge.** Le maintien du quotient
   conjugal (1 part de veuvage) n'est accordé qu'avec un enfant à charge ou rattaché : il manque 1 part
   dans ce cas (brochure IR 2026 p. 85).

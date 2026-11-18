@@ -97,7 +97,13 @@ export interface ImpotResult {
   /** Reprises de réductions ou crédits d'impôt (8TF). */
   reprisesImpot: number;
   impotNet: number;
+  /**
+   * Taux marginal : tranche de `quotientTauxMarginal`. Sous plafonnement du quotient familial, l'avantage
+   * est figé et chaque euro supplémentaire est taxé sur les parts de base (simulateur officiel 2026).
+   */
   tmi: number;
+  /** Revenu mondial fictif divisé par les parts retenues pour le TMI : `partsBase` si plafonné, sinon `nombreParts`. */
+  quotientTauxMarginal: number;
   /** Impôt sur le bénéfice agricole excédant la moyenne triennale (5XT/5XU) : `tmi` × montant, ajouté après la décote. */
   impotTauxMarginal: number;
   /** Taxes annexes dues avec l'IR (agents généraux, 5QM/5RM), hors réductions et crédits d'impôt. */
@@ -350,7 +356,9 @@ export function calculerImpot(
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
-  const tmi = tmiPourQuotient(parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0);
+  const partsTauxMarginal = plafonnementApplique ? parts.partsBase : parts.nombreParts;
+  const quotientTauxMarginal = partsTauxMarginal > 0 ? revenuMondialFictif / partsTauxMarginal : 0;
+  const tmi = tmiPourQuotient(quotientTauxMarginal);
   const impotTauxMarginal = Math.round(Math.max(0, revenuTauxMarginal) * tmi);
   const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;
   // Crédit égal à l'impôt français : quote-part de l'impôt au barème, arrondie, imputée en premier.
@@ -383,6 +391,7 @@ export function calculerImpot(
       + revenuExonereRetenuPourRFR),
     nombreParts: parts.nombreParts,
     quotientFamilial: parts.nombreParts > 0 ? revenuMondialFictif / parts.nombreParts : 0,
+    quotientTauxMarginal,
     impotSansMajorations,
     impotAvecMajorations,
     avantageQuotientFamilial,

@@ -13,9 +13,9 @@ const TaxRateCard = ({ overview }: { overview: FiscalOverview }) => {
   const tranches = BAREME_2026.map((t, i) => ({ ...t, seuilBas: i === 0 ? 0 : BAREME_2026[i - 1].seuil }));
   const active = tranches.find((t) => t.taux === impot.tmi);
   const position = active && active.seuil !== Infinity && active.seuil > active.seuilBas
-    ? Math.min(100, Math.max(0, ((impot.quotientFamilial - active.seuilBas) / (active.seuil - active.seuilBas)) * 100))
+    ? Math.min(100, Math.max(0, ((impot.quotientTauxMarginal - active.seuilBas) / (active.seuil - active.seuilBas)) * 100))
     : 0;
-  const marge = active && active.seuil !== Infinity ? Math.max(0, active.seuil - impot.quotientFamilial) : null;
+  const marge = active && active.seuil !== Infinity ? Math.max(0, active.seuil - impot.quotientTauxMarginal) : null;
 
   return (
     <div className="border-b border-border px-8 py-6">
@@ -48,8 +48,9 @@ const TaxRateCard = ({ overview }: { overview: FiscalOverview }) => {
             <div className="rounded-[2px] bg-secondary/50 p-3">
               <p className="text-[11.5px] text-muted-foreground">
                 Quotient familial ({impot.revenuExonereTauxEffectif > 0 ? 'revenu mondial' : 'revenu'} / part)
+                {impot.plafonnementApplique && ' (parts de base, plafonnement)'}
               </p>
-              <p className="mt-1 text-[16px] font-medium tabular-nums">{formatEuros(impot.quotientFamilial)}</p>
+              <p className="mt-1 text-[16px] font-medium tabular-nums">{formatEuros(impot.quotientTauxMarginal)}</p>
             </div>
             <div className="rounded-[2px] bg-secondary/50 p-3">
               <p className="text-[11.5px] text-muted-foreground">Marge avant tranche supérieure</p>

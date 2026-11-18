@@ -136,6 +136,36 @@ describe('calculerImpot — plafonnement avec les parts réelles (non-régressio
   });
 });
 
+describe('calculerImpot — taux marginal sous plafonnement du quotient familial', () => {
+  const foyer = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
+    situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
+    enfantsMajeursRattaches: 0, parentIsole: false, ancienParentIsole: false, invaliditeDeclarant1: false,
+    invaliditeDeclarant2: false, ancienCombattantDeclarant1: false, ancienCombattantDeclarant2: false,
+    veufAncienCombattant: false, veuveDeGuerre: false, ...overrides,
+  });
+  const unEnfant = foyer({ enfantsCharge: [{ anneeNaissance: 2011, invalide: false, residenceAlternee: false }] });
+
+  it('sans plafonnement : quotient sur toutes les parts, inchangé', () => {
+    const result = calculerImpot(40000, calculerPartsFiscales(unEnfant), 'marie');
+    expect(result.plafonnementApplique).toBe(false);
+    expect(result.quotientTauxMarginal).toBe(16000);
+    expect(result.tmi).toBe(0.11);
+  });
+
+  it('plafonné : quotient sur les parts de base (simulateur officiel 2026, S9 : 41 % et non 30 %)', () => {
+    const result = calculerImpot(182800, calculerPartsFiscales(unEnfant), 'marie');
+    expect(result.plafonnementApplique).toBe(true);
+    expect(result.quotientTauxMarginal).toBe(91400);
+    expect(result.tmi).toBe(0.41);
+  });
+
+  it('5XT plafonné taxé au TMI des parts de base (simulateur officiel 2026 : 10 000 € → 4 100 €)', () => {
+    const result = calculerImpot(209000, calculerPartsFiscales(unEnfant), 'marie', 0, 'metropole', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10000);
+    expect(result.impotApresDecote).toBe(51484);
+    expect(result.impotTauxMarginal).toBe(4100);
+  });
+});
+
 describe('calculerImpot — réduction complémentaire (art. 197 I 2 CGI)', () => {
   const foyer = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
     situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
@@ -171,6 +201,15 @@ describe('calculerImpot — réduction complémentaire (art. 197 I 2 CGI)', () =
     const result = calculerImpot(63100, parts, 'veuf');
     expect(result.reductionComplementaireQuotientFamilial).toBe(524);
     expect(result.impotApresDecote).toBe(2475);
+  });
+
+  it('TMI sur les parts de base sous plafonnement, veuf compris (simulateur officiel 2026 : 30 %)', () => {
+    const parts = calculerPartsFiscales(foyer({
+      situationFamille: 'veuf', invaliditeDeclarant1: true, enfantsCharge: [enfant({ invalide: true })],
+    }));
+    const result = calculerImpot(63100, parts, 'veuf');
+    expect(result.quotientTauxMarginal).toBe(63100);
+    expect(result.tmi).toBe(0.3);
   });
 
   it("nulle sans demi-part qui y ouvre droit, même plafonné", () => {
