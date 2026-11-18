@@ -74,7 +74,6 @@ import {
   RevenusFonciers2042Input,
   RevenusFonciers2042Result,
   REVENUS_NON_SALARIES_VIDE,
-  SEUIL_DEFICIT_AGRICOLE,
   RevenusNonSalariesResult,
   ChargesDeductiblesInput,
   ChargesDeductiblesResult,
@@ -289,7 +288,7 @@ export interface FiscalOverview {
   revenusFonciers2042: RevenusFonciers2042Result;
   /** Cadre 5 (2042-C-PRO), régimes micro — voir calculerRevenusNonSalaries.ts. */
   revenusNonSalaries: RevenusNonSalariesResult;
-  /** Déficit agricole de l'année retranché du revenu global (0 si les autres revenus nets dépassent SEUIL_DEFICIT_AGRICOLE). */
+  /** Déficit agricole de l'année retranché du revenu global (0 si les autres revenus nets dépassent le seuil du millésime). */
   deficitAgricoleImpute: number;
   /** Cadre 6 (charges déductibles, déficits globaux antérieurs, 6GH) — voir calculerChargesDeductibles.ts. */
   chargesDeductibles: ChargesDeductiblesResult;
@@ -435,7 +434,7 @@ export function useFiscalOverview(): FiscalOverview {
       const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
       const parts = calculerPartsFiscales(foyerInput, PARAMETRES);
       const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
-      const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE);
+      const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE, PARAMETRES);
       const revenusFonciers2042 = calculerRevenusFonciers2042(
         fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT,
         revenusFonciers?.revenuFoncierNetImposable ?? null,
@@ -448,7 +447,7 @@ export function useFiscalOverview(): FiscalOverview {
         - revenusFonciers2042.deficitImputableRevenuGlobal
         + revenusNonSalaries.totalNetImposable;
       // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
-      const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= SEUIL_DEFICIT_AGRICOLE ? revenusNonSalaries.deficitAgricole : 0;
+      const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= PARAMETRES.nonSalaries.seuilDeficitAgricole ? revenusNonSalaries.deficitAgricole : 0;
       const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
       const chargesDeductibles = calculerChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput);
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;

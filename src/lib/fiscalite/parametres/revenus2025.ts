@@ -43,6 +43,15 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     salaires: { plancher: 509, plafond: 14555 },
     pensions: { plancher: 454, plafondFoyer: 4439 },
   },
+  nonSalaries: {
+    seuilMicroVentes: 188_700,
+    seuilMicroServices: 77_700,
+    seuilMicroMeubles: 77_700,
+    seuilMicroMeublesNonClasses: 15_000,
+    seuilMicroBA: 120_000,
+    seuilDeficitAgricole: 128_826,
+    seuilCotisationsChambresHotes: 6_123,
+  },
   abattementsSpeciaux: {
     personnesAgees: { seuilPlein: 17670, seuilReduit: 28430, montantPlein: 2822, montantReduit: 1411 },
     rattachement: 6855,

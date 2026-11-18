@@ -1,15 +1,17 @@
 import { TAUX_PS_CAPITAUX_MOBILIERS } from './calculerPrelevementsSociauxCapitauxMobiliers';
 import { RevenusNonSalariesInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
+
+const SEUILS_PAR_DEFAUT = PARAMETRES_PAR_DEFAUT.nonSalaries;
 
 /** Abattement minimal des régimes micro, par activité (art. 50-0 et 102 ter CGI). */
 const ABATTEMENT_MINIMUM = 305;
 
-/** Seuils des régimes micro, revenus 2025 (brochure IR 2026, p. 168-180). */
-export const SEUIL_MICRO_VENTES = 188_700;
-export const SEUIL_MICRO_SERVICES = 77_700;
-/** Locations meublées non professionnelles (loi Le Meur) : seuils appréciés au niveau du foyer. */
-export const SEUIL_MICRO_MEUBLES = 77_700;
-export const SEUIL_MICRO_MEUBLES_NON_CLASSES = 15_000;
+/** Seuils des régimes micro du millésime par défaut (valeurs : `parametres.nonSalaries`). */
+export const SEUIL_MICRO_VENTES = SEUILS_PAR_DEFAUT.seuilMicroVentes;
+export const SEUIL_MICRO_SERVICES = SEUILS_PAR_DEFAUT.seuilMicroServices;
+export const SEUIL_MICRO_MEUBLES = SEUILS_PAR_DEFAUT.seuilMicroMeubles;
+export const SEUIL_MICRO_MEUBLES_NON_CLASSES = SEUILS_PAR_DEFAUT.seuilMicroMeublesNonClasses;
 
 /**
  * Prélèvements sociaux sur les revenus des locations meublées non professionnelles
@@ -19,13 +21,13 @@ export const SEUIL_MICRO_MEUBLES_NON_CLASSES = 15_000;
 export const TAUX_PS_NON_SALARIES = TAUX_PS_CAPITAUX_MOBILIERS;
 
 /** Seuil du micro-BA (moyenne des recettes HT des trois dernières années), apprécié ici sur l'année. */
-export const SEUIL_MICRO_BA = 120_000;
+export const SEUIL_MICRO_BA = SEUILS_PAR_DEFAUT.seuilMicroBA;
 /**
  * Déficit agricole imputable sur le revenu global seulement si les revenus nets
  * d'autres sources du foyer n'excèdent pas ce montant (art. 156 I 1° CGI,
  * brochure IR 2026 p. 165) ; sinon reportable sur les BA des six années suivantes.
  */
-export const SEUIL_DEFICIT_AGRICOLE = 128_826;
+export const SEUIL_DEFICIT_AGRICOLE = SEUILS_PAR_DEFAUT.seuilDeficitAgricole;
 /** Plafond annuel de l'abattement jeunes créateurs (art. 93-9 CGI, brochure p. 178). */
 export const PLAFOND_ABATTEMENT_JEUNES_CREATEURS = 50_000;
 /**
@@ -33,7 +35,7 @@ export const PLAFOND_ABATTEMENT_JEUNES_CREATEURS = 50_000;
  * courte durée au-delà de 23 000 € de recettes, chambres d'hôtes au-delà de 6 123 € de revenu imposable.
  */
 export const SEUIL_COTISATIONS_MEUBLES_COURTE_DUREE = 23_000;
-export const SEUIL_COTISATIONS_CHAMBRES_HOTES = 6_123;
+export const SEUIL_COTISATIONS_CHAMBRES_HOTES = SEUILS_PAR_DEFAUT.seuilCotisationsChambresHotes;
 
 /** Abattement du micro-BA (art. 64 bis CGI), minimum 305 €. */
 const ABATTEMENT_MICRO_BA = 0.87;
@@ -226,7 +228,7 @@ export interface RevenusNonSalariesResult {
   /**
    * Déficits agricoles de l'année (5HF/5IF), à retrancher du revenu global par
    * `useFiscalOverview.ts` seulement si les autres revenus nets du foyer
-   * n'excèdent pas `SEUIL_DEFICIT_AGRICOLE`.
+   * n'excèdent pas le seuil du millésime (`parametres.nonSalaries.seuilDeficitAgricole`).
    */
   deficitAgricole: number;
   /** Plus-values professionnelles à long terme (12,8 %) et brevets (10 %), ajoutés après la décote. */
@@ -293,7 +295,11 @@ const somme = (input: RevenusNonSalariesInput, cles: Cle[]) => cles.reduce((s, c
  * créateurs 5QL/5RL et 5SV/5SW (déjà déduits du bénéfice déclaré) : RFR seul.
  * Indemnités des agents généraux 5QM/5RM : taxe par personne (art. 719), hors IR.
  */
-export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): RevenusNonSalariesResult {
+export function calculerRevenusNonSalaries(
+  input: RevenusNonSalariesInput,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
+): RevenusNonSalariesResult {
+  const seuils = parametres.nonSalaries;
   const v = (c: Cle) => input[c] ?? 0;
   let revenuExonereTauxEffectif = 0;
   const netParCle = new Map<Cle, number>();
@@ -360,22 +366,22 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
   const ventes = parDeclarant([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo'], ['case5va', 'case5mo', 'case5po']]);
   const services = parDeclarant([['case5tb', 'case5kp', 'case5np'], ['case5ub', 'case5lp', 'case5op'], ['case5vb', 'case5mp', 'case5pp']]);
   const bnc = parDeclarant([['case5te', 'case5hq', 'case5ku'], ['case5ue', 'case5iq', 'case5lu'], ['case5ve', 'case5jq', 'case5mu']]);
-  if (ventes.some((x, d) => x + services[d] > SEUIL_MICRO_VENTES)) alertes.push('ventes_au_dela_du_seuil');
-  if (services.some(x => x > SEUIL_MICRO_SERVICES)) alertes.push('services_au_dela_du_seuil');
-  if (bnc.some(x => x > SEUIL_MICRO_SERVICES)) alertes.push('bnc_au_dela_du_seuil');
+  if (ventes.some((x, d) => x + services[d] > seuils.seuilMicroVentes)) alertes.push('ventes_au_dela_du_seuil');
+  if (services.some(x => x > seuils.seuilMicroServices)) alertes.push('services_au_dela_du_seuil');
+  if (bnc.some(x => x > seuils.seuilMicroServices)) alertes.push('bnc_au_dela_du_seuil');
   if ((['case5ql', 'case5sl', 'case5rl', 'case5sv', 'case5sx', 'case5sw'] as Cle[]).some(c => v(c) > PLAFOND_ABATTEMENT_JEUNES_CREATEURS)) {
     alertes.push('jeunes_createurs_au_dela_du_plafond');
   }
   const courteDuree = parDeclarant([['case5ng', 'case5nh'], ['case5og', 'case5oh'], ['case5pg', 'case5ph']]);
   if (courteDuree.some(x => x > SEUIL_COTISATIONS_MEUBLES_COURTE_DUREE)
-    || (['case5ng', 'case5pg', 'case5og'] as Cle[]).some(c => (netParCle.get(c) ?? 0) > SEUIL_COTISATIONS_CHAMBRES_HOTES)) {
+    || (['case5ng', 'case5pg', 'case5og'] as Cle[]).some(c => (netParCle.get(c) ?? 0) > seuils.seuilCotisationsChambresHotes)) {
     alertes.push('meubles_cotisations_a_verifier');
   }
   const meublesNonClasses = somme(input, ['case5nh', 'case5ph', 'case5oh', 'case5nk', 'case5pk', 'case5ok']);
   const meubles = meublesNonClasses + somme(input, ['case5ng', 'case5pg', 'case5og', 'case5ni', 'case5pi', 'case5oi', 'case5nj', 'case5pj', 'case5oj', 'case5nl', 'case5pl', 'case5ol']);
-  if (meubles > SEUIL_MICRO_MEUBLES) alertes.push('meubles_au_dela_du_seuil');
-  if (meublesNonClasses > SEUIL_MICRO_MEUBLES_NON_CLASSES) alertes.push('meubles_non_classes_au_dela_du_seuil');
-  if (v('case5xb') > SEUIL_MICRO_BA || v('case5yb') > SEUIL_MICRO_BA || v('case5zb') > SEUIL_MICRO_BA) alertes.push('ba_micro_au_dela_du_seuil');
+  if (meubles > seuils.seuilMicroMeubles) alertes.push('meubles_au_dela_du_seuil');
+  if (meublesNonClasses > seuils.seuilMicroMeublesNonClasses) alertes.push('meubles_non_classes_au_dela_du_seuil');
+  if (v('case5xb') > seuils.seuilMicroBA || v('case5yb') > seuils.seuilMicroBA || v('case5zb') > seuils.seuilMicroBA) alertes.push('ba_micro_au_dela_du_seuil');
 
   return {
     totalNetImposable: bicPro + bncPro + bicNonPro + bncNonPro + lmnp + ba,

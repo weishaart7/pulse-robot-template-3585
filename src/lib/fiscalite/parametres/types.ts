@@ -49,6 +49,19 @@ export interface ParametresFiscaux {
     /** Plancher par pensionné, plafond commun au foyer. */
     readonly pensions: { readonly plancher: number; readonly plafondFoyer: number };
   };
+  /** Cadre 5 : seuils revalorisés des régimes micro, du déficit agricole et des cotisations des meublés. */
+  readonly nonSalaries: {
+    readonly seuilMicroVentes: number;
+    readonly seuilMicroServices: number;
+    /** Locations meublées non professionnelles, appréciées au niveau du foyer (loi Le Meur). */
+    readonly seuilMicroMeubles: number;
+    readonly seuilMicroMeublesNonClasses: number;
+    readonly seuilMicroBA: number;
+    /** Déficit agricole imputable seulement sous ce montant de revenus d'autres sources (art. 156 I 1° CGI). */
+    readonly seuilDeficitAgricole: number;
+    /** Chambres d'hôtes soumises aux cotisations sociales au-delà de ce revenu imposable (CSS art. L. 611-1). */
+    readonly seuilCotisationsChambresHotes: number;
+  };
   readonly abattementsSpeciaux: {
     /** Personnes âgées ou invalides (art. 157 bis CGI). */
     readonly personnesAgees: {
