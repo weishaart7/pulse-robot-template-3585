@@ -1,8 +1,8 @@
-# Aurevia — reprise : cases non gérées et taux AV transmission
+# Aurevia — reprise : moteur IR face au simulateur officiel
 
 Nov 18, 2026 · @Titouan
 
-Les deux chantiers ouverts après la campagne de comparaison du moteur IR d'Aurevia avec le simulateur officiel sont terminés et poussés sur `main` : les cases non gérées qui changent l'impôt (7US comprise depuis le 18 nov. 2026) et le taux de PS de l'assurance-vie hors fiscalité (gardé à 17,2 %). Les écarts connus restants (7DO, 7ZZ…7ZW, 8TK, arrondi des PS de 4BK/4BL) sont résolus depuis le 18 nov. 2026 : aucun écart connu ne reste avec le simulateur.
+Les deux chantiers ouverts après la campagne de comparaison du moteur IR d'Aurevia avec le simulateur officiel sont terminés et poussés sur `main` : les cases non gérées qui changent l'impôt (7US comprise depuis le 18 nov. 2026) et le taux de PS de l'assurance-vie hors fiscalité (gardé à 17,2 %). Les écarts connus restants (7DO, 7ZZ…7ZW, 8TK, arrondi des PS de 4BK/4BL) sont résolus depuis le 18 nov. 2026. Une seconde campagne sur 21 foyers complexes, puis une vérification BOFiP, ont corrigé les écarts de règles de calcul (voir « Campagne foyers complexes ») ; aucun écart connu ne reste avec le simulateur hors 0XX, mis de côté.
 
 ## Contexte
 
@@ -47,6 +47,27 @@ Commits du 18 nov. 2026, poussés sur `main` :
 8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère). L'arrondi des PS de 4BK/4BL est aligné aussi (PS du foncier entier, moins ceux de la fraction arrondis par contribution). Les anciennes colonnes de ventilation de 8TK sont supprimées en base.
 
 Décisions prises : quand le simulateur et la loi ou ClickImpôts divergent, Aurevia suit le simulateur officiel 2026 (3SB hors RFR, assurance-vie à 18,6 %, 1NX sans PS).
+
+## Campagne foyers complexes (18 nov. 2026)
+
+21 foyers (S1 à S21 : couples avec enfants en résidence alternée, invalidité, veufs, parents isolés, PFU, assurance-vie, foncier, non-salariés, PER, dons, PME, CEHR, CDHR, crédit égal à l'impôt français) comparés au simulateur sur les deux millésimes, figés dans `src/hooks/useFiscalOverview.simulateurOfficiel.test.ts` (332 tests). Règles ensuite vérifiées dans le BOFiP. Commits poussés sur `main` :
+
+| Commit | Objet |
+| --- | --- |
+| `a9874bb` | Non-régression contre le simulateur officiel (cas figés, écarts connus en `it.fails`) |
+| `39ebf35` | Réduction complémentaire du quotient familial, 1 801 € (art. 197 I 2) |
+| `3228f7e` | TMI sur les parts de base sous plafonnement du quotient (5XT compris) |
+| `35bf5ab` → `59e0145` | Paramètres par millésime (`src/lib/fiscalite/parametres/`), cinq lots, sans changement de résultat |
+| `c542f55` | Choix du millésime de règles dans la Vue d'ensemble ; revenus 2026 provisoire (calc-2027 : dons 7UD 2 000 €) |
+| `8b3baa9` | CDHR (art. 224 CGI, BOI-IR-CDHR-10), acomptes 8HR/8HS déduits du solde |
+| `e3c55c8` | Réductions imputées sur le seul impôt au barème (BOI-IR-LIQ-20-20-40 §10) |
+| `5a7dac9` | Plafonnement global des niches sur les avantages imputés (BOI-IR-LIQ-20-20-10-30) |
+| `cafb0b9` | Veuf (2 011 €, maintien avec une personne invalide), case T (personne invalide seule, enfant unique alterné), abattements arrondis à l'euro |
+| `e63cbb2` | CEHR et CDHR au prorata du crédit égal à l'impôt français ; droits et décote arrondis (art. 1657) |
+
+Divergence BOFiP / simulateur : BOI-IR-CDHR-10 §180 retire les revenus exonérés par convention du revenu de référence de la CDHR, le simulateur les garde ; Aurevia suit le simulateur.
+
+Restent ouverts : 0XX (refusé par le simulateur sans fiche de détail ; base des dons à 20 % et règle du quart de la CDHR, signalée « approximative »), avance 7HB (nouveau champ en base), répartition entre catégories du plafonnement global quand l'impôt ne suffit pas (prorata, non observé), millésime revenus 2026 définitif et codes 7UQ/7VM (après la loi de finances pour 2027), dettes 2042-IFI (dette d'un actif écarté, parts de sociétés à 100 % en 9CA).
 
 ## Point 1 — les cases non gérées qui changent l'impôt
 
@@ -117,7 +138,7 @@ Commit `8fb9fe8`, poussé sur `main` : les taux écrits en dur sont remplacés p
 
 ## Consignes pour la nouvelle conversation
 
-Traiter un lot à la fois : exposer les règles vérifiées sur le simulateur et la séquence fichier par fichier, attendre la validation, coder, relancer la comparaison, mettre à jour `docs/fiscalite.md`, commiter (CLAUDE.md du projet).
+Traiter un lot à la fois : vérifier la règle sur le simulateur (il tranche en cas de doute, sans attendre de validation depuis le 18 nov. 2026) et dans le BOFiP, coder, ajouter le cas au test de non-régression sur les deux millésimes, mettre à jour `docs/fiscalite.md`, commiter. Demander seulement ce que le simulateur ne tranche pas (migration, périmètre).
 
 ### Où regarder dans le code
 
@@ -135,7 +156,8 @@ Traiter un lot à la fois : exposer les règles vérifiées sur le simulateur et
 
 ### À savoir
 
-- Le simulateur 2027 (revenus 2026) change le sens de certains codes (7UQ, frais réels 1AE) : ne pas l'utiliser comme référence pour Aurevia.
+- Le simulateur 2027 (revenus 2026) sert de référence au seul millésime provisoire revenus 2026 ; il change le sens de certains codes (7UQ, frais réels 1AE) et applique encore le barème 2026 (loi de finances pour 2027 non promulguée).
+- Le plafond épargne retraite se poste en APS/BPS/CPS/DPS (additionnés) ; 0XX et 3VH avec 3VG sont refusés en saisie simple.
 - Typecheck : 0 erreur depuis `eb23a37` (18 nov. 2026). Lint : 50 `any` restants hors transmission et `src/utils` (hooks 14, sociétés 11, patrimoine 9, ui et autres 16). Erreurs `rules-of-hooks` de `ui/checkbox.tsx` et `ui/switch.tsx` corrigées (`7310ee9`).
 - Les écritures en base passent par la MCP Supabase (projet `npypkocowjkszxtecxzq`) ; le projet était en pause et a été réactivé le 16 novembre 2026.
 - Aucun compte de test Aurevia n'existe : l'inscription a échoué (domaines de test refusés, quota d'e-mails Supabase). Les écrans n'ont donc pas été vérifiés dans le navigateur.
