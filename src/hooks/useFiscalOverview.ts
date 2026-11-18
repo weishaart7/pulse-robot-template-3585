@@ -17,7 +17,8 @@ import { useChargesDeductibles } from './useChargesDeductibles';
 import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
 import { calculerCEHR } from '@/lib/fiscalite/calculerCEHR';
-import { ANNEE_REVENUS_PAR_DEFAUT, parametresFiscaux } from '@/lib/fiscalite/parametres';
+import { ANNEE_REVENUS_PAR_DEFAUT, type ParametresFiscaux } from '@/lib/fiscalite/parametres';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { arrondirPrelevementsSociaux } from '@/lib/fiscalite/arrondirPrelevementsSociaux';
 import { calculerAbattementsSpeciaux, type AbattementsSpeciauxResult } from '@/lib/fiscalite/calculerAbattementsSpeciaux';
 import {
@@ -201,11 +202,13 @@ const REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT: ReductionsCreditsImpotInput = {
   case7db: null, case7dr: null, case7dl: null, case7dq: false, case7dg: false, membresPlus65Ans: null,
 };
 
-/** Année des revenus calculée (millésime de paramètres appliqué), celle de la 2044 reprise. */
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
+/**
+ * Millésime par défaut, hors contexte. Le calcul suit le millésime choisi (`useMillesimeFiscal`),
+ * exposé par `FiscalOverview.anneeRevenus` / `anneeIFI` / `parametres`.
+ */
 export const ANNEE_REVENUS = ANNEE_REVENUS_PAR_DEFAUT;
-const PARAMETRES = parametresFiscaux(ANNEE_REVENUS);
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
 export const ANNEE_IFI = ANNEE_REVENUS + 1;
 
@@ -246,6 +249,11 @@ export interface ComparaisonOptionBareme {
 }
 
 export interface FiscalOverview {
+  /** Millésime de règles appliqué (année des revenus), celui de la 2044 reprise. */
+  anneeRevenus: number;
+  /** Année de la 2042-IFI reprise : 1er janvier suivant l'année des revenus. */
+  anneeIFI: number;
+  parametres: ParametresFiscaux;
   loading: boolean;
   foyerRenseigne: boolean;
   revenusRenseignes: boolean;
@@ -347,6 +355,8 @@ export interface FiscalOverview {
  * chargement de la page.
  */
 export function useFiscalOverview(): FiscalOverview {
+  const { anneeRevenus, parametres } = useMillesimeFiscal();
+  const anneeIFI = anneeRevenus + 1;
   const { data: foyer, loading: loadingFoyer, refetch: refetchFoyer } = useFoyerFiscal();
   const { data: revenus, loading: loadingRevenus, refetch: refetchRevenus } = useRevenusSalaires();
   const { data: gains, loading: loadingGains, refetch: refetchGains } = useGainsActionnariatSalarie();
@@ -368,11 +378,11 @@ export function useFiscalOverview(): FiscalOverview {
     if (!isAuthenticated) { setLoading2044(false); return; }
     setLoading2044(true);
     // Sans création : seule une 2044 déjà ouverte pour l'année des revenus compte dans l'impôt.
-    chargerDonnees2044(ANNEE_REVENUS, false)
-      .then((d) => setDeclaration2044(d ? calculerDonnees2044(ANNEE_REVENUS, d) : null))
+    chargerDonnees2044(anneeRevenus, false)
+      .then((d) => setDeclaration2044(d ? calculerDonnees2044(anneeRevenus, d) : null))
       .catch((error) => { if (import.meta.env.DEV) console.error('Erreur chargement 2044:', error); setDeclaration2044(null); })
       .finally(() => setLoading2044(false));
-  }, [isAuthenticated]);
+  }, [isAuthenticated, anneeRevenus]);
   useEffect(() => { charger2044(); }, [charger2044]);
 
   const [donneesIFI, setDonneesIFI] = useState<DonneesIFI | null>(null);
@@ -381,11 +391,11 @@ export function useFiscalOverview(): FiscalOverview {
     if (!isAuthenticated) { setLoadingIFI(false); return; }
     setLoadingIFI(true);
     // Sans création : seule une 2042-IFI déjà ouverte pour l'année est reprise.
-    chargerDonneesIFI(ANNEE_IFI, false)
+    chargerDonneesIFI(anneeIFI, false)
       .then(setDonneesIFI)
       .catch((error) => { if (import.meta.env.DEV) console.error('Erreur chargement IFI:', error); setDonneesIFI(null); })
       .finally(() => setLoadingIFI(false));
-  }, [isAuthenticated]);
+  }, [isAuthenticated, anneeIFI]);
   useEffect(() => { chargerIFI(); }, [chargerIFI]);
 
   const refetch = () => {
@@ -416,10 +426,10 @@ export function useFiscalOverview(): FiscalOverview {
     const simuler = (capitauxMobiliersInput: RevenusCapitauxMobiliersInput & { case2op: boolean }) => {
 
       // Gains d'actionnariat dans le pool 10 %/frais réels de chaque déclarant (brochure IR 2026 p.107).
-      const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput, PARAMETRES);
+      const revenuSalaires = calculerRevenuSalaires(revenusInput, exoneresInput, gainsInput, parametres);
       const gainsActionnariat = calculerGainsActionnariatSalarie(gainsInput, revenuSalaires.gainsActionnariatNetImposable);
       // 1AH/1BH dans le pool d'abattement des pensions : plafond de 4 439 € unique pour le foyer.
-      const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput, PARAMETRES);
+      const pensionsRetraitesRentes = calculerPensionsRetraitesRentes(pensionsInput, exoneresInput, parametres);
       const revenuExonereTauxEffectif = calculerRevenuExonereTauxEffectif(
         exoneresInput,
         revenuSalaires.salairesNetImposablesExoneresTauxEffectif,
@@ -432,9 +442,9 @@ export function useFiscalOverview(): FiscalOverview {
       // Revenus au quotient (coefficient 4) : 0XX et plus-values RVG/RUA (option barème).
       const revenuExceptionnelQuotient = gainsActionnariat.revenuExceptionnelQuotient + plusValuesGainsDivers.revenuExceptionnelQuotient;
       const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
-      const parts = calculerPartsFiscales(foyerInput, PARAMETRES);
+      const parts = calculerPartsFiscales(foyerInput, parametres);
       const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
-      const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE, PARAMETRES);
+      const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE, parametres);
       const revenusFonciers2042 = calculerRevenusFonciers2042(
         fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT,
         revenusFonciers?.revenuFoncierNetImposable ?? null,
@@ -447,15 +457,15 @@ export function useFiscalOverview(): FiscalOverview {
         - revenusFonciers2042.deficitImputableRevenuGlobal
         + revenusNonSalaries.totalNetImposable;
       // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
-      const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= PARAMETRES.nonSalaries.seuilDeficitAgricole ? revenusNonSalaries.deficitAgricole : 0;
+      const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= parametres.nonSalaries.seuilDeficitAgricole ? revenusNonSalaries.deficitAgricole : 0;
       const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
       const chargesDeductibles = calculerChargesDeductibles(
-        charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput, PARAMETRES,
+        charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput, parametres,
       );
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
       // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
       const abattementsSpeciaux = calculerAbattementsSpeciaux(
-        foyerInput, revenuNetGlobal, ANNEE_REVENUS, revenuNetGlobal + revenuExceptionnelQuotient, PARAMETRES,
+        foyerInput, revenuNetGlobal, anneeRevenus, revenuNetGlobal + revenuExceptionnelQuotient, parametres,
       );
       const revenuImposableTotal = revenuNetGlobal - abattementsSpeciaux.total;
       const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
@@ -493,7 +503,7 @@ export function useFiscalOverview(): FiscalOverview {
             + (pensionsInput.case1bz ?? 0) + (pensionsInput.case1bo ?? 0) + (pensionsInput.case1bm ?? 0),
           personnesCharge: revenuSalaires.pac1.remunerationsBrutes + revenuSalaires.pac2.remunerationsBrutes,
         },
-        PARAMETRES,
+        parametres,
       );
       // Plafonnement global des avantages fiscaux (art. 200-0 A) : l'excédent s'ajoute à l'impôt.
       const investissementsOutreMer = calculerInvestissementsOutreMer(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);
@@ -553,7 +563,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenusNonSalaries.taxeAgentsGeneraux,
         revenuCreditImpotFrancais,
         prelevementSourceDivers.revenuMondial8ZR,
-        PARAMETRES,
+        parametres,
       );
       const impotSansCreditEtranger = calculer(0);
       const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
@@ -598,16 +608,19 @@ export function useFiscalOverview(): FiscalOverview {
       const creditEtrangerPrelevementsSociaux = Math.min(creditEtranger.creditPrelevementsSociaux, ps.total);
       const prelevementsSociauxTotal = ps.total - creditEtrangerPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
-      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient, PARAMETRES);
+      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient, parametres);
       const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;
 
       const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
         impots: impot.impotApresDecote + impot.impotForfaitaire + cehr + prelevementsSociauxTotal,
         revenus: impot.revenuFiscalReference,
       };
-      const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI, PARAMETRES) : null;
+      const ifi = donneesIFI ? calculerDonneesIFI(anneeIFI, donneesIFI, plafonnementIFI, parametres) : null;
 
       return {
+        anneeRevenus,
+        anneeIFI,
+        parametres,
         loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions || loadingPrelevementSource,
         foyerRenseigne: foyer !== null,
         revenusRenseignes: revenus !== null || gains !== null || exoneres !== null || pensions !== null || capitauxMobiliers !== null || plusValues !== null || fonciers2042 !== null || nonSalaries !== null || charges !== null || reductions !== null || prelevementSource !== null || declaration2044 !== null,
@@ -627,7 +640,7 @@ export function useFiscalOverview(): FiscalOverview {
         deficitAgricoleImpute,
         chargesDeductibles,
         abattementsSpeciaux,
-        alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput, ANNEE_REVENUS),
+        alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput, anneeRevenus),
         alerte8TK: verification8TK.alerte,
         reductionsCreditsImpot,
         plafonnementNiches,
@@ -678,7 +691,7 @@ export function useFiscalOverview(): FiscalOverview {
       };
 
     return { ...resultat, comparaisonOptionBareme };
-  }, [donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [anneeRevenus, anneeIFI, parametres, donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   const overview = useMemo(
     () => evaluer(capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT),

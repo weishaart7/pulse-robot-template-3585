@@ -1,5 +1,4 @@
 import { PanelTitle } from '@/components/layout/workspace-panel';
-import { PARAMETRES_PAR_DEFAUT } from '@/lib/fiscalite';
 import { FiscalOverview } from '@/hooks/useFiscalOverview';
 import { cn } from '@/lib/utils';
 import { formatEuros, LigneDetail } from './FiscalOverviewCard';
@@ -10,7 +9,7 @@ import { formatEuros, LigneDetail } from './FiscalOverviewCard';
 const TaxRateCard = ({ overview }: { overview: FiscalOverview }) => {
   const { parts, impot } = overview;
 
-  const bareme = PARAMETRES_PAR_DEFAUT.impot.bareme;
+  const bareme = overview.parametres.impot.bareme;
   const tranches = bareme.map((t, i) => ({ ...t, seuilBas: i === 0 ? 0 : bareme[i - 1].seuil }));
   const active = tranches.find((t) => t.taux === impot.tmi);
   const position = active && active.seuil !== Infinity && active.seuil > active.seuilBas

@@ -5,7 +5,7 @@ import { PanelTitle, panelButtonClass, WorkspaceHeader } from '@/components/layo
 import { panelInsetClass } from '@/components/layout/panel-section';
 import { cn } from '@/lib/utils';
 import { useDeclaration2044 } from '@/hooks/useDeclaration2044';
-import { ANNEE_REVENUS } from '@/hooks/useFiscalOverview';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { formatEuros } from './2044/Grille2044';
 import { DeficitsAnterieursSection, ImmeublesSection, PartsSection, ResultatSection } from './2044/Sections2044';
 
@@ -24,7 +24,7 @@ function CaseReport({ code, libelle, valeur }: { code: string; libelle: string; 
 }
 
 const Declaration2044Interface = ({ onClose }: Declaration2044InterfaceProps) => {
-  const annee = ANNEE_REVENUS;
+  const annee = useMillesimeFiscal().anneeRevenus;
   const etat = useDeclaration2044(annee);
   const r = etat.resultat;
 

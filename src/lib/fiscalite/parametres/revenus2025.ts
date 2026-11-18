@@ -7,6 +7,8 @@ import type { ParametresFiscaux } from './types';
  */
 export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
   anneeRevenus: 2025,
+  statut: 'definitif',
+  source: 'Loi de finances pour 2026, brochure IR 2026, simulateur officiel calc-2026.cgi',
   impot: {
     bareme: [
       { seuil: 11600, taux: 0 },

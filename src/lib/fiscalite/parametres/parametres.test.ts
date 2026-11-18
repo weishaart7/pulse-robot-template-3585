@@ -8,11 +8,11 @@ describe('parametresFiscaux', () => {
   it('le millésime par défaut est celui des revenus 2025', () => {
     expect(ANNEE_REVENUS_PAR_DEFAUT).toBe(2025);
     expect(PARAMETRES_PAR_DEFAUT.anneeRevenus).toBe(2025);
-    expect(anneesRevenusDisponibles()).toEqual([2025]);
+    expect(anneesRevenusDisponibles()).toEqual([2025, 2026]);
   });
 
   it('refuse un millésime absent plutôt que de retomber sur un autre', () => {
-    expect(() => parametresFiscaux(2026)).toThrow('revenus 2026');
+    expect(() => parametresFiscaux(2024)).toThrow('revenus 2024');
   });
 
   it('chaque millésime porte sa propre année et un barème croissant terminé par Infinity', () => {
@@ -23,6 +23,17 @@ describe('parametresFiscaux', () => {
       expect([...seuils].sort((a, b) => a - b)).toEqual(seuils);
       expect(seuils[seuils.length - 1]).toBe(Infinity);
     }
+  });
+
+  it('revenus 2026 provisoire : seuls les plafonds des dons à 75 % diffèrent de 2025 (calc-2027.cgi)', () => {
+    const p2025 = parametresFiscaux(2025);
+    const p2026 = parametresFiscaux(2026);
+    expect(p2025.statut).toBe('definitif');
+    expect(p2026.statut).toBe('provisoire');
+    expect(p2026.reductionsCredits.plafondDons75Premiere).toBe(2000);
+    const sansDons = (p: typeof p2025) => ({ ...p, anneeRevenus: 0, statut: null, source: null,
+      reductionsCredits: { ...p.reductionsCredits, plafondDons75Premiere: 0, plafondDons75Annee: 0 } });
+    expect(sansDons(p2026)).toEqual(sansDons(p2025));
   });
 
   it('les paramètres passés au moteur sont bien ceux appliqués', () => {

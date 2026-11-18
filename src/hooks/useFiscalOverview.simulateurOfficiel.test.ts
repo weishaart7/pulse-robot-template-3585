@@ -6,7 +6,9 @@
  * et doit être converti en `it` classique.
  */
 import { describe, expect, it, vi } from 'vitest';
+import { createElement, type ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
+import { MillesimeFiscalProvider } from '@/contexts/MillesimeFiscalContext';
 import type { EnfantCharge, FoyerFiscalInput } from '@/lib/fiscalite/types';
 
 const { donnees, hook } = vi.hoisted(() => {
@@ -197,11 +199,14 @@ const CAS: Record<string, Cas> = {
   },
 };
 
-function calculer(saisies: Record<string, unknown>) {
+function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
   for (const cle of Object.keys(donnees)) delete donnees[cle];
   Object.assign(donnees, saisies);
-  const { result } = renderHook(() => useFiscalOverview());
+  const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(MillesimeFiscalProvider, { anneeInitiale: anneeRevenus, children });
+  const { result } = renderHook(() => useFiscalOverview(), { wrapper });
   const r = result.current;
+  expect(r.anneeRevenus).toBe(anneeRevenus);
   const obtenu: Required<Attendu> = {
     parts: r.parts.nombreParts,
     revenuFiscalReference: r.impot.revenuFiscalReference,
@@ -217,16 +222,29 @@ function calculer(saisies: Record<string, unknown>) {
   return obtenu;
 }
 
-describe('useFiscalOverview — simulateur officiel 2026 (revenus 2025)', () => {
-  for (const [nom, cas] of Object.entries(CAS)) {
-    describe(`${nom} : ${cas.description}`, () => {
-      const postes = Object.keys(cas.attendu) as (keyof Attendu)[];
-      for (const poste of postes) {
-        const enEcart = cas.ecartsConnus?.includes(poste) ?? false;
-        (enEcart ? it.fails : it)(`${poste}${enEcart ? ' (écart connu)' : ''}`, () => {
-          expect(calculer(cas.saisies)[poste]).toBe(cas.attendu[poste]);
-        });
-      }
-    });
-  }
-});
+/**
+ * calc-2027.cgi (revenus 2026, novembre 2026) avec le millésime provisoire : mêmes valeurs que
+ * calc-2026.cgi, sauf les dons 7UD plafonnés à 2 000 € (S3 : 1 500 € à 75 % au lieu de 750 €).
+ */
+const ECARTS_2027: Record<string, Partial<Attendu>> = {
+  S3: { reductions: 5460, impotNet: 85947 },
+};
+
+function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}) {
+  describe(titre, () => {
+    for (const [nom, cas] of Object.entries(CAS)) {
+      const attendu = { ...cas.attendu, ...ecarts[nom] };
+      describe(`${nom} : ${cas.description}`, () => {
+        for (const poste of Object.keys(attendu) as (keyof Attendu)[]) {
+          const enEcart = cas.ecartsConnus?.includes(poste) ?? false;
+          (enEcart ? it.fails : it)(`${poste}${enEcart ? ' (écart connu)' : ''}`, () => {
+            expect(calculer(cas.saisies, anneeRevenus)[poste]).toBe(attendu[poste]);
+          });
+        }
+      });
+    }
+  });
+}
+
+decrireCampagne('useFiscalOverview — simulateur officiel 2026 (revenus 2025)', 2025);
+decrireCampagne('useFiscalOverview — simulateur officiel 2027 (revenus 2026, millésime provisoire)', 2026, ECARTS_2027);

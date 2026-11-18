@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ANNEE_REVENUS } from '@/hooks/useFiscalOverview';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRevenusFonciers2042 } from '@/hooks/useRevenusFonciers2042';
 import { RevenusFonciers2042 } from '@/services/revenusFonciers2042Service';
@@ -9,8 +9,6 @@ import { calculerRevenusFonciers2042, RevenusFonciers2042Input } from '@/lib/fis
 import { LectureLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
-/** Année des revenus de la 2044 reprise : celle calculée par useFiscalOverview. */
-const ANNEE_REVENUS_2044 = ANNEE_REVENUS;
 
 const FONCIERS_VIDE: RevenusFonciers2042Input = {
   case4ba: null, case4bd: null, case4be: null, case4bk: null, case4bl: null, case4bn: false, case4bz: false,
@@ -49,6 +47,8 @@ interface RevenusFonciersFormProps {
 export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
   const { data, loading, saving, saveData } = useRevenusFonciers2042();
   const { isAuthenticated } = useAuth();
+  // 2044 reprise : celle du millésime choisi, comme dans useFiscalOverview.
+  const { anneeRevenus } = useMillesimeFiscal();
   const [rf, setRf] = useState<RevenusFonciers2042Input>(FONCIERS_VIDE);
   const [rfId, setRfId] = useState<string | undefined>(undefined);
   const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
@@ -64,10 +64,10 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
   useEffect(() => {
     if (!isAuthenticated) return;
     // Sans création : seule une 2044 déjà ouverte est reprise, comme dans useFiscalOverview.
-    chargerDonnees2044(ANNEE_REVENUS_2044, false)
-      .then((d) => setDeclaration2044(d ? calculerDonnees2044(ANNEE_REVENUS_2044, d) : null))
+    chargerDonnees2044(anneeRevenus, false)
+      .then((d) => setDeclaration2044(d ? calculerDonnees2044(anneeRevenus, d) : null))
       .catch((error) => { if (import.meta.env.DEV) console.error('Erreur chargement 2044:', error); });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, anneeRevenus]);
 
   const update = <K extends keyof RevenusFonciers2042Input>(key: K, value: RevenusFonciers2042Input[K]) => {
     setRf(prev => ({ ...prev, [key]: value }));

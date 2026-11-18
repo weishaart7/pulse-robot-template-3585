@@ -5,14 +5,14 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PanelTitle, panelButtonClass, WorkspaceHeader } from '@/components/layout/workspace-panel';
 import { cn } from '@/lib/utils';
 import { useDeclarationIFI } from '@/hooks/useDeclarationIFI';
-import { ANNEE_IFI } from '@/hooks/useFiscalOverview';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import type { Plafonnement2042 } from '@/services/declarationIFIDonnees';
 import { formatEuros } from './2044/Grille2044';
 import { ActifSection, LiquidationSection, PassifSection, ReductionsSection } from './declarationIFI/SectionsIFI';
 
 interface DeclarationIFIInterfaceProps {
   onClose: () => void;
-  /** 9PR et 9PX repris de la Vision générale, valables pour ANNEE_IFI seulement ; null si le foyer n'est pas renseigné. */
+  /** 9PR et 9PX repris de la Vision générale, valables pour l'IFI du millésime choisi seulement ; null si le foyer n'est pas renseigné. */
   plafonnement2042: Plafonnement2042 | null;
 }
 
@@ -49,8 +49,8 @@ function LigneResume({ libelle, valeur, fort }: { libelle: string; valeur: numbe
 }
 
 const DeclarationIFIInterface = ({ onClose, plafonnement2042 }: DeclarationIFIInterfaceProps) => {
-  // Seule l'IFI 2026 (revenus 2025) est traitée pour l'instant.
-  const annee = ANNEE_IFI;
+  // IFI au 1er janvier suivant l'année de revenus du millésime choisi.
+  const annee = useMillesimeFiscal().anneeRevenus + 1;
   const etat = useDeclarationIFI(annee, plafonnement2042);
   const r = etat.resultat;
 

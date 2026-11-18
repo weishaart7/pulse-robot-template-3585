@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertTriangle, RefreshCw, Trash2, Users } from 'lucide-react';
 import { useFoyerFiscal } from '@/hooks/useFoyerFiscal';
 import { useFamilyLinks, useFamilyProfile, useMaritalStatus } from '@/hooks/useFamilyData';
-import { ANNEE_REVENUS } from '@/hooks/useFiscalOverview';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { appliquerFamille, ecartsAvecFamille, foyerDepuisFamille } from '@/lib/fiscalite/foyerDepuisFamille';
 import { panelButtonClass } from '@/components/layout/workspace-panel';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,7 @@ interface MenageFormProps {
 
 export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   const { data, loading, saving, saveData } = useFoyerFiscal();
+  const { anneeRevenus } = useMillesimeFiscal();
   const [foyer, setFoyer] = useState<FoyerFiscalInput>(FOYER_VIDE);
   const [foyerId, setFoyerId] = useState<string | undefined>(undefined);
   /** Brouillon prérempli depuis Famille, pas encore enregistré. */
@@ -71,8 +72,8 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
   const liens = useFamilyLinks();
   const familleChargee = !profil.loading && !marital.loading && !liens.loading;
   const famille = useMemo(
-    () => (familleChargee ? foyerDepuisFamille(profil.data, marital.data, liens.data, ANNEE_REVENUS) : null),
-    [familleChargee, profil.data, marital.data, liens.data],
+    () => (familleChargee ? foyerDepuisFamille(profil.data, marital.data, liens.data, anneeRevenus) : null),
+    [familleChargee, profil.data, marital.data, liens.data, anneeRevenus],
   );
 
   // Foyer enregistré : il fait foi. Sinon, à la première ouverture, brouillon prérempli depuis Famille.
@@ -160,6 +161,7 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
       onSave={handleSubmit}
     >
       <RepriseFamille
+        anneeRevenus={anneeRevenus}
         repris={repris}
         ecarts={ecarts}
         notes={famille?.notes ?? []}
@@ -340,8 +342,9 @@ export const MenageForm = ({ onSaved, onChange }: MenageFormProps) => {
  * Lien avec Famille : bouton de reprise, état du brouillon, écarts entre le Ménage et Famille, et
  * points que Famille ne permet pas de trancher.
  */
-const RepriseFamille = ({ repris, ecarts, notes, onReprendre, disponible }: {
+const RepriseFamille = ({ repris, ecarts, notes, onReprendre, disponible, anneeRevenus }: {
   repris: boolean;
+  anneeRevenus: number;
   ecarts: string[];
   notes: string[];
   onReprendre: () => void;
@@ -358,7 +361,7 @@ const RepriseFamille = ({ repris, ecarts, notes, onReprendre, disponible }: {
           <p className="text-[12.5px] text-muted-foreground">
             {repris
               ? 'Situation, enfants, personnes à charge et invalidités viennent de Famille ; vérifiez puis enregistrez.'
-              : `Situation appréciée pour les revenus ${ANNEE_REVENUS} ; la résidence alternée, le lieu et les cases T, L, G restent à saisir ici.`}
+              : `Situation appréciée pour les revenus ${anneeRevenus} ; la résidence alternée, le lieu et les cases T, L, G restent à saisir ici.`}
           </p>
         </div>
       </div>

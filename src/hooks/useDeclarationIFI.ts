@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { toast } from '@/hooks/use-toast';
 import { declarationIFIService } from '@/services/declarationIFIService';
 import {
@@ -28,6 +29,7 @@ const signalerErreur = (description: string, error: unknown) => {
  */
 export const useDeclarationIFI = (annee: number, depuis2042: Plafonnement2042 | null) => {
   const { isAuthenticated } = useAuth();
+  const { parametres } = useMillesimeFiscal();
   const [donnees, setDonnees] = useState<DonneesIFI | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -102,9 +104,9 @@ export const useDeclarationIFI = (annee: number, depuis2042: Plafonnement2042 | 
 
   const resultat = useMemo(
     () => (donnees
-      ? calculerDonneesIFI(annee, donnees, depuis2042)
-      : calculerDeclarationIFI({ annee, biens: [], biensIndirects: [], dettes: [] })),
-    [annee, donnees, depuis2042],
+      ? calculerDonneesIFI(annee, donnees, depuis2042, parametres)
+      : calculerDeclarationIFI({ annee, biens: [], biensIndirects: [], dettes: [] }, parametres)),
+    [annee, donnees, depuis2042, parametres],
   );
   const lignes = useMemo(() => (donnees ? lignesIFI(donnees) : { actifs: [], dettes: [] }), [donnees]);
 

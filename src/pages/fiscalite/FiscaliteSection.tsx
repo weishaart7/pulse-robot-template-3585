@@ -4,6 +4,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import FiscalDeclarationsCard from './components/FiscalDeclarationsCard';
 import FiscalOverviewCard from './components/FiscalOverviewCard';
 import TaxRateCard from './components/TaxRateCard';
+import MillesimeSelector from './components/MillesimeSelector';
 import { useFiscalOverview } from '@/hooks/useFiscalOverview';
 
 // Cadre « panneau de travail », sur le modèle d'Immobilier, Retraite et Famille : barre d'en-tête
@@ -11,17 +12,23 @@ import { useFiscalOverview } from '@/hooks/useFiscalOverview';
 const FiscaliteSection = () => {
   const fiscalOverview = useFiscalOverview();
   const valeursParDefaut = !fiscalOverview.foyerRenseigne || !fiscalOverview.revenusRenseignes;
+  const { anneeRevenus, parametres } = fiscalOverview;
+  const provisoire = parametres.statut === 'provisoire';
 
   return (
     <div className="workspace-panel -mx-4 -mt-3 md:-m-6">
       <WorkspaceHeader icon={<Landmark strokeWidth={1.75} />} trail={['Fiscalité', "Vue d'ensemble"]} />
 
-      <div className="px-8 pt-6 pb-4">
-        <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">Vue d'ensemble</h1>
-        <p className="mt-1 text-[12.5px] text-muted-foreground">
-          Revenus 2025, barème 2026
-          {valeursParDefaut && ' · calcul sur des valeurs par défaut : complétez le foyer et les revenus dans la 2042'}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3 px-8 pt-6 pb-4">
+        <div className="min-w-0">
+          <h1 className="text-[24px] font-medium leading-tight tracking-[-0.02em]">Vue d'ensemble</h1>
+          <p className="mt-1 text-[12.5px] text-muted-foreground">
+            Revenus {anneeRevenus}, barème {anneeRevenus + 1}
+            {provisoire && ' · règles provisoires, loi de finances non promulguée'}
+            {valeursParDefaut && ' · calcul sur des valeurs par défaut : complétez le foyer et les revenus dans la 2042'}
+          </p>
+        </div>
+        <MillesimeSelector />
       </div>
 
       {/* Déclarations à gauche sur toute la hauteur ; imposition puis taux marginal à droite. */}

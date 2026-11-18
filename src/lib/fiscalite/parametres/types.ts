@@ -13,6 +13,10 @@ export interface TrancheBareme {
 export interface ParametresFiscaux {
   /** Année des revenus imposés (2025 pour la déclaration déposée en 2026). */
   readonly anneeRevenus: number;
+  /** `provisoire` tant que la loi de finances n'est pas promulguée : valeurs à confirmer. */
+  readonly statut: 'definitif' | 'provisoire';
+  /** Origine des valeurs (loi, brochure, simulateur officiel utilisé pour les contrôler). */
+  readonly source: string;
   readonly impot: {
     readonly bareme: readonly TrancheBareme[];
     readonly decote: {

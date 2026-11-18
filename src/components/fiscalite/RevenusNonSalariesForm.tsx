@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { useRevenusNonSalaries } from '@/hooks/useRevenusNonSalaries';
 import { RevenusNonSalaries } from '@/services/revenusNonSalariesService';
 import { calculerRevenusNonSalaries, REVENUS_NON_SALARIES_VIDE, RevenusNonSalariesInput } from '@/lib/fiscalite';
@@ -23,6 +24,7 @@ interface RevenusNonSalariesFormProps {
 
 export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps) => {
   const { data, loading, saving, saveData } = useRevenusNonSalaries();
+  const { parametres } = useMillesimeFiscal();
   const [rns, setRns] = useState<RevenusNonSalariesInput>(REVENUS_NON_SALARIES_VIDE);
   const [rnsId, setRnsId] = useState<string | undefined>(undefined);
 
@@ -48,7 +50,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
     return <Cadre2042Chargement texte="Chargement des revenus non salariés..." />;
   }
 
-  const { alertes } = calculerRevenusNonSalaries(rns);
+  const { alertes } = calculerRevenusNonSalaries(rns, parametres);
 
   return (
     <Cadre2042 titre="Revenus des professions non salariées"

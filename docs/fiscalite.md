@@ -211,8 +211,22 @@ fonciers (§4).
   des déficits reportables (6FA à 6FL) et l'âge des enfants des alertes du cadre 6 se déduisent de
   l'année de revenus. Les exports historiques (`SEUIL_*`, `PLAFOND_*`, `PENSION_ABATTEMENT_PLAFOND_FOYER`)
   restent, tirés du millésime par défaut. Hors paramètres pour l'instant : codes et libellés de cases
-  datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), données de
-  la 2042 sans année (une ligne par utilisateur), projections retraite (millésime par défaut).
+  datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), projections
+  retraite (millésime par défaut).
+- **Choix du millésime de règles, sans année sur les données de la 2042.** Les 12 tables de la 2042
+  restent à une ligne par utilisateur : la même déclaration en cours est calculée avec les règles du
+  millésime choisi. [MillesimeFiscalContext.tsx](src/contexts/MillesimeFiscalContext.tsx) porte ce
+  choix pour toute l'application (provider dans `App.tsx`, mémorisé dans le navigateur, repli sur le
+  millésime par défaut si le stockage est indisponible ou la valeur inconnue) ; `useFiscalOverview`
+  l'applique et expose `anneeRevenus`, `anneeIFI`, `parametres`. La 2044 et la 2042-IFI, vraies
+  déclarations par année, suivent le millésime choisi (2044 de l'année de revenus, IFI au 1er janvier
+  suivant) : en règles 2026, la 2044 revenus 2025 n'est pas reprise. Le sélecteur
+  ([MillesimeSelector.tsx](src/pages/fiscalite/components/MillesimeSelector.tsx), en-tête de la Vue
+  d'ensemble) n'apparaît qu'à partir de deux millésimes. **Revenus 2026 provisoire**
+  (`revenus2026.ts`, `statut: 'provisoire'`) : valeurs relevées sur calc-2027.cgi en novembre 2026,
+  identiques aux revenus 2025 sauf les dons à 75 % (7UD seul, 2 000 €) ; le nouveau sens de 7UQ
+  (Chambord) et la suppression de 7VM ne sont pas modélisés, signalés dans le cadre 7. Les 9 cas de
+  `useFiscalOverview.simulateurOfficiel.test.ts` sont rejoués sur les deux millésimes.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
   `Declaration2042Interface.tsx` reprend la mécanique de l'ancien `IFIInterface.tsx` (overlay
@@ -1924,6 +1938,11 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
+- **Contribution différentielle sur les hauts revenus (CDHR, art. 224 CGI) non calculée.** Imposition
+  minimale des foyers dont le RFR dépasse 250 000 € (500 000 € couple), présente sur les simulateurs
+  officiels 2026 et 2027 ; seuls les acomptes 8HR/8HS sont saisis, à titre informatif. Impôt
+  sous-estimé pour un foyer à haut revenu dont le taux moyen d'imposition est faible (niches, PFU).
+  Aucun des 9 cas de non-régression n'y était soumis.
 - **Quotient familial — complément de 2 011 € du veuf non modélisé.** Quand les deux premières
   demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
   par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €

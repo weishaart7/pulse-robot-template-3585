@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useReductionsCreditsImpot } from '@/hooks/useReductionsCreditsImpot';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { ReductionsCreditsImpot } from '@/services/reductionsCreditsImpotService';
 import { ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel, REGLES_SCELLIER, RegleScellier, REGLES_CENSI_BOUVARD } from '@/lib/fiscalite';
 import { SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
@@ -45,6 +46,9 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
     }
   }, [data]);
 
+  // Cases et libellés de la 2042 revenus 2025 ; en règles 2026, 7UQ (Chambord) et 7VM changent de sens.
+  const { anneeRevenus } = useMillesimeFiscal();
+
   const update = <K extends keyof ReductionsCreditsImpotInput>(key: K, value: ReductionsCreditsImpotInput[K]) => {
     setRc(prev => ({ ...prev, [key]: value }));
   };
@@ -63,6 +67,13 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
     <Cadre2042 titre="Réductions et crédits d'impôt"
       description="Cadre 7 de la 2042 : dons, services à la personne, garde, scolarité, cotisations syndicales, prestations compensatoires. Les autres réductions relèvent de la 2042-RICI, non gérée ici."
       saving={saving} onSave={handleSubmit}>
+        {anneeRevenus > 2025 && (
+          <p className="py-2 text-[13px] text-muted-foreground">
+            Règles revenus {anneeRevenus} provisoires : les dons à 75 % se déclarent en 7UD seul (maximum 2 000 €).
+            7UQ désigne les dons pour le château de Chambord et 7VM disparaît : ces deux cases restent calculées
+            selon les règles 2025, à ne pas utiliser pour une simulation {anneeRevenus}.
+          </p>
+        )}
         <SousGroupe titre="Dons versés à des organismes établis en France" aide="Réduction non restituable. Au-delà des plafonds à 75 %, l'excédent est retenu à 66 % avec les dons 7UF, dans la limite de 20 % du revenu imposable.">
           <SingleMontantLigne label="Aide aux personnes en difficulté, du 1.1 au 13.10.2025" extra="75 %, maximum 1 000 €" code="7UD" value={rc.case7ud} onChange={v => update('case7ud', v)} />
           <SingleMontantLigne label="Aide aux personnes en difficulté, du 14.10 au 31.12.2025" extra="75 %, maximum 2 000 € avec 7UD" code="7UQ" value={rc.case7uq} onChange={v => update('case7uq', v)} />

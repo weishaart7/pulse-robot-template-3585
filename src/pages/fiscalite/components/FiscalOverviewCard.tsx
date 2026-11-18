@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { PanelTitle } from '@/components/layout/workspace-panel';
 import { SectorsDonut, type DonutSector } from '@/components/ui/sectors-donut';
 import { CITRON_INK, CITRON_MID, GREY, LAGON, LAGON_DEEP, LAGON_INK, LAGON_MID } from '@/components/budget/budgetColors';
-import { ANNEE_IFI, FiscalOverview } from '@/hooks/useFiscalOverview';
+import { FiscalOverview } from '@/hooks/useFiscalOverview';
 import { cn } from '@/lib/utils';
 
 // Imposition totale : chiffre principal et pastille TMI, détail des impôts calculés (lignes à 0 € ou non
@@ -105,7 +105,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
     { label: 'Exonération de CSG et CRDS (8RF à 8RM)', valeur: reductionPrelevementsSociaux === 0 ? 0 : -reductionPrelevementsSociaux },
     { label: 'Prélèvements sociaux (salaires)', valeur: null, texte: 'Prélevés en paie' },
     ifi
-      ? { label: `IFI ${ANNEE_IFI} (2042-IFI)`, valeur: ifi.ifiNet }
+      ? { label: `IFI ${overview.anneeIFI} (2042-IFI)`, valeur: ifi.ifiNet }
       : { label: 'IFI', valeur: null, texte: 'Pas de 2042-IFI' },
   ];
   // L'IR reste toujours visible, même à 0 €.
