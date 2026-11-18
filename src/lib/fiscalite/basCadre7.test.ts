@@ -51,7 +51,14 @@ describe('bas du cadre 7', () => {
     expect(r({ case7wi: 10000, case8yu: 31393 }, foyer('celibataire'))).toBe(1250);
     expect(r({ case7wi: 10000, case8yu: 31394 }, foyer('celibataire'))).toBe(0);
   });
-  it('7WI : plafond diminué des dépenses antérieures (loi, non vérifiable sur le simulateur)', () => {
+  it('7WI : plafond diminué des dépenses antérieures 7ZZ…7ZW (simulateur, les 4 cases saisies)', () => {
     expect(r({ case7wi: 10000, case8yu: 30000, case7zz: 3000 }, foyer('celibataire'))).toBe(500);
+    const ant = (zz: number, zy = 0, zx = 0, zw = 0) => ({ case7zz: zz, case7zy: zy, case7zx: zx, case7zw: zw });
+    expect(r({ case7wi: 8000, case8ys: 40000, ...ant(3000) })).toBe(1750);
+    expect(r({ case7wi: 8000, case8ys: 40000, ...ant(0, 0, 0, 3000) })).toBe(1750);
+    expect(r({ case7wi: 8000, case8ys: 40000, ...ant(1000, 1000, 1000, 1000) })).toBe(1500);
+    expect(r({ case7wi: 8000, case8ys: 40000, ...ant(6000) })).toBe(1000);
+    expect(r({ case7wi: 8000, case8ys: 40000, ...ant(12000) })).toBe(0);
+    expect(r({ case7wi: 12000, case8ys: 40000, ...ant(3000) })).toBe(1750);
   });
 });

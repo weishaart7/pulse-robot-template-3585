@@ -1572,7 +1572,8 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
 - **Bas du cadre 7** (`calculerReductionsCreditsImpot.ts`) : `7WL` crédit restituable de 40 %, 20 000 €
   par foyer ; `7GZ` 25 % de 1 525 € + 300 € par enfant (150 € en alternée, non mesuré) ; `7CD`/`7CE`
   25 %, 10 000 € par personne ; `7WI` crédit restituable de 25 %, 5 000 € (10 000 € couple) moins les
-  dépenses retenues `7ZZ`…`7ZW` (loi ; « calcul impossible » sur le simulateur), si le RFR 2023 (`8YS`)
+  dépenses retenues `7ZZ`…`7ZW` (vérifié : le simulateur exige les quatre cases, même à 0 ; couple,
+  7WI 8 000 € + 7ZZ 3 000 € → 1 750 €), si le RFR 2023 (`8YS`)
   ou 2024 (`8YU`) ne dépasse pas 31 393 € (1 personne), 49 995 € (2), + 6 976 € par personne en plus
   (déclarants, enfants, invalides, majeurs rattachés) ; case Île-de-France sans effet sur le simulateur,
   non saisie. Tous hors plafonnement global.

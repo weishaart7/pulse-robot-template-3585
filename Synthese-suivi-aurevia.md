@@ -56,7 +56,7 @@ La 2042-RICI est couverte en huit sous-lots, tous commités et poussés sur `mai
 | 6b | `aed76ce` | Fin du bloc entreprises ; ordre d'imputation PME/ESUS corrigé, 7DC dans le plafond commun | 15 |
 | 6a | `b09aa33` | Souscriptions au capital : PME, ESUS, JEI/JEIR, FCPI/FIP, SOFICA | 21 |
 
-Écart 7DO résolu le 18 nov. 2026 : le simulateur déduit 7DO deux fois du plafond PME pour les cases imputées après elle, Aurevia fait de même. Écart connu restant : dépenses antérieures 7ZZ…7ZW de 7WI appliquées selon la loi (« calcul impossible » sur le simulateur). Formulaires toujours non vus dans le navigateur.
+Écart 7DO résolu le 18 nov. 2026 : le simulateur déduit 7DO deux fois du plafond PME pour les cases imputées après elle, Aurevia fait de même. Dépenses antérieures 7ZZ…7ZW de 7WI vérifiées le 18 nov. 2026 : le « calcul impossible » venait de la saisie obligatoire des quatre cases ; Aurevia donnait déjà les mêmes montants. Plus aucun écart connu sur la 2042-RICI. Formulaires toujours non vus dans le navigateur.
 
 ### Priorité 1 — personnes à charge (colonnes C/D, I/J)
 
