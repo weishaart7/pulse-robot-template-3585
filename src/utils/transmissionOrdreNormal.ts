@@ -1,3 +1,4 @@
+import type { MaritalStatus as MaritalStatusRow } from '@/services/familyService';
 /**
  * Chargement des données Transmission et calcul chaîné « ordre normal »
  * (l'Utilisateur décède en premier, puis le conjoint survivant), partagés
@@ -60,7 +61,7 @@ export const buildTransmissionParams = (): TransmissionParams => ({
 /** Données brutes lues en base, sans aucun calcul. */
 export interface TransmissionData {
   familyProfile: any;
-  maritalStatus: any;
+  maritalStatus: MaritalStatusRow | null;
   familyLinks: any[];
   assets: any[];
   societesDutreil: string[];
@@ -233,14 +234,14 @@ export function buildOrdreNormalBase(data: TransmissionData, passifs: Passif[], 
   const { familyProfile, maritalStatus, familyLinks, assets, assetDemembrements, demembrementCtx } = data;
   const params = buildTransmissionParams();
   const referenceDate = new Date().toISOString().split('T')[0];
-  const optionConjoint = (maritalStatus as any)?.option_conjoint as ConjointOption | null;
-  const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
-  const duhOpte = !!(maritalStatus as any)?.duh_opte;
+  const optionConjoint = maritalStatus?.option_conjoint as ConjointOption | null;
+  const partageEnvisage = !!maritalStatus?.partage_envisage;
+  const duhOpte = !!maritalStatus?.duh_opte;
   // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
   // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
   // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
-  const regimeMatrimonial = (maritalStatus as any)?.statut_couple === 'Marié(e)'
-    ? ((maritalStatus as any)?.regime_matrimonial as string | null)
+  const regimeMatrimonial = maritalStatus?.statut_couple === 'Marié(e)'
+    ? (maritalStatus?.regime_matrimonial as string | null)
     : undefined;
 
   const familyUtilisateur: FamilyGraph = buildFamilyGraph(familyProfile, maritalStatus, familyLinks);
@@ -249,7 +250,7 @@ export function buildOrdreNormalBase(data: TransmissionData, passifs: Passif[], 
     familyProfile?.date_naissance,
     familyUtilisateur,
     referenceDate,
-    (maritalStatus as any)?.date_naissance_conjoint
+    maritalStatus?.date_naissance_conjoint
   );
   // Deux variantes du passif fusionné : `passifLinesUtilisateur` déduit la
   // part des emprunts couverte par l'assurance décès de l'Utilisateur (les
@@ -331,7 +332,7 @@ export function computeOrdreNormal(base: OrdreNormalBase, conjointOption: Conjoi
     familyProfile?.date_naissance,
     spouseFamily,
     referenceDate,
-    (maritalStatus as any)?.date_naissance_conjoint
+    maritalStatus?.date_naissance_conjoint
   );
   // Contrats réels du 1er décès : les capitaux AV/PER reçus par le conjoint
   // entrent dans sa succession — cf. computeRecuAuPremierDeces.

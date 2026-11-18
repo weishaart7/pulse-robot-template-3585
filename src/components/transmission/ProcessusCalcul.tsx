@@ -136,13 +136,13 @@ export const ProcessusCalcul = () => {
         familyProfile?.date_naissance,
         familyGraph,
         new Date().toISOString().split('T')[0],
-        (maritalStatus as any)?.date_naissance_conjoint
+        maritalStatus?.date_naissance_conjoint
       );
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
       // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
       // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
-      const regimeMatrimonialSiMarie = (maritalStatus as any)?.statut_couple === 'Marié(e)'
-        ? (maritalStatus as any)?.regime_matrimonial
+      const regimeMatrimonialSiMarie = maritalStatus?.statut_couple === 'Marié(e)'
+        ? maritalStatus?.regime_matrimonial
         : undefined;
       const ctx: TransmissionContext = {
         family: familyGraph,
@@ -151,7 +151,7 @@ export const ProcessusCalcul = () => {
         params,
         // Même source que Synthese.tsx/Succession2ndDeces.tsx : l'option
         // enregistrée dans l'onglet Optimisation, jamais une valeur figée.
-        conjointOption: ((maritalStatus as any)?.option_conjoint as ConjointOption | null) || undefined,
+        conjointOption: (maritalStatus?.option_conjoint as ConjointOption | null) || undefined,
         rawAssets: (assets || []).filter((a): a is typeof a & { id: string } => !!a.id),
         societesDutreil,
         dutreilPartsNonAffectees,
@@ -165,9 +165,9 @@ export const ProcessusCalcul = () => {
         // communs, jamais dans avContracts (déjà filtré par détenteur dans
         // computeTransmission).
         avReintegrationCivileMontant: computeAVReintegrationCivile(avContracts, 'spouse', regimeMatrimonialSiMarie),
-        partageEnvisage: !!(maritalStatus as any)?.partage_envisage,
+        partageEnvisage: !!maritalStatus?.partage_envisage,
         valeurBiensPartage: (maritalStatus as { valeur_biens_partage?: number | null } | null)?.valeur_biens_partage ?? null,
-        duhOpte: !!(maritalStatus as any)?.duh_opte,
+        duhOpte: !!maritalStatus?.duh_opte,
         regimeMatrimonial: regimeMatrimonialSiMarie,
         recompenses: buildRecompensesCalcInput(recompenses),
         creancesEntreEpoux: buildCreancesCalcInput(creancesEntreEpoux),

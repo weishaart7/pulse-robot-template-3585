@@ -125,7 +125,7 @@ export const Succession2ndDeces = () => {
           familyProfile?.date_naissance,
           spouseFamilyFirst,
           referenceDate,
-          (maritalStatus as any)?.date_naissance_conjoint
+          maritalStatus?.date_naissance_conjoint
         );
         const spouseBasePatrimony = buildSpouseOwnBasePatrimony(assets || [], passifLinesBrut, assetDemembrements, demembrementCtx);
         const ctxConjointDecede: TransmissionContext = {
@@ -187,7 +187,7 @@ export const Succession2ndDeces = () => {
           familyProfile?.date_naissance,
           utilisateurVeufFamily,
           referenceDate,
-          (maritalStatus as any)?.date_naissance_conjoint
+          maritalStatus?.date_naissance_conjoint
         );
 
         const chainedInverse = computeChainedTransmission({

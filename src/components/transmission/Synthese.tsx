@@ -117,9 +117,9 @@ export const Synthese = () => {
         .eq('user_id', user!.id)
         .single();
 
-      const optionConjoint = (maritalStatus as any)?.option_conjoint as string | null;
-      const partageEnvisage = !!(maritalStatus as any)?.partage_envisage;
-      const duhOpte = !!(maritalStatus as any)?.duh_opte;
+      const optionConjoint = maritalStatus?.option_conjoint as string | null;
+      const partageEnvisage = !!maritalStatus?.partage_envisage;
+      const duhOpte = !!maritalStatus?.duh_opte;
 
       const { data: familyLinks } = await supabase
         .from('family_links')
@@ -270,7 +270,7 @@ export const Synthese = () => {
         familyProfile?.date_naissance,
         family,
         referenceDate,
-        (maritalStatus as any)?.date_naissance_conjoint
+        maritalStatus?.date_naissance_conjoint
       );
 
       // Construire le patrimoine
@@ -309,8 +309,8 @@ export const Synthese = () => {
       // regime_matrimonial n'a de sens que sous Marié(e) : ce champ n'est
       // jamais effacé en changeant de statut (cf. RelationInfoForm.tsx), donc
       // un ex-marié devenu Pacsé/Concubin peut garder une valeur périmée.
-      const regimeMatrimonialSiMarie = (maritalStatus as any)?.statut_couple === 'Marié(e)'
-        ? (maritalStatus as any)?.regime_matrimonial
+      const regimeMatrimonialSiMarie = maritalStatus?.statut_couple === 'Marié(e)'
+        ? maritalStatus?.regime_matrimonial
         : undefined;
 
       setHasPERConjointNonReintegre(hasPERNonDenoueConjoint(avContracts, 'spouse', regimeMatrimonialSiMarie));
