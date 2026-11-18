@@ -33,7 +33,8 @@ import {
   buildPassifsParBien
 } from '@/utils/transmissionHelpers';
 import { computeTransmission, FamilyGraph, getDecedentRole, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
-import type { Liberalite } from '@/lib/transmission/types';
+import type { Liberalite, TransmissionResult, HeirShare } from '@/lib/transmission/types';
+import type { ConjointOption } from '@/lib/transmission';
 import { abattementParentSurvivant } from '@/lib/transmission/abattementParentSurvivant';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
@@ -42,7 +43,7 @@ import { hasDonneesContratAV, getCapitalDecesContrat } from '@/constants/assetTy
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
-import transmissionParamsData from '@/data/transmission-params.json';
+import { buildTransmissionParams } from '@/utils/transmissionOrdreNormal';
 import './kairos-transmission.css';
 
 // Explication du moteur (successionLegale.ts / transmission/index.ts) : la
@@ -73,7 +74,7 @@ export const Synthese = () => {
   const { passifs, loading: passifsLoading } = usePassifs();
   const { emprunts, loading: empruntsLoading } = useEmprunts();
   const [loading, setLoading] = useState(true);
-  const [transmissionResult, setTransmissionResult] = useState<any>(null);
+  const [transmissionResult, setTransmissionResult] = useState<TransmissionResult | null>(null);
   const [hasAssets, setHasAssets] = useState(false);
   const [legsCaducs, setLegsCaducs] = useState<LegsCaduc[]>([]);
   // Libéralités (avec leur donateur) et date de simulation : abattements vis-à-vis du parent survivant.
@@ -117,7 +118,7 @@ export const Synthese = () => {
         .eq('user_id', user!.id)
         .single();
 
-      const optionConjoint = maritalStatus?.option_conjoint as string | null;
+      const optionConjoint = maritalStatus?.option_conjoint as ConjointOption | null;
       const partageEnvisage = !!maritalStatus?.partage_envisage;
       const duhOpte = !!maritalStatus?.duh_opte;
 
@@ -288,19 +289,7 @@ export const Synthese = () => {
       );
       setLegsCaducs(legsCaducs);
 
-      // Paramètres fiscaux - conversion de type appropriée
-      const params: TransmissionParams = {
-        abattements: {
-          ...transmissionParamsData.abattements,
-          conjoint: transmissionParamsData.abattements.conjoint === "Infinity" ? Infinity : Number(transmissionParamsData.abattements.conjoint)
-        },
-        bareme: transmissionParamsData.bareme,
-        prelevement990I: transmissionParamsData.prelevement990I,
-        debours: {
-          mode: transmissionParamsData.debours.mode as "pourcentage" | "forfait",
-          valeur: transmissionParamsData.debours.valeur
-        }
-      };
+      const params: TransmissionParams = buildTransmissionParams();
 
       // Point d'entrée unique : computeTransmission calcule la dévolution civile
       // ET la fiscalité DMTG en interne (cf. consolidation du moteur), et renvoie
@@ -323,7 +312,7 @@ export const Synthese = () => {
         societesDutreil,
         dutreilPartsNonAffectees,
         passifsParBien: buildPassifsParBien(passifLines),
-        conjointOption: (optionConjoint as any) || undefined,
+        conjointOption: optionConjoint || undefined,
         referenceDate,
         rawAssets: assets || [],
         assetDemembrements,
@@ -428,14 +417,14 @@ export const Synthese = () => {
   const heritiersData = (() => {
     // Légataires non héritiers (cf. TransmissionResult.legataires) : affichés
     // comme des bénéficiaires à part entière, leur net venant de netBreakdown.
-    const heirsSource: any[] = [
+    const heirsSource: Pick<HeirShare, 'personId' | 'nom' | 'lien' | 'partFinale' | 'typeQuotePart' | 'representation'>[] = [
       ...(transmissionResult.heirs || []),
       ...(transmissionResult.legataires || []).map(l => ({
         personId: l.personId,
         nom: l.nom,
         lien: l.lien,
         partFinale: l.montant,
-        typeQuotePart: 'pleine_propriete'
+        typeQuotePart: 'pleine_propriete' as const
       }))
     ];
 
@@ -458,8 +447,8 @@ export const Synthese = () => {
       parts: { value: number; typeQuotePart?: string }[];
     }>();
 
-    heirsSource.forEach((heir: any) => {
-      const person = transmissionResult.family.persons.find((p: any) => p.id === heir.personId);
+    heirsSource.forEach(heir => {
+      const person = transmissionResult.family.persons.find(p => p.id === heir.personId);
       let displayName = heir.nom || 'Héritier inconnu';
       if (person) {
         const prenom = person.prenom || '';
@@ -626,7 +615,7 @@ export const Synthese = () => {
         const pctMasse = (v: number) => (masse > 0 ? `${((v / masse) * 100).toFixed(1).replace('.', ',')} %` : '0 %');
         // Même total que « Coûts de la succession » et le Processus de calcul : le prélèvement 990 I
         // (déjà retranché du capital décès net) y est ajouté, sans quoi les écrans divergeaient.
-        const coutsTotaux = (transmissionResult.netBreakdown?.heirs || []).reduce((t: number, h: any) => t + (h.totalCouts || 0), 0)
+        const coutsTotaux = (transmissionResult.netBreakdown?.heirs || []).reduce((t: number, h) => t + (h.totalCouts || 0), 0)
           + (transmissionResult.dmtg?.totals.prelev990I || 0);
         type HeritierAffiche = {
           name: string; value: number; percentage: string; lien: string;

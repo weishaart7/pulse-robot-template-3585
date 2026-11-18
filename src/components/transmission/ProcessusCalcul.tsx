@@ -35,7 +35,7 @@ import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService, AssetDemembrement } from '@/services/assetDemembrementService';
 import { societeDutreilService } from '@/services/societeExtendedService';
-import transmissionParamsData from '@/data/transmission-params.json';
+import { buildTransmissionParams } from '@/utils/transmissionOrdreNormal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import './kairos-transmission.css';
 
@@ -99,16 +99,7 @@ export const ProcessusCalcul = () => {
     };
   }, [liberalites, assets, assetDemembrements, demembrementCtx]);
 
-  const params: TransmissionParams = useMemo(() => {
-    const rawParams = transmissionParamsData as any;
-    return {
-      ...rawParams,
-      abattements: {
-        ...rawParams.abattements,
-        conjoint: rawParams.abattements.conjoint === "Infinity" ? Infinity : rawParams.abattements.conjoint
-      }
-    } as TransmissionParams;
-  }, []);
+  const params: TransmissionParams = useMemo(() => buildTransmissionParams(), []);
 
   // Patrimoine + calcul de transmission regroupés dans le même useMemo : les
   // deux peuvent lever BienNonQualifieError (buildPatrimonySnapshot pondère

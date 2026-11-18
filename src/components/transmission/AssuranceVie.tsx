@@ -37,7 +37,7 @@ import { assetDemembrementService } from '@/services/assetDemembrementService';
 import { Recompense } from '@/types/recompense';
 import { CreanceEntreEpoux } from '@/types/creanceEntreEpoux';
 import { PatrimoineOriginaire, PatrimoineFinal } from '@/types/participationAcquets';
-import transmissionParamsData from '@/data/transmission-params.json';
+import { buildTransmissionParams } from '@/utils/transmissionOrdreNormal';
 
 // "Bons & contrats de capitalisation" est volontairement exclu de cet écran : contrairement aux
 // 3 natures ci-dessous, il n'est pas hors succession (art. L132-12) — au décès il intègre l'actif
@@ -278,14 +278,7 @@ export const AssuranceVie = () => {
               assetDemembrements,
               demembrementCtx
             );
-            const rawParams = transmissionParamsData as any;
-            const params: TransmissionParams = {
-              ...rawParams,
-              abattements: {
-                ...rawParams.abattements,
-                conjoint: rawParams.abattements.conjoint === 'Infinity' ? Infinity : rawParams.abattements.conjoint
-              }
-            };
+            const params: TransmissionParams = buildTransmissionParams();
 
             const result = computeTransmission({
               family,

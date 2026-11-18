@@ -127,7 +127,7 @@ export const LegsForm: React.FC<LegsFormProps> = ({ open, onOpenChange, editingG
     }));
   };
 
-  const handleLegataireToggle = (familyMember: any) => {
+  const handleLegataireToggle = (familyMember: (typeof familyLinks)[number]) => {
     const isSelected = formData.legataires.some(l => l.id === familyMember.id);
     
     setFormData(prev => ({

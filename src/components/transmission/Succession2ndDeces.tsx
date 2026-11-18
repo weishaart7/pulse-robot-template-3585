@@ -142,7 +142,7 @@ export const Succession2ndDeces = () => {
           // choisie pour le conjoint au décès de l'Utilisateur. Si elle n'est
           // pas ouverte dans ce sens (DDV non consentie par le conjoint,
           // enfant non commun), successionLegale.ts retombe sur 1/4 PP.
-          conjointOption: (optionConjoint as any) || undefined,
+          conjointOption: optionConjoint,
           referenceDate,
           rawAssets: buildSpouseRawAssets(assets || [], assetDemembrements, demembrementCtx),
           assetDemembrements,
