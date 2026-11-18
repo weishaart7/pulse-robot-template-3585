@@ -52,6 +52,16 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     seuilDeficitAgricole: 128_826,
     seuilCotisationsChambresHotes: 6_123,
   },
+  chargesDeductibles: {
+    plafondPensionEnfantMajeur: 6855,
+    plafondAccueilPersonneAgee: 4075,
+  },
+  reductionsCredits: {
+    // 1 000 € jusqu'au 13.10.2025 (7UD/7VA), 2 000 € sur l'année avec 7UQ/7VM.
+    plafondDons75Premiere: 1000,
+    plafondDons75Annee: 2000,
+    seuilsRfrAutonomie: { une: 31393, deux: 49995, parPersonne: 6976 },
+  },
   abattementsSpeciaux: {
     personnesAgees: { seuilPlein: 17670, seuilReduit: 28430, montantPlein: 2822, montantReduit: 1411 },
     rattachement: 6855,

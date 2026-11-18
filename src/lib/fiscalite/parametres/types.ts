@@ -62,6 +62,21 @@ export interface ParametresFiscaux {
     /** Chambres d'hôtes soumises aux cotisations sociales au-delà de ce revenu imposable (CSS art. L. 611-1). */
     readonly seuilCotisationsChambresHotes: number;
   };
+  /** Cadre 6 : plafonds revalorisés des charges déductibles (art. 156 II 2° et 2° ter CGI). */
+  readonly chargesDeductibles: {
+    /** Par enfant majeur, doublé si le parent entretient seul un enfant marié/pacsé ou chargé de famille. */
+    readonly plafondPensionEnfantMajeur: number;
+    /** Par personne de plus de 75 ans accueillie. */
+    readonly plafondAccueilPersonneAgee: number;
+  };
+  /** Cadre 7 : plafonds fixés ou revalorisés pour l'année. */
+  readonly reductionsCredits: {
+    /** Dons à 75 % (art. 200 1 ter CGI) : plafond des dons 7UD/7VA, puis plafond annuel avec 7UQ/7VM. */
+    readonly plafondDons75Premiere: number;
+    readonly plafondDons75Annee: number;
+    /** Seuils de RFR du crédit autonomie 7WI : 1, 2 personnes, puis par personne en plus. */
+    readonly seuilsRfrAutonomie: { readonly une: number; readonly deux: number; readonly parPersonne: number };
+  };
   readonly abattementsSpeciaux: {
     /** Personnes âgées ou invalides (art. 157 bis CGI). */
     readonly personnesAgees: {

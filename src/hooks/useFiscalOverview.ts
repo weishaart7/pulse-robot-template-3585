@@ -449,7 +449,9 @@ export function useFiscalOverview(): FiscalOverview {
       // Art. 156 I 1° CGI : « revenus nets d'autres sources » approchés par le revenu imposable hors déficit agricole.
       const deficitAgricoleImpute = revenuImposableAvantDeficitAgricole <= PARAMETRES.nonSalaries.seuilDeficitAgricole ? revenusNonSalaries.deficitAgricole : 0;
       const revenuBrutGlobal = revenuImposableAvantDeficitAgricole - deficitAgricoleImpute;
-      const chargesDeductibles = calculerChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput);
+      const chargesDeductibles = calculerChargesDeductibles(
+        charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput, PARAMETRES,
+      );
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
       // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
       const abattementsSpeciaux = calculerAbattementsSpeciaux(
@@ -491,6 +493,7 @@ export function useFiscalOverview(): FiscalOverview {
             + (pensionsInput.case1bz ?? 0) + (pensionsInput.case1bo ?? 0) + (pensionsInput.case1bm ?? 0),
           personnesCharge: revenuSalaires.pac1.remunerationsBrutes + revenuSalaires.pac2.remunerationsBrutes,
         },
+        PARAMETRES,
       );
       // Plafonnement global des avantages fiscaux (art. 200-0 A) : l'excédent s'ajoute à l'impôt.
       const investissementsOutreMer = calculerInvestissementsOutreMer(reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT);

@@ -1,8 +1,9 @@
 import { FoyerFiscalInput, ReductionsCreditsImpotInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
 
-/** Dons aux personnes en difficulté à 75 % (art. 200 1 ter CGI) : 1 000 € jusqu'au 13.10.2025, 2 000 € sur l'année. */
-export const PLAFOND_DONS_75_AVANT_14_10 = 1000;
-export const PLAFOND_DONS_75_ANNEE = 2000;
+/** Dons à 75 % (art. 200 1 ter CGI), millésime par défaut (valeurs : `parametres.reductionsCredits`). */
+export const PLAFOND_DONS_75_AVANT_14_10 = PARAMETRES_PAR_DEFAUT.reductionsCredits.plafondDons75Premiere;
+export const PLAFOND_DONS_75_ANNEE = PARAMETRES_PAR_DEFAUT.reductionsCredits.plafondDons75Annee;
 /** Dons pour le patrimoine religieux à 75 % (art. 200 1 quater CGI). */
 export const PLAFOND_DONS_PATRIMOINE_RELIGIEUX = 1000;
 /** Dons à 66 % dans la limite de 20 % du revenu imposable (art. 200 1 CGI). */
@@ -34,8 +35,8 @@ export const PLAFOND_RENTE_SURVIE = 1525;
 export const MAJORATION_RENTE_SURVIE_ENFANT = 300;
 export const PLAFOND_DEPENDANCE_PAR_PERSONNE = 10000;
 export const PLAFOND_AUTONOMIE = 5000;
-/** Seuils de RFR de 7WI (1, 2 personnes, puis par personne en plus) ; 2023 ou 2024 au choix. */
-export const SEUILS_RFR_AUTONOMIE = { une: 31393, deux: 49995, parPersonne: 6976 } as const;
+/** Seuils de RFR de 7WI du millésime par défaut ; RFR N−2 ou N−1 au choix. */
+export const SEUILS_RFR_AUTONOMIE = PARAMETRES_PAR_DEFAUT.reductionsCredits.seuilsRfrAutonomie;
 /** Reports de dons excédentaires 2020-2024. */
 const COUPLES_AUTONOMIE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 const REPORTS_DONS = ['case7xs', 'case7xt', 'case7xu', 'case7xw', 'case7xy'] as const;
@@ -97,12 +98,14 @@ export function calculerReductionsCreditsImpot(
   foyer: FoyerFiscalInput,
   revenuImposable: number,
   revenusActivite: RevenusActiviteDeclarants = { declarant1: 0, declarant2: 0 },
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): ReductionsCreditsImpotResult {
+  const { plafondDons75Premiere, plafondDons75Annee, seuilsRfrAutonomie } = parametres.reductionsCredits;
   // Dons à un organisme européen : 7VA avec 7UD, 7VM avec 7UQ, 7VC avec 7UF (simulateur officiel 2026).
   const dons1 = montant(input.case7ud) + montant(input.case7va);
   const dons2 = montant(input.case7uq) + montant(input.case7vm);
-  const retenus1 = Math.min(dons1, PLAFOND_DONS_75_AVANT_14_10);
-  const retenusDifficulte = Math.min(retenus1 + dons2, PLAFOND_DONS_75_ANNEE);
+  const retenus1 = Math.min(dons1, plafondDons75Premiere);
+  const retenusDifficulte = Math.min(retenus1 + dons2, plafondDons75Annee);
   const religieux = montant(input.case7uj);
   const retenusReligieux = Math.min(religieux, PLAFOND_DONS_PATRIMOINE_RELIGIEUX);
   const mayotte = montant(input.case7uo);
@@ -170,8 +173,8 @@ export function calculerReductionsCreditsImpot(
   const couple = COUPLES_AUTONOMIE.includes(foyer.situationFamille);
   const personnes = (couple ? 2 : 1) + foyer.enfantsCharge.length + foyer.personnesInvalidesCharge.length
     + foyer.enfantsMajeursRattaches;
-  const seuilRfr = personnes === 1 ? SEUILS_RFR_AUTONOMIE.une
-    : SEUILS_RFR_AUTONOMIE.deux + (personnes - 2) * SEUILS_RFR_AUTONOMIE.parPersonne;
+  const seuilRfr = personnes === 1 ? seuilsRfrAutonomie.une
+    : seuilsRfrAutonomie.deux + (personnes - 2) * seuilsRfrAutonomie.parPersonne;
   const rfrs = [input.case8ys, input.case8yu].filter((v): v is number => typeof v === 'number' && v > 0);
   const eligibleAutonomie = rfrs.some(v => v <= seuilRfr);
   const anterieures = montant(input.case7zz) + montant(input.case7zy) + montant(input.case7zx) + montant(input.case7zw);

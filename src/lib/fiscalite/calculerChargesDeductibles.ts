@@ -1,15 +1,9 @@
 import { ChargesDeductiblesInput, RevenusCapitauxMobiliersInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
 
-/**
- * Plafond de la pension alimentaire à un enfant majeur, par enfant (art. 156 II 2° CGI) :
- * brochure IR 2026. Doublé si le parent entretient seul un enfant marié/pacsé ou chargé de famille.
- */
-export const PLAFOND_PENSION_ENFANT_MAJEUR = 6855;
-/**
- * Déduction forfaitaire par personne de plus de 75 ans accueillie (art. 156 II 2° ter CGI) :
- * brochure IR 2026.
- */
-export const PLAFOND_ACCUEIL_PERSONNE_AGEE = 4075;
+/** Plafonds du millésime par défaut (valeurs : `parametres.chargesDeductibles`). */
+export const PLAFOND_PENSION_ENFANT_MAJEUR = PARAMETRES_PAR_DEFAUT.chargesDeductibles.plafondPensionEnfantMajeur;
+export const PLAFOND_ACCUEIL_PERSONNE_AGEE = PARAMETRES_PAR_DEFAUT.chargesDeductibles.plafondAccueilPersonneAgee;
 /** Majoration des pensions fixées par une décision de justice définitive avant le 1.1.2006 (6GI, 6GJ, 6GP). */
 export const MAJORATION_PENSION_AVANT_2006 = 1.25;
 /** Fraction déductible de la CSG prélevée à la source sur 2BH/2DF (art. 154 quinquies II CGI). */
@@ -52,7 +46,7 @@ export function csgDeductibleAnticipee(cm: CapitauxMobiliersCSG): number {
   return Math.round(TAUX_CSG_DEDUCTIBLE * Math.max(0, imposesParOption - montant(cm.case2bh) - montant(cm.case2df)));
 }
 
-/** Report reportable d'une année vers l'imposition des revenus 2026. */
+/** Reliquat d'une année, reportable sur les revenus de l'année suivante. */
 export interface ReliquatAnnuel {
   annee: number;
   montant: number;
@@ -90,9 +84,9 @@ export interface ChargesDeductiblesResult {
   epargneRetraitePersonneCharge: EpargneRetraiteDeclarant;
   /** Sans 6QR : déduction supplémentaire qu'apporterait la mutualisation des plafonds (0 sinon). */
   gainMutualisation: number;
-  /** Déficits 2020 à 2024 non imputés, reportables sur les revenus 2026. */
+  /** Déficits des années N−5 à N−1 non imputés (6FB à 6FL), reportables sur les revenus N+1. */
   deficitsReportables: ReliquatAnnuel[];
-  /** Reliquat de 6FA (déficit 2019) : sixième et dernière année d'imputation, définitivement perdu. */
+  /** Reliquat de 6FA (déficit N−6) : sixième et dernière année d'imputation, définitivement perdu. */
   deficitPerdu: number;
   /** Grosses réparations 2016 et 2017 non imputées (plafond de 25 000 € ou revenu insuffisant), reportables. */
   grossesReparationsReportables: ReliquatAnnuel[];
@@ -126,7 +120,9 @@ export function calculerChargesDeductibles(
   input: ChargesDeductiblesInput,
   revenuBrutGlobal: number,
   capitauxMobiliers: CapitauxMobiliersCSG | null = null,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): ChargesDeductiblesResult {
+  const { plafondPensionEnfantMajeur, plafondAccueilPersonneAgee } = parametres.chargesDeductibles;
   const sommesAAjouter = montant(input.case6gh);
   const csgDeductibleAutomatique = capitauxMobiliers ? csgDeductibleCapitauxMobiliers(capitauxMobiliers) : 0;
   let disponible = Math.max(0, revenuBrutGlobal + sommesAAjouter);
@@ -142,11 +138,11 @@ export function calculerChargesDeductibles(
   }
   const deficitPerdu = reliquatsDeficits[0];
   const deficitsReportables = reliquatsDeficits.slice(1)
-    .map((m, i) => ({ annee: 2020 + i, montant: m }))
+    .map((m, i) => ({ annee: parametres.anneeRevenus - 5 + i, montant: m }))
     .filter(r => r.montant > 0);
 
   const pensionEnfantMajeur = (v: number | null, entretienSeul = false) =>
-    Math.min(montant(v), PLAFOND_PENSION_ENFANT_MAJEUR * (entretienSeul ? 2 : 1));
+    Math.min(montant(v), plafondPensionEnfantMajeur * (entretienSeul ? 2 : 1));
   // 6GI/6GJ majorés avant plafonnement par enfant ; 6GP majoré sans plafond.
   const majoree = (v: number | null) => montant(v) * MAJORATION_PENSION_AVANT_2006;
   const pensions = pensionEnfantMajeur(input.case6el, input.entretienSeul6el) + pensionEnfantMajeur(input.case6em, input.entretienSeul6em)
@@ -181,7 +177,7 @@ export function calculerChargesDeductibles(
 
   // Sans nombre saisi, un montant 6EU vaut pour une personne accueillie.
   const personnesAccueillies = input.case6ev ?? (montant(input.case6eu) > 0 ? 1 : 0);
-  const accueil = Math.min(montant(input.case6eu), Math.max(0, personnesAccueillies) * PLAFOND_ACCUEIL_PERSONNE_AGEE);
+  const accueil = Math.min(montant(input.case6eu), Math.max(0, personnesAccueillies) * plafondAccueilPersonneAgee);
   const reparations = [input.case6hp, input.case6hq, input.case6hr].map(montant);
   const grossesReparations = Math.min(reparations[0] + reparations[1] + reparations[2], PLAFOND_GROSSES_REPARATIONS);
 
