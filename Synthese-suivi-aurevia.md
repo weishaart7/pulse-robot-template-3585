@@ -64,7 +64,7 @@ Décisions prises : quand le simulateur et la loi ou ClickImpôts divergent, Aur
 | `5a7dac9` | Plafonnement global des niches sur les avantages imputés (BOI-IR-LIQ-20-20-10-30) |
 | `cafb0b9` | Veuf (2 011 €, maintien avec une personne invalide), case T (personne invalide seule, enfant unique alterné), abattements arrondis à l'euro |
 | `e63cbb2` | CEHR et CDHR au prorata du crédit égal à l'impôt français ; droits et décote arrondis (art. 1657) |
-| `feat(fiscalite): avance immédiate 7HB` | Avance immédiate 7HB ajoutée au solde (colonne `case_7hb`), cas S22 |
+| `cb11fa9` | Avance immédiate 7HB ajoutée au solde (colonne `case_7hb`), cas S22 |
 
 Divergence BOFiP / simulateur : BOI-IR-CDHR-10 §180 retire les revenus exonérés par convention du revenu de référence de la CDHR, le simulateur les garde ; Aurevia suit le simulateur.
 
