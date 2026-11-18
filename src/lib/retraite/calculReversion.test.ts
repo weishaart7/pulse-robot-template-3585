@@ -87,8 +87,9 @@ describe('reversionPourSurvivant', () => {
     expect(net.pensionsBrutes).toBeCloseTo(31001.6, 2);
     expect(net.tranche).toBe('tauxNormal');
     expect(net.prelevementsSociaux).toBeCloseTo(2911.14, 1);
-    expect(net.impot).toBe(1445);
-    expect(net.netAnnuel).toBeCloseTo(26645.46, 1);
+    // Droits, abattement et décote arrondis chacun à l'euro (art. 1657 CGI).
+    expect(net.impot).toBe(1444);
+    expect(net.netAnnuel).toBeCloseTo(26646.46, 1);
   });
 });
 

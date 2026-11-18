@@ -330,12 +330,14 @@ export function calculerImpot(
   const estCoupleImpositionCommune = COUPLE_IMPOSITION_COMMUNE.includes(situationFamille);
   const seuilDecote = estCoupleImpositionCommune ? decoteParams.seuilCouple : decoteParams.seuilCelibataire;
   const montantDecoteBase = estCoupleImpositionCommune ? decoteParams.montantCouple : decoteParams.montantCelibataire;
-  // Plafonnée à l'impôt, comme sur l'avis (droits simples 132 € → décote 132 €, jamais au-delà).
-  const decote = impotApresReductionOutreMer < seuilDecote
-    ? Math.min(impotApresReductionOutreMer, Math.max(0, montantDecoteBase - impotApresReductionOutreMer * decoteParams.taux))
+  // Plafonnée à l'impôt, comme sur l'avis (droits simples 132 € → décote 132 €, jamais au-delà). Droits et
+  // décote arrondis chacun à l'euro le plus proche (art. 1657 CGI, BOI-IR-LIQ-20-20-40).
+  const droitsArrondis = Math.round(impotApresReductionOutreMer);
+  const decote = droitsArrondis < seuilDecote
+    ? Math.min(droitsArrondis, Math.round(Math.max(0, montantDecoteBase - droitsArrondis * decoteParams.taux)))
     : 0;
 
-  const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
+  const impotApresDecote = Math.max(0, droitsArrondis - decote);
   const partsTauxMarginal = plafonnementApplique ? parts.partsBase : parts.nombreParts;
   const quotientTauxMarginal = partsTauxMarginal > 0 ? revenuMondialFictif / partsTauxMarginal : 0;
   const tmi = tmiPourQuotient(quotientTauxMarginal, bareme);

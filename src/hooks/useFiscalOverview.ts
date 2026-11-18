@@ -631,7 +631,13 @@ export function useFiscalOverview(): FiscalOverview {
       const creditEtrangerPrelevementsSociaux = Math.min(creditEtranger.creditPrelevementsSociaux, ps.total);
       const prelevementsSociauxTotal = ps.total - creditEtrangerPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
-      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient, parametres);
+      // Crédit égal à l'impôt français (1AF…, 8TK) : CEHR et CDHR diminuées au prorata de ce revenu dans le RFR
+      // (simulateur officiel 2026 : 1AJ 150 000 € + 1AF 300 000 € → CEHR 5 563 × 1/3 = 1 854 €).
+      const partHorsCreditFrancais = impot.revenuFiscalReference > 0
+        ? Math.max(0, 1 - revenuCreditImpotFrancais / impot.revenuFiscalReference)
+        : 1;
+      const cehrBrute = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient, parametres);
+      const cehr = Math.round(cehrBrute * partHorsCreditFrancais);
       // CDHR : impôt retenu IR1 = impôt net, hors acomptes et crédits restituables d'acompte (2CK, assurance-vie),
       // hors crédits conventionnels et avantages listés (réintégrés, dans la limite de l'impôt), hors brevets.
       const reductionsListees = investissementsOutreMer.reductions + souscriptionsCapital.reductions
@@ -645,20 +651,23 @@ export function useFiscalOverview(): FiscalOverview {
         + impot.creditImpotEtranger2AB + impot.creditImpotEtrangerCadre8 + impot.creditImpotFrancais
         + Math.min(reductionsListees, impot.reductionsImpot) + Math.min(creditsListes, impot.creditsImpotCadre7)
         - Math.round(revenusNonSalaries.produitsBrevets * TAUX_BREVETS);
-      const cdhr = {
-        ...calculerCDHR({
+      const cdhrBrute = calculerCDHR({
           revenuFiscalReference: impot.revenuFiscalReference,
           revenuExceptionnelQuotient: impot.revenuExceptionnelQuotient,
           abattementDividendes: revenuCapitauxMobiliers.abattementDividendes,
           produitsBrevets: revenusNonSalaries.produitsBrevets,
           impotRetenu: impotRetenuCDHR,
-          cehr,
+          cehr: cehrBrute,
           prelevementsLiberatoires: prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH,
           situationFamille: foyerInput.situationFamille,
           personnesCharge: foyerInput.enfantsCharge.length + foyerInput.personnesInvalidesCharge.length
             + foyerInput.enfantsMajeursRattaches + (foyerInput.personnesRattacheesFoyerDistinct ?? 0),
-        }, parametres),
-        approximative: impot.revenuExceptionnelQuotient > 0 || impot.creditImpotFrancais > 0 || revenuExonere > 0,
+        }, parametres);
+      const cdhr = {
+        ...cdhrBrute,
+        cdhr: Math.round(cdhrBrute.cdhr * partHorsCreditFrancais),
+        // Revenus au quotient : règle du quart (BOI-IR-CDHR-10 §140, §250) non modélisée.
+        approximative: impot.revenuExceptionnelQuotient > 0,
       };
       const solde = prelevementSource
         ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr + cdhr.cdhr, prelevementsSociauxTotal)

@@ -214,7 +214,8 @@ fonciers (§4).
   datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), projections
   retraite (millésime par défaut).
 - **Revenus catégoriels arrondis à l'euro.** Les abattements de 10 % (salaires, pensions) et de 40 %
-  (dividendes au barème) sont arrondis à l'euro le plus proche, comme les régimes micro : simulateur
+  (dividendes au barème), comme les droits simples et la décote, sont arrondis chacun à l'euro le plus
+  proche (art. 1657 CGI, BOI-IR-LIQ-20-20-40), comme les régimes micro : simulateur
   officiel 2026, 1AJ 66 672 € → 60 005 €, 1AS 10 007 € → 9 006 €, 2DC 10 007 € → 6 004 € (cas S19).
 - **Veuf : maintien du quotient conjugal avec un enfant ou une personne invalide à charge**, part de veuvage
   ouvrant 2 011 € de réduction complémentaire (cas S16, S17 ; S18 pour la case T avec une seule personne
@@ -245,9 +246,11 @@ fonciers (§4).
   Scellier, Censi-Bouvard, forestier, bornes, 7WI ; dons à partir des revenus 2026, `cdhr.donsReintegres`),
   hors impôt sur les brevets. Les crédits non listés (emploi à domicile, garde) diminuent IR1. Majorations :
   12 500 € par couple, 1 500 € par personne à charge (résidence alternée comptée en entier, simulateur
-  officiel). CEHR1 = CEHR ; PREL1 = PFL de 2DH. Acomptes 8HR/8HS déduits du solde. Affichée « approximative »
-  avec des revenus au quotient (règle du quart, §140 et §250, non modélisée), un crédit égal à l'impôt français
-  ou des revenus exonérés par convention (non retirés du RREF). Non retenue dans le plafonnement de l'IFI.
+  officiel). CEHR1 = CEHR brute ; PREL1 = PFL de 2DH. Acomptes 8HR/8HS déduits du solde. Revenus exonérés
+  par convention (taux effectif) laissés dans le RREF comme sur le simulateur officiel, bien que le §180 les
+  exclue. Crédit égal à l'impôt français (1AF…, 8TK) : CEHR et CDHR diminuées au prorata de ce revenu dans le
+  RFR (cas S20, S21). Affichée « approximative » avec des revenus au quotient seulement (règle du quart,
+  §140 et §250, non modélisée). Non retenue dans le plafonnement de l'IFI.
   Contrôlée sur 10 cas du simulateur et sur l'exemple §380 (31 074 €).
 - **Choix du millésime de règles, sans année sur les données de la 2042.** Les 12 tables de la 2042
   restent à une ligne par utilisateur : la même déclaration en cours est calculée avec les règles du

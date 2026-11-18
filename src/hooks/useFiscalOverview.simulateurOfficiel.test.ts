@@ -296,6 +296,27 @@ const CAS: Record<string, Cas> = {
     },
     attendu: { parts: 1, revenuFiscalReference: 69331, droitsSimples: 12702, impotNet: 12702, prelevementsSociaux: 0, tmi: 0.3 },
   },
+  S20: {
+    description: "crédit égal à l'impôt français (1AF/8TK) : CEHR diminuée au prorata du revenu concerné",
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 150000, case1af: 300000 },
+      prelevementSource: { case8tk: 300000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 435445, droitsSimples: 172474, cehr: 1854, cdhr: 0, impotNet: 59345,
+      prelevementsSociaux: 0, tmi: 0.45 },
+  },
+  S21: {
+    description: "crédit égal à l'impôt français : CEHR et CDHR diminuées au même prorata",
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1af: 100000 },
+      rcm: { case2dc: 400000, case2op: false },
+      prelevementSource: { case8tk: 100000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 490000, droitsSimples: 20701, impotProportionnel: 51200, cehr: 5878,
+      cdhr: 15428, impotNet: 72506, prelevementsSociaux: 74400, tmi: 0.41 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
