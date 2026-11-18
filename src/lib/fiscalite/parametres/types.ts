@@ -77,6 +77,11 @@ export interface ParametresFiscaux {
     /** Seuils de RFR du crédit autonomie 7WI : 1, 2 personnes, puis par personne en plus. */
     readonly seuilsRfrAutonomie: { readonly une: number; readonly deux: number; readonly parPersonne: number };
   };
+  /** IFI au 1er janvier suivant l'année de revenus (déclaration déposée avec la 2042). */
+  readonly ifi: {
+    /** Biens ruraux loués à long terme et parts de GFA/GAF : 3/4 exonérés jusqu'à ce montant (art. 976 III et IV). */
+    readonly seuilExonerationRurale: number;
+  };
   readonly abattementsSpeciaux: {
     /** Personnes âgées ou invalides (art. 157 bis CGI). */
     readonly personnesAgees: {

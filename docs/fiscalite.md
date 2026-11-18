@@ -198,6 +198,22 @@ fonciers (§4).
 
 ## 2. Architecture & décisions
 
+- **Millésimes fiscaux : paramètres revalorisés regroupés par année de revenus.**
+  [parametres/](src/lib/fiscalite/parametres/index.ts) porte un type `ParametresFiscaux` et un fichier
+  par millésime (`revenus2025.ts`) ; `parametresFiscaux(anneeRevenus)` lève une erreur pour un
+  millésime absent (pas de repli silencieux). Y figurent seulement les valeurs fixées ou revalorisées
+  chaque année : barème, décote, réduction outre-mer, plafonds du quotient familial, CEHR, abattements
+  spéciaux, abattements de 10 % (salaires, pensions), seuils micro, micro-BA, déficit agricole et
+  cotisations des meublés, plafonds de pension à un enfant majeur et d'accueil, dons à 75 %, seuils de
+  RFR de 7WI, seuil rural de l'IFI. Les taux légaux stables restent dans les modules. Chaque fonction
+  de calcul concernée prend un dernier paramètre optionnel `parametres` (millésime par défaut) ;
+  `useFiscalOverview.ts` en dérive `ANNEE_REVENUS` et passe le même jeu à tout le calcul ; les années
+  des déficits reportables (6FA à 6FL) et l'âge des enfants des alertes du cadre 6 se déduisent de
+  l'année de revenus. Les exports historiques (`SEUIL_*`, `PLAFOND_*`, `PENSION_ABATTEMENT_PLAFOND_FOYER`)
+  restent, tirés du millésime par défaut. Hors paramètres pour l'instant : codes et libellés de cases
+  datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), données de
+  la 2042 sans année (une ligne par utilisateur), projections retraite (millésime par défaut).
+
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
   `Declaration2042Interface.tsx` reprend la mécanique de l'ancien `IFIInterface.tsx` (overlay
   `fixed inset-0` plein écran, sidebar de navigation par section) plutôt que d'introduire un nouveau

@@ -1,4 +1,5 @@
 import { assetService } from '@/services/assetService';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from '@/lib/fiscalite/parametres';
 import { passifService } from '@/services/passifService';
 import {
   declarationIFIService,
@@ -81,7 +82,12 @@ export function plafonnementRetenu(d: DonneesIFI, depuis2042: Plafonnement2042 |
   };
 }
 
-export function calculerDonneesIFI(annee: number, d: DonneesIFI, depuis2042: Plafonnement2042 | null): DeclarationIFIResultat {
+export function calculerDonneesIFI(
+  annee: number,
+  d: DonneesIFI,
+  depuis2042: Plafonnement2042 | null,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
+): DeclarationIFIResultat {
   const { actifs, dettes } = lignesIFI(d);
   const retenus = actifs.filter((a) => !a.exclu);
   const plafonnement = plafonnementRetenu(d, depuis2042);
@@ -97,5 +103,5 @@ export function calculerDonneesIFI(annee: number, d: DonneesIFI, depuis2042: Pla
     revenusN1: plafonnement.revenus,
     impotEtranger: Number(d.declaration.impot_etranger ?? 0),
     valeurBiensEtranger: Number(d.declaration.valeur_biens_etranger ?? 0),
-  });
+  }, parametres);
 }

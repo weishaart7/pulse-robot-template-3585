@@ -605,7 +605,7 @@ export function useFiscalOverview(): FiscalOverview {
         impots: impot.impotApresDecote + impot.impotForfaitaire + cehr + prelevementsSociauxTotal,
         revenus: impot.revenuFiscalReference,
       };
-      const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI) : null;
+      const ifi = donneesIFI ? calculerDonneesIFI(ANNEE_IFI, donneesIFI, plafonnementIFI, PARAMETRES) : null;
 
       return {
         loading: loadingIFI || loading2044 || loadingFoyer || loadingRevenus || loadingGains || loadingExoneres || loadingPensions || loadingCapitauxMobiliers || loadingPlusValues || loadingFonciers2042 || loadingNonSalaries || loadingCharges || loadingReductions || loadingPrelevementSource,
@@ -627,7 +627,7 @@ export function useFiscalOverview(): FiscalOverview {
         deficitAgricoleImpute,
         chargesDeductibles,
         abattementsSpeciaux,
-        alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput),
+        alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput, ANNEE_REVENUS),
         alerte8TK: verification8TK.alerte,
         reductionsCreditsImpot,
         plafonnementNiches,

@@ -2,6 +2,8 @@
 // calculée case à case. Fonction pure : les montants arrivent déjà ramenés à la part du foyer
 // (préremplissage : preremplissageIFI.ts), l'arrondi à l'euro est fait sur les cases.
 
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
+
 /** Ligne d'actif de l'annexe 2 (biens détenus directement). */
 export type CategorieBienIFI =
   | 'residencePrincipale' // 9AA, abattement de 30 % (art. 973 I)
@@ -111,8 +113,8 @@ export interface DeclarationIFIResultat {
 
 export const SEUIL_ASSUJETTISSEMENT_IFI = 1_300_000;
 export const ABATTEMENT_RESIDENCE_PRINCIPALE = 0.3;
-/** Biens ruraux loués à long terme et parts de GFA/GAF : 3/4 jusqu'à ce montant, 1/2 au-delà (art. 976 III et IV). */
-export const SEUIL_EXONERATION_RURALE = 101_897;
+/** Biens ruraux loués à long terme et parts de GFA/GAF : 3/4 jusqu'à ce montant, 1/2 au-delà (millésime par défaut). */
+export const SEUIL_EXONERATION_RURALE = PARAMETRES_PAR_DEFAUT.ifi.seuilExonerationRurale;
 export const TAUX_REDUCTION_DONS = 0.75;
 export const PLAFOND_REDUCTION_DONS = 50_000;
 export const TAUX_PLAFONNEMENT = 0.75;
@@ -152,7 +154,7 @@ export function impotIFI(patrimoineNet: number): number {
 }
 
 /** Valeur imposable d'un ensemble de biens d'une même catégorie (abattement ou exonération partielle). */
-function valeurImposable(categorie: CategorieBienIFI, valeurDeclaree: number): number {
+function valeurImposable(categorie: CategorieBienIFI, valeurDeclaree: number, seuilRural: number): number {
   switch (categorie) {
     case 'residencePrincipale':
       return valeurDeclaree * (1 - ABATTEMENT_RESIDENCE_PRINCIPALE);
@@ -160,8 +162,8 @@ function valeurImposable(categorie: CategorieBienIFI, valeurDeclaree: number): n
       return valeurDeclaree * 0.25;
     case 'biensRurauxBailLongTerme':
     case 'partsGfaGaf':
-      return Math.min(valeurDeclaree, SEUIL_EXONERATION_RURALE) * 0.25
-        + Math.max(0, valeurDeclaree - SEUIL_EXONERATION_RURALE) * 0.5;
+      return Math.min(valeurDeclaree, seuilRural) * 0.25
+        + Math.max(0, valeurDeclaree - seuilRural) * 0.5;
     default:
       return valeurDeclaree;
   }
@@ -174,7 +176,11 @@ export function montantDeductibleInFine({ montantEmprunte, anneesEcoulees, duree
   return positif(montantEmprunte) * restant;
 }
 
-export function calculerDeclarationIFI(input: DeclarationIFIInput): DeclarationIFIResultat {
+export function calculerDeclarationIFI(
+  input: DeclarationIFIInput,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
+): DeclarationIFIResultat {
+  const seuilRural = parametres.ifi.seuilExonerationRurale;
   // Actif : valeur déclarée par catégorie (après fraction taxable des biens mixtes).
   const declare: Record<CategorieBienIFI, number> = {
     residencePrincipale: 0, autreBati: 0, boisForets: 0, biensRurauxBailLongTerme: 0, partsGfaGaf: 0, autreNonBati: 0,
@@ -184,7 +190,7 @@ export function calculerDeclarationIFI(input: DeclarationIFIInput): DeclarationI
   }
   // 9AA est déclarée après abattement ; 9AC, 9AD et 9BA avant exonération.
   const imposable = Object.fromEntries(
-    (Object.keys(declare) as CategorieBienIFI[]).map((c) => [c, valeurImposable(c, declare[c])]),
+    (Object.keys(declare) as CategorieBienIFI[]).map((c) => [c, valeurImposable(c, declare[c], seuilRural)]),
   ) as Record<CategorieBienIFI, number>;
   const case9CA = Math.round(input.biensIndirects.reduce((s, v) => s + positif(v), 0));
   const exonerationsPartielles = Math.round(
@@ -256,7 +262,7 @@ export function calculerDeclarationIFI(input: DeclarationIFIInput): DeclarationI
     case9CA,
     tauxImposable: Object.fromEntries(
       (Object.keys(declare) as CategorieBienIFI[]).map((c) => [
-        c, declare[c] > 0 ? imposable[c] / declare[c] : valeurImposable(c, 1),
+        c, declare[c] > 0 ? imposable[c] / declare[c] : valeurImposable(c, 1, seuilRural),
       ]),
     ) as Record<CategorieBienIFI, number>,
     exonerationsPartielles,

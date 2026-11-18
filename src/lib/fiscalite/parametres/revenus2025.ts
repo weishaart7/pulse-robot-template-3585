@@ -62,6 +62,9 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     plafondDons75Annee: 2000,
     seuilsRfrAutonomie: { une: 31393, deux: 49995, parPersonne: 6976 },
   },
+  ifi: {
+    seuilExonerationRurale: 101_897,
+  },
   abattementsSpeciaux: {
     personnesAgees: { seuilPlein: 17670, seuilReduit: 28430, montantPlein: 2822, montantReduit: 1411 },
     rattachement: 6855,

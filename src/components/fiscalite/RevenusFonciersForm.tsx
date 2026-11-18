@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ANNEE_REVENUS } from '@/hooks/useFiscalOverview';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRevenusFonciers2042 } from '@/hooks/useRevenusFonciers2042';
 import { RevenusFonciers2042 } from '@/services/revenusFonciers2042Service';
@@ -8,8 +9,8 @@ import { calculerRevenusFonciers2042, RevenusFonciers2042Input } from '@/lib/fis
 import { LectureLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
-/** Année des revenus de la 2044 reprise (même valeur que ANNEE_REVENUS de useFiscalOverview). */
-const ANNEE_REVENUS_2044 = 2025;
+/** Année des revenus de la 2044 reprise : celle calculée par useFiscalOverview. */
+const ANNEE_REVENUS_2044 = ANNEE_REVENUS;
 
 const FONCIERS_VIDE: RevenusFonciers2042Input = {
   case4ba: null, case4bd: null, case4be: null, case4bk: null, case4bl: null, case4bn: false, case4bz: false,
