@@ -136,6 +136,51 @@ describe('calculerImpot — plafonnement avec les parts réelles (non-régressio
   });
 });
 
+describe('calculerImpot — réduction complémentaire (art. 197 I 2 CGI)', () => {
+  const foyer = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
+    situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
+    enfantsMajeursRattaches: 0, parentIsole: false, ancienParentIsole: false, invaliditeDeclarant1: false,
+    invaliditeDeclarant2: false, ancienCombattantDeclarant1: false, ancienCombattantDeclarant2: false,
+    veufAncienCombattant: false, veuveDeGuerre: false, ...overrides,
+  });
+  const enfant = (options: Partial<FoyerFiscalInput['enfantsCharge'][number]> = {}) =>
+    ({ anneeNaissance: 2015, invalide: false, residenceAlternee: false, ...options });
+
+  it('nulle quand le plafonnement ne joue pas', () => {
+    const parts = calculerPartsFiscales(foyer({ invaliditeDeclarant2: true }));
+    const result = calculerImpot(30000, parts, 'marie');
+    expect(result.plafonnementApplique).toBe(false);
+    expect(result.reductionComplementaireQuotientFamilial).toBe(0);
+  });
+
+  it('bornée par la somme des compléments, demi pour un enfant invalide alterné (simulateur officiel 2026 : 2 702 €)', () => {
+    const parts = calculerPartsFiscales(foyer({
+      invaliditeDeclarant2: true,
+      enfantsCharge: [enfant(), enfant(), enfant({ invalide: true, residenceAlternee: true })],
+    }));
+    const result = calculerImpot(234585, parts, 'marie');
+    expect(result.reductionComplementaireQuotientFamilial).toBe(2702);
+    expect(result.impotApresPlafonnement).toBeCloseTo(55649.39, 2);
+    expect(result.impotApresDecote).toBe(52947);
+  });
+
+  it('bornée par le supplément créé par le plafonnement (simulateur officiel 2026 : 524 €)', () => {
+    const parts = calculerPartsFiscales(foyer({
+      situationFamille: 'veuf', invaliditeDeclarant1: true, enfantsCharge: [enfant({ invalide: true })],
+    }));
+    const result = calculerImpot(63100, parts, 'veuf');
+    expect(result.reductionComplementaireQuotientFamilial).toBe(524);
+    expect(result.impotApresDecote).toBe(2475);
+  });
+
+  it("nulle sans demi-part qui y ouvre droit, même plafonné", () => {
+    const parts = calculerPartsFiscales(foyer({ enfantsCharge: [enfant()] }));
+    const result = calculerImpot(182800, parts, 'marie');
+    expect(result.plafonnementApplique).toBe(true);
+    expect(result.reductionComplementaireQuotientFamilial).toBe(0);
+  });
+});
+
 describe('calculerImpot — décote', () => {
   it("s'applique et annule l'impôt sous le seuil célibataire (897 / 45,25 %)", () => {
     // impôt brut proche du seuil bas : décote peut ramener l'impôt à 0

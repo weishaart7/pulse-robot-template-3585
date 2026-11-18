@@ -69,7 +69,13 @@ export interface ImpotResult {
   avantageQuotientFamilial: number;
   plafondQuotientFamilial: number;
   plafonnementApplique: boolean;
+  /** Droits simples : impôt après plafonnement, avant la réduction complémentaire. */
   impotApresPlafonnement: number;
+  /**
+   * Réduction d'impôt complémentaire (art. 197 I 2 CGI) : demi-parts d'invalidité,
+   * d'ancien combattant, de veuve de guerre, arrondie à l'euro ; 0 sans plafonnement.
+   */
+  reductionComplementaireQuotientFamilial: number;
   tauxEffectif: number;
   impotProportionnel: number;
   reductionOutreMer: number;
@@ -133,6 +139,8 @@ interface QuotientFamilialResult {
   plafondQuotientFamilial: number;
   plafonnementApplique: boolean;
   impotApresPlafonnement: number;
+  reductionComplementaire: number;
+  impotApresReductionComplementaire: number;
 }
 
 /**
@@ -158,6 +166,12 @@ function calculerImpotApresQuotientFamilial(
   const plafonnementApplique = avantageQuotientFamilial > plafondQuotientFamilial;
   const avantageRetenu = Math.min(avantageQuotientFamilial, plafondQuotientFamilial);
   const impotApresPlafonnement = impotSansMajorations - avantageRetenu;
+  // Art. 197 I 2 : réduction complémentaire des demi-parts qui portent un plafondComplementaire,
+  // limitée au supplément d'impôt créé par le plafonnement ; arrondie à part (simulateur officiel 2026).
+  const plafondComplementaire = parts.majorations.reduce((total, m) => total + (m.plafondComplementaire ?? 0), 0);
+  const reductionComplementaire = plafonnementApplique
+    ? Math.round(Math.min(plafondComplementaire, impotApresPlafonnement - impotAvecMajorations))
+    : 0;
 
   return {
     impotSansMajorations,
@@ -166,6 +180,8 @@ function calculerImpotApresQuotientFamilial(
     plafondQuotientFamilial,
     plafonnementApplique,
     impotApresPlafonnement,
+    reductionComplementaire,
+    impotApresReductionComplementaire: impotApresPlafonnement - reductionComplementaire,
   };
 }
 
@@ -193,9 +209,11 @@ function calculerImpotApresQuotientFamilial(
  * à charge, dont la part de veuvage est elle-même une majoration plafonnée).
  * Toutes les majorations produites par `calculerPartsFiscales` portent un
  * plafond ; une majoration sans `plafondUnitaire` désactiverait par prudence
- * tout plafonnement du foyer (garde-fou, plus atteint en pratique). Le
- * `plafondComplementaire` (réductions complémentaires 1 801 € / 2 011 €) n'est
- * pas encore appliqué.
+ * tout plafonnement du foyer (garde-fou, plus atteint en pratique). Quand le
+ * plafonnement joue, la réduction complémentaire (art. 197 I 2 : somme des
+ * `plafondComplementaire`, 1 801 € par demi-part, dans la limite du supplément
+ * d'impôt créé par le plafonnement) se retranche aussitôt, avant le taux
+ * effectif et la décote. Le complément de 2 011 € du veuf n'est pas modélisé.
  *
  * `revenuExonereTauxEffectif` (optionnel, 0 par défaut) : revenu exonéré net
  * retenu pour le taux effectif (`calculerRevenuExonereTauxEffectif.ts`) ;
@@ -294,7 +312,7 @@ export function calculerImpot(
 
   const qfOrdinaire = calculerImpotApresQuotientFamilial(revenuMondialFictifOrdinaire, parts);
 
-  let impotApresPlafonnement = qfOrdinaire.impotApresPlafonnement;
+  let impotApresReductionComplementaire = qfOrdinaire.impotApresReductionComplementaire;
   let impotSupplementaireQuotientExceptionnel = 0;
   let revenuMondialFictif = revenuMondialFictifOrdinaire;
 
@@ -304,17 +322,20 @@ export function calculerImpot(
       parts,
     );
     impotSupplementaireQuotientExceptionnel =
-      (qfAvecQuotient.impotApresPlafonnement - qfOrdinaire.impotApresPlafonnement) * COEFFICIENT_QUOTIENT_EXCEPTIONNEL;
-    impotApresPlafonnement = qfOrdinaire.impotApresPlafonnement + impotSupplementaireQuotientExceptionnel;
+      (qfAvecQuotient.impotApresReductionComplementaire - qfOrdinaire.impotApresReductionComplementaire)
+      * COEFFICIENT_QUOTIENT_EXCEPTIONNEL;
+    impotApresReductionComplementaire = qfOrdinaire.impotApresReductionComplementaire + impotSupplementaireQuotientExceptionnel;
     revenuMondialFictif = revenuMondialFictifOrdinaire + revenuExceptionnel;
   }
 
   const { impotSansMajorations, impotAvecMajorations, avantageQuotientFamilial, plafondQuotientFamilial, plafonnementApplique } = qfOrdinaire;
+  const reductionComplementaireQuotientFamilial = qfOrdinaire.reductionComplementaire;
+  const impotApresPlafonnement = impotApresReductionComplementaire + reductionComplementaireQuotientFamilial;
 
   const baseFrance = revenu + revenuCredit + revenuExceptionnel;
-  const tauxEffectif = revenuMondialFictif > 0 ? impotApresPlafonnement / revenuMondialFictif : 0;
+  const tauxEffectif = revenuMondialFictif > 0 ? impotApresReductionComplementaire / revenuMondialFictif : 0;
   // Arrondi à l'euro, comme l'avis (« impôt après application du taux effectif »).
-  const impotProportionnel = revenuExonere > 0 || revenuMondialSaisi > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresPlafonnement;
+  const impotProportionnel = revenuExonere > 0 || revenuMondialSaisi > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresReductionComplementaire;
 
   const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = REDUCTION_OUTRE_MER[lieuResidence];
   const reductionOutreMer = Math.min(plafondReductionOutreMer, impotProportionnel * tauxReductionOutreMer);
@@ -368,6 +389,7 @@ export function calculerImpot(
     plafondQuotientFamilial,
     plafonnementApplique,
     impotApresPlafonnement,
+    reductionComplementaireQuotientFamilial,
     tauxEffectif,
     impotProportionnel,
     reductionOutreMer,

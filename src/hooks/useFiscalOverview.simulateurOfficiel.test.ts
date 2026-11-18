@@ -122,10 +122,10 @@ const CAS: Record<string, Cas> = {
       charges: { case6ns: 20000, case6ps: PLAFOND_PER },
       reductions: { case7db: 15000, case7uf: 4000 },
     },
-    // Officiel : réduction complémentaire 2 702 € (art. 197 I 2) affichée à part des dons (2 640 €).
+    // Réduction complémentaire 2 702 € (art. 197 I 2), affichée à part des dons (2 640 €).
     attendu: { parts: 4.25, revenuFiscalReference: 290585, droitsSimples: 55649, reductions: 2640, impotNet: 42807,
       prelevementsSociaux: 10145, tmi: 0.41 },
-    ecartsConnus: ['impotNet', 'tmi'],
+    ecartsConnus: ['tmi'],
   },
   S5: {
     description: 'veuf invalide, enfant invalide, rente viagère, assurance-vie, micro-foncier, dons 7UD',
@@ -138,10 +138,10 @@ const CAS: Record<string, Cas> = {
       charges: { case6gu: 5000 },
       reductions: { case7ud: 1500, case7uf: 3000, case7db: 9000 },
     },
-    // Officiel : réduction complémentaire 524 €, puis 2 475 € de dons imputés.
+    // Réduction complémentaire 524 €, puis 2 475 € de dons imputés.
     attendu: { parts: 3.5, revenuFiscalReference: 63100, droitsSimples: 2999, reductions: 2475, impotNet: -4500,
       prelevementsSociaux: 7585, tmi: 0.3 },
-    ecartsConnus: ['reductions', 'tmi'],
+    ecartsConnus: ['tmi'],
   },
   S6: {
     description: 'célibataire très haut revenu, PFU, plafond 20 % des dons, CEHR',

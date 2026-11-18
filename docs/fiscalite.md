@@ -434,8 +434,11 @@ fonciers (§4).
   il est nul ou omis), puis plafonnement art. 197 CGI (compare l'avantage procuré par les majorations à
   la somme de leurs `plafondUnitaire` — chiffré pour toutes les majorations, dont le 3e enfant et
   suivants (3 614 €) et la part de veuvage ; avantage mesuré par rapport à `partsBase`, 1 part pour un
-  veuf ; les réductions complémentaires de 1 801 € / 2 011 € (`plafondComplementaire`) ne sont pas
-  appliquées), puis
+  veuf), puis **réduction complémentaire** (art. 197 I 2 CGI, `reductionComplementaireQuotientFamilial` :
+  somme des `plafondComplementaire` — 1 801 € par demi-part P/F/S/W/G, invalidité d'un enfant ou d'une
+  personne à charge, moitié en résidence alternée — dans la limite du supplément d'impôt créé par le
+  plafonnement, arrondie à l'euro à part ; nulle sans plafonnement ; le complément de 2 011 € du veuf
+  n'est pas modélisé), puis
   **proratisation** (méthode du taux effectif : `impôt sur le revenu mondial fictif × (revenu imposable
   en France / revenu mondial fictif)` — seule la part française paie, mais au taux moyen du revenu
   mondial ; sans revenu exonéré, ce ratio vaut 1 et n'a aucun effet), puis **réduction d'impôt outre-mer**
@@ -450,8 +453,7 @@ fonciers (§4).
   au barème progressif (la décote est explicitement limitée par l'art. 197 I 4° CGI à la « cotisation
   résultant du barème »). Le TMI reflète la tranche du revenu mondial fictif (pas seulement la part
   française, ni l'impôt forfaitaire qui n'entre dans aucun quotient), cohérent avec le taux marginal réel
-  du foyer sur la part barème. Le `plafondComplementaire` (cumul de plusieurs majorations sur une même
-  personne) n'est pas appliqué. 45 tests couvrent le barème tranche par tranche, le quotient à plusieurs
+  du foyer sur la part barème. 45 tests couvrent le barème tranche par tranche, le quotient à plusieurs
   parts, le plafonnement (actif/inactif/désactivé), le taux effectif (progressivité, non-imposition de la
   part exonérée, TMI sur le revenu mondial, cas limites à zéro), la réduction outre-mer (métropole
   neutre, 30 %/40 % sous et au-delà du plafond, impact sur l'impôt net par rapport à la métropole),
@@ -1904,14 +1906,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
-- **Quotient familial — réductions d'impôt complémentaires non appliquées.** Les plafonds
-  `plafondComplementaire` (1 801 € par demi-part P/F/S/W/G et invalidité d'une personne ou d'un enfant à
-  charge ; 2 011 € pour le veuf quand les deux premières demi-parts sont plafonnées) sont portés par
-  `calculerPartsFiscales.ts` mais ignorés par `calculerImpot.ts` : impôt surestimé pour les foyers
-  plafonnés concernés (brochure IR 2026 p. 79, 81, 84-85). Mesuré sur le simulateur officiel 2026 :
-  cas S4 (conjoint invalide, enfant invalide alterné) 2 702 € manquants ; cas S5 (veuf invalide) 524 €
-  manquants, absorbés à tort par les dons. Écarts figés en `it.fails` dans
-  `useFiscalOverview.simulateurOfficiel.test.ts`.
+- **Quotient familial — complément de 2 011 € du veuf non modélisé.** Quand les deux premières
+  demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
+  par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €
+  par demi-part est, elle, appliquée (voir §2).
 - **Taux marginal affiché sous plafonnement du quotient familial.** `calculerImpot.ts` mesure le TMI
   sur le quotient toutes parts comprises ; le simulateur officiel le mesure sur les parts de base quand
   le plafonnement joue (S4 et S9 : 41 % officiel contre 30 % ; S5 : 30 % contre 11 %). Impôt inchangé,

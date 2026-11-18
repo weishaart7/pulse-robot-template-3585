@@ -66,6 +66,12 @@ const TaxRateCard = ({ overview }: { overview: FiscalOverview }) => {
           )}
           <LigneDetail label="Nombre de parts" valeur={parts.nombreParts.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} />
           <LigneDetail label="Plafonnement du quotient familial" valeur={impot.plafonnementApplique ? 'Oui' : 'Non'} />
+          {impot.reductionComplementaireQuotientFamilial > 0 && (
+            <LigneDetail
+              label="Réduction complémentaire (quotient familial)"
+              valeur={formatEuros(impot.reductionComplementaireQuotientFamilial)}
+            />
+          )}
           <LigneDetail label="Impôt net (IR)" valeur={formatEuros(impot.impotNet)} />
         </div>
       </div>
