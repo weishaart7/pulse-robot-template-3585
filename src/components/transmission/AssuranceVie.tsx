@@ -29,6 +29,8 @@ import {
 import { computeTransmission, FamilyGraph, PatrimonySnapshot, TransmissionParams } from '@/lib/transmission';
 import { resolveEffectiveAVBeneficiaires } from '@/lib/dmtg/assurance-vie';
 import type { DMTGBeneficiaryResult } from '@/lib/dmtg/types';
+import type { TransmissionResult } from '@/lib/transmission/types';
+import type { Json } from '@/integrations/supabase/types';
 import { BienNonQualifieError } from '@/lib/patrimoine/succession';
 import { DemembrementFractionContext } from '@/lib/patrimoine/demembrementFraction';
 import { assetDemembrementService } from '@/services/assetDemembrementService';
@@ -80,7 +82,7 @@ export const AssuranceVie = () => {
   // Résultat du vrai moteur fiscal (computeTransmission -> dmtg.perBeneficiary,
   // cf. dmtg/assurance-vie.ts::computeAssuranceVie) — remplace l'estimation
   // simplifiée basée sur l'âge actuel du souscripteur (décision du 2026-07-18).
-  const [transmissionResult, setTransmissionResult] = useState<any>(null);
+  const [transmissionResult, setTransmissionResult] = useState<TransmissionResult | null>(null);
   const [computeErrorMessage, setComputeErrorMessage] = useState<string | null>(null);
   const [avContractsBuilt, setAvContractsBuilt] = useState<ReturnType<typeof buildAVContracts>>([]);
   const [familyMembersById, setFamilyMembersById] = useState<Map<string, { nom: string; prenom: string; lien: string }>>(new Map());
@@ -156,32 +158,32 @@ export const AssuranceVie = () => {
 
         setSubscriberAge(computeAge(profileRes.data?.date_naissance));
         setUserName(`${profileRes.data?.prenom || ''} ${profileRes.data?.nom || ''}`.trim() || null);
-        setConjointAge(computeAge((maritalRes.data as any)?.date_naissance_conjoint));
+        setConjointAge(computeAge(maritalRes.data?.date_naissance_conjoint));
         const statut = maritalRes.data?.statut_couple || null;
         const coupleStatus = ['Marié(e)', 'Pacsé(e)'].includes(statut || '');
         setIsCouple(coupleStatus);
 
         const familyLinksRows = familyRes.data || [];
-        const familyMembers = familyLinksRows.map((f: any) => ({
+        const familyMembers = familyLinksRows.map(f => ({
           nom: f.nom,
           prenom: f.prenom,
           lien: f.lien_familial,
         }));
         setBeneficiaires(familyMembers);
         setNbBeneficiaires(Math.max(1, familyMembers.length));
-        setFamilyMembersById(new Map(familyLinksRows.map((f: any) => [f.id, { nom: f.nom, prenom: f.prenom || '', lien: f.lien_familial }])));
+        setFamilyMembersById(new Map(familyLinksRows.map(f => [f.id, { nom: f.nom, prenom: f.prenom || '', lien: f.lien_familial }])));
 
         // Get spouse name if couple
         if (coupleStatus && maritalRes.data) {
-          const ms = maritalRes.data as any;
+          const ms = maritalRes.data;
           if (ms.nom_conjoint || ms.prenom_conjoint) {
             setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
           }
         }
 
          // Fetch all operations and contract details for these contracts
-        let avOperationsRaw: any[] = [];
-        let avClausesRaw: any[] = [];
+        let avOperationsRaw: { asset_id: string; type_operation: string; montant: number | null; date_operation: string }[] = [];
+        let avClausesRaw: { asset_id: string; clause_beneficiaire_structuree: Json | null; avance_en_cours: number | null }[] = [];
         if (avContracts.length > 0) {
           const assetIds = avContracts.map(c => c.id);
           const [opsRes2, clausesRes] = await Promise.all([
@@ -200,7 +202,7 @@ export const AssuranceVie = () => {
 
           if (opsRes2.data) {
             const grouped: OperationsByContract = {};
-            opsRes2.data.forEach((op: any) => {
+            opsRes2.data.forEach(op => {
               if (!grouped[op.asset_id]) grouped[op.asset_id] = [];
               grouped[op.asset_id].push({ type_operation: op.type_operation, montant: op.montant });
             });
@@ -208,9 +210,10 @@ export const AssuranceVie = () => {
           }
 
           if (clausesRes.data) {
-            setContractClauses(clausesRes.data.map((d: any) => ({
+            setContractClauses(clausesRes.data.map(d => ({
               asset_id: d.asset_id,
-              clause_beneficiaire_structuree: d.clause_beneficiaire_structuree || null,
+              // jsonb lu en base : forme écrite par ClauseBeneficiaireBuilder.
+              clause_beneficiaire_structuree: (d.clause_beneficiaire_structuree as unknown as ClauseStructuree) || null,
             })));
           }
         }
@@ -223,19 +226,19 @@ export const AssuranceVie = () => {
         if (profileRes.data && avContracts.length > 0) {
           try {
             const opsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
-            avOperationsRaw.forEach((op: any) => {
+            avOperationsRaw.forEach(op => {
               const list = opsByAsset.get(op.asset_id) || [];
               list.push({ type_operation: op.type_operation, montant: op.montant, date_operation: op.date_operation });
               opsByAsset.set(op.asset_id, list);
             });
-            const clauseByAsset = new Map<string, any>(avClausesRaw.map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null]));
+            const clauseByAsset = new Map<string, ClauseStructuree | null>(avClausesRaw.map(d => [d.asset_id, (d.clause_beneficiaire_structuree as unknown as ClauseStructuree) || null]));
             const avContractsRaw: AVContractRawRow[] = avContracts.map(a => ({
               assetId: a.id!,
               label: a.denomination,
               valeurEstimee: a.valeur_estimee,
               capitalGaranti: a.capital_garanti,
               assureTiers: a.assure_tiers,
-              avanceEnCours: avClausesRaw.find((d: { asset_id: string; avance_en_cours?: number | null }) => d.asset_id === a.id)?.avance_en_cours ?? null,
+              avanceEnCours: avClausesRaw.find(d => d.asset_id === a.id)?.avance_en_cours ?? null,
               regimeRetraiteEtrangere: a.regime_retraite_etrangere,
               detenteur: a.detenteur,
               operations: opsByAsset.get(a.id!) || [],
@@ -254,7 +257,7 @@ export const AssuranceVie = () => {
               profileRes.data.date_naissance,
               family,
               referenceDate,
-              (maritalRes.data as any)?.date_naissance_conjoint
+              maritalRes.data?.date_naissance_conjoint
             );
             setAvContractsBuilt(builtAvContracts);
 
@@ -299,7 +302,7 @@ export const AssuranceVie = () => {
               // n'est jamais effacé en changeant de statut (cf.
               // RelationInfoForm.tsx), donc un ex-marié devenu Pacsé/Concubin
               // peut garder une valeur périmée.
-              regimeMatrimonial: statut === 'Marié(e)' ? (maritalRes.data as any)?.regime_matrimonial : undefined,
+              regimeMatrimonial: statut === 'Marié(e)' ? maritalRes.data?.regime_matrimonial : undefined,
               recompenses: buildRecompensesCalcInput((recompensesRes.data || []) as Recompense[]),
               creancesEntreEpoux: buildCreancesCalcInput((creancesRes.data || []) as CreanceEntreEpoux[]),
               participationAcquets: buildParticipationAcquetsContext(
@@ -349,7 +352,7 @@ export const AssuranceVie = () => {
     // bénéficiaire par bénéficiaire : les tranches affichées sont la somme des
     // tranches de chacun, pas un barème appliqué au total.
     const detailsAV = Object.values(dmtgPerBeneficiary)
-      .map((b: any) => b.detailAV)
+      .map(b => b.detailAV)
       .filter(Boolean) as NonNullable<DMTGBeneficiaryResult['detailAV']>[];
     const montant990I = detailsAV.reduce((sum, d) => sum + d.assiette990I, 0);
     const abattement990I = detailsAV.reduce((sum, d) => sum + d.abattement990I, 0);

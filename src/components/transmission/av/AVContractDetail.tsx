@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Chip, panelPrimaryButtonClass } from '@/components/layout/workspace-panel';
 import { PanelCard, PanelCardContent, PanelCardHeader, PanelCardTitle } from '@/components/layout/panel-section';
+import type { Json } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -150,7 +151,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       ]);
 
       if (detailsRes.data) {
-        const d = detailsRes.data as any;
+        const d = detailsRes.data;
         setDetails({
           id: d.id,
           part_fonds_euros: d.part_fonds_euros || 0,
@@ -172,7 +173,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         });
         // Restore structured clause if exists
         if (d.clause_beneficiaire_structuree) {
-          setClauseStructuree(d.clause_beneficiaire_structuree);
+          setClauseStructuree(d.clause_beneficiaire_structuree as unknown as ClauseStructuree);
           setClauseMode('assistee');
         }
       }
@@ -180,7 +181,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         setOperations(opsRes.data as AVOperation[]);
       }
       if (familyRes.data) {
-        setBeneficiaires(familyRes.data.map((f: any) => ({
+        setBeneficiaires(familyRes.data.map(f => ({
           id: f.id,
           nom: f.nom,
           prenom: f.prenom,
@@ -189,7 +190,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       }
       // Conjoint name
       if (maritalRes.data) {
-        const ms = maritalRes.data as any;
+        const ms = maritalRes.data;
         const statut = ms.statut_couple || '';
         if (isCoupleStatus(statut) && (ms.nom_conjoint || ms.prenom_conjoint)) {
           setConjointName(`${ms.prenom_conjoint || ''} ${ms.nom_conjoint || ''}`.trim());
@@ -229,7 +230,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
         rachats_programmes: details.rachats_programmes,
         rachats_programmes_montant: details.rachats_programmes_montant,
         rachats_programmes_periodicite: details.rachats_programmes_periodicite,
-        clause_beneficiaire_structuree: clauseMode === 'assistee' ? clauseStructuree : null,
+        clause_beneficiaire_structuree: clauseMode === 'assistee' ? (clauseStructuree as unknown as Json) : null,
         origine_fonds: details.origine_fonds,
         avance_en_cours: details.avance_en_cours,
       };
@@ -237,7 +238,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
       if (details.id) {
         const { error } = await supabase
           .from('av_contract_details')
-          .update(payload as any)
+          .update(payload)
           .eq('id', details.id);
         if (error) throw error;
       } else {
@@ -247,7 +248,7 @@ export const AVContractDetail: React.FC<AVContractDetailProps> = ({ contract, on
             user_id: user.id,
             asset_id: contract.id,
             ...payload,
-          } as any)
+          })
           .select()
           .single();
         if (error) throw error;

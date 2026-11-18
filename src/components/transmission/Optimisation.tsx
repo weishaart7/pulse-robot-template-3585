@@ -59,14 +59,14 @@ export const Optimisation = () => {
 
   // Load saved option from DB
   useEffect(() => {
-    if (maritalData && (maritalData as any).option_conjoint) {
-      setSelectedOption((maritalData as any).option_conjoint as ConjointOption);
+    if (maritalData && maritalData.option_conjoint) {
+      setSelectedOption(maritalData.option_conjoint as ConjointOption);
     }
     if (maritalData) {
       setPartageEnvisage(!!maritalData.partage_envisage);
       const vbp = (maritalData as { valeur_biens_partage?: number | null }).valeur_biens_partage;
       setValeurBiensPartage(vbp != null ? String(vbp) : '');
-      setDuhOpte(!!(maritalData as any).duh_opte);
+      setDuhOpte(!!maritalData.duh_opte);
     }
   }, [maritalData]);
 
@@ -81,7 +81,7 @@ export const Optimisation = () => {
       setSaving(true);
       const { error } = await supabase
         .from('marital_status')
-        .update({ option_conjoint: option } as any)
+        .update({ option_conjoint: option })
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -180,7 +180,7 @@ export const Optimisation = () => {
       setSavingDuh(true);
       const { error } = await supabase
         .from('marital_status')
-        .update({ duh_opte: checked } as any)
+        .update({ duh_opte: checked })
         .eq('user_id', user.id);
 
       if (error) throw error;

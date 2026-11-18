@@ -182,14 +182,14 @@ export const Synthese = () => {
         throw new Error("Les opérations d'assurance-vie n'ont pas pu être chargées, le calcul ne peut pas être fiable.");
       }
 
-      const avClauseByAsset = new Map<string, any>(
-        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.clause_beneficiaire_structuree || null])
+      const avClauseByAsset = new Map<string, AVContractRawRow['clauseBeneficiaireStructuree'] | null>(
+        (avDetailsRes.data || []).map(d => [d.asset_id, (d.clause_beneficiaire_structuree as unknown as AVContractRawRow['clauseBeneficiaireStructuree']) || null])
       );
       const avOrigineFondsByAsset = new Map<string, string | null>(
-        (avDetailsRes.data || []).map((d: any) => [d.asset_id, d.origine_fonds || null])
+        (avDetailsRes.data || []).map(d => [d.asset_id, d.origine_fonds || null])
       );
       const avOperationsByAsset = new Map<string, { type_operation: string; montant: number | null; date_operation: string }[]>();
-      (avOperationsRes.data || []).forEach((op: any) => {
+      (avOperationsRes.data || []).forEach(op => {
         const list = avOperationsByAsset.get(op.asset_id) || [];
         list.push({ type_operation: op.type_operation, montant: op.montant, date_operation: op.date_operation });
         avOperationsByAsset.set(op.asset_id, list);
