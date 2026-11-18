@@ -88,7 +88,7 @@ export function calculateSuccessionLegale(
 
 function calculateBrancheA(
   graph: FamilyGraph,
-  personnesVivantes: any[],
+  personnesVivantes: Person[],
   result: SuccessionLegaleResult,
   optionConjoint?: string
 ): SuccessionLegaleResult {
@@ -245,7 +245,7 @@ function calculateBrancheA(
 
 function calculateBrancheB(
   graph: FamilyGraph,
-  personnesVivantes: any[],
+  personnesVivantes: Person[],
   result: SuccessionLegaleResult
 ): SuccessionLegaleResult {
   // B1. Y a-t-il des enfants vivants ou représentables ?
@@ -351,7 +351,7 @@ function calculateBrancheB(
 
 interface Souche {
   rootChildId: PersonId;
-  heritiers: Array<{ person: any; part: number; representation: boolean }>;
+  heritiers: Array<{ person: Person; part: number; representation: boolean }>;
 }
 
 /**
@@ -423,7 +423,7 @@ function buildSouchesEnfants(graph: FamilyGraph, result?: SuccessionLegaleResult
 function collectRepresentantsRecursive(
   graph: FamilyGraph,
   deceasedId: PersonId
-): Array<{ person: any; part: number }> {
+): Array<{ person: Person; part: number }> {
   const directChildren = graph.links
     .filter(link => link.from === deceasedId && link.relation === 'child')
     .map(link => graph.persons.find(p => p.id === link.to))
@@ -431,7 +431,7 @@ function collectRepresentantsRecursive(
 
   if (directChildren.length === 0) return [];
 
-  const results: Array<{ person: any; part: number }> = [];
+  const results: Array<{ person: Person; part: number }> = [];
   const partPerChild = 1.0 / directChildren.length;
 
   for (const child of directChildren) {
@@ -512,10 +512,10 @@ function distributeToSouchesWithType(
 
 interface SoucheFratrie {
   rootSiblingId: PersonId;
-  heritiers: Array<{ person: any; part: number; representation: boolean }>;
+  heritiers: Array<{ person: Person; part: number; representation: boolean }>;
 }
 
-function buildSouchesFratrie(graph: FamilyGraph, personnesVivantes: any[]): SoucheFratrie[] {
+function buildSouchesFratrie(graph: FamilyGraph, personnesVivantes: Person[]): SoucheFratrie[] {
   const allSiblings = graph.persons.filter(p => {
     if (p.id === graph.decedentId) return false;
     const lien = p.lienFamilial?.toLowerCase();
@@ -738,7 +738,7 @@ function getAscendantsAutreLigne(graph: FamilyGraph, personnesVivantes: Person[]
 
 function distributeFenteHeritiers(
   result: SuccessionLegaleResult,
-  heritiers: any[],
+  heritiers: Person[],
   totalShare: number
 ): void {
   const part = totalShare / heritiers.length;
@@ -758,15 +758,15 @@ function distributeFenteHeritiers(
 
 // ─── Utilitaires ────────────────────────────────────────────────────
 
-function getParentsVivants(_graph: FamilyGraph, personnesVivantes: any[]): any[] {
+function getParentsVivants(_graph: FamilyGraph, personnesVivantes: Person[]): Person[] {
   return personnesVivantes.filter(p => {
     const lien = p.lienFamilial?.toLowerCase();
     return lien === 'parent' || lien === 'père' || lien === 'mère';
   });
 }
 
-function findAllLivingDescendants(graph: FamilyGraph, ancestorId: PersonId): any[] {
-  const results: any[] = [];
+function findAllLivingDescendants(graph: FamilyGraph, ancestorId: PersonId): Person[] {
+  const results: Person[] = [];
   const childLinks = graph.links.filter(l => l.from === ancestorId && l.relation === 'child');
 
   for (const link of childLinks) {
