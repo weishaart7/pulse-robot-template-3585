@@ -520,6 +520,7 @@ export function useFiscalOverview(): FiscalOverview {
         COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille),
         revenuImposableTotal,
         aRevenuProfessionnelReel(nonSalaries ?? REVENUS_NON_SALARIES_VIDE),
+        parametres,
       );
       const investissementsForestiers = calculerInvestissementsForestiers(
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT,

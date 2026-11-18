@@ -330,6 +330,34 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 1, revenuFiscalReference: 45000, droitsSimples: 6604, impotNet: 1604, solde: 5604,
       prelevementsSociaux: 0, tmi: 0.3 },
   },
+  S23: {
+    description: 'divorcé, case T, 2 enfants alternés, BNC réel, PFU, cryptos, PER, FCPI 7GQ, CEHR',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'divorce', parentIsole: true, anneeNaissanceDeclarant1: 1984,
+        enfantsCharge: [enfant(2012, { residenceAlternee: true }), enfant(2016, { residenceAlternee: true })] },
+      salaires: { case1aj: 220000 },
+      nonSalaries: { case5qc: 60000 },
+      rcm: { case2dc: 50000, case2op: false },
+      plusValues: { case3vg: 40000, case3an: 10000 },
+      charges: { case6ns: 15000, case6ps: PLAFOND_PER },
+      reductions: { case7gq: 8000, case7db: 6000 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 365445, droitsSimples: 84962, impotProportionnel: 12800,
+      reductions: 1440, cehr: 3463, cdhr: 0, impotNet: 96785, prelevementsSociaux: 18600, tmi: 0.45 },
+  },
+  S24: {
+    description: 'marié très haut revenu, PFU, plus-value, foncier réel, FCPI 7GQ et dons, CEHR',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1970, anneeNaissanceDeclarant2: 1972 },
+      salaires: { case1aj: 400000, case1bj: 200000 },
+      rcm: { case2dc: 100000, case2op: false },
+      plusValues: { case3vg: 200000 },
+      fonciers: { case4ba: 30000 },
+      reductions: { case7gq: 10000, case7uf: 20000 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 900890, droitsSimples: 223448, impotProportionnel: 38400,
+      reductions: 15000, cehr: 12027, cdhr: 0, impotNet: 258875, prelevementsSociaux: 60960, tmi: 0.45 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -360,12 +388,15 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
 
 /**
  * calc-2027.cgi (revenus 2026, novembre 2026) avec le millésime provisoire : mêmes valeurs que
- * calc-2026.cgi, sauf les dons 7UD plafonnés à 2 000 € (S3 : 1 500 € à 75 % au lieu de 750 €).
+ * calc-2026.cgi, sauf les dons 7UD plafonnés à 2 000 € et la FCPI 7GQ à 25 % (S3 : 1 500 € à 75 % au lieu de 750 €).
  */
 const ECARTS_2027: Record<string, Partial<Attendu>> = {
   S3: { reductions: 5460, impotNet: 85947 },
   // Dons réintégrés dans l'impôt retenu par la CDHR à partir des revenus 2026.
   S11: { cdhr: 14699, impotNet: 71400 },
+  // FCPI 7GQ à 25 % (7GR supprimée).
+  S23: { reductions: 2000, impotNet: 96225 },
+  S24: { reductions: 15700, impotNet: 258175 },
 };
 
 function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}) {

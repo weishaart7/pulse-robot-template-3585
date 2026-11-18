@@ -267,8 +267,9 @@ fonciers (§4).
   ([MillesimeSelector.tsx](src/pages/fiscalite/components/MillesimeSelector.tsx), en-tête de la Vue
   d'ensemble) n'apparaît qu'à partir de deux millésimes. **Revenus 2026 provisoire**
   (`revenus2026.ts`, `statut: 'provisoire'`) : valeurs relevées sur calc-2027.cgi en novembre 2026,
-  identiques aux revenus 2025 sauf les dons à 75 % (7UD seul, 2 000 €) ; le nouveau sens de 7UQ
-  (Chambord) et la suppression de 7VM ne sont pas modélisés, signalés dans le cadre 7. Les 9 cas de
+  identiques aux revenus 2025 sauf les dons à 75 % (7UD seul, 2 000 €) et la FCPI (7GQ à 25 %, 7GR
+  supprimée) ; le nouveau sens de 7UQ
+  (Chambord) et la suppression de 7VM ne sont pas modélisés, signalés dans le cadre 7. Les cas de
   `useFiscalOverview.simulateurOfficiel.test.ts` sont rejoués sur les deux millésimes.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
@@ -1605,8 +1606,9 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   taux ni la date). Comme le simulateur, `7DO` est déduite deux fois du plafond restant pour les cases
   imputées après elle (`7CV`, `7CO`, `7CI`, `7GW`, `7BS`…) : célibataire 7DO 20 000 € + 7CO 20 000 € →
   6 100 € ; couple 7DO 50 000 € + 7CO 4 000 € → 9 000 €. `7DC`, `7DP`, `7CA`, imputées avant, ne sont pas touchées. JEI/JEU/JEIC `7CR` 30 % (75 000 / 150 000 €) et JEIR `7DZ` 50 %
-  (50 000 / 100 000 €), plafonds propres. FCPI `7GR` 25 % puis `7GQ` 18 %, 12 000 € (24 000 €) en
-  commun ; FIP Corse `7FM` et outre-mer `7FL` 30 %, 12 000 € (24 000 €) chacun. SOFICA `7EN` 48 %,
+  (50 000 / 100 000 €), plafonds propres. FCPI `7GR` puis `7GQ`, 12 000 € (24 000 €) en
+  commun, taux par millésime (`reductionsCredits.tauxFcpi`) : 25 % / 18 % en revenus 2025, `7GQ` seule à
+  25 % en revenus 2026 (`7GR` supprimée de calc-2027.cgi) ; FIP Corse `7FM` et outre-mer `7FL` 30 %, 12 000 € (24 000 €) chacun. SOFICA `7EN` 48 %,
   `7GN` 36 %, `7FN` 30 % dans cet ordre, versements ≤ min(25 % du RNI, 18 000 €). Presse `7MY` 50 %
   puis `7MX` 30 %, 10 000 € (20 000 €) en commun ; objets classés `7NZ` 18 %, 20 000 € par foyer ;
   DFCI `7UC` 50 %, 1 000 € par foyer ; reprise de société `7FH` 25 %, 20 000 € (40 000 €). Reports

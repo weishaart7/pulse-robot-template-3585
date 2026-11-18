@@ -97,6 +97,8 @@ export interface ParametresFiscaux {
     readonly plafondDons75Annee: number;
     /** Seuils de RFR du crédit autonomie 7WI : 1, 2 personnes, puis par personne en plus. */
     readonly seuilsRfrAutonomie: { readonly une: number; readonly deux: number; readonly parPersonne: number };
+    /** Souscriptions FCPI (art. 199 terdecies-0 A) : taux par case, 0 si la case n'existe plus. */
+    readonly tauxFcpi: { readonly case7gr: number; readonly case7gq: number };
   };
   /** IFI au 1er janvier suivant l'année de revenus (déclaration déposée avec la 2042). */
   readonly ifi: {

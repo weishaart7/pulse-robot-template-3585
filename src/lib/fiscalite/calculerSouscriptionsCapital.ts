@@ -1,4 +1,5 @@
 import { ReductionsCreditsImpotInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
 
 /**
  * Souscriptions au capital et fin du bloc « entreprises » de la 2042-RICI (revenus 2025/impôt 2026).
@@ -12,7 +13,8 @@ import { ReductionsCreditsImpotInput } from './types';
  * - JEI/JEU/JEIC (7CR) : 30 %, 75 000 € (150 000 €) ; JEIR (7DZ) : 50 %, 50 000 € (100 000 €) ;
  *   reprise de société (7FH) : 25 %, 20 000 € (40 000 €) ; DFCI (7UC) : 50 %, 1 000 € par foyer ;
  *   plafonds propres, hors plafonnement global ;
- * - FCPI : 7GR (25 %) puis 7GQ (18 %), 12 000 € (24 000 €) en commun ; FIP Corse (7FM) et FIP
+ * - FCPI : 7GR puis 7GQ, 12 000 € (24 000 €) en commun ; taux par millésime (`tauxFcpi`) : 25 % / 18 %
+ *   en revenus 2025, 7GQ seule à 25 % en revenus 2026 (calc-2027.cgi, 7GR supprimée) ; FIP Corse (7FM) et FIP
  *   outre-mer (7FL) : 30 %, 12 000 € (24 000 €) chacun ;
  * - presse : 7MY (50 %) puis 7MX (30 %), 10 000 € (20 000 €) en commun ; objets classés monuments
  *   historiques (7NZ) : 18 %, 20 000 € par foyer ; reports au titre du plafonnement global (7CY…7GY) ;
@@ -46,7 +48,6 @@ const GROUPE_PME: Tranche = [
 ];
 /** Cases du groupe PME ouvrant la majoration ESUS de 3 000 €. */
 const CASES_ESUS_MAJORANTES: Cle[] = ['case7dc', 'case7bs'];
-const GROUPE_FCPI: Tranche = [['case7gr', 0.25], ['case7gq', 0.18]];
 const GROUPE_SOFICA: Tranche = [['case7en', 0.48], ['case7gn', 0.36], ['case7fn', 0.30]];
 const GROUPE_PRESSE: Tranche = [['case7my', 0.50], ['case7mx', 0.30]];
 const REPORTS_PLAFONNEMENT: Cle[] = ['case7cy', 'case7dy', 'case7ey', 'case7fy', 'case7gy'];
@@ -91,11 +92,14 @@ export function calculerSouscriptionsCapital(
   couple: boolean,
   revenuImposable: number,
   revenuProfessionnelReel = false,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): SouscriptionsCapitalResult {
+  const { tauxFcpi } = parametres.reductionsCredits;
+  const groupeFcpi: Tranche = [['case7gr', tauxFcpi.case7gr], ['case7gq', tauxFcpi.case7gq]];
   const k = couple ? 2 : 1;
   const pme = imputer(input, GROUPE_PME, PLAFOND_PME * k, CASES_ESUS_MAJORANTES);
   const esus = pme.majorante + Math.round(montant(input.case7ek));
-  const fcpi = imputer(input, GROUPE_FCPI, PLAFOND_FCPI_FIP * k).reduction;
+  const fcpi = imputer(input, groupeFcpi, PLAFOND_FCPI_FIP * k).reduction;
   const fip = Math.round(plafonne(input.case7fm, PLAFOND_FCPI_FIP * k, 0.30) + plafonne(input.case7fl, PLAFOND_FCPI_FIP * k, 0.30));
   const presse = imputer(input, GROUPE_PRESSE, PLAFOND_PRESSE * k).reduction;
   const objetsMH = Math.round(plafonne(input.case7nz, PLAFOND_OBJETS_MH, 0.18));
