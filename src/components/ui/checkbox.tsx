@@ -32,7 +32,8 @@ const CheckboxRoot = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   CheckboxProps
 >(({ className, size, label, description, error, id, ...props }, ref) => {
-  const checkboxId = id || React.useId();
+  const generatedId = React.useId();
+  const checkboxId = id || generatedId;
   const iconSize = size === "sm" ? 10 : size === "lg" ? 14 : 12;
 
   // Custom SVG check path for drawing animation
