@@ -1,17 +1,5 @@
 import { FoyerFiscalInput, PartsFiscalesResult } from './types';
-
-/**
- * Barème progressif de l'impôt sur le revenu, revenus 2025 / impôt 2026
- * (art. 4 loi de finances pour 2026, revalorisation de 0,9 %).
- * `seuil` = borne supérieure cumulée de la tranche (revenu par part).
- */
-export const BAREME_2026 = [
-  { seuil: 11600, taux: 0 },
-  { seuil: 29579, taux: 0.11 },
-  { seuil: 84577, taux: 0.30 },
-  { seuil: 181917, taux: 0.41 },
-  { seuil: Infinity, taux: 0.45 },
-] as const;
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux, type TrancheBareme } from './parametres';
 
 /**
  * Système du quotient pour revenus exceptionnels (art. 163-0 A CGI) :
@@ -21,23 +9,7 @@ export const BAREME_2026 = [
  */
 const COEFFICIENT_QUOTIENT_EXCEPTIONNEL = 4;
 
-const DECOTE_TAUX = 0.4525;
-const DECOTE_SEUIL_CELIBATAIRE = 1982;
-const DECOTE_MONTANT_CELIBATAIRE = 897;
-const DECOTE_SEUIL_COUPLE = 3277;
-const DECOTE_MONTANT_COUPLE = 1483;
-
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
-
-/**
- * Réduction d'impôt outre-mer (art. 197 I 3° CGI, revenus 2025 / impôt 2026) :
- * taux et plafond par territoire. Absente pour la métropole.
- */
-const REDUCTION_OUTRE_MER: Record<FoyerFiscalInput['lieuResidence'], { taux: number; plafond: number }> = {
-  metropole: { taux: 0, plafond: 0 },
-  guadeloupe_martinique_reunion: { taux: 0.30, plafond: 2450 },
-  guyane_mayotte: { taux: 0.40, plafond: 4050 },
-};
 
 export interface ImpotResult {
   revenuImposable: number;
@@ -113,11 +85,11 @@ export interface ImpotResult {
 }
 
 /** Impôt dû sur un quotient (revenu par part), tranche par tranche. */
-function impotPourQuotient(quotient: number): number {
+function impotPourQuotient(quotient: number, bareme: readonly TrancheBareme[]): number {
   let impot = 0;
   let seuilPrecedent = 0;
 
-  for (const tranche of BAREME_2026) {
+  for (const tranche of bareme) {
     if (quotient <= seuilPrecedent) break;
     const borneSup = Math.min(quotient, tranche.seuil);
     impot += (borneSup - seuilPrecedent) * tranche.taux;
@@ -128,14 +100,14 @@ function impotPourQuotient(quotient: number): number {
 }
 
 /** Taux marginal d'imposition (taux de la tranche contenant le quotient). */
-function tmiPourQuotient(quotient: number): number {
-  const tranche = BAREME_2026.find(t => quotient <= t.seuil);
-  return tranche ? tranche.taux : BAREME_2026[BAREME_2026.length - 1].taux;
+function tmiPourQuotient(quotient: number, bareme: readonly TrancheBareme[]): number {
+  const tranche = bareme.find(t => quotient <= t.seuil);
+  return tranche ? tranche.taux : bareme[bareme.length - 1].taux;
 }
 
-function impotBrut(revenuImposable: number, nombreParts: number): number {
+function impotBrut(revenuImposable: number, nombreParts: number, bareme: readonly TrancheBareme[]): number {
   if (nombreParts <= 0) return 0;
-  return impotPourQuotient(revenuImposable / nombreParts) * nombreParts;
+  return impotPourQuotient(revenuImposable / nombreParts, bareme) * nombreParts;
 }
 
 interface QuotientFamilialResult {
@@ -159,9 +131,10 @@ interface QuotientFamilialResult {
 function calculerImpotApresQuotientFamilial(
   revenuMondial: number,
   parts: PartsFiscalesResult,
+  bareme: readonly TrancheBareme[],
 ): QuotientFamilialResult {
-  const impotAvecMajorations = impotBrut(revenuMondial, parts.nombreParts);
-  const impotSansMajorations = impotBrut(revenuMondial, parts.partsBase);
+  const impotAvecMajorations = impotBrut(revenuMondial, parts.nombreParts, bareme);
+  const impotSansMajorations = impotBrut(revenuMondial, parts.partsBase, bareme);
   const avantageQuotientFamilial = Math.max(0, impotSansMajorations - impotAvecMajorations);
 
   const majorationSansPlafond = parts.majorations.some(m => m.plafondUnitaire === undefined);
@@ -285,6 +258,7 @@ function calculerImpotApresQuotientFamilial(
  * `revenuMondialImpose` (8ZR, 0 par défaut) : s'il est saisi, remplace le revenu mondial fictif
  * (revenu imposable + revenus exonérés retenus pour le taux effectif) dans le taux effectif et le RFR ;
  * les revenus au quotient (0XX) s'y ajoutent.
+ * `parametres` : millésime appliqué (barème, décote, réduction outre-mer), revenus 2025 par défaut.
  */
 export function calculerImpot(
   revenuImposable: number,
@@ -306,7 +280,9 @@ export function calculerImpot(
   taxesAnnexes = 0,
   revenuCreditImpotFrancais = 0,
   revenuMondialImpose = 0,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): ImpotResult {
+  const { bareme, decote: decoteParams, reductionOutreMer: reductionsOutreMer } = parametres.impot;
   const revenu = Math.max(0, revenuImposable);
   const revenuExonere = Math.max(0, revenuExonereTauxEffectif);
   const revenuExceptionnel = Math.max(0, revenuExceptionnelQuotient);
@@ -316,7 +292,7 @@ export function calculerImpot(
   const revenuMondialSaisi = Math.max(0, revenuMondialImpose);
   const revenuMondialFictifOrdinaire = revenuMondialSaisi > 0 ? revenuMondialSaisi : revenu + revenuCredit + revenuExonere;
 
-  const qfOrdinaire = calculerImpotApresQuotientFamilial(revenuMondialFictifOrdinaire, parts);
+  const qfOrdinaire = calculerImpotApresQuotientFamilial(revenuMondialFictifOrdinaire, parts, bareme);
 
   let impotApresReductionComplementaire = qfOrdinaire.impotApresReductionComplementaire;
   let impotSupplementaireQuotientExceptionnel = 0;
@@ -326,6 +302,7 @@ export function calculerImpot(
     const qfAvecQuotient = calculerImpotApresQuotientFamilial(
       revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL,
       parts,
+      bareme,
     );
     impotSupplementaireQuotientExceptionnel =
       (qfAvecQuotient.impotApresReductionComplementaire - qfOrdinaire.impotApresReductionComplementaire)
@@ -343,22 +320,22 @@ export function calculerImpot(
   // Arrondi à l'euro, comme l'avis (« impôt après application du taux effectif »).
   const impotProportionnel = revenuExonere > 0 || revenuMondialSaisi > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresReductionComplementaire;
 
-  const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = REDUCTION_OUTRE_MER[lieuResidence];
+  const { taux: tauxReductionOutreMer, plafond: plafondReductionOutreMer } = reductionsOutreMer[lieuResidence];
   const reductionOutreMer = Math.min(plafondReductionOutreMer, impotProportionnel * tauxReductionOutreMer);
   const impotApresReductionOutreMer = impotProportionnel - reductionOutreMer;
 
   const estCoupleImpositionCommune = COUPLE_IMPOSITION_COMMUNE.includes(situationFamille);
-  const seuilDecote = estCoupleImpositionCommune ? DECOTE_SEUIL_COUPLE : DECOTE_SEUIL_CELIBATAIRE;
-  const montantDecoteBase = estCoupleImpositionCommune ? DECOTE_MONTANT_COUPLE : DECOTE_MONTANT_CELIBATAIRE;
+  const seuilDecote = estCoupleImpositionCommune ? decoteParams.seuilCouple : decoteParams.seuilCelibataire;
+  const montantDecoteBase = estCoupleImpositionCommune ? decoteParams.montantCouple : decoteParams.montantCelibataire;
   // Plafonnée à l'impôt, comme sur l'avis (droits simples 132 € → décote 132 €, jamais au-delà).
   const decote = impotApresReductionOutreMer < seuilDecote
-    ? Math.min(impotApresReductionOutreMer, Math.max(0, montantDecoteBase - impotApresReductionOutreMer * DECOTE_TAUX))
+    ? Math.min(impotApresReductionOutreMer, Math.max(0, montantDecoteBase - impotApresReductionOutreMer * decoteParams.taux))
     : 0;
 
   const impotApresDecote = Math.max(0, Math.round(impotApresReductionOutreMer - decote));
   const partsTauxMarginal = plafonnementApplique ? parts.partsBase : parts.nombreParts;
   const quotientTauxMarginal = partsTauxMarginal > 0 ? revenuMondialFictif / partsTauxMarginal : 0;
-  const tmi = tmiPourQuotient(quotientTauxMarginal);
+  const tmi = tmiPourQuotient(quotientTauxMarginal, bareme);
   const impotTauxMarginal = Math.round(Math.max(0, revenuTauxMarginal) * tmi);
   const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;
   // Crédit égal à l'impôt français : quote-part de l'impôt au barème, arrondie, imputée en premier.

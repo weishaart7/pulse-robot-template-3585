@@ -1,4 +1,5 @@
 export * from './types';
+export * from './parametres';
 export * from './calculerPartsFiscales';
 export * from './calculerRevenuSalaires';
 export * from './calculerGainsActionnariatSalarie';

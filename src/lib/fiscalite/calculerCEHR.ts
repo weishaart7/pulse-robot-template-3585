@@ -1,4 +1,5 @@
 import { FoyerFiscalInput } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
 
 /**
  * Contribution exceptionnelle sur les hauts revenus (art. 223 sexies CGI),
@@ -12,10 +13,12 @@ export function calculerCEHR(
   revenuFiscalReference: number,
   situationFamille: FoyerFiscalInput['situationFamille'],
   revenuExceptionnelQuotient = 0,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): number {
-  const seuil = situationFamille === 'marie' || situationFamille === 'pacse' ? 500_000 : 250_000;
+  const { seuilPersonneSeule, tauxPremiereTranche, tauxSecondeTranche } = parametres.cehr;
+  const seuil = situationFamille === 'marie' || situationFamille === 'pacse' ? 2 * seuilPersonneSeule : seuilPersonneSeule;
   const rfr = Math.max(0, revenuFiscalReference + Math.max(0, revenuExceptionnelQuotient) * 3 / 4);
   const tranche3 = Math.min(Math.max(0, rfr - seuil), seuil);
   const tranche4 = Math.max(0, rfr - 2 * seuil);
-  return Math.round(tranche3 * 0.03 + tranche4 * 0.04);
+  return Math.round(tranche3 * tauxPremiereTranche + tranche4 * tauxSecondeTranche);
 }

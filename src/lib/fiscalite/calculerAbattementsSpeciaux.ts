@@ -1,16 +1,5 @@
 import type { FoyerFiscalInput } from './types';
-
-/**
- * Abattement spécial personnes âgées ou invalides (art. 157 bis CGI, BOI-IR-BASE-40 §60),
- * revenus 2025 / impôt 2026. Montants et seuils revalorisés chaque année comme la première
- * tranche du barème (+0,9 % pour les revenus 2025, voir BAREME_2026).
- */
-export const ABATTEMENT_PERSONNES_AGEES_2026 = {
-  seuilPlein: 17670,
-  seuilReduit: 28430,
-  montantPlein: 2822,
-  montantReduit: 1411,
-} as const;
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
 
 export interface AbattementPersonnesAgeesResult {
   /** Montant déduit du revenu net global (jamais au-delà de celui-ci). */
@@ -28,13 +17,14 @@ const COUPLE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
  * à taux proportionnel, revenus au quotient compris pour leur montant total (BOI-IR-BASE-40 §40).
  * Condition d'âge : plus de 65 ans au 31 décembre de `anneeRevenus`, soit né au plus tard en
  * `anneeRevenus − 65`. Invalidité : mêmes critères que les cases P/F (art. 195 1 c, d, d bis).
- * Une personne âgée et invalide ne compte qu'une fois (§20).
+ * Une personne âgée et invalide ne compte qu'une fois (§20). Seuils et montants : millésime
+ * (`parametres.abattementsSpeciaux`), revalorisés chaque année comme la première tranche du barème.
  */
 export function calculerAbattementPersonnesAgees(
   foyer: FoyerFiscalInput,
   revenuNetGlobal: number,
   anneeRevenus: number,
-  bareme = ABATTEMENT_PERSONNES_AGEES_2026,
+  bareme: ParametresFiscaux['abattementsSpeciaux']['personnesAgees'] = PARAMETRES_PAR_DEFAUT.abattementsSpeciaux.personnesAgees,
 ): AbattementPersonnesAgeesResult {
   const enCouple = COUPLE.includes(foyer.situationFamille);
   const declarants = [
@@ -53,11 +43,6 @@ export function calculerAbattementPersonnesAgees(
     anneeNaissanceManquante,
   };
 }
-
-/** Abattement par personne rattachée au titre d'un enfant ayant fondé un foyer distinct (art. 196 B CGI), revenus 2025. */
-export const ABATTEMENT_RATTACHEMENT_2026 = 6855;
-/** Demi-abattement par petit-enfant en résidence alternée (BOI-IR-BASE-40 §240 : 3 428 €). */
-export const ABATTEMENT_RATTACHEMENT_ALTERNEE_2026 = 3428;
 
 export interface AbattementsSpeciauxResult {
   personnesAgees: AbattementPersonnesAgeesResult;
@@ -81,11 +66,13 @@ export function calculerAbattementsSpeciaux(
   revenuNetGlobal: number,
   anneeRevenus: number,
   revenuNetGlobalSeuil = revenuNetGlobal,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): AbattementsSpeciauxResult {
-  const personnesAgees = calculerAbattementPersonnesAgees(foyer, revenuNetGlobalSeuil, anneeRevenus);
+  const { personnesAgees: baremeAgees, rattachement: montantRattachement, rattachementAlterne } = parametres.abattementsSpeciaux;
+  const personnesAgees = calculerAbattementPersonnesAgees(foyer, revenuNetGlobalSeuil, anneeRevenus, baremeAgees);
   const personnes = Math.max(0, foyer.personnesRattacheesFoyerDistinct ?? 0);
   const alternes = Math.min(personnes, Math.max(0, foyer.petitsEnfantsRattachesAlternee ?? 0));
-  const rattachementBrut = (personnes - alternes) * ABATTEMENT_RATTACHEMENT_2026 + alternes * ABATTEMENT_RATTACHEMENT_ALTERNEE_2026;
+  const rattachementBrut = (personnes - alternes) * montantRattachement + alternes * rattachementAlterne;
   const rng = Math.max(0, revenuNetGlobal);
   const agees = Math.min(personnesAgees.abattement, rng);
   const rattachement = Math.min(rattachementBrut, rng - agees);

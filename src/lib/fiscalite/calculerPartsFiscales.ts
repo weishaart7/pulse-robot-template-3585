@@ -1,13 +1,10 @@
 import { FoyerFiscalInput, MajorationDetail, MajorationNonRetenue, PartsFiscalesResult } from './types';
+import { PARAMETRES_PAR_DEFAUT, type ParametresFiscaux } from './parametres';
+
+type PlafondsQuotientFamilial = ParametresFiscaux['quotientFamilial'];
 
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
-const PLAFOND_DEMI_PART_STANDARD = 1807;
-const PLAFOND_COMPLEMENTAIRE_STANDARD = 1801;
-// Plafond global des deux premières demi-parts au-delà de 1 part (enfant n°1 + case T), dont la
-// demi-part de l'enfant n°1 consomme déjà PLAFOND_DEMI_PART_STANDARD : reste pour la case T.
-const PLAFOND_PARENT_ISOLE = 4262 - PLAFOND_DEMI_PART_STANDARD;
-const PLAFOND_ANCIEN_PARENT_ISOLE = 1079;
 
 function rangLabel(rang: number): string {
   return rang === 1 ? '1er' : `${rang}e`;
@@ -55,11 +52,15 @@ function construireEnfantsRang(input: FoyerFiscalInput): EnfantRang[] {
 }
 
 /** 1 807 € par demi-part, au prorata (un quart de part : 903,5 €, non arrondi — simulateur officiel : 2 quarts = 1 807 €). */
-function plafondPourParts(parts: number): number {
-  return (parts / 0.5) * PLAFOND_DEMI_PART_STANDARD;
+function plafondPourParts(parts: number, qf: PlafondsQuotientFamilial): number {
+  return (parts / 0.5) * qf.plafondDemiPart;
 }
 
-function majorationsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: number): MajorationDetail[] {
+function majorationsEnfants(
+  enfants: EnfantRang[],
+  nombrePersonnesInvalides: number,
+  qf: PlafondsQuotientFamilial,
+): MajorationDetail[] {
   const majorations: MajorationDetail[] = [];
   const rangs = rangsEnfants(enfants, nombrePersonnesInvalides);
 
@@ -74,7 +75,7 @@ function majorationsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: num
       type: `enfant_rang_${rang}`,
       libelle: `${rangLabel(rang)} ${nature}${suffixe}`,
       parts,
-      plafondUnitaire: plafondPourParts(parts),
+      plafondUnitaire: plafondPourParts(parts, qf),
     });
 
     if (enfant.invalide) {
@@ -83,8 +84,8 @@ function majorationsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: num
         type: `enfant_rang_${rang}_invalidite`,
         libelle: `Majoration invalidité — ${rangLabel(rang)} ${nature}${suffixe}`,
         parts: partsInvalidite,
-        plafondUnitaire: enfant.residenceAlternee ? PLAFOND_DEMI_PART_STANDARD / 2 : PLAFOND_DEMI_PART_STANDARD,
-        plafondComplementaire: enfant.residenceAlternee ? PLAFOND_COMPLEMENTAIRE_STANDARD / 2 : PLAFOND_COMPLEMENTAIRE_STANDARD,
+        plafondUnitaire: enfant.residenceAlternee ? qf.plafondDemiPart / 2 : qf.plafondDemiPart,
+        plafondComplementaire: enfant.residenceAlternee ? qf.plafondComplementaire / 2 : qf.plafondComplementaire,
       });
     }
   });
@@ -94,13 +95,18 @@ function majorationsEnfants(enfants: EnfantRang[], nombrePersonnesInvalides: num
 
 const MOTIF_NON_CUMUL_SEUL = 'une seule demi-part parmi les cases P, L, W et G pour une personne seule';
 
-function majorationPersonnelle(type: string, libelle: string, plafondComplementaire = true): MajorationDetail {
+function majorationPersonnelle(
+  type: string,
+  libelle: string,
+  qf: PlafondsQuotientFamilial,
+  plafondComplementaire = true,
+): MajorationDetail {
   return {
     type,
     libelle,
     parts: 0.5,
-    plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-    ...(plafondComplementaire ? { plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD } : {}),
+    plafondUnitaire: qf.plafondDemiPart,
+    ...(plafondComplementaire ? { plafondComplementaire: qf.plafondComplementaire } : {}),
   };
 }
 
@@ -118,19 +124,20 @@ function demiPartsPersonnelles(
   input: FoyerFiscalInput,
   estCouple: boolean,
   nombreEnfants: number,
+  qf: PlafondsQuotientFamilial,
 ): { retenues: MajorationDetail[]; nonRetenues: MajorationNonRetenue[] } {
   const retenues: MajorationDetail[] = [];
   const nonRetenues: MajorationNonRetenue[] = [];
   const ecarter = (type: string, libelle: string, motif: string) => nonRetenues.push({ type, libelle, motif });
 
   if (estCouple) {
-    if (input.invaliditeDeclarant1) retenues.push(majorationPersonnelle('invalidite_declarant1', 'Invalidité — déclarant 1 (case P)'));
-    if (input.invaliditeDeclarant2) retenues.push(majorationPersonnelle('invalidite_declarant2', 'Invalidité — déclarant 2 (case F)'));
+    if (input.invaliditeDeclarant1) retenues.push(majorationPersonnelle('invalidite_declarant1', 'Invalidité — déclarant 1 (case P)', qf));
+    if (input.invaliditeDeclarant2) retenues.push(majorationPersonnelle('invalidite_declarant2', 'Invalidité — déclarant 2 (case F)', qf));
     if (input.ancienCombattantDeclarant1 || input.ancienCombattantDeclarant2) {
       if (input.invaliditeDeclarant1 || input.invaliditeDeclarant2) {
         ecarter('ancien_combattant_couple', 'Ancien combattant +74 ans (case S)', 'ne se cumule pas avec les cases P ou F');
       } else {
-        retenues.push(majorationPersonnelle('ancien_combattant_couple', 'Ancien combattant +74 ans (case S)'));
+        retenues.push(majorationPersonnelle('ancien_combattant_couple', 'Ancien combattant +74 ans (case S)', qf));
       }
     }
     for (const [coche, type, libelle] of [
@@ -148,21 +155,21 @@ function demiPartsPersonnelles(
   const candidates: { coche: boolean; majoration: MajorationDetail; exclusion?: string }[] = [
     {
       coche: input.invaliditeDeclarant1,
-      majoration: majorationPersonnelle('invalidite_declarant1', 'Invalidité (case P)'),
+      majoration: majorationPersonnelle('invalidite_declarant1', 'Invalidité (case P)', qf),
     },
     {
       coche: input.ancienCombattantDeclarant1,
-      majoration: majorationPersonnelle('ancien_combattant_declarant1', 'Ancien combattant +74 ans (case W)'),
+      majoration: majorationPersonnelle('ancien_combattant_declarant1', 'Ancien combattant +74 ans (case W)', qf),
       exclusion: nombreEnfants > 0 ? 'exclue avec un enfant à charge ou rattaché' : undefined,
     },
     {
       coche: input.veufAncienCombattant,
-      majoration: majorationPersonnelle('veuf_ancien_combattant', "Veuf/veuve d'ancien combattant +74 ans (case W)"),
+      majoration: majorationPersonnelle('veuf_ancien_combattant', "Veuf/veuve d'ancien combattant +74 ans (case W)", qf),
       exclusion: nombreEnfants > 0 ? 'exclue avec un enfant à charge ou rattaché' : undefined,
     },
     {
       coche: input.veuveDeGuerre,
-      majoration: majorationPersonnelle('veuve_de_guerre', 'Veuve de guerre (case G)'),
+      majoration: majorationPersonnelle('veuve_de_guerre', 'Veuve de guerre (case G)', qf),
       exclusion: nombreEnfants > 0 ? 'exclue avec un enfant à charge ou rattaché' : undefined,
     },
     {
@@ -171,7 +178,7 @@ function demiPartsPersonnelles(
         type: 'ancien_parent_isole',
         libelle: 'Ancien parent isolé, 5 ans seul (case L)',
         parts: 0.5,
-        plafondUnitaire: PLAFOND_ANCIEN_PARENT_ISOLE,
+        plafondUnitaire: qf.plafondAncienParentIsole,
       },
       exclusion: aPersonneACharge ? 'suppose de vivre seul sans personne à charge' : undefined,
     },
@@ -212,7 +219,11 @@ function demiPartsPersonnelles(
  * majorations que la somme indépendante des plafonds par ligne ne peut pas
  * représenter) — laissé en dette plutôt que deviné (voir docs/fiscalite.md).
  */
-export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesResult {
+export function calculerPartsFiscales(
+  input: FoyerFiscalInput,
+  parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
+): PartsFiscalesResult {
+  const qf = parametres.quotientFamilial;
   const enfantsRang = construireEnfantsRang(input);
   const nombreEnfants = enfantsRang.length;
 
@@ -228,10 +239,10 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
       type: 'veuf_quotient_conjugal',
       libelle: 'Maintien du quotient conjugal (veuf avec personne à charge)',
       parts: 1,
-      plafondUnitaire: plafondPourParts(1),
+      plafondUnitaire: plafondPourParts(1, qf),
     });
   }
-  majorations.push(...majorationsEnfants(enfantsRang, input.personnesInvalidesCharge.length));
+  majorations.push(...majorationsEnfants(enfantsRang, input.personnesInvalidesCharge.length, qf));
 
   input.personnesInvalidesCharge.forEach((_, index) => {
     const rang = index + 1;
@@ -242,14 +253,14 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
       type: `personne_invalide_charge_${rang}`,
       libelle: `Personne invalide à charge (${rangLabel(rang)})`,
       parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
+      plafondUnitaire: qf.plafondDemiPart,
     });
     majorations.push({
       type: `personne_invalide_charge_${rang}_invalidite`,
       libelle: `Majoration invalidité — personne invalide à charge (${rangLabel(rang)})`,
       parts: 0.5,
-      plafondUnitaire: PLAFOND_DEMI_PART_STANDARD,
-      plafondComplementaire: PLAFOND_COMPLEMENTAIRE_STANDARD,
+      plafondUnitaire: qf.plafondDemiPart,
+      plafondComplementaire: qf.plafondComplementaire,
     });
   });
 
@@ -258,11 +269,12 @@ export function calculerPartsFiscales(input: FoyerFiscalInput): PartsFiscalesRes
       type: 'parent_isole',
       libelle: 'Parent isolé (case T)',
       parts: 0.5,
-      plafondUnitaire: PLAFOND_PARENT_ISOLE,
+      // Plafond global enfant n°1 + case T, dont la demi-part de l'enfant consomme déjà plafondDemiPart.
+      plafondUnitaire: qf.plafondParentIsole - qf.plafondDemiPart,
     });
   }
 
-  const { retenues, nonRetenues } = demiPartsPersonnelles(input, estCouple, nombreEnfants);
+  const { retenues, nonRetenues } = demiPartsPersonnelles(input, estCouple, nombreEnfants, qf);
   majorations.push(...retenues);
 
   const nombreParts = partsBase + majorations.reduce((total, m) => total + m.parts, 0);

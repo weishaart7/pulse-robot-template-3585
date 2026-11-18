@@ -17,6 +17,7 @@ import { useChargesDeductibles } from './useChargesDeductibles';
 import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
 import { calculerCEHR } from '@/lib/fiscalite/calculerCEHR';
+import { ANNEE_REVENUS_PAR_DEFAUT, parametresFiscaux } from '@/lib/fiscalite/parametres';
 import { arrondirPrelevementsSociaux } from '@/lib/fiscalite/arrondirPrelevementsSociaux';
 import { calculerAbattementsSpeciaux, type AbattementsSpeciauxResult } from '@/lib/fiscalite/calculerAbattementsSpeciaux';
 import {
@@ -201,10 +202,11 @@ const REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT: ReductionsCreditsImpotInput = {
   case7db: null, case7dr: null, case7dl: null, case7dq: false, case7dg: false, membresPlus65Ans: null,
 };
 
-/** Année des revenus du barème appliqué (BAREME_2026 : revenus 2025), celle de la 2044 reprise. */
+/** Année des revenus calculée (millésime de paramètres appliqué), celle de la 2044 reprise. */
 const COUPLE_IMPOSITION_COMMUNE: FoyerFiscalInput['situationFamille'][] = ['marie', 'pacse'];
 
-export const ANNEE_REVENUS = 2025;
+export const ANNEE_REVENUS = ANNEE_REVENUS_PAR_DEFAUT;
+const PARAMETRES = parametresFiscaux(ANNEE_REVENUS);
 /** IFI au 1er janvier suivant l'année des revenus : son plafonnement reprend l'impôt de ces revenus. */
 export const ANNEE_IFI = ANNEE_REVENUS + 1;
 
@@ -431,7 +433,7 @@ export function useFiscalOverview(): FiscalOverview {
       // Revenus au quotient (coefficient 4) : 0XX et plus-values RVG/RUA (option barème).
       const revenuExceptionnelQuotient = gainsActionnariat.revenuExceptionnelQuotient + plusValuesGainsDivers.revenuExceptionnelQuotient;
       const prelevementsSociauxGainsActionnariat = calculerPrelevementsSociauxGainsActionnariatSalarie(gainsInput);
-      const parts = calculerPartsFiscales(foyerInput);
+      const parts = calculerPartsFiscales(foyerInput, PARAMETRES);
       const revenusFonciers = declaration2044 ? revenusFonciersPour2042(declaration2044) : null;
       const revenusNonSalaries = calculerRevenusNonSalaries(nonSalaries ?? REVENUS_NON_SALARIES_VIDE);
       const revenusFonciers2042 = calculerRevenusFonciers2042(
@@ -452,7 +454,7 @@ export function useFiscalOverview(): FiscalOverview {
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
       // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
       const abattementsSpeciaux = calculerAbattementsSpeciaux(
-        foyerInput, revenuNetGlobal, ANNEE_REVENUS, revenuNetGlobal + revenuExceptionnelQuotient,
+        foyerInput, revenuNetGlobal, ANNEE_REVENUS, revenuNetGlobal + revenuExceptionnelQuotient, PARAMETRES,
       );
       const revenuImposableTotal = revenuNetGlobal - abattementsSpeciaux.total;
       const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
@@ -549,6 +551,7 @@ export function useFiscalOverview(): FiscalOverview {
         revenusNonSalaries.taxeAgentsGeneraux,
         revenuCreditImpotFrancais,
         prelevementSourceDivers.revenuMondial8ZR,
+        PARAMETRES,
       );
       const impotSansCreditEtranger = calculer(0);
       const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
@@ -593,7 +596,7 @@ export function useFiscalOverview(): FiscalOverview {
       const creditEtrangerPrelevementsSociaux = Math.min(creditEtranger.creditPrelevementsSociaux, ps.total);
       const prelevementsSociauxTotal = ps.total - creditEtrangerPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
-      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient);
+      const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient, PARAMETRES);
       const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;
 
       const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {

@@ -1,5 +1,5 @@
 import { PanelTitle } from '@/components/layout/workspace-panel';
-import { BAREME_2026 } from '@/lib/fiscalite';
+import { PARAMETRES_PAR_DEFAUT } from '@/lib/fiscalite';
 import { FiscalOverview } from '@/hooks/useFiscalOverview';
 import { cn } from '@/lib/utils';
 import { formatEuros, LigneDetail } from './FiscalOverviewCard';
@@ -10,7 +10,8 @@ import { formatEuros, LigneDetail } from './FiscalOverviewCard';
 const TaxRateCard = ({ overview }: { overview: FiscalOverview }) => {
   const { parts, impot } = overview;
 
-  const tranches = BAREME_2026.map((t, i) => ({ ...t, seuilBas: i === 0 ? 0 : BAREME_2026[i - 1].seuil }));
+  const bareme = PARAMETRES_PAR_DEFAUT.impot.bareme;
+  const tranches = bareme.map((t, i) => ({ ...t, seuilBas: i === 0 ? 0 : bareme[i - 1].seuil }));
   const active = tranches.find((t) => t.taux === impot.tmi);
   const position = active && active.seuil !== Infinity && active.seuil > active.seuilBas
     ? Math.min(100, Math.max(0, ((impot.quotientTauxMarginal - active.seuilBas) / (active.seuil - active.seuilBas)) * 100))
