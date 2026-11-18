@@ -213,6 +213,21 @@ fonciers (§4).
   restent, tirés du millésime par défaut. Hors paramètres pour l'instant : codes et libellés de cases
   datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), projections
   retraite (millésime par défaut).
+- **Contribution différentielle sur les hauts revenus (CDHR, art. 224 CGI, BOI-IR-CDHR-10).**
+  [calculerCDHR.ts](src/lib/fiscalite/calculerCDHR.ts) : CDHR = 20 % × RREF − décote − (IR1 + CEHR1 + PREL1
+  + majorations), arrondie, due si le RREF dépasse 250 000 € (500 000 € en imposition commune). RREF : RFR
+  avec les revenus au quotient pour leur montant total, moins l'abattement de 40 % des dividendes au barème et
+  les produits de brevets à 10 %. Décote jusqu'à 330 000 € / 660 000 € : 20 % × RREF − 82,5 % × (RREF − seuil).
+  IR1 (construit dans `useFiscalOverview.ts`) : impôt net hors acomptes et crédits d'acompte (2CK,
+  assurance-vie), avec réintégration, dans la limite de l'impôt, des crédits conventionnels (2AB, 8VL…, crédit
+  égal à l'impôt français) et des avantages listés (outre-mer, souscriptions, Loc'Avantages et Malraux, Pinel,
+  Scellier, Censi-Bouvard, forestier, bornes, 7WI ; dons à partir des revenus 2026, `cdhr.donsReintegres`),
+  hors impôt sur les brevets. Les crédits non listés (emploi à domicile, garde) diminuent IR1. Majorations :
+  12 500 € par couple, 1 500 € par personne à charge (résidence alternée comptée en entier, simulateur
+  officiel). CEHR1 = CEHR ; PREL1 = PFL de 2DH. Acomptes 8HR/8HS déduits du solde. Affichée « approximative »
+  avec des revenus au quotient (règle du quart, §140 et §250, non modélisée), un crédit égal à l'impôt français
+  ou des revenus exonérés par convention (non retirés du RREF). Non retenue dans le plafonnement de l'IFI.
+  Contrôlée sur 10 cas du simulateur et sur l'exemple §380 (31 074 €).
 - **Choix du millésime de règles, sans année sur les données de la 2042.** Les 12 tables de la 2042
   restent à une ligne par utilisateur : la même déclaration en cours est calculée avec les règles du
   millésime choisi. [MillesimeFiscalContext.tsx](src/contexts/MillesimeFiscalContext.tsx) porte ce
@@ -1938,11 +1953,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
-- **Contribution différentielle sur les hauts revenus (CDHR, art. 224 CGI) non calculée.** Imposition
-  minimale des foyers dont le RFR dépasse 250 000 € (500 000 € couple), présente sur les simulateurs
-  officiels 2026 et 2027 ; seuls les acomptes 8HR/8HS sont saisis, à titre informatif. Impôt
-  sous-estimé pour un foyer à haut revenu dont le taux moyen d'imposition est faible (niches, PFU).
-  Aucun des 9 cas de non-régression n'y était soumis.
+- **Réductions du cadre 7 imputées sur l'impôt à taux proportionnel (PFU).** Sur le simulateur officiel
+  2026, 7UF n'ouvre aucune réduction quand l'impôt vient du seul PFU (400 000 € de dividendes, 10 000 € de
+  dons : 0 €), alors que `calculerImpot.ts` impute les réductions sur l'impôt au barème augmenté de
+  l'impôt forfaitaire (6 600 € accordés). Impôt sous-estimé ; règle d'imputation à exposer avant correctif.
 - **Quotient familial — complément de 2 011 € du veuf non modélisé.** Quand les deux premières
   demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
   par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €

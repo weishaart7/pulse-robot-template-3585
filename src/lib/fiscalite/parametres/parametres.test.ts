@@ -25,14 +25,16 @@ describe('parametresFiscaux', () => {
     }
   });
 
-  it('revenus 2026 provisoire : seuls les plafonds des dons à 75 % diffèrent de 2025 (calc-2027.cgi)', () => {
+  it('revenus 2026 provisoire : seuls les dons diffèrent de 2025 (plafonds à 75 %, réintégration CDHR) (calc-2027.cgi)', () => {
     const p2025 = parametresFiscaux(2025);
     const p2026 = parametresFiscaux(2026);
     expect(p2025.statut).toBe('definitif');
     expect(p2026.statut).toBe('provisoire');
     expect(p2026.reductionsCredits.plafondDons75Premiere).toBe(2000);
+    expect([p2025.cdhr.donsReintegres, p2026.cdhr.donsReintegres]).toEqual([false, true]);
     const sansDons = (p: typeof p2025) => ({ ...p, anneeRevenus: 0, statut: null, source: null,
-      reductionsCredits: { ...p.reductionsCredits, plafondDons75Premiere: 0, plafondDons75Annee: 0 } });
+      reductionsCredits: { ...p.reductionsCredits, plafondDons75Premiere: 0, plafondDons75Annee: 0 },
+      cdhr: { ...p.cdhr, donsReintegres: null } });
     expect(sansDons(p2026)).toEqual(sansDons(p2025));
   });
 

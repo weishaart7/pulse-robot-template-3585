@@ -49,13 +49,13 @@ describe('calculerInvestissementsLocatifs', () => {
     expect(loc({ case7bo: 10000, case7bk: 10000 }).avantagesPlafonnesCourants).toBe(8000);
   });
   it('7WR : crédit de 40 % sans plafond, hors plafonnement global', () => {
-    expect(loc({ case7wr: 200000 })).toEqual({ reductions: 0, credits: 80000, avantagesPlafonnesCourants: 0 });
+    expect(loc({ case7wr: 200000 })).toEqual({ reductions: 0, credits: 80000, creditBornes: 0, avantagesPlafonnesCourants: 0 });
   });
   it('Malraux : 400 000 € en commun, 7TX d’abord ; reports', () => {
     expect(loc({ case7tx: 1000 }).reductions).toBe(300);
     expect(loc({ case7ty: 1000 }).reductions).toBe(220);
     expect(loc({ case7tx: 500000 }).reductions).toBe(120000);
     expect(loc({ case7tx: 300000, case7ty: 300000 }).reductions).toBe(112000);
-    expect(loc({ case7kw: 1000, case7ky: 1000, case7kx: 1000 })).toEqual({ reductions: 3000, credits: 0, avantagesPlafonnesCourants: 0 });
+    expect(loc({ case7kw: 1000, case7ky: 1000, case7kx: 1000 })).toEqual({ reductions: 3000, credits: 0, creditBornes: 0, avantagesPlafonnesCourants: 0 });
   });
 });

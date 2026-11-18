@@ -68,7 +68,7 @@ export interface PrelevementSourceDiversResult {
 /**
  * Cadre 8 de la 2042 et de la 2042-C (revenus 2025/impôt 2026), hors crédit
  * égal à l'impôt étranger (voir `creditImpotEgalImpotEtranger`, qui dépend
- * de l'impôt calculé). Informatives : 8HR/8HS (CDHR non calculée), 8TA,
+ * de l'impôt calculé). 8HR/8HS (acomptes de CDHR) : déduits du solde. Informatives : 8TA,
  * 8UT, 8TT, 8UU, 8FV. 8SH/8SI : voir `exonerationTotaleCsgCrds`.
  * Contributions 8TQ…8SB : montants saisis tels que déclarés, la base déclarée
  * étant déjà après déduction de 1,75 % sur salaires et chômage (brochure p. 328).
@@ -89,7 +89,9 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
       montant(input.case8rf) * TAUX_CSG_CRDS_FONCIER
       + somme(input.case8rv, input.case8rc, input.case8rm) * TAUX_CSG_CRDS_PATRIMOINE,
     ),
-    impotDejaPaye: somme(input.case8hv, input.case8iv, input.case8jv, input.case8kv, input.case8hw, input.case8iw, input.case8jw, input.case8kw)
+    // Acomptes de CDHR 8HR/8HS déduits du solde (simulateur officiel 2026).
+    impotDejaPaye: somme(input.case8hv, input.case8iv, input.case8jv, input.case8kv, input.case8hw, input.case8iw, input.case8jw, input.case8kw,
+      input.case8hr, input.case8hs)
       - somme(input.case8hy, input.case8iy, input.case8jy, input.case8ky),
     prelevementsSociauxDejaPayes: somme(input.case8hx, input.case8ix, input.case8jx, input.case8kx)
       - somme(input.case8hz, input.case8iz, input.case8jz, input.case8kz),

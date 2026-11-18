@@ -41,6 +41,15 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     tauxPremiereTranche: 0.03,
     tauxSecondeTranche: 0.04,
   },
+  cdhr: {
+    seuilPersonneSeule: 250_000,
+    tauxMinimum: 0.20,
+    plafondDecotePersonneSeule: 330_000,
+    tauxDecote: 0.825,
+    majorationCouple: 12_500,
+    majorationPersonneCharge: 1_500,
+    donsReintegres: false,
+  },
   abattementsDixPourCent: {
     salaires: { plancher: 509, plafond: 14555 },
     pensions: { plancher: 454, plafondFoyer: 4439 },

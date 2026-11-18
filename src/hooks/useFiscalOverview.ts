@@ -17,6 +17,8 @@ import { useChargesDeductibles } from './useChargesDeductibles';
 import { useReductionsCreditsImpot } from './useReductionsCreditsImpot';
 import { usePrelevementSourceDivers } from './usePrelevementSourceDivers';
 import { calculerCEHR } from '@/lib/fiscalite/calculerCEHR';
+import { calculerCDHR, type CDHRResult } from '@/lib/fiscalite/calculerCDHR';
+import { TAUX_BREVETS } from '@/lib/fiscalite/calculerRevenusNonSalaries';
 import { ANNEE_REVENUS_PAR_DEFAUT, type ParametresFiscaux } from '@/lib/fiscalite/parametres';
 import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { arrondirPrelevementsSociaux } from '@/lib/fiscalite/arrondirPrelevementsSociaux';
@@ -228,7 +230,8 @@ export interface ColonneComparatif {
   /** Réductions et crédits imputés (cadre 7, crédits du cadre 2, crédits égaux à l'impôt). */
   reductions: number;
   cehr: number;
-  /** IR + CEHR + PS + PFL de 2DH, comme l'imposition totale de la vue d'ensemble. */
+  cdhr: number;
+  /** IR + CEHR + CDHR + PS + PFL de 2DH, comme l'imposition totale de la vue d'ensemble. */
   imposition: number;
 }
 
@@ -318,7 +321,12 @@ export interface FiscalOverview {
   prelevementsSociauxTotal: number;
   /** CEHR (art. 223 sexies CGI, sans lissage), sur le RFR ; hors `impot.impotNet`, qui sert au taux moyen. */
   cehr: number;
-  /** Solde après prélèvement à la source (CEHR comprise) ; null si aucun cadre 8 n'est saisi. */
+  /**
+   * CDHR (art. 224 CGI), hors `impot.impotNet` comme la CEHR. `approximative` : revenus au quotient,
+   * crédit égal à l'impôt français ou revenus exonérés par convention, non retraités.
+   */
+  cdhr: CDHRResult & { approximative: boolean };
+  /** Solde après prélèvement à la source (CEHR et CDHR comprises, acomptes 8HR/8HS déduits) ; null sans cadre 8. */
   solde: SoldeImpotResult | null;
   /** Cases 4BA à 4BD de la 2044 de l'année des revenus, reprises dans l'impôt ; null sans 2044 ouverte pour cette année. */
   revenusFonciers: RevenusFonciers2042 | null;
@@ -609,7 +617,37 @@ export function useFiscalOverview(): FiscalOverview {
       const prelevementsSociauxTotal = ps.total - creditEtrangerPrelevementsSociaux
         + prelevementSourceDivers.contributionsSocialesRevenusActivite;
       const cehr = calculerCEHR(impot.revenuFiscalReference, foyerInput.situationFamille, impot.revenuExceptionnelQuotient, parametres);
-      const solde = prelevementSource ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr, prelevementsSociauxTotal) : null;
+      // CDHR : impôt retenu IR1 = impôt net, hors acomptes et crédits restituables d'acompte (2CK, assurance-vie),
+      // hors crédits conventionnels et avantages listés (réintégrés, dans la limite de l'impôt), hors brevets.
+      const reductionsListees = investissementsOutreMer.reductions + souscriptionsCapital.reductions
+        + investissementsLocatifs.reductions + investissementsPinel.reductions + investissementsScellier.reductions
+        + investissementsCensiBouvard.reductions
+        + (parametres.cdhr.donsReintegres ? reductionsCreditsImpot.reductionDons75 + reductionsCreditsImpot.reductionDons66 : 0);
+      const creditsListes = investissementsOutreMer.credit + investissementsForestiers.credit
+        + investissementsLocatifs.creditBornes + reductionsCreditsImpot.creditAutonomie;
+      const impotRetenuCDHR = impot.impotNet - impot.taxesAnnexes
+        + impot.creditImpotValeursEtrangeres2CK + impot.creditImpotAssuranceVie
+        + impot.creditImpotEtranger2AB + impot.creditImpotEtrangerCadre8 + impot.creditImpotFrancais
+        + Math.min(reductionsListees, impot.reductionsImpot) + Math.min(creditsListes, impot.creditsImpotCadre7)
+        - Math.round(revenusNonSalaries.produitsBrevets * TAUX_BREVETS);
+      const cdhr = {
+        ...calculerCDHR({
+          revenuFiscalReference: impot.revenuFiscalReference,
+          revenuExceptionnelQuotient: impot.revenuExceptionnelQuotient,
+          abattementDividendes: revenuCapitauxMobiliers.abattementDividendes,
+          produitsBrevets: revenusNonSalaries.produitsBrevets,
+          impotRetenu: impotRetenuCDHR,
+          cehr,
+          prelevementsLiberatoires: prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH,
+          situationFamille: foyerInput.situationFamille,
+          personnesCharge: foyerInput.enfantsCharge.length + foyerInput.personnesInvalidesCharge.length
+            + foyerInput.enfantsMajeursRattaches + (foyerInput.personnesRattacheesFoyerDistinct ?? 0),
+        }, parametres),
+        approximative: impot.revenuExceptionnelQuotient > 0 || impot.creditImpotFrancais > 0 || revenuExonere > 0,
+      };
+      const solde = prelevementSource
+        ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr + cdhr.cdhr, prelevementsSociauxTotal)
+        : null;
 
       const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {
         impots: impot.impotApresDecote + impot.impotForfaitaire + cehr + prelevementsSociauxTotal,
@@ -648,6 +686,7 @@ export function useFiscalOverview(): FiscalOverview {
         reductionPrelevementsSociaux,
         prelevementsSociauxTotal,
         cehr,
+        cdhr,
         solde,
         revenuBrutGlobal,
         impot,
@@ -667,7 +706,8 @@ export function useFiscalOverview(): FiscalOverview {
         prelevementsSociaux: r.prelevementsSociauxTotal,
         reductions: r.impot.impotApresDecote + impotProportionnel + r.impot.reprisesImpot - r.impot.impotNet,
         cehr: r.cehr,
-        imposition: r.impot.impotNet + r.cehr + r.prelevementsSociauxTotal
+        cdhr: r.cdhr.cdhr,
+        imposition: r.impot.impotNet + r.cehr + r.cdhr.cdhr + r.prelevementsSociauxTotal
           + r.prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH,
       };
     };

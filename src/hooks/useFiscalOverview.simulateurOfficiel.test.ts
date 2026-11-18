@@ -54,7 +54,8 @@ interface Attendu {
   impotProportionnel?: number;
   reductions?: number;
   cehr?: number;
-  /** « Impôt sur le revenu net » du simulateur : CEHR comprise, après crédits. */
+  cdhr?: number;
+  /** « Impôt sur le revenu net » du simulateur : CEHR et CDHR comprises, après crédits. */
   impotNet: number;
   prelevementsSociaux: number;
   tmi: number;
@@ -108,7 +109,7 @@ const CAS: Record<string, Cas> = {
       reductions: { case7ud: 3000, case7uf: 5000 },
     },
     attendu: { parts: 2, revenuFiscalReference: 588361, droitsSimples: 33716, impotProportionnel: 55040,
-      reductions: 5370, cehr: 2651, impotNet: 86037, prelevementsSociaux: 71980, tmi: 0.3 },
+      reductions: 5370, cehr: 2651, cdhr: 0, impotNet: 86037, prelevementsSociaux: 71980, tmi: 0.3 },
   },
   S4: {
     description: 'marié, conjoint invalide, enfant invalide alterné, 2OP + abattement 3SG, rente viagère, PER',
@@ -154,7 +155,7 @@ const CAS: Record<string, Cas> = {
       reductions: { case7uf: 150000, case7db: 12000 },
     },
     attendu: { parts: 1, revenuFiscalReference: 1255445, droitsSimples: 199474, impotProportionnel: 97280,
-      reductions: 65399, cehr: 37718, impotNet: 248073, prelevementsSociaux: 151680, tmi: 0.45 },
+      reductions: 65399, cehr: 37718, cdhr: 0, impotNet: 248073, prelevementsSociaux: 151680, tmi: 0.45 },
   },
   S7: {
     description: 'pacsés, micro-BNC pro, micro-BIC services, LMNP micro, frais réels, 2OP, PER',
@@ -197,6 +198,27 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 2.5, revenuFiscalReference: 319800, droitsSimples: 40742, impotProportionnel: 14190,
       reductions: 4710, impotNet: 45222, prelevementsSociaux: 25900, tmi: 0.41 },
   },
+  S10: {
+    description: 'CDHR : célibataire, 1 enfant, dividendes au PFU, emploi à domicile (crédit non réintégré)',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975, enfantsCharge: [enfant(2012)] },
+      rcm: { case2dc: 400000, case2op: false },
+      reductions: { case7db: 10000 },
+    },
+    attendu: { parts: 1.5, revenuFiscalReference: 400000, droitsSimples: 0, impotProportionnel: 51200, cehr: 4500,
+      cdhr: 27800, impotNet: 78500, prelevementsSociaux: 74400, tmi: 0 },
+  },
+  S11: {
+    description: 'CDHR : salaire et PFU, dons non réintégrés en revenus 2025, réintégrés en revenus 2026',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 100000 },
+      rcm: { case2dc: 300000, case2op: false },
+      reductions: { case7uf: 10000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 390000, droitsSimples: 20701, reductions: 6600, impotProportionnel: 38400,
+      cehr: 4200, cdhr: 21299, impotNet: 78000, prelevementsSociaux: 55800, tmi: 0.41 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -215,7 +237,8 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
     impotProportionnel: r.impot.impotForfaitaire,
     reductions: r.impot.reductionsImpot,
     cehr: r.cehr,
-    impotNet: r.impot.impotNet + r.cehr,
+    cdhr: r.cdhr.cdhr,
+    impotNet: r.impot.impotNet + r.cehr + r.cdhr.cdhr,
     prelevementsSociaux: r.prelevementsSociauxTotal,
     tmi: r.impot.tmi,
   };
@@ -228,6 +251,8 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
  */
 const ECARTS_2027: Record<string, Partial<Attendu>> = {
   S3: { reductions: 5460, impotNet: 85947 },
+  // Dons réintégrés dans l'impôt retenu par la CDHR à partir des revenus 2026.
+  S11: { cdhr: 14699, impotNet: 71400 },
 };
 
 function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}) {

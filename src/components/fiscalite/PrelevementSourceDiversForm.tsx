@@ -93,7 +93,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
 
         <SousGroupe titre="Acomptes et avances">
           <MontantEclateLigne
-            label="Acompte de CDHR versé en 2025" aide="Informatif : la contribution différentielle sur les hauts revenus n'est pas calculée."
+            label="Acompte de CDHR versé en 2025" aide="Déduit du solde à payer, avec la contribution différentielle sur les hauts revenus calculée dans la Vue d'ensemble."
             items={[
               { label: 'Déclarant 1', code: '8HR', value: ps.case8hr, onChange: v => update('case8hr', v) },
               { label: 'Déclarant 2', code: '8HS', value: ps.case8hs, onChange: v => update('case8hs', v) },

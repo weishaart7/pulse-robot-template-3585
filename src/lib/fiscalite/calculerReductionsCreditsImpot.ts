@@ -76,6 +76,8 @@ export interface ReductionsCreditsImpotResult {
   reductionRenteSurvieDependance: number;
   /** Travaux PPRT 7WL et perte d'autonomie 7WI (crédits restituables hors plafond global). */
   creditsTravauxLogement: number;
+  /** Dont crédit perte d'autonomie 7WI (art. 200 quater A), réintégré pour la CDHR. */
+  creditAutonomie: number;
   /** Crédits restituables du cadre 7 : services à la personne, garde, cotisations syndicales. */
   totalCredits: number;
   /** Avantages soumis au plafonnement global de 10 000 € (services à la personne, garde) — voir calculerPlafonnementNiches. */
@@ -187,6 +189,7 @@ export function calculerReductionsCreditsImpot(
     creditsTravauxLogement,
     reductionDons75,
     reductionDons66,
+    creditAutonomie: Math.round(creditAutonomie),
     donsExcedentaires: base66 - retenus66,
     totalReductions: reductionDons75 + reductionDons66 + reductionScolarite + reductionPrestationCompensatoire
       + reductionRenteSurvieDependance,

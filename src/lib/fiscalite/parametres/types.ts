@@ -46,6 +46,21 @@ export interface ParametresFiscaux {
     readonly tauxPremiereTranche: number;
     readonly tauxSecondeTranche: number;
   };
+  /** Contribution différentielle sur les hauts revenus (art. 224 CGI, BOI-IR-CDHR-10). */
+  readonly cdhr: {
+    /** Seuil du revenu de référence pour une personne seule, doublé pour un couple. */
+    readonly seuilPersonneSeule: number;
+    /** Taux minimal d'imposition du revenu de référence. */
+    readonly tauxMinimum: number;
+    /** Décote jusqu'à ce revenu de référence (personne seule, doublé pour un couple). */
+    readonly plafondDecotePersonneSeule: number;
+    /** Décote = RREF × tauxMinimum − (RREF − seuil) × tauxDecote. */
+    readonly tauxDecote: number;
+    readonly majorationCouple: number;
+    readonly majorationPersonneCharge: number;
+    /** Réduction pour dons (art. 200) réintégrée dans l'impôt retenu : à partir des revenus 2026. */
+    readonly donsReintegres: boolean;
+  };
   /** Abattements de 10 % (art. 83 3° et 158-5-a CGI) : plancher et plafond revalorisés. */
   readonly abattementsDixPourCent: {
     /** Par déclarant ou personne à charge. */

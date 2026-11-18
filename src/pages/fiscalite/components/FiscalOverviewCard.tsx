@@ -70,12 +70,12 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, cdhr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
   // PFL de 2DH : déjà prélevé à la source, compté dans l'imposition mais pas dans le solde à payer.
-  const impositionRevenus = impot.impotNet + cehr + prelevementsSociauxTotal
+  const impositionRevenus = impot.impotNet + cehr + cdhr.cdhr + prelevementsSociauxTotal
     + prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH;
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
@@ -89,6 +89,10 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const impots: Ligne[] = [
     { label: 'Impôt sur le revenu (IR)', valeur: impot.impotNet },
     { label: 'Contribution exceptionnelle sur les hauts revenus', valeur: cehr },
+    {
+      label: cdhr.approximative ? 'Contribution différentielle sur les hauts revenus (approximative)' : 'Contribution différentielle sur les hauts revenus',
+      valeur: cdhr.cdhr,
+    },
     { label: 'Prélèvements sociaux (capitaux mobiliers)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementsSociaux },
     ...(prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH > 0
       ? [{ label: 'Prélèvement libératoire 2DH (7,5 %, déjà prélevé)', valeur: prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH }]

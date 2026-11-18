@@ -42,7 +42,7 @@ const ABATTEMENT_MICRO_BA = 0.87;
 /** Plus-values professionnelles à long terme : 12,8 % (art. 39 quindecies CGI), PS en sus. */
 const TAUX_PLUS_VALUES_LONG_TERME = 0.128;
 /** Produits de la cession ou concession de brevets : 10 % (art. 238 CGI), sans PS. */
-const TAUX_BREVETS = 0.10;
+export const TAUX_BREVETS = 0.10;
 
 /**
  * Taxe sur l'indemnité de cessation des agents généraux d'assurances (art. 151 septies A V
@@ -237,6 +237,8 @@ export interface RevenusNonSalariesResult {
    * Excédent du bénéfice agricole sur la moyenne triennale l'année de la cession (5XT/5XU,
    * art. 75-0 B CGI) : hors barème, imposé au taux marginal du revenu global par `calculerImpot`.
    */
+  /** Produits de brevets imposés à 10 % (art. 238), retirés du revenu de référence et de l'impôt retenus par la CDHR. */
+  produitsBrevets: number;
   revenuImposableTauxMarginal: number;
   /** Taxe sur les indemnités des agents généraux (5QM/5RM) : due en sus de l'IR, hors réductions d'impôt. */
   taxeAgentsGeneraux: number;
@@ -387,6 +389,7 @@ export function calculerRevenusNonSalaries(
     totalNetImposable: bicPro + bncPro + bicNonPro + bncNonPro + lmnp + ba,
     deficitAgricole: somme(input, ['case5hf', 'case5jf', 'case5if']),
     impotForfaitaire: plusValuesLongTerme * TAUX_PLUS_VALUES_LONG_TERME + brevets * TAUX_BREVETS,
+    produitsBrevets: brevets,
     revenuImposableTauxMarginal,
     taxeAgentsGeneraux: taxeAgentGeneral(v('case5qm')) + taxeAgentGeneral(v('case5rm')),
     revenuCreditImpotEgalImpotFrancais: somme(input, [...CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5]),

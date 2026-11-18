@@ -31,6 +31,8 @@ export interface InvestissementsLocatifsResult {
   reductions: number;
   /** Crédits restituables (bornes, 7WR). */
   credits: number;
+  /** Dont crédit bornes de recharge (art. 200 quater C), réintégré pour la CDHR. */
+  creditBornes: number;
   /** Part comptée au plafonnement global de 10 000 € (bornes, Loc'Avantages). */
   avantagesPlafonnesCourants: number;
 }
@@ -45,6 +47,7 @@ export function calculerInvestissementsLocatifs(input: ReductionsCreditsImpotInp
   return {
     reductions: locAvantages + malraux,
     credits: bornes + risques,
+    creditBornes: bornes,
     avantagesPlafonnesCourants: bornes + locAvantages,
   };
 }

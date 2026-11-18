@@ -145,6 +145,8 @@ export interface RevenuCapitauxMobiliersResult {
    * `revenuMondialFictif`.
    */
   revenuExonereRetenuPourRFR: number;
+  /** Abattement de 40 % appliqué aux dividendes (option barème), retiré du revenu de référence de la CDHR. */
+  abattementDividendes: number;
   /**
    * Déficit RCM de l'année, reportable sur les revenus de même nature des
    * 6 années suivantes, uniquement en cas d'option barème (brochure DGFiP
@@ -299,6 +301,7 @@ export function calculerRevenuCapitauxMobiliers(
       creditImpotEtranger2AB,
       creditImpotValeursEtrangeres2CK,
       revenuExonereRetenuPourRFR: abattementDividendes + revenuExonereRetenuPourRFRContratsAssuranceVie,
+      abattementDividendes,
       casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
     };
   }
@@ -315,6 +318,7 @@ export function calculerRevenuCapitauxMobiliers(
     creditImpotEtranger2AB,
     creditImpotValeursEtrangeres2CK,
     revenuExonereRetenuPourRFR: revenuExonereRetenuPourRFRContratsAssuranceVie + baseTaux128 + baseTaux75,
+    abattementDividendes: 0,
     casesExclues: CASES_CAPITAUX_MOBILIERS_EXCLUES_DU_CALCUL,
   };
 }
