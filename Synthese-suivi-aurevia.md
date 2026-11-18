@@ -1,8 +1,8 @@
 # Aurevia — reprise : cases non gérées et taux AV transmission
 
-Nov 17, 2026 · @Titouan
+Nov 18, 2026 · @Titouan
 
-Les deux chantiers ouverts après la campagne de comparaison du moteur IR d'Aurevia avec le simulateur officiel sont terminés et poussés sur `main` : les cases non gérées qui changent l'impôt (7US comprise depuis le 18 nov. 2026) et le taux de PS de l'assurance-vie hors fiscalité (gardé à 17,2 %).
+Les deux chantiers ouverts après la campagne de comparaison du moteur IR d'Aurevia avec le simulateur officiel sont terminés et poussés sur `main` : les cases non gérées qui changent l'impôt (7US comprise depuis le 18 nov. 2026) et le taux de PS de l'assurance-vie hors fiscalité (gardé à 17,2 %). Les écarts connus restants (7DO, 7ZZ…7ZW, 8TK, arrondi des PS de 4BK/4BL) sont résolus depuis le 18 nov. 2026 : aucun écart connu ne reste avec le simulateur.
 
 ## Contexte
 
@@ -29,7 +29,19 @@ Commits déjà faits sur `main` (poussés le 17 nov. 2026) :
 | `815e66d` | Abattement personnes âgées (art. 157 bis) |
 | `5d21a14` | Plafond quart de part en résidence alternée à 903,5 € |
 
-8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère). L'arrondi des PS de 4BK/4BL est aligné aussi (PS du foncier entier, moins ceux de la fraction arrondis par contribution).
+Commits du 18 nov. 2026, poussés sur `main` :
+
+| Commit | Objet |
+| --- | --- |
+| `8fb9fe8` | Taux de PS de l'assurance-vie via constantes (17,2 % hors fiscalité) |
+| `d6cb6d5` | 7US, mécénat d'entreprise (colonne `case_7us`) |
+| `1bb2c30` | 7DO déduite deux fois du plafond PME |
+| `fc495e8` | 7WI et dépenses antérieures 7ZZ…7ZW : tests sur les mesures du simulateur |
+| `39eccaf` | 8TK : contrôle du crédit égal à l'impôt français ; rentes 1AR…1DR sans crédit |
+| `a0fb240` | Arrondi des PS de la fraction 4BK/4BL |
+| `c442801` | Colonnes `case_8tk186` et `case_8tk172` supprimées en base (table vide) |
+
+8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère). L'arrondi des PS de 4BK/4BL est aligné aussi (PS du foncier entier, moins ceux de la fraction arrondis par contribution). Les anciennes colonnes de ventilation de 8TK sont supprimées en base.
 
 Décisions prises : quand le simulateur et la loi ou ClickImpôts divergent, Aurevia suit le simulateur officiel 2026 (3SB hors RFR, assurance-vie à 18,6 %, 1NX sans PS).
 
