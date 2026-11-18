@@ -1,7 +1,7 @@
 // Mapping unique entre la ligne Supabase `societes` et l'état du formulaire
 // SocieteForm.tsx, consommé par SocietesSection.tsx. Renvoie `null` (et non
 // `undefined`) pour un champ vidé, afin que la valeur soit effacée en base.
-import type { Societe } from '@/services/societeService';
+import type { Societe, SocieteCreation } from '@/services/societeService';
 
 export interface SocieteFormData {
   denomination: string;
@@ -94,7 +94,7 @@ export const societeToFormData = (societe: Societe): SocieteFormData => ({
 
 export const formDataToSociete = (
   data: SocieteFormData
-): Omit<Societe, 'id' | 'user_id' | 'created_at' | 'updated_at'> => ({
+): SocieteCreation => ({
   denomination: data.denomination,
   type_societe: data.typeSociete,
   date_creation: data.dateCreation || null,
@@ -119,8 +119,9 @@ export const formDataToSociete = (
   forme_societe_civile: data.formeSocieteCivile || null,
   pourcentage_utilisateur: data.pourcentageUtilisateur ?? null,
   pourcentage_conjoint: data.pourcentageConjoint ?? null,
-  qualification_bien: data.qualificationBien || null,
-  detenteur: data.detenteur || null,
+  // Obligatoires : SocieteForm bloque l'envoi s'ils sont vides.
+  qualification_bien: data.qualificationBien,
+  detenteur: data.detenteur,
   origine_entree: data.origineEntree || null,
   montant_entree: data.montantEntree ?? null,
   remploi_entree: data.remploiEntree || false,

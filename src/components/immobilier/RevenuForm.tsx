@@ -79,7 +79,7 @@ export const RevenuForm = ({ assetId, open, onOpenChange, onSuccess, impactBudge
       const champs = {
         nature: formData.nature,
         montant: parseFloat(formData.montant),
-        periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Annuelle',
+        periodicite: formData.periodicite as 'Mensuelle' | 'Trimestrielle' | 'Semestrielle' | 'Annuelle',
         commentaire: formData.commentaire || undefined,
         impact_budget: localImpactBudget,
       };

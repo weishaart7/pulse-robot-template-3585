@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldHelp } from '@/components/ui/field-help';
 import { supabase } from '@/integrations/supabase/client';
 import { Asset } from '@/services/assetService';
+import type { NetPerHeirResult } from '@/lib/transmission/netBreakdown';
 import { societeDutreilService } from '@/services/societeExtendedService';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePassifs, useEmprunts } from '@/hooks/usePassifs';
@@ -487,8 +488,8 @@ export const Synthese = () => {
     // frais de notaire et droit de partage) — pas de heir.partFinale (part civile
     // brute), qui ne sert plus qu'à répartir les types de quote-part (usufruit/
     // nue-propriété) au sein d'un même héritier via `parts` ci-dessus.
-    const netByPersonId = new Map(
-      (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
+    const netByPersonId = new Map<string, NetPerHeirResult>(
+      (transmissionResult.netBreakdown?.heirs || []).map((n: NetPerHeirResult) => [n.personId, n] as const)
     );
 
     return Array.from(grouped.values())
@@ -766,8 +767,8 @@ export const Synthese = () => {
           </PanelCardHeader>
           <PanelCardContent>
             {(() => {
-              const netByPersonId = new Map(
-                (transmissionResult.netBreakdown?.heirs || []).map((n: any) => [n.personId, n])
+              const netByPersonId = new Map<string, NetPerHeirResult>(
+                (transmissionResult.netBreakdown?.heirs || []).map((n: NetPerHeirResult) => [n.personId, n] as const)
               );
 
               const rows = heritiersData.map((heritier, idx) => {

@@ -13,13 +13,14 @@ type PatrimoineAcquetsRow<T extends PatrimoineAcquetsTable> =
  * tables sont réellement identiques en forme.
  */
 export function createPatrimoineAcquetsService<T extends PatrimoineAcquetsTable>(table: T) {
+  // Les deux tables ont les mêmes colonnes : l'une sert de type pour les requêtes génériques.
+  const from = () => supabase.from(table as 'patrimoine_originaire');
   return {
     async getAll(): Promise<PatrimoineAcquetsRow<T>[]> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from(table)
+      const { data, error } = await from()
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
@@ -29,15 +30,14 @@ export function createPatrimoineAcquetsService<T extends PatrimoineAcquetsTable>
         throw error;
       }
 
-      return (data || []) as PatrimoineAcquetsRow<T>[];
+      return (data || []) as unknown as PatrimoineAcquetsRow<T>[];
     },
 
     async create(ligne: Omit<PatrimoineAcquetsRow<T>, 'id' | 'user_id'>): Promise<PatrimoineAcquetsRow<T>> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non connecté');
 
-      const { data, error } = await supabase
-        .from(table)
+      const { data, error } = await from()
         .insert({ ...ligne, user_id: user.id } as any)
         .select()
         .single();
@@ -47,15 +47,14 @@ export function createPatrimoineAcquetsService<T extends PatrimoineAcquetsTable>
         throw error;
       }
 
-      return data as PatrimoineAcquetsRow<T>;
+      return data as unknown as PatrimoineAcquetsRow<T>;
     },
 
     async remove(id: string): Promise<void> {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non connecté');
 
-      const { error } = await supabase
-        .from(table)
+      const { error } = await from()
         .delete()
         .eq('id', id)
         .eq('user_id', user.id);

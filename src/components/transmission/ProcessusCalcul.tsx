@@ -152,7 +152,7 @@ export const ProcessusCalcul = () => {
         // Même source que Synthese.tsx/Succession2ndDeces.tsx : l'option
         // enregistrée dans l'onglet Optimisation, jamais une valeur figée.
         conjointOption: ((maritalStatus as any)?.option_conjoint as ConjointOption | null) || undefined,
-        rawAssets: assets || [],
+        rawAssets: (assets || []).filter((a): a is typeof a & { id: string } => !!a.id),
         societesDutreil,
         dutreilPartsNonAffectees,
         passifsParBien: buildPassifsParBien(passifLines),

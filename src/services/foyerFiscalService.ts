@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { EnfantCharge, FoyerFiscalInput, PersonneInvalideCharge } from '@/lib/fiscalite';
 
 export interface FoyerFiscal extends FoyerFiscalInput {
@@ -55,8 +56,8 @@ function foyerFiscalToRow(foyer: FoyerFiscal, userId: string) {
     user_id: userId,
     situation_famille: foyer.situationFamille,
     lieu_residence: foyer.lieuResidence,
-    enfants_charge: foyer.enfantsCharge,
-    personnes_invalides_charge: foyer.personnesInvalidesCharge,
+    enfants_charge: foyer.enfantsCharge as unknown as Json,
+    personnes_invalides_charge: foyer.personnesInvalidesCharge as unknown as Json,
     enfants_majeurs_rattaches: foyer.enfantsMajeursRattaches,
     parent_isole: foyer.parentIsole,
     ancien_parent_isole: foyer.ancienParentIsole,

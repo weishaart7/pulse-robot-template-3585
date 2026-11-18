@@ -170,7 +170,7 @@ export interface AssetRevenu {
   asset_id: string;
   nature: string;
   montant: number;
-  periodicite: 'Mensuelle' | 'Trimestrielle' | 'Annuelle';
+  periodicite: 'Mensuelle' | 'Trimestrielle' | 'Semestrielle' | 'Annuelle';
   date_debut: string;
   date_fin?: string;
   commentaire?: string;

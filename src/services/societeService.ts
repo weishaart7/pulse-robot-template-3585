@@ -111,6 +111,10 @@ const recalculerSociete = async (societeId: string): Promise<Societe | null> => 
   return aJour;
 };
 
+/** Saisie d'une société : detenteur et qualification_bien sont NOT NULL sans défaut en base (societes). */
+export type SocieteCreation = Omit<Societe, 'id' | 'user_id' | 'created_at' | 'updated_at'>
+  & Required<Pick<Societe, 'detenteur' | 'qualification_bien'>>;
+
 export const societeService = {
   recalculerSociete,
 
@@ -198,7 +202,7 @@ export const societeService = {
     return data;
   },
 
-  async create(societe: Omit<Societe, 'id' | 'user_id' | 'created_at' | 'updated_at'>): Promise<Societe> {
+  async create(societe: SocieteCreation): Promise<Societe> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
