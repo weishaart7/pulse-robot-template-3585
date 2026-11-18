@@ -34,6 +34,8 @@ export interface ParametresFiscaux {
     readonly plafondDemiPart: number;
     /** Réduction complémentaire par demi-part (invalidité, ancien combattant, veuve de guerre). */
     readonly plafondComplementaire: number;
+    /** Réduction complémentaire de la part de maintien du quotient conjugal du veuf. */
+    readonly plafondComplementaireVeuf: number;
     /** Plafond total des deux premières parts du premier enfant d'un parent isolé (case T). */
     readonly plafondParentIsole: number;
     /** Plafond de la demi-part d'ancien parent isolé (case L). */

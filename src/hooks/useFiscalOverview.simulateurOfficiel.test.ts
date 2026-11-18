@@ -262,6 +262,40 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 1, revenuFiscalReference: 52200, droitsSimples: 8764, reductions: 8764, plafonnement: 2784, prelevementsSociaux: 0,
       impotNet: -3216, tmi: 0.3 },
   },
+  S16: {
+    description: 'veuf, 1 enfant : réduction complémentaire de 2 011 € sur la part de veuvage',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'veuf', anneeNaissanceDeclarant1: 1975, enfantsCharge: [enfant(2015)] },
+      salaires: { case1aj: 66667 },
+    },
+    attendu: { parts: 2.5, revenuFiscalReference: 60000, droitsSimples: 5683, impotNet: 3672, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  S17: {
+    description: 'veuf avec seulement une personne invalide à charge : 3 parts, 2 011 + 1 801 €',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'veuf', anneeNaissanceDeclarant1: 1975, personnesInvalidesCharge: [{ anneeNaissance: 1950 }] },
+      salaires: { case1aj: 100000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 90000, droitsSimples: 13473, impotNet: 9661, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+  S18: {
+    description: 'parent isolé (T) avec seulement une personne invalide à charge : 2,5 parts',
+    saisies: {
+      foyer: { ...FOYER, parentIsole: true, anneeNaissanceDeclarant1: 1975, personnesInvalidesCharge: [{ anneeNaissance: 1950 }] },
+      salaires: { case1aj: 100000 },
+    },
+    attendu: { parts: 2.5, revenuFiscalReference: 90000, droitsSimples: 15280, impotNet: 13479, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+  S19: {
+    description: "arrondis à l'euro des abattements : salaires, pensions, dividendes au barème",
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 33336 },
+      pensions: { case1as: 33336 },
+      rcm: { case2dc: 10007, case2bh: 10007, case2op: true },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 69331, droitsSimples: 12702, impotNet: 12702, prelevementsSociaux: 0, tmi: 0.3 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {

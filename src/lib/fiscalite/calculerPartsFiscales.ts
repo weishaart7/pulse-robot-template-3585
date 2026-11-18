@@ -212,12 +212,9 @@ function demiPartsPersonnelles(
  * complémentaire d'un montant maximal de 1 801 € est appliquée » pour la
  * demi-part liée à l'invalidité elle-même) — modélisé en 2 lignes de
  * `majorations[]` (0,5 part chacune), même mécanique que la majoration
- * invalidité d'un enfant à charge ci-dessus. **Cas non modélisé** : lorsque le
- * foyer ne compte à charge qu'une seule personne invalide ET coche la case T
- * (parent isolé), le plafond spécifique de 4 262 € normalement associé à la
- * case T ne s'applique pas à ces 2 demi-parts (interaction entre deux
- * majorations que la somme indépendante des plafonds par ligne ne peut pas
- * représenter) — laissé en dette plutôt que deviné (voir docs/fiscalite.md).
+ * invalidité d'un enfant à charge ci-dessus. Case T avec une seule personne
+ * invalide à charge : demi-part plafonnée à 1 807 €, sans le plafond de 4 262 €
+ * propre au premier enfant (simulateur officiel 2026).
  */
 export function calculerPartsFiscales(
   input: FoyerFiscalInput,
@@ -227,9 +224,11 @@ export function calculerPartsFiscales(
   const enfantsRang = construireEnfantsRang(input);
   const nombreEnfants = enfantsRang.length;
 
-  // Veuf avec enfant à charge ou rattaché : autant de parts qu'un couple, mais le plafonnement se
-  // mesure par rapport à 1 part — la part de veuvage est une majoration plafonnée (2 demi-parts).
-  const veufAvecEnfants = input.situationFamille === 'veuf' && nombreEnfants > 0;
+  // Veuf avec enfant ou personne invalide à charge : autant de parts qu'un couple, mais le plafonnement
+  // se mesure par rapport à 1 part — la part de veuvage est une majoration plafonnée (2 demi-parts),
+  // avec une réduction complémentaire de 2 011 € (simulateur officiel 2026, entière même en résidence alternée).
+  const veufAvecEnfants = input.situationFamille === 'veuf'
+    && (nombreEnfants > 0 || input.personnesInvalidesCharge.length > 0);
   const estCouple = COUPLE_IMPOSITION_COMMUNE.includes(input.situationFamille);
   const partsBase = estCouple ? 2 : 1;
 
@@ -240,6 +239,7 @@ export function calculerPartsFiscales(
       libelle: 'Maintien du quotient conjugal (veuf avec personne à charge)',
       parts: 1,
       plafondUnitaire: plafondPourParts(1, qf),
+      plafondComplementaire: qf.plafondComplementaireVeuf,
     });
   }
   majorations.push(...majorationsEnfants(enfantsRang, input.personnesInvalidesCharge.length, qf));
@@ -264,13 +264,20 @@ export function calculerPartsFiscales(
     });
   });
 
-  if (input.parentIsole && nombreEnfants > 0) {
+  if (input.parentIsole && (nombreEnfants > 0 || input.personnesInvalidesCharge.length > 0)) {
+    // Un seul enfant, en résidence alternée, sans autre personne à charge : la case T vaut 0,25 part et les
+    // plafonds sont réduits de moitié (simulateur officiel 2026 : 1,5 part, avantage plafonné à 4 262 € / 2).
+    const seulEnfantAlterne = nombreEnfants === 1 && enfantsRang[0].residenceAlternee
+      && input.personnesInvalidesCharge.length === 0;
+    const plafondT = nombreEnfants > 0 ? qf.plafondParentIsole - qf.plafondDemiPart : qf.plafondDemiPart;
     majorations.push({
       type: 'parent_isole',
       libelle: 'Parent isolé (case T)',
-      parts: 0.5,
-      // Plafond global enfant n°1 + case T, dont la demi-part de l'enfant consomme déjà plafondDemiPart.
-      plafondUnitaire: qf.plafondParentIsole - qf.plafondDemiPart,
+      parts: seulEnfantAlterne ? 0.25 : 0.5,
+      // Avec un enfant : plafond global enfant n°1 + case T, dont la demi-part de l'enfant consomme déjà
+      // plafondDemiPart. Avec une seule personne invalide à charge : demi-part ordinaire (simulateur officiel
+      // 2026 : 2,5 parts, avantage plafonné à 3 × 1 807 €).
+      plafondUnitaire: seulEnfantAlterne ? plafondT / 2 : plafondT,
     });
   }
 

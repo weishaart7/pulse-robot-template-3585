@@ -21,7 +21,8 @@ export function abattementPensionDeclarant(
   abattement: AbattementPensions = PARAMETRES_PAR_DEFAUT.abattementsDixPourCent.pensions,
 ): number {
   if (pension <= 0) return 0;
-  return Math.min(pension, Math.max(abattement.plancher, pension * PENSION_ABATTEMENT_TAUX));
+  // Arrondi à l'euro le plus proche, comme le simulateur officiel 2026 (1AS 10 007 € → net 9 006 €).
+  return Math.round(Math.min(pension, Math.max(abattement.plancher, pension * PENSION_ABATTEMENT_TAUX)));
 }
 
 type PensionsExonerees = Pick<RevenusExoneresTauxEffectifInput, 'case1ah' | 'case1bh' | 'case1ch' | 'case1dh'>;

@@ -33,6 +33,7 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
   quotientFamilial: {
     plafondDemiPart: 1807,
     plafondComplementaire: 1801,
+    plafondComplementaireVeuf: 2011,
     plafondParentIsole: 4262,
     plafondAncienParentIsole: 1079,
   },

@@ -263,13 +263,14 @@ export function calculerDeclarant(
   const baseTotale = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsExonereesTauxEffectif
     + remunerationsActionnariat;
 
+  // Arrondi à l'euro le plus proche, comme le simulateur officiel 2026 (1AJ 66 672 € → net 60 005 €).
   const abattementForfaitaire = baseTotale <= 0
     ? 0
-    : Math.min(
+    : Math.round(Math.min(
         abattement.plafond,
         Math.max(abattement.plancher, baseTotale * ABATTEMENT_TAUX),
         baseTotale,
-      );
+      ));
 
   const fraisReels = (fraisReelsDomestique === null && fraisReelsExonere === null)
     ? null

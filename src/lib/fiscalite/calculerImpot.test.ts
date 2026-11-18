@@ -167,6 +167,68 @@ describe("calculerImpot — imputation des réductions sur le seul impôt au bar
   });
 });
 
+describe('calculerImpot — veuf : complément de 2 011 € et maintien avec une personne invalide (simulateur officiel 2026)', () => {
+  const veuf = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
+    situationFamille: 'veuf', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],
+    enfantsMajeursRattaches: 0, parentIsole: false, ancienParentIsole: false, invaliditeDeclarant1: false,
+    invaliditeDeclarant2: false, ancienCombattantDeclarant1: false, ancienCombattantDeclarant2: false,
+    veufAncienCombattant: false, veuveDeGuerre: false, ...overrides,
+  });
+  const enfant = (residenceAlternee = false) => ({ anneeNaissance: 2015, invalide: false, residenceAlternee });
+  const cas = (foyer: FoyerFiscalInput, rni: number) => calculerImpot(rni, calculerPartsFiscales(foyer), 'veuf');
+
+  it('1 enfant, RNI 60 000 € : réduction complémentaire de 2 011 €', () => {
+    const r = cas(veuf({ enfantsCharge: [enfant()] }), 60000);
+    expect(Math.round(r.impotApresPlafonnement)).toBe(5683);
+    expect(r.reductionComplementaireQuotientFamilial).toBe(2011);
+  });
+
+  it('1 enfant, RNI 52 000 € : bornée par le supplément du plafonnement (753 €)', () => {
+    expect(cas(veuf({ enfantsCharge: [enfant()] }), 52000).reductionComplementaireQuotientFamilial).toBe(753);
+  });
+
+  it('sans plafonnement (RNI 48 000 €) : aucune réduction', () => {
+    expect(cas(veuf({ enfantsCharge: [enfant()] }), 48000).reductionComplementaireQuotientFamilial).toBe(0);
+  });
+
+  it('enfant en résidence alternée : 2 011 € entiers', () => {
+    expect(cas(veuf({ enfantsCharge: [enfant(true)] }), 120000).reductionComplementaireQuotientFamilial).toBe(2011);
+  });
+
+  it('veuf invalide avec 1 enfant : 2 011 + 1 801 €', () => {
+    expect(cas(veuf({ invaliditeDeclarant1: true, enfantsCharge: [enfant()] }), 120000).reductionComplementaireQuotientFamilial).toBe(3812);
+  });
+
+  it('case T avec un seul enfant, en résidence alternée : 1,5 part, plafond 4 262 € / 2', () => {
+    const avec = (alternes: number, exclusifs = 0) => calculerPartsFiscales(veuf({
+      situationFamille: 'celibataire', parentIsole: true,
+      enfantsCharge: [...Array(alternes).fill(enfant(true)), ...Array(exclusifs).fill(enfant())],
+    }));
+    // RNI 135 445 € (1AJ 150 000 €), droits simples du simulateur officiel 2026.
+    const droits = (p: ReturnType<typeof avec>) => Math.round(calculerImpot(135445, p, 'celibataire').impotApresPlafonnement);
+    expect([avec(1).nombreParts, droits(avec(1))]).toEqual([1.5, 37202]);
+    expect([avec(2).nombreParts, droits(avec(2))]).toEqual([2, 35071]);
+    expect([avec(1, 1).nombreParts, droits(avec(1, 1))]).toEqual([2.25, 34167]);
+    expect([avec(3).nombreParts, droits(avec(3))]).toEqual([2.5, 33264]);
+  });
+
+  it('case T avec une seule personne invalide à charge : 2,5 parts, demi-part plafonnée à 1 807 €', () => {
+    const foyer = veuf({ situationFamille: 'celibataire', parentIsole: true, personnesInvalidesCharge: [{ anneeNaissance: 1950 }] });
+    expect(calculerPartsFiscales(foyer).nombreParts).toBe(2.5);
+    const r = calculerImpot(90000, calculerPartsFiscales(foyer), 'celibataire');
+    expect(Math.round(r.impotApresPlafonnement)).toBe(15280);
+    expect(r.reductionComplementaireQuotientFamilial).toBe(1801);
+  });
+
+  it('seulement une personne invalide à charge : 3 parts, réduction 3 812 €', () => {
+    const foyer = veuf({ personnesInvalidesCharge: [{ anneeNaissance: 1950 }] });
+    expect(calculerPartsFiscales(foyer).nombreParts).toBe(3);
+    const r = cas(foyer, 90000);
+    expect(Math.round(r.impotApresPlafonnement)).toBe(13473);
+    expect(r.reductionComplementaireQuotientFamilial).toBe(3812);
+  });
+});
+
 describe('calculerImpot — taux marginal sous plafonnement du quotient familial', () => {
   const foyer = (overrides: Partial<FoyerFiscalInput>): FoyerFiscalInput => ({
     situationFamille: 'marie', lieuResidence: 'metropole', enfantsCharge: [], personnesInvalidesCharge: [],

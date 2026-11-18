@@ -54,6 +54,7 @@ describe('calculerPartsFiscales — parts de base', () => {
       libelle: 'Maintien du quotient conjugal (veuf avec personne à charge)',
       parts: 1,
       plafondUnitaire: 3614,
+      plafondComplementaire: 2011,
     });
     expect(result.nombreParts).toBe(2.5);
   });

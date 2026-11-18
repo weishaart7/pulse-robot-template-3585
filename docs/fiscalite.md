@@ -213,6 +213,12 @@ fonciers (§4).
   restent, tirés du millésime par défaut. Hors paramètres pour l'instant : codes et libellés de cases
   datés (reports de dons, Scellier, Censi-Bouvard, forestier, rénovation énergétique 2044), projections
   retraite (millésime par défaut).
+- **Revenus catégoriels arrondis à l'euro.** Les abattements de 10 % (salaires, pensions) et de 40 %
+  (dividendes au barème) sont arrondis à l'euro le plus proche, comme les régimes micro : simulateur
+  officiel 2026, 1AJ 66 672 € → 60 005 €, 1AS 10 007 € → 9 006 €, 2DC 10 007 € → 6 004 € (cas S19).
+- **Veuf : maintien du quotient conjugal avec un enfant ou une personne invalide à charge**, part de veuvage
+  ouvrant 2 011 € de réduction complémentaire (cas S16, S17 ; S18 pour la case T avec une seule personne
+  invalide).
 - **Imputation des réductions sur le seul impôt au barème.** Les réductions non restituables (cadres 7 et 8,
   outre-mer, souscriptions, investissements locatifs) s'imputent sur l'impôt au barème après décote, diminué
   du crédit égal à l'impôt français ; le PFU, les impositions à taux proportionnel (gains d'actionnariat à taux
@@ -291,8 +297,8 @@ fonciers (§4).
   compris pour la majoration invalidité elle-même — confirmé BOFiP BOI-IR-LIQ-10-20-20-20), personne
   invalide à charge hors enfant (+1 part entière, distincte de la majoration invalidité du foyer),
   parent isolé (case T, +0,5 part, plafond 2 455 € : l'enfant n°1 et la case T sont plafonnés ensemble à
-  4 262 € ; avec uniquement des enfants en résidence alternée, la majoration réduite à 0,25 part pour
-  un seul enfant n'est pas modélisée, ni la case T ouverte par une personne invalide recueillie seule),
+  4 262 € ; un seul enfant à charge, en résidence alternée : 0,25 part, plafonds réduits de moitié ;
+  une seule personne invalide recueillie sans enfant : 0,5 part plafonnée à 1 807 €, simulateur officiel 2026),
   et demi-parts de situation personnelle avec leurs règles de non-cumul (brochure IR 2026 p. 77-79) :
   en couple, P et F se cumulent, S (ancien combattant +74 ans, l'un ou les deux déclarants) vaut une
   seule demi-part pour le couple et ne se cumule pas avec P ou F, L/W veuf/G sont écartées ; personne
@@ -497,8 +503,8 @@ fonciers (§4).
   veuf), puis **réduction complémentaire** (art. 197 I 2 CGI, `reductionComplementaireQuotientFamilial` :
   somme des `plafondComplementaire` — 1 801 € par demi-part P/F/S/W/G, invalidité d'un enfant ou d'une
   personne à charge, moitié en résidence alternée — dans la limite du supplément d'impôt créé par le
-  plafonnement, arrondie à l'euro à part ; nulle sans plafonnement ; le complément de 2 011 € du veuf
-  n'est pas modélisé), puis
+  plafonnement, arrondie à l'euro à part ; nulle sans plafonnement ; 2 011 € pour la part de maintien du
+  quotient conjugal du veuf, entière même en résidence alternée, `plafondComplementaireVeuf`), puis
   **proratisation** (méthode du taux effectif : `impôt sur le revenu mondial fictif × (revenu imposable
   en France / revenu mondial fictif)` — seule la part française paie, mais au taux moyen du revenu
   mondial ; sans revenu exonéré, ce ratio vaut 1 et n'a aucun effet), puis **réduction d'impôt outre-mer**
@@ -1968,13 +1974,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
-- **Quotient familial — complément de 2 011 € du veuf non modélisé.** Quand les deux premières
-  demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
-  par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €
-  par demi-part est, elle, appliquée (voir §2).
-- **Quotient familial — veuf avec seulement une personne invalide à charge.** Le maintien du quotient
-  conjugal (1 part de veuvage) n'est accordé qu'avec un enfant à charge ou rattaché : il manque 1 part
-  dans ce cas (brochure IR 2026 p. 85).
 - **Parts de sociétés comptées à 100 % en 9CA.** La fraction représentative d'immeubles n'est pas
   calculée (trésorerie, actifs non immobiliers, holdings) : signalé sous l'actif, à corriger par saisie.
 
@@ -1995,11 +1994,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   AGA (décision à compter du 31.12.2016). Vérifier pour chaque case le taux réellement liquidé (avis
   d'imposition réel de préférence, le simulateur officiel n'affichant aucune ligne PS pour 1TZ/1AY).
 
-- **Quotient familial — case T hors enfant à charge exclusive.** Avec uniquement des enfants en
-  résidence alternée, la case T vaut 0,25 part pour un seul enfant (0,5 à partir de deux), plafond
-  4 262 € / 2 : le moteur accorde toujours 0,5 part. La case T ouverte par une seule personne invalide
-  recueillie (sans enfant) n'est pas calculée, bien que le libellé du formulaire la mentionne
-  (brochure IR 2026 p. 79-80, 85).
 - **Situation du foyer — changements en cours d'année non modélisés.** Mariage ou Pacs (option pour
   l'imposition distincte, cas du Pacs antérieur suivi d'un mariage), divorce ou rupture (condition de
   vivre seul appréciée au 31 décembre pour T et L), décès (deux déclarations, maintien pour l'année du
@@ -2037,16 +2031,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 - **RFR — 2XX et 2VM** (produits et gains déjà soumis au prélèvement libératoire) : exclus du RFR alors
   que 2DH, de même nature, y est retenu. Probablement à réintégrer (art. 1417 IV CGI), à vérifier.
 
-- **Plafonnement du quotient familial — interaction non modélisée entre la case T (parent isolé) et une
-  personne invalide à charge unique.** La brochure DGFiP (IR 2026, p.85) précise que lorsque le foyer
-  ne compte à charge qu'une seule personne invalide et coche la case T, le plafond spécifique de
-  4 262 € normalement associé à la case T ne s'applique pas aux 2 demi-parts de la personne invalide
-  (qui restent plafonnées à 1 807 €/1 807 €+1 801 € chacune, comme dans le cas général). L'architecture
-  actuelle de `calculerImpot.ts` (somme indépendante des `plafondUnitaire` de chaque majoration, sans
-  connaissance des interactions entre majorations) ne peut pas représenter cette exception sans un
-  changement plus large — non modélisé plutôt que deviné. Cas rare (célibataire/divorcé/séparé, case T,
-  et aucun autre enfant/personne à charge que la personne invalide) : un écart resterait possible pour
-  ce profil précis.
 - **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…, contrôlé par 8TK) : ordre aligné
   sur l'avis ClickImpôts.** Le revenu reste dans la base française ; l'impôt après taux effectif est
   arrondi à l'euro, puis le crédit (impôt après décote × revenu / base française, arrondi) est imputé
@@ -2235,8 +2219,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     majoration (`calculerPartsFiscales.ts`) porte désormais un `plafondUnitaire` chiffré (scission en 2
     demi-parts, voir §2/§3). Reste non appliqué par `calculerImpot.ts` : le cumul de plusieurs
     majorations `plafondComplementaire` sur une même personne (architecture actuelle : somme
-    indépendante des plafonds par ligne, pas d'agrégation par personne), et l'interaction entre le
-    plafond spécifique de la case T (4 262 €) et une personne invalide à charge unique (voir §3).
+    indépendante des plafonds par ligne, pas d'agrégation par personne).
   - **Reprise depuis Famille** : résidence alternée, lieu de résidence, cases T, L et G, et
     changement de situation en cours d'année (mariage, PACS, divorce, décès) restent manuels.
   - **2042-IFI** : voir « Non modélisé » en §2, « Déclaration 2042-IFI ».

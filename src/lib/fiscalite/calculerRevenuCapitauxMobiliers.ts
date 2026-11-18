@@ -283,7 +283,8 @@ export function calculerRevenuCapitauxMobiliers(
   const revenuExonereRetenuPourRFRContratsAssuranceVie = case2dh + revenusLiberatoiresRetenusPourRFR;
 
   if (input.case2op) {
-    const abattementDividendes = dividendes * ABATTEMENT_DIVIDENDES_TAUX;
+    // Arrondi à l'euro le plus proche, comme le simulateur officiel 2026 (2DC 10 007 € → net 6 004 €).
+    const abattementDividendes = Math.round(dividendes * ABATTEMENT_DIVIDENDES_TAUX);
     const fraisCharges = input.case2ca ?? 0;
     const deficitsAnterieurs = (input.case2aa ?? 0) + (input.case2al ?? 0) + (input.case2am ?? 0)
       + (input.case2an ?? 0) + (input.case2aq ?? 0) + (input.case2ar ?? 0);
