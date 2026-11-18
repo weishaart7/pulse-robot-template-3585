@@ -40,6 +40,8 @@ import {
   calculerPlafonnementNiches,
   calculerInvestissementsOutreMer,
   calculerSouscriptionsCapital,
+  controle8TK,
+  CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5,
   aRevenuProfessionnelReel,
   calculerInvestissementsForestiers,
   calculerInvestissementsLocatifs,
@@ -293,6 +295,8 @@ export interface FiscalOverview {
   abattementsSpeciaux: AbattementsSpeciauxResult;
   /** Rappels croisant le cadre 6 et la situation de famille. */
   alertesChargesDeductibles: string[];
+  /** 8TK différente du total des cases ouvrant droit au crédit égal à l'impôt français (crédit refusé). */
+  alerte8TK: string | null;
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
   /** Plafonnement global des avantages fiscaux (art. 200-0 A) : excédent ajouté à l'impôt. */
@@ -455,20 +459,28 @@ export function useFiscalOverview(): FiscalOverview {
         + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
         + revenusNonSalaries.impotForfaitaire;
       const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
-      // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR, 4BL, 8TK) : revenu
-      // compris dans la base française, crédit imputé après la décote (voir calculerImpot.ts).
+      // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) : revenu compris dans la
+      // base française, crédit imputé après la décote (voir calculerImpot.ts). Accordé seulement si 8TK
+      // égale le total brut de ces cases (simulateur officiel 2026, voir controle8TK).
       const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
       const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
-      // 8TK : déjà compris dans le revenu imposable (déclaré dans sa catégorie) — basculé vers le revenu
-      // ouvrant droit au crédit, RFR inchangé.
-      const revenuCredit8TK = Math.min(prelevementSourceDivers.revenuCreditImpotEgalImpotFrancais, Math.max(0, revenuImposableTotal));
+      const nonSalariesInput = nonSalaries ?? REVENUS_NON_SALARIES_VIDE;
+      const fonciers2042Input = fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT;
+      const totalCategories8TK = [revenusInput.case1af, revenusInput.case1bf, pensionsInput.case1al, pensionsInput.case1bl,
+        fonciers2042Input.case4bk, fonciers2042Input.case4bl,
+        ...CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5.map(cle => nonSalariesInput[cle])]
+        .reduce<number>((t, v) => t + Math.max(0, v ?? 0), 0);
+      const verification8TK = controle8TK(prelevementSourceDivers.montant8TK, totalCategories8TK);
       const revenuExonere = revenuExonereTauxEffectif.totalRetenu
         + revenusFonciers2042.revenuExonereTauxEffectif + revenusNonSalaries.revenuExonereTauxEffectif
         + prelevementSourceDivers.revenuTauxEffectif;
-      const revenuCreditImpotFrancais = revenuSalaires.revenuCreditImpotEgalImpotFrancais
+      const revenuCategories8TK = revenuSalaires.revenuCreditImpotEgalImpotFrancais
         + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
         + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais
-        + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais + revenuCredit8TK;
+        + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais;
+      // Crédit refusé : ces revenus, tenus hors de la base imposée, y reviennent sans crédit.
+      const revenuCreditImpotFrancais = verification8TK.creditAccorde ? revenuCategories8TK : 0;
+      const revenuImposableHorsCredit = revenuImposableTotal + (verification8TK.creditAccorde ? 0 : revenuCategories8TK);
       const reductionsCreditsImpot = calculerReductionsCreditsImpot(
         reductions ?? REDUCTIONS_CREDITS_IMPOT_PAR_DEFAUT, foyerInput, revenuImposableTotal,
         {
@@ -511,7 +523,7 @@ export function useFiscalOverview(): FiscalOverview {
       });
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
       const calculer = (creditEtranger: number) => calculerImpot(
-        revenuImposableTotal - revenuCredit8TK,
+        revenuImposableHorsCredit,
         parts,
         foyerInput.situationFamille,
         revenuExonere,
@@ -543,7 +555,7 @@ export function useFiscalOverview(): FiscalOverview {
       const creditEtranger = creditImpotEgalImpotEtranger(prelevementSourceInput, {
         impotBareme: impotSansCreditEtranger.impotApresDecote - impotSansCreditEtranger.creditImpotFrancais
           - impotSansCreditEtranger.reductionsImpot,
-        revenuImposable: revenuImposableTotal - revenuCredit8TK,
+        revenuImposable: revenuImposableHorsCredit,
         optionBareme: capitauxMobiliersInput.case2op,
         exonerationCsgCrds: exonerationTotale,
       });
@@ -564,8 +576,8 @@ export function useFiscalOverview(): FiscalOverview {
           + revenusFonciers2042.totalNetImposable + plusValuesGainsDivers.basePrelevementsSociaux172,
         // 3XN (report, taux 2017 de 17,2 %) suit les lignes du foncier (simulateur officiel 2026).
         historique155: plusValuesGainsDivers.basePrelevementsSociaux155,
-        neutralisePatrimoine: prelevementSourceDivers.assiettePS8TK186,
-        neutraliseFoncier: prelevementSourceDivers.assiettePS8TK172,
+        neutralisePatrimoine: 0,
+        neutraliseFoncier: 0,
         exonerationTotaleCsgCrds: exonerationTotale,
         exonerePatrimoine: somme(prelevementSourceInput.case8rv, prelevementSourceInput.case8rc, prelevementSourceInput.case8rm),
         exonereFoncier: somme(prelevementSourceInput.case8rf),
@@ -609,6 +621,7 @@ export function useFiscalOverview(): FiscalOverview {
         chargesDeductibles,
         abattementsSpeciaux,
         alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput),
+        alerte8TK: verification8TK.alerte,
         reductionsCreditsImpot,
         plafonnementNiches,
         prelevementSourceDivers,

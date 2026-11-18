@@ -65,6 +65,10 @@ export function taxeAgentGeneral(indemnite: number): number {
   return Math.round(taxe);
 }
 
+/** Cadre 5 : revenus de source étrangère ouvrant droit au crédit d'impôt égal à l'impôt français. */
+export const CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5 = ['case5ak', 'case5bk', 'case5df', 'case5ef', 'case5ur', 'case5vr',
+  'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys'] as const;
+
 export const REVENUS_NON_SALARIES_VIDE: RevenusNonSalariesInput = {
   case5ta: null, case5ua: null, case5tb: null, case5ub: null, case5te: null, case5ue: null, case5ko: null, case5lo: null,
   case5kp: null, case5lp: null, case5no: null, case5oo: null, case5np: null, case5op: null, case5ng: null, case5og: null,
@@ -379,8 +383,7 @@ export function calculerRevenusNonSalaries(input: RevenusNonSalariesInput): Reve
     impotForfaitaire: plusValuesLongTerme * TAUX_PLUS_VALUES_LONG_TERME + brevets * TAUX_BREVETS,
     revenuImposableTauxMarginal,
     taxeAgentsGeneraux: taxeAgentGeneral(v('case5qm')) + taxeAgentGeneral(v('case5rm')),
-    revenuCreditImpotEgalImpotFrancais: somme(input, ['case5ak', 'case5bk', 'case5df', 'case5ef', 'case5ur', 'case5vr',
-      'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys']),
+    revenuCreditImpotEgalImpotFrancais: somme(input, [...CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5]),
     // 5HG/5IG (art. 151 septies A) hors RFR : absentes de l'art. 1417 IV, comme sur le simulateur officiel 2026.
     revenuExonereRetenuPourRFR: plusValuesLongTerme + brevets + exoneresZones + revenuImposableTauxMarginal
       + somme(input, ['case5ql', 'case5sl', 'case5rl', 'case5sv', 'case5sx', 'case5sw']),

@@ -14,7 +14,7 @@ Les 1 305 cases du simulateur officiel 2026 (revenus 2025, l'année que modélis
 | Non gérées par Aurevia, avec effet sur l'impôt officiel | 704 |
 | Non gérées, sans effet officiel | 105 |
 | Non testables (simulateur : crédit égal à l'impôt français, exit tax, 3SE, 8TA, 8TM, 0XX) | 44 |
-| Écart restant, invérifiable : 8TK (et 4BK/4BL) | 3 |
+| Écart 8TK (et 4BK/4BL) : résolu le 18 nov. 2026, voir ci-dessous | 3 |
 
 Commits déjà faits sur `main` (poussés le 17 nov. 2026) :
 
@@ -28,6 +28,8 @@ Commits déjà faits sur `main` (poussés le 17 nov. 2026) :
 | `dfd1817` | Abattement enfants mariés rattachés (cases N et P) |
 | `815e66d` | Abattement personnes âgées (art. 157 bis) |
 | `5d21a14` | Plafond quart de part en résidence alternée à 903,5 € |
+
+8TK (résolu le 18 nov. 2026) : le simulateur n'accorde le crédit égal à l'impôt français que si 8TK égale exactement le total brut des cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) ; 8TK n'a aucun effet propre et les rentes 1AR…1DR n'ouvrent pas de crédit. Aurevia applique la même règle stricte (alerte si 8TK diffère) ; reste 2 € d'arrondi sur les PS de 4BK (603 € contre 601 €).
 
 Décisions prises : quand le simulateur et la loi ou ClickImpôts divergent, Aurevia suit le simulateur officiel 2026 (3SB hors RFR, assurance-vie à 18,6 %, 1NX sans PS).
 

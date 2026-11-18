@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRELEVEMENT_SOURCE_DIVERS_VIDE, calculerPrelevementSourceDivers, calculerSoldeImpot, creditImpotEgalImpotEtranger, exonerationTotaleCsgCrds } from './calculerPrelevementSourceDivers';
+import { PRELEVEMENT_SOURCE_DIVERS_VIDE, calculerPrelevementSourceDivers, calculerSoldeImpot, controle8TK, creditImpotEgalImpotEtranger, exonerationTotaleCsgCrds } from './calculerPrelevementSourceDivers';
 import { calculerImpot } from './calculerImpot';
 import { calculerPartsFiscales } from './calculerPartsFiscales';
 import { FoyerFiscalInput, PrelevementSourceDiversInput } from './types';
@@ -20,10 +20,10 @@ describe('calculerPrelevementSourceDivers', () => {
     expect(calculerSoldeImpot(r, 5000, 600)).toEqual({ soldeImpot: 1000, soldePrelevementsSociaux: 250 });
   });
 
-  it('8TI au taux effectif, 8TK isolé (déjà dans sa catégorie), 8TF en reprise', () => {
+  it('8TI au taux effectif, 8TK reprise pour contrôle, 8TF en reprise', () => {
     const r = calculerPrelevementSourceDivers({ ...VIDE, case8ti: 1000, case8tk: 2000, case8tf: 150 });
     expect(r.revenuTauxEffectif).toBe(1000);
-    expect(r.revenuCreditImpotEgalImpotFrancais).toBe(2000);
+    expect(r.montant8TK).toBe(2000);
     expect(r.reprises).toBe(150);
   });
 
@@ -61,13 +61,14 @@ describe('calculerPrelevementSourceDivers', () => {
   });
 });
 
-describe('ventilation interne de 8TK (PS neutralisés)', () => {
-  it('assiettes plafonnées à 8TK, 18,6 % d\'abord', () => {
-    const r = calculerPrelevementSourceDivers({ ...VIDE, case8tk: 10000, case8tk186: 6000, case8tk172: 3000 });
-    expect([r.assiettePS8TK186, r.assiettePS8TK172, r.ventilation8TKSuperieure]).toEqual([6000, 3000, false]);
-    const excedent = calculerPrelevementSourceDivers({ ...VIDE, case8tk: 5000, case8tk186: 4000, case8tk172: 3000 });
-    expect([excedent.assiettePS8TK186, excedent.assiettePS8TK172, excedent.ventilation8TKSuperieure]).toEqual([4000, 1000, true]);
-    expect(calculerPrelevementSourceDivers({ ...VIDE, case8tk186: 4000 }).assiettePS8TK186).toBe(0);
+describe('contrôle de 8TK (simulateur officiel 2026)', () => {
+  it('crédit accordé seulement si 8TK égale le total brut des cases de catégorie', () => {
+    expect(controle8TK(5000, 5000)).toEqual({ creditAccorde: true, alerte: null });
+    expect(controle8TK(0, 0)).toEqual({ creditAccorde: false, alerte: null });
+    expect(controle8TK(4500, 5000).creditAccorde).toBe(false);
+    expect(controle8TK(5001, 5000).creditAccorde).toBe(false);
+    expect(controle8TK(0, 5000).alerte).toMatch(/doit être égale/);
+    expect(controle8TK(5000, 0).alerte).toMatch(/sans revenu/);
   });
 });
 

@@ -606,7 +606,7 @@ fonciers (§4).
   ordinaire + 200 000 € de 0XX : impôt brut attendu 89 690,11 €, contre 98 023,84 € sans quotient) puis en
   base et à l'écran sur le compte réel (40 000 € sur `0XX` → +12 000 € d'IR, cohérent avec le TMI 30 % du
   foyer de test : 40 000/4 × 30 % × 4).
-- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR) — désormais couvert, via
+- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL) — désormais couvert, via
   le même mécanisme que la méthode du taux effectif.** Recherche BOFiP avant codage : la formule
   officielle du crédit est `crédit = impôt total × (revenu étranger concerné / revenu net global
   imposable)` — mathématiquement identique à la formule déjà implémentée pour le taux effectif
@@ -634,9 +634,8 @@ fonciers (§4).
   officielle référence une case **8TK** (cadre 8, « Revenus de
   source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français ») qui agrège en théorie
   toutes les catégories concernées (salaires, pensions, revenus fonciers 4BK/4BL...) pour piloter le
-  crédit réel — non implémentée ici : le calcul retenu applique directement la formule par case sans
-  passer par cette case agrégée, ce qui donne le même résultat final mais ne reproduit pas exactement le
-  cheminement du CERFA papier. Vérifié en base et à l'écran sur le compte réel : +30 000 € sur `1AF` (net
+  crédit réel — elle sert de contrôle : voir « Taux effectif » au cadre 8 (crédit accordé seulement si
+  8TK égale le total brut des cases de catégorie). Vérifié en base et à l'écran sur le compte réel : +30 000 € sur `1AF` (net
   27 000 € après abattement) → +3 183 € d'IR ; +20 000 € sur `1AL` → +2 299 € d'IR — ordres de grandeur
   cohérents avec le mécanisme du taux effectif déjà testé (aucune régression sur les 149 tests du
   module).
@@ -735,10 +734,10 @@ fonciers (§4).
   fraction imposable par tranche d'âge (art. 158-6 CGI, 70 %/50 %/40 %/30 %, vérifiée contre l'exemple
   chiffré de la brochure p.120), incluse dans `totalNetImposable` **sans** l'abattement de 10 % classique
   (mécanismes exclusifs). **Exclue du calcul** (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1HK/1HL (case
-  informative) seulement — 1AL/1BL et 1AR/1BR/1CR/1DR (pensions/rentes étrangères, crédit d'impôt égal à
-  l'impôt français) ne sont pas exclues : `revenuCreditImpotEgalImpotFrancais` isole leur part du calcul
-  (1AR/1BR/1CR/1DR : fraction par tranche d'âge, sans abattement, comme 1AW), n'entrant pas dans
-  `totalNetImposable`.
+  informative) seulement — 1AL/1BL (pensions étrangères, crédit d'impôt égal à l'impôt français) ne sont
+  pas exclues : `revenuCreditImpotEgalImpotFrancais` isole leur part du calcul, hors `totalNetImposable`.
+  1AR/1BR/1CR/1DR (rentes étrangères) entrent dans `totalNetImposable` par tranche d'âge, sans abattement
+  ni crédit (simulateur officiel 2026 : impôt inchangé quel que soit 8TK).
   **Bug corrigé — 1AL/1BL était isolée dans un pool d'abattement indépendant, avec son propre plafond de
   4 439 €, au lieu de partager le plafond unique du foyer avec 1AS/1AZ/1AO/1AM.** Audit case par case
   contre le texte intégral de la brochure (p.117) : « L'abattement de 10 % est appliqué automatiquement
@@ -1605,8 +1604,7 @@ cadre 8 est enregistré).
   additionne au niveau du foyer par contribution, puis arrondit chacune à l'euro le plus proche, comme
   l'avis : CSG-CRDS patrimoine 11,1 % (dont 2DI et 1NX), CSG-CRDS foncier 9,7 %, solidarité 7,5 %
   (patrimoine + foncier + 1NX), CSG-CRDS 9,7 % de 1TT, contribution 10 % (1TT + 3VN + 1NX), 30 % (1NY).
-  8TK ventilé réduit les bases de toutes les lignes, l'exonération 8SH/8SI ou 8RF…8RM celles de la
-  CSG-CRDS seule. Vérifié sur ClickImpôts (rentes, base 29 500 € : 3 275 + 2 213 = 5 488 €). Les
+  L'exonération 8SH/8SI ou 8RF…8RM réduit les bases de la CSG-CRDS seule. Vérifié sur ClickImpôts (rentes, base 29 500 € : 3 275 + 2 213 = 5 488 €). Les
   contributions 8TQ…8SB sont aussi arrondies une à une.
 - **Solde** : impôt net − (`8HV`…`8KV` + `8HW`…`8KW`) + `8HY`…`8KY` + `8EA` ; PS calculés −
   `8HX`…`8KX` + `8HZ`…`8KZ`. Positif : reste à payer ; négatif : à rembourser.
@@ -1614,15 +1612,14 @@ cadre 8 est enregistré).
   `8ZR` (revenu net mondial), `8ZR` remplace tout le revenu mondial — impôt = barème(8ZR) / 8ZR × revenu
   imposable, RFR = 8ZR + ajouts habituels (PFU, salaires exonérés…), autres revenus exonérés (1AC…)
   ignorés car compris dans 8ZR, RFR possiblement inférieur au revenu imposable (simulateur officiel
-  2026 ; alerte si 8TI ou 8ZR est saisi seul). `8TK` (déjà déclaré dans sa
-  catégorie, brochure p. 323) est retiré de la base imposée en France et ajouté au revenu retenu pour le
-  taux effectif, comme 1AF : équivaut au crédit impôt × 8TK / revenu imposable ; RFR inchangé.
-- **PS sur 8TK** : ventilation interne (colonnes `case_8tk186`, `case_8tk172`, aucune case officielle)
-  des revenus du patrimoine compris dans 8TK, plafonnée à 8TK (18,6 % d'abord, alerte au-delà). Leurs
-  PS sont neutralisés (18,6 % / 17,2 %, ou 7,5 % de prélèvement de solidarité seul si 8SH/8SI),
-  plafonnés aux PS du patrimoine restant dus. Le reste de 8TK (salaires, pensions, BIC/BNC
-  professionnels) ne supporte pas de PS du patrimoine. Foncier exclu (passe par 4BK/4BL). **À
-  confirmer** : taux des BIC non professionnels après la LFSS 2026 (l'utilisateur ventile).
+  2026 ; alerte si 8TI ou 8ZR est saisi seul). - **8TK** (`controle8TK`, simulateur officiel 2026) : n'ouvre aucun crédit par elle-même et ne
+  change pas les PS (2DC + 8TK → impôt et PS inchangés). Le crédit égal à l'impôt français se calcule
+  sur les cases de catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…5YS) et n'est accordé que si 8TK est
+  exactement égale à leur total brut ; sinon ces revenus restent imposés sans crédit et une alerte
+  s'affiche (1AF 5 000 € : 8TK 5 000 € → 8 619 €, 8TK 4 500 € ou 5 001 € → 9 158 €). Avec du foncier, le
+  simulateur refuse le calcul si 8TK diffère. Les anciennes colonnes de ventilation `case_8tk186` et
+  `case_8tk172` ne sont plus lues (toujours en base). Écart connu : PS de 4BK arrondis à 603 € au lieu de
+  601 € (4BE 10 000 € + 4BK 5 000 €).
 - **Crédit égal à l'impôt étranger** (`8PL`/`8VL`, `8PM`/`8VM`+`8WM`+`8UM`), non restituable, imputé
   avec 2AB : par catégorie, min(impôt étranger, impôt français correspondant), l'impôt français
   s'entendant de l'IR augmenté des PS (brochure IR 2026 p. 366). Imputé d'abord sur l'IR, le reliquat
@@ -1984,7 +1981,7 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   changement plus large — non modélisé plutôt que deviné. Cas rare (célibataire/divorcé/séparé, case T,
   et aucun autre enfant/personne à charge que la personne invalide) : un écart resterait possible pour
   ce profil précis.
-- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR/1BR/1CR/1DR, 4BL, 8TK) : ordre aligné
+- **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…, contrôlé par 8TK) : ordre aligné
   sur l'avis ClickImpôts.** Le revenu reste dans la base française ; l'impôt après taux effectif est
   arrondi à l'euro, puis le crédit (impôt après décote × revenu / base française, arrondi) est imputé
   comme une réduction, après la décote et avant le cadre 7 (`calculerImpot.ts::creditImpotFrancais`).
@@ -1996,10 +1993,8 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   avec revenu étranger** : l'app ne modélise aucun statut non-résident (`foyer_fiscal` n'a que
   `lieuResidence` métropole/DOM-TOM, pas résident/non-résident) — seule la composante résident est
   pertinente ici, un non-résident fiscal utilisant l'outil obtiendrait un résultat non fiable (régime
-  fiscal des non-résidents entièrement différent, hors périmètre du module). **Case 8TK (cadre 8,
-  agrégation officielle du crédit toutes catégories confondues) non utilisée** : le calcul retenu
-  applique la formule directement par catégorie sans passer par cette case pivot du CERFA — même
-  résultat final, cheminement différent du papier.
+  fiscal des non-résidents entièrement différent, hors périmètre du module). **Case 8TK (cadre 8)** :
+  contrôle du total des catégories, voir « Taux effectif » au cadre 8.
 - **Système du quotient (`0XX`, art. 163-0 A CGI) : seuls les revenus exceptionnels (coefficient fixe 4)
   sont couverts, pas les revenus différés (coefficient variable = nombre d'années + 1).** La 2042/2042-C
   n'a aucune case pour saisir ce nombre d'années — l'ajouter nécessiterait un champ hors CERFA, écarté

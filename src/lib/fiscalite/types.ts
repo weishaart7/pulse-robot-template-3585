@@ -1547,10 +1547,6 @@ export interface PrelevementSourceDiversInput {
   case8sd: number | null;
   /** Pensions en capital soumises à imposition forfaitaire, CSG 3,8 % (phase 8.2) */
   case8sb: number | null;
-  /** Ventilation interne de 8TK (pas de case officielle) : dont revenus du patrimoine à PS 18,6 % */
-  case8tk186: number | null;
-  /** Ventilation interne de 8TK : dont revenus du patrimoine à PS 17,2 %, hors foncier (4BK/4BL) */
-  case8tk172: number | null;
   /** Crédits restituables : recherche à restitution immédiate (8TB), collaboration de recherche (8WK), famille (8UZ),
    *  industrie verte (8CV), Corse à restitution immédiate (8TS), prêts sans intérêt (8WC), métiers d'art (8WR),
    *  versements libératoires des micro-entrepreneurs (8UY), agriculture biologique (8WA), haute valeur

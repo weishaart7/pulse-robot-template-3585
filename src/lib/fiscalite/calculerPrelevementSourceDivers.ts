@@ -19,7 +19,7 @@ export function exonerationTotaleCsgCrds(input: PrelevementSourceDiversInput, co
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
   case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8zr: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,
-  case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null, case8tk186: null, case8tk172: null,
+  case8tq: null, case8tr: null, case8sc: null, case8sw: null, case8sx: null, case8tw: null, case8tv: null, case8qv: null, case8th: null, case8qh: null, case8tx: null, case8qx: null, case8sa: null, case8sd: null, case8sb: null,
 };
 
 /** CRDS sur tous les revenus d'activité et de remplacement (ord. 96-50). */
@@ -37,22 +37,8 @@ export interface PrelevementSourceDiversResult {
   revenuMondial8ZR: number;
   /** 8TI saisi sans 8ZR, ou l'inverse (le simulateur officiel exige les deux). */
   incoherence8TI8ZR: boolean;
-  /**
-   * 8TK : revenus déjà déclarés dans leur catégorie, ouvrant droit à un crédit
-   * égal à l'impôt français. L'appelant les retire de la base imposée en France
-   * et les ajoute au revenu retenu pour le taux effectif (comme 1AF), ce qui
-   * revient au crédit impôt × 8TK / revenu imposable.
-   */
-  revenuCreditImpotEgalImpotFrancais: number;
-  /**
-   * Ventilation interne de 8TK (18,6 % puis 17,2 %), plafonnée à 8TK dans cet
-   * ordre : revenus du patrimoine dont les PS sont neutralisés par le crédit
-   * égal à l'impôt français. Taux appliqués par l'appelant (7,5 % si 8SH/8SI).
-   */
-  assiettePS8TK186: number;
-  assiettePS8TK172: number;
-  /** Ventilation 8TK supérieure à 8TK : l'excédent est écarté. */
-  ventilation8TKSuperieure: boolean;
+  /** 8TK : contrôle des cases de catégorie ouvrant droit au crédit égal à l'impôt français (voir `controle8TK`). */
+  montant8TK: number;
   /** 8TF et 8TP : reprises ajoutées à l'impôt net. */
   reprises: number;
   /** Crédits restituables du cadre 8 (8TB, 8WK, 8UZ, 8CV, 8TS, 8WC, 8WR, 8UY, 8WA, 8WH, 8WT). */
@@ -88,15 +74,11 @@ export interface PrelevementSourceDiversResult {
  * étant déjà après déduction de 1,75 % sur salaires et chômage (brochure p. 328).
  */
 export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversInput): PrelevementSourceDiversResult {
-  const assiettePS8TK186 = Math.min(montant(input.case8tk186), montant(input.case8tk));
   return {
     revenuTauxEffectif: montant(input.case8ti),
     revenuMondial8ZR: montant(input.case8zr),
     incoherence8TI8ZR: (montant(input.case8ti) > 0) !== (montant(input.case8zr) > 0),
-    revenuCreditImpotEgalImpotFrancais: montant(input.case8tk),
-    assiettePS8TK186,
-    assiettePS8TK172: Math.min(montant(input.case8tk172), montant(input.case8tk) - assiettePS8TK186),
-    ventilation8TKSuperieure: somme(input.case8tk186, input.case8tk172) > montant(input.case8tk),
+    montant8TK: montant(input.case8tk),
     reprises: somme(input.case8tf, input.case8tp),
     // Simulateur officiel 2026 (1 000 € chacun) : restitués si l'impôt est nul, sauf 8TC/8TG/8TO et 8PY/8PZ.
     creditsRestituables: somme(input.case8tb, input.case8wk, input.case8uz, input.case8cv, input.case8ts, input.case8wc,
@@ -201,5 +183,25 @@ export function calculerSoldeImpot(
   return {
     soldeImpot: Math.round(impotNet - resultat.impotDejaPaye + resultat.avanceReductionsCredits),
     soldePrelevementsSociaux: Math.round(prelevementsSociaux - resultat.prelevementsSociauxDejaPayes),
+  };
+}
+
+/**
+ * Crédit d'impôt égal à l'impôt français (simulateur officiel 2026) : il se calcule sur les cases de
+ * catégorie (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…5YS) et n'est accordé que si 8TK est exactement égale à
+ * leur total brut. 8TK n'ouvre aucun crédit par elle-même. Sinon, aucun crédit (avec du foncier, le
+ * simulateur refuse même le calcul).
+ */
+export function controle8TK(montant8TK: number, totalCategories: number): { creditAccorde: boolean; alerte: string | null } {
+  const tk = Math.max(0, montant8TK);
+  const total = Math.max(0, totalCategories);
+  if (tk === 0 && total === 0) return { creditAccorde: false, alerte: null };
+  if (Math.abs(tk - total) < 0.005) return { creditAccorde: true, alerte: null };
+  const fmt = (v: number) => `${Math.round(v).toLocaleString('fr-FR')} €`;
+  return {
+    creditAccorde: false,
+    alerte: total === 0
+      ? `8TK (${fmt(tk)}) est saisie sans revenu dans les cases de catégorie (1AF, 1AL, 4BK, 4BL, 5AK…) : aucun crédit égal à l'impôt français.`
+      : `8TK (${fmt(tk)}) doit être égale au total brut des cases de catégorie (${fmt(total)}) : crédit égal à l'impôt français non accordé.`,
   };
 }

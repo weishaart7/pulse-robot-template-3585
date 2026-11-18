@@ -142,10 +142,10 @@ describe('calculerPensionsRetraitesRentes — cases exclues du calcul', () => {
     expect(result.totalNetImposable).toBe(0);
   });
 
-  it('1AR/1BR/1CR/1DR n\'entrent pas dans totalNetImposable (traitées séparément)', () => {
+  it('1AR/1BR/1CR/1DR imposées dans totalNetImposable par tranche d\'âge, sans crédit (simulateur 2026)', () => {
     const result = calculerPensionsRetraitesRentes(makeInput({ case1ar: 5000, case1br: 5000, case1cr: 5000, case1dr: 5000 }));
     expect(result.rentesViageresImposables).toBe(0);
-    expect(result.totalNetImposable).toBe(0);
+    expect(result.totalNetImposable).toBeCloseTo(3500 + 2500 + 2000 + 1500, 6);
   });
 
   it('ignore 1HK/1HL (case informative)', () => {
@@ -185,9 +185,9 @@ describe('calculerPensionsRetraitesRentes — crédit d\'impôt égal à l\'imp�
     expect(result.pensionsNettes + result.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(195561, 6);
   });
 
-  it('1AR/1BR/1CR/1DR : fraction par tranche d\'âge, sans abattement (comme 1AW)', () => {
+  it('1AR/1BR/1CR/1DR : aucun crédit égal à l\'impôt français (simulateur officiel 2026)', () => {
     const result = calculerPensionsRetraitesRentes(makeInput({ case1ar: 1000, case1br: 1000, case1cr: 1000, case1dr: 1000 }));
-    expect(result.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(700 + 500 + 400 + 300, 6);
+    expect(result.revenuCreditImpotEgalImpotFrancais).toBe(0);
   });
 
   it('nul par défaut', () => {

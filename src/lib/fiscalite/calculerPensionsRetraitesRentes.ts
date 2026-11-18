@@ -43,10 +43,9 @@ export const FRACTION_IMPOSABLE_RENTE = {
 
 /**
  * Cases exclues du calcul : 1HK/1HL sont purement informatives. 1AL (pensions
- * étrangères) et 1AR (rentes étrangères) ouvrent droit à un crédit d'impôt
- * égal à l'impôt français — elles ne sont PAS exclues du calcul mais traitées
- * séparément (voir `revenuCreditImpotEgalImpotFrancais` ci-dessous), sur le
- * même principe que le taux effectif.
+ * étrangères) ouvre droit à un crédit d'impôt égal à l'impôt français, traité
+ * séparément (voir `revenuCreditImpotEgalImpotFrancais` ci-dessous) ; les rentes
+ * étrangères 1AR…1DR n'y ouvrent pas droit sur le simulateur officiel 2026.
  */
 export const CASES_PENSIONS_EXCLUES_DU_CALCUL = [
   'case1hk', 'case1hl',
@@ -195,17 +194,20 @@ export function calculerPensionsRetraitesRentes(
     + (input.case1cw ?? 0) * FRACTION_IMPOSABLE_RENTE.de60a69
     + (input.case1dw ?? 0) * FRACTION_IMPOSABLE_RENTE.aPartirDe70;
 
-  const totalNetImposable = pensionsNettes + capitalPER + rentesViageresImposables;
-
-  const capitalRetraite = (input.case1at ?? 0) + (input.case1bt ?? 0) + (input.case1ct ?? 0) + (input.case1dt ?? 0);
-  const impotForfaitaire = capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX) * CAPITAL_RETRAITE_TAUX_FORFAITAIRE;
-
   const rentesEtrangeresImposables = (input.case1ar ?? 0) * FRACTION_IMPOSABLE_RENTE.moins50
     + (input.case1br ?? 0) * FRACTION_IMPOSABLE_RENTE.de50a59
     + (input.case1cr ?? 0) * FRACTION_IMPOSABLE_RENTE.de60a69
     + (input.case1dr ?? 0) * FRACTION_IMPOSABLE_RENTE.aPartirDe70;
+  // Rentes étrangères 1AR…1DR : imposées comme 1AW, sans crédit (simulateur officiel 2026).
+  const totalNetImposable = pensionsNettes + capitalPER + rentesViageresImposables + rentesEtrangeresImposables;
 
-  const revenuCreditImpotEgalImpotFrancais = pensionEtrangereNette + rentesEtrangeresImposables;
+  const capitalRetraite = (input.case1at ?? 0) + (input.case1bt ?? 0) + (input.case1ct ?? 0) + (input.case1dt ?? 0);
+  const impotForfaitaire = capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX) * CAPITAL_RETRAITE_TAUX_FORFAITAIRE;
+
+
+  // Rentes 1AR…1DR : imposées sans crédit égal à l'impôt français, et hors du contrôle de 8TK
+  // (simulateur officiel 2026 : 1AR 5 000 € → impôt inchangé quel que soit 8TK).
+  const revenuCreditImpotEgalImpotFrancais = pensionEtrangereNette;
 
   return {
     pensionsBrutes,

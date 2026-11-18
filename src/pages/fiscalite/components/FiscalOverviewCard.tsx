@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
+    revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -289,6 +289,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
                 sousLigne={chargesDeductibles.grossesReparationsReportables.map(r => `${r.annee} : ${formatEuros(r.montant)}`).join(' · ')}
                 muted
               />
+            )}
+            {alerte8TK && (
+              <p className="border-b border-border/60 py-2 text-[12px] text-muted-foreground">{alerte8TK}</p>
             )}
             {alertesChargesDeductibles.map(alerte => (
               <p key={alerte} className="border-b border-border/60 py-2 text-[12px] text-muted-foreground">{alerte}</p>

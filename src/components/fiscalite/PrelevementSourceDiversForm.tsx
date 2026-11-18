@@ -108,12 +108,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           {calculerPrelevementSourceDivers(ps).incoherence8TI8ZR && (
             <p className="py-2 text-[13px] text-muted-foreground">8TI et 8ZR vont ensemble : renseignez les deux.</p>
           )}
-          <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" aide="Montant avant impôt étranger, également déclaré dans sa catégorie : l'impôt français correspondant est annulé." value={ps.case8tk} onChange={v => update('case8tk', v)} />
-          <SingleMontantLigne label="Dont revenus du patrimoine · PS 18,6 %" extra="ventilation interne, non déclarée" aide="Capitaux mobiliers et plus-values de valeurs mobilières compris dans 8TK : leurs prélèvements sociaux sont neutralisés par le crédit égal à l'impôt français." code="8TK" value={ps.case8tk186} onChange={v => update('case8tk186', v)} />
-          <SingleMontantLigne label="Dont revenus du patrimoine · PS 17,2 %" extra="ventilation interne, hors foncier (4BK/4BL)" aide="Revenus restés à 17,2 % après la LFSS 2026, compris dans 8TK. Taux des BIC non professionnels à confirmer." code="8TK" value={ps.case8tk172} onChange={v => update('case8tk172', v)} />
-          {calculerPrelevementSourceDivers(ps).ventilation8TKSuperieure && (
-            <p className="py-2 text-[13px] text-muted-foreground">La ventilation excède 8TK : l'excédent est ignoré.</p>
-          )}
+          <SingleMontantLigne label="Revenus de source étrangère ouvrant droit à un crédit d'impôt égal à l'impôt français" code="8TK" aide="Total brut des cases 1AF/1BF, 1AL/1BL, 4BK, 4BL et 5AK… (montants avant abattement). Le crédit n'est accordé que si 8TK est exactement égale à ce total, comme sur le simulateur officiel." value={ps.case8tk} onChange={v => update('case8tk', v)} />
           <MontantEclateLigne
             label="Revenus de capitaux mobiliers et plus-values étrangers, crédit d'impôt égal à l'impôt étranger"
             aide="Déjà déclarés dans leur catégorie : sert au calcul du crédit, au plus l'impôt français correspondant (IR puis prélèvements sociaux). Impôt étranger à saisir dans la limite du taux prévu par la convention."
