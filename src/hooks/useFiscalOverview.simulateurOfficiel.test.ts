@@ -55,6 +55,8 @@ interface Attendu {
   reductions?: number;
   cehr?: number;
   cdhr?: number;
+  /** Excédent du plafonnement global des avantages fiscaux (art. 200-0 A). */
+  plafonnement?: number;
   /** « Impôt sur le revenu net » du simulateur : CEHR et CDHR comprises, après crédits. */
   impotNet: number;
   prelevementsSociaux: number;
@@ -230,6 +232,36 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 1, revenuFiscalReference: 47000, droitsSimples: 1694, decote: 130, reductions: 1564,
       impotProportionnel: 2560, impotNet: 2560, prelevementsSociaux: 3720, tmi: 0.11 },
   },
+  S13: {
+    description: 'plafonnement global : PFU seul, PME non imputée faute d\'impôt au barème, aucun excédent',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      rcm: { case2dc: 200000, case2op: false },
+      reductions: { case7db: 12000, case7cp: 50000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 200000, droitsSimples: 0, reductions: 0, plafonnement: 0,
+      impotProportionnel: 25600, impotNet: 19600, prelevementsSociaux: 37200, tmi: 0 },
+  },
+  S14: {
+    description: 'plafonnement global : PME imputée en partie (8 764 €) et emploi à domicile, excédent 4 764 €',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 58000 },
+      reductions: { case7db: 12000, case7cp: 50000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 52200, droitsSimples: 8764, reductions: 8764, plafonnement: 4764, prelevementsSociaux: 0,
+      impotNet: -1236, tmi: 0.3 },
+  },
+  S15: {
+    description: 'plafonnement global : dons imputés avant la PME, excédent 2 784 €',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 58000 },
+      reductions: { case7uf: 3000, case7db: 12000, case7cp: 50000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 52200, droitsSimples: 8764, reductions: 8764, plafonnement: 2784, prelevementsSociaux: 0,
+      impotNet: -3216, tmi: 0.3 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -249,6 +281,7 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
     reductions: r.impot.reductionsImpot,
     cehr: r.cehr,
     cdhr: r.cdhr.cdhr,
+    plafonnement: r.plafonnementNiches.excedent,
     impotNet: r.impot.impotNet + r.cehr + r.cdhr.cdhr,
     prelevementsSociaux: r.prelevementsSociauxTotal,
     tmi: r.impot.tmi,

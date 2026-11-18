@@ -13,7 +13,8 @@
  *   (sans majoration ESUS) ; JEI/JEIR hors plafond ;
  * - hors plafond : dons, cotisations syndicales, scolarité, prestations compensatoires, cadre 8.
  *
- * Hypothèse : une réduction non imputée faute d'impôt compte pour son montant entier.
+ * Montants attendus : avantages effectivement imputés (simulateur officiel 2026 : PFU seul, 7DB 12 000 € et
+ * PME 9 000 € → aucun excédent). La part imputée des réductions est calculée par useFiscalOverview.
  */
 export const PLAFOND_NICHES = 10_000;
 export const MAJORATION_PLAFOND_ESUS = 3_000;

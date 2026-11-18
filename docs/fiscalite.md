@@ -220,6 +220,14 @@ fonciers (§4).
   taxes annexes s'ajoutent ensuite, dus en entier ; l'excédent de réductions est perdu. Les crédits d'impôt,
   restituables ou non (2AB, 8VL, services à la personne…), s'imputent sur l'impôt total. Établi sur 14 cas du
   simulateur officiel 2026 (dividendes au PFU et dons : aucune réduction), cas S12 de la non-régression.
+- **Plafonnement global des avantages fiscaux sur les avantages imputés.** `calculerPlafonnementNiches.ts`
+  reçoit les crédits plafonnés en entier (services à la personne, garde, forestier, bornes) et la seule part
+  imputée des réductions plafonnées : `useFiscalOverview.ts` calcule l'impôt une première fois sans excédent,
+  impute d'abord les réductions non plafonnées (cadres 7 et 8), puis les réductions d'investissement, et
+  applique leur taux d'imputation à chaque catégorie (courant, ESUS, SOFICA, outre-mer, millésimes). Hypothèse :
+  perte répartie au prorata entre catégories d'investissement (ordre interne non observé). Simulateur officiel
+  2026 : PFU seul → aucun excédent (S13) ; impôt au barème 8 764 € → 4 764 € (S14), 2 784 € avec 3 000 € de
+  dons imputés d'abord (S15).
 - **Contribution différentielle sur les hauts revenus (CDHR, art. 224 CGI, BOI-IR-CDHR-10).**
   [calculerCDHR.ts](src/lib/fiscalite/calculerCDHR.ts) : CDHR = 20 % × RREF − décote − (IR1 + CEHR1 + PREL1
   + majorations), arrondie, due si le RREF dépasse 250 000 € (500 000 € en imposition commune). RREF : RFR
@@ -1960,10 +1968,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   **Reste hors calcul** : les revenus fonciers — voir §4.
 - **Une dette reliée à un actif écarté de la 2042-IFI reste déduite.** Écarter un bien (`exclu`) n'écarte
   pas l'emprunt qui le finance : il faut écarter aussi la dette, sinon le passif est surestimé.
-- **Plafonnement global des niches : avantages déclarés, non imputés.** Une réduction perdue faute d'impôt
-  au barème (voir imputation des réductions, §2) reste comptée dans le plafond de 10 000 €
-  (`calculerPlafonnementNiches.ts`). Excédent de plafonnement possiblement surestimé ; non vérifié sur le
-  simulateur officiel.
 - **Quotient familial — complément de 2 011 € du veuf non modélisé.** Quand les deux premières
   demi-parts d'un veuf avec enfants sont plafonnées, la réduction complémentaire de 2 011 € n'est portée
   par aucune majoration (brochure IR 2026 p. 85) : impôt surestimé dans ce cas. La réduction de 1 801 €

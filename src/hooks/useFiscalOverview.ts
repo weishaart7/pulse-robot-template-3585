@@ -533,18 +533,8 @@ export function useFiscalOverview(): FiscalOverview {
       for (const [annee, v] of Object.entries(investissementsCensiBouvard.millesimes)) {
         millesimes[Number(annee) as keyof typeof millesimes] += v;
       }
-      const plafonnementNiches = calculerPlafonnementNiches({
-        millesimes,
-        revenuNetImposable: revenuImposableTotal,
-        courants: reductionsCreditsImpot.avantagesPlafonnesCourants + souscriptionsCapital.avantagesPlafonnesCourants
-          + investissementsForestiers.credit + investissementsLocatifs.avantagesPlafonnesCourants
-          + investissementsPinel.avantagesPlafonnesCourants + investissementsCensiBouvard.avantagesPlafonnesCourants,
-        sofica: souscriptionsCapital.sofica,
-        esus: souscriptionsCapital.esus,
-        outreMer: investissementsOutreMer.avantagesPlafonnes + investissementsPinel.outreMer,
-      });
       // Le crédit égal à l'impôt étranger dépend de l'impôt français : premier calcul sans lui.
-      const calculer = (creditEtranger: number) => calculerImpot(
+      const calculer = (creditEtranger: number, excedentPlafonnement: number) => calculerImpot(
         revenuImposableHorsCredit,
         parts,
         foyerInput.situationFamille,
@@ -566,14 +556,39 @@ export function useFiscalOverview(): FiscalOverview {
         reductionsCreditsImpot.totalCredits + prelevementSourceDivers.creditsRestituables + investissementsOutreMer.credit
           + investissementsForestiers.credit + investissementsLocatifs.credits,
         creditEtranger,
-        prelevementSourceDivers.reprises + plafonnementNiches.excedent,
+        prelevementSourceDivers.reprises + excedentPlafonnement,
         revenusNonSalaries.revenuImposableTauxMarginal,
         revenusNonSalaries.taxeAgentsGeneraux,
         revenuCreditImpotFrancais,
         prelevementSourceDivers.revenuMondial8ZR,
         parametres,
       );
-      const impotSansCreditEtranger = calculer(0);
+      // Plafonnement global (art. 200-0 A) sur les seuls avantages imputés (simulateur officiel 2026) : réductions
+      // non plafonnées (cadres 7 et 8) imputées d'abord, puis les réductions d'investissement, dont la part
+      // perdue faute d'impôt au barème est répartie au prorata entre catégories ; crédits plafonnés retenus en entier.
+      // L'excédent s'ajoute après les réductions : un premier calcul sans excédent donne les réductions imputées.
+      const reductionsNonPlafonnees = reductionsCreditsImpot.totalReductions + prelevementSourceDivers.reductions;
+      const reductionsInvestissement = investissementsOutreMer.reductions + souscriptionsCapital.reductions
+        + investissementsLocatifs.reductions + investissementsPinel.reductions + investissementsScellier.reductions
+        + investissementsCensiBouvard.reductions;
+      const reductionsImputees = calculer(0, 0).reductionsImpot;
+      const tauxImputation = reductionsInvestissement > 0
+        ? Math.min(1, Math.max(0, (reductionsImputees - reductionsNonPlafonnees) / reductionsInvestissement))
+        : 1;
+      const imputee = (v: number) => v * tauxImputation;
+      const plafonnementNiches = calculerPlafonnementNiches({
+        millesimes: Object.fromEntries(Object.entries(millesimes).map(([a, v]) => [a, imputee(v)])),
+        revenuNetImposable: revenuImposableTotal,
+        courants: reductionsCreditsImpot.avantagesPlafonnesCourants + investissementsForestiers.credit
+          + investissementsLocatifs.creditBornes
+          + imputee(souscriptionsCapital.avantagesPlafonnesCourants
+            + investissementsLocatifs.avantagesPlafonnesCourants - investissementsLocatifs.creditBornes
+            + investissementsPinel.avantagesPlafonnesCourants + investissementsCensiBouvard.avantagesPlafonnesCourants),
+        sofica: imputee(souscriptionsCapital.sofica),
+        esus: imputee(souscriptionsCapital.esus),
+        outreMer: imputee(investissementsOutreMer.avantagesPlafonnes + investissementsPinel.outreMer),
+      });
+      const impotSansCreditEtranger = calculer(0, plafonnementNiches.excedent);
       const exonerationTotale = exonerationTotaleCsgCrds(prelevementSourceInput, COUPLE_IMPOSITION_COMMUNE.includes(foyerInput.situationFamille));
       const creditEtranger = creditImpotEgalImpotEtranger(prelevementSourceInput, {
         impotBareme: impotSansCreditEtranger.impotApresDecote - impotSansCreditEtranger.creditImpotFrancais
@@ -583,7 +598,7 @@ export function useFiscalOverview(): FiscalOverview {
         exonerationCsgCrds: exonerationTotale,
       });
       // 8TC/8TG/8TO : non restituables, imputés avec le crédit égal à l'impôt étranger.
-      const impot = calculer(creditEtranger.creditImpot + prelevementSourceDivers.creditsNonRestituables);
+      const impot = calculer(creditEtranger.creditImpot + prelevementSourceDivers.creditsNonRestituables, plafonnementNiches.excedent);
       const somme = (...v: (number | null)[]) => v.reduce<number>((t, x) => t + Math.max(0, x ?? 0), 0);
       // Bases du foyer par contribution, arrondies une seule fois (voir arrondirPrelevementsSociaux.ts).
       // Fraction 4BK/4BL : crédit égal à l'impôt français, qui neutralise aussi ses PS.
