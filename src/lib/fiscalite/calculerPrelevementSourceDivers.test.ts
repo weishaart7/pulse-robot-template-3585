@@ -20,6 +20,12 @@ describe('calculerPrelevementSourceDivers', () => {
     expect(calculerSoldeImpot(r, 5000, 600)).toEqual({ soldeImpot: 1000, soldePrelevementsSociaux: 250 });
   });
 
+  it('avance immédiate 7HB ajoutée au solde, cumulée avec 8EA et sans plafond (simulateur officiel 2026)', () => {
+    const r = calculerPrelevementSourceDivers({ ...VIDE, case8ea: 1000 });
+    expect(calculerSoldeImpot(r, 1604, 0, 3000).soldeImpot).toBe(5604);
+    expect(calculerSoldeImpot(calculerPrelevementSourceDivers(VIDE), 1604, 0, 8000).soldeImpot).toBe(9604);
+  });
+
   it('8TI au taux effectif, 8TK reprise pour contrôle, 8TF en reprise', () => {
     const r = calculerPrelevementSourceDivers({ ...VIDE, case8ti: 1000, case8tk: 2000, case8tf: 150 });
     expect(r.revenuTauxEffectif).toBe(1000);

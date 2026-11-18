@@ -220,6 +220,10 @@ fonciers (§4).
 - **Veuf : maintien du quotient conjugal avec un enfant ou une personne invalide à charge**, part de veuvage
   ouvrant 2 011 € de réduction complémentaire (cas S16, S17 ; S18 pour la case T avec une seule personne
   invalide).
+- **Avance immédiate 7HB.** Crédit services à la personne déjà versé en cours d'année (CESU+, prestataire) :
+  le crédit reste calculé en entier sur 7DB et 7HB s'ajoute au solde à payer, cumulée avec 8EA, sans plafond
+  (simulateur officiel 2026, cas S22) ; le solde est calculé dès que 7HB est saisie, même sans cadre 8.
+  Colonne `case_7hb` (migration `20261118200000`). Le simulateur refuse 7HB sans 7DB : rappel dans le cadre 7.
 - **Imputation des réductions sur le seul impôt au barème.** Les réductions non restituables (cadres 7 et 8,
   outre-mer, souscriptions, investissements locatifs) s'imputent sur l'impôt au barème après décote, diminué
   du crédit égal à l'impôt français ; le PFU, les impositions à taux proportionnel (gains d'actionnariat à taux
@@ -1985,10 +1989,6 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
   (brochure IR 2026 p. 243, note 1) : `useFiscalOverview.ts` passe `revenuImposableTotal` sans
   `revenuExceptionnelQuotient` (0XX). Réduction 66 % sous-estimée, excédent reportable surestimé.
   À trancher : 5XT/5XU (taux marginal) proposés hors base.
-- **Cadre 7 — avance immédiate 7HB non saisie.** L'avance de crédit services à la personne perçue en
-  2025 (CESU+, prestataire) doit être ajoutée au solde comme 8EA (brochure IR 2026 p. 238) : crédit
-  compté deux fois, solde sous-estimé. Le solde n'est aujourd'hui calculé que si le cadre 8 existe.
-
 ### 🟠 À surveiller (cas limite, peu probable)
 
 - **Taux des PS « revenus du patrimoine » à vérifier case par case.** 18,6 % (CSG 10,6 % LFSS 2026)

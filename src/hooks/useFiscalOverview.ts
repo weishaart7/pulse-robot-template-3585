@@ -669,8 +669,10 @@ export function useFiscalOverview(): FiscalOverview {
         // Revenus au quotient : règle du quart (BOI-IR-CDHR-10 §140, §250) non modélisée.
         approximative: impot.revenuExceptionnelQuotient > 0,
       };
-      const solde = prelevementSource
-        ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr + cdhr.cdhr, prelevementsSociauxTotal)
+      // 7HB (avance immédiate, CESU+) : solde calculé même sans cadre 8 ; le simulateur l'exige avec 7DB.
+      const avance7HB = Math.max(0, reductions?.case7hb ?? 0);
+      const solde = prelevementSource || avance7HB > 0
+        ? calculerSoldeImpot(prelevementSourceDivers, impot.impotNet + cehr + cdhr.cdhr, prelevementsSociauxTotal, avance7HB)
         : null;
 
       const plafonnementIFI: Plafonnement2042 | null = foyer === null ? null : {

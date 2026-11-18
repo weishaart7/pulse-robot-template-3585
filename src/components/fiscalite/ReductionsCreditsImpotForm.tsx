@@ -94,6 +94,10 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
         <SousGroupe titre="Services à la personne" aide="Crédit restituable de 50 % des dépenses nettes des aides, dans la limite du plafond.">
           <SingleMontantLigne label="Dépenses de services à la personne" code="7DB" value={rc.case7db} onChange={v => update('case7db', v)} />
           <SingleMontantLigne label="Aides perçues" extra="APA, PCH, CESU préfinancé…" code="7DR" value={rc.case7dr} onChange={v => update('case7dr', v)} />
+          <SingleMontantLigne label="Avance immédiate perçue (CESU+, prestataire)" code="7HB" aide="Crédit déjà versé en cours d'année : il reste calculé en entier sur 7DB et l'avance s'ajoute au solde à payer." value={rc.case7hb ?? null} onChange={v => update('case7hb', v)} />
+          {(rc.case7hb ?? 0) > 0 && !((rc.case7db ?? 0) > 0) && (
+            <p className="py-2 text-[13px] text-muted-foreground">7HB suppose des dépenses déclarées en 7DB : le simulateur officiel refuse le calcul sans elles.</p>
+          )}
           <SingleMontantLigne label="Ascendants de plus de 65 ans bénéficiaires de l'APA" extra="nombre" code="7DL" value={rc.case7dl} onChange={v => update('case7dl', v)} />
           <SingleMontantLigne label="Membres du foyer âgés de plus de 65 ans" extra="nombre, hors formulaire" aide="Majore le plafond de 1 500 € chacun ; les enfants et personnes à charge sont repris du Ménage." code="+65" value={rc.membresPlus65Ans} onChange={v => update('membresPlus65Ans', v)} />
           <SingleCaseLigne label="Vous avez employé directement pour la première fois en 2025 un salarié à domicile" code="7DQ" checked={rc.case7dq} onChange={v => update('case7dq', v)} />

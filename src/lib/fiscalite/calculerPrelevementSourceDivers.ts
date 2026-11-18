@@ -176,14 +176,19 @@ export interface SoldeImpotResult {
   soldePrelevementsSociaux: number;
 }
 
-/** Solde de l'impôt de l'année après prélèvement à la source (8HV…8KZ) et avance 8EA. */
+/**
+ * Solde de l'impôt de l'année après prélèvement à la source (8HV…8KZ), avances 8EA et avance immédiate 7HB
+ * (crédit services à la personne déjà versé : ajoutée au solde, sans plafond, simulateur officiel 2026).
+ */
 export function calculerSoldeImpot(
   resultat: PrelevementSourceDiversResult,
   impotNet: number,
   prelevementsSociaux: number,
+  avanceImmediate7HB = 0,
 ): SoldeImpotResult {
   return {
-    soldeImpot: Math.round(impotNet - resultat.impotDejaPaye + resultat.avanceReductionsCredits),
+    soldeImpot: Math.round(impotNet - resultat.impotDejaPaye + resultat.avanceReductionsCredits
+      + Math.max(0, avanceImmediate7HB)),
     soldePrelevementsSociaux: Math.round(prelevementsSociaux - resultat.prelevementsSociauxDejaPayes),
   };
 }

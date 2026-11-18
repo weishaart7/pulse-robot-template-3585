@@ -915,6 +915,8 @@ export interface ReductionsCreditsImpotInput {
   case7fh?: number | null;
   /** Mécénat d'entreprise : montant de la réduction (2069-RS), exige un revenu professionnel au réel. */
   case7us?: number | null;
+  /** Avance immédiate du crédit services à la personne perçue (7HB) : ajoutée au solde à payer, avec 7DB. */
+  case7hb?: number | null;
   /** Investissements forestiers : dépenses, voir calculerInvestissementsForestiers. */
   case7un?: number | null;
   case7ul?: number | null;

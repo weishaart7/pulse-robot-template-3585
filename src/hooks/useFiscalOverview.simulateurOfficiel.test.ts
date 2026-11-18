@@ -55,6 +55,8 @@ interface Attendu {
   reductions?: number;
   cehr?: number;
   cdhr?: number;
+  /** « Montant restant à payer » : impôt net après prélèvement à la source et avances (8EA, 7HB). */
+  solde?: number;
   /** Excédent du plafonnement global des avantages fiscaux (art. 200-0 A). */
   plafonnement?: number;
   /** « Impôt sur le revenu net » du simulateur : CEHR et CDHR comprises, après crédits. */
@@ -317,6 +319,17 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 1, revenuFiscalReference: 490000, droitsSimples: 20701, impotProportionnel: 51200, cehr: 5878,
       cdhr: 15428, impotNet: 72506, prelevementsSociaux: 74400, tmi: 0.41 },
   },
+  S22: {
+    description: 'avance immédiate 7HB et avance 8EA ajoutées au solde à payer',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 50000 },
+      reductions: { case7db: 10000, case7hb: 3000 },
+      prelevementSource: { case8ea: 1000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 45000, droitsSimples: 6604, impotNet: 1604, solde: 5604,
+      prelevementsSociaux: 0, tmi: 0.3 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -337,6 +350,7 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
     cehr: r.cehr,
     cdhr: r.cdhr.cdhr,
     plafonnement: r.plafonnementNiches.excedent,
+    solde: r.solde?.soldeImpot ?? Number.NaN,
     impotNet: r.impot.impotNet + r.cehr + r.cdhr.cdhr,
     prelevementsSociaux: r.prelevementsSociauxTotal,
     tmi: r.impot.tmi,
