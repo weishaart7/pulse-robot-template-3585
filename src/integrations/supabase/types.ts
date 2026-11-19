@@ -5358,6 +5358,7 @@ export type Database = {
           case_5pf: number | null
           case_5py: number | null
           case_5sg: number | null
+          case_5ye: number | null
           case_5xm: number | null
           case_5yt: number | null
           case_5zt: number | null
@@ -5641,6 +5642,7 @@ export type Database = {
           case_5pf?: number | null
           case_5py?: number | null
           case_5sg?: number | null
+          case_5ye?: number | null
           case_5xm?: number | null
           case_5yt?: number | null
           case_5zt?: number | null
@@ -5924,6 +5926,7 @@ export type Database = {
           case_5pf?: number | null
           case_5py?: number | null
           case_5sg?: number | null
+          case_5ye?: number | null
           case_5xm?: number | null
           case_5yt?: number | null
           case_5zt?: number | null

@@ -32,7 +32,7 @@ const CASES_NUMERIQUES = [
   'case5lt', 'case5mt', 'case5hg', 'case5ig', 'case5qj', 'case5rj', 'case5tc', 'case5uc',
   'case5xt', 'case5xu', 'case5hd', 'case5id', 'case5tf', 'case5uf', 'case5ql', 'case5rl',
   'case5sv', 'case5sw', 'case5qm', 'case5rm',
-  'case5ck', 'case5ff', 'case5wr', 'case5gy', 'case5zj', 'case5zs', 'case5sz', 'case5md', 'case5pf', 'case5py', 'case5sg',
+  'case5ck', 'case5ff', 'case5wr', 'case5gy', 'case5zj', 'case5zs', 'case5sz', 'case5md', 'case5pf', 'case5py', 'case5sg', 'case5ye',
   'case5xm', 'case5yt', 'case5zt', 'case5ym', 'case5yu', 'case5zu',
 ] as const;
 

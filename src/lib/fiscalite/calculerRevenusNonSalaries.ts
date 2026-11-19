@@ -107,7 +107,7 @@ type Cle = keyof RevenusNonSalariesInput;
  * Colonnes « personnes à charge » du cadre 5 et leur jumelle déclarant 1 (ordre des champs du simulateur
  * officiel 2026) : chaque case PAC rejoint les mêmes agrégats que sa jumelle — 63 paires vérifiées à
  * l'identique (RNI, RFR, impôt et PS), 5JY avec un bénéfice agricole PAC (= 5HG) ; 11 paires ajoutées en
- * novembre 2026 (crédit 8TK 5CK…5ZS, moins-values 5SZ/5MD, déficits 5PF/5PY/5SG), vérifiées sur les
+ * novembre 2026 (crédit 8TK 5CK…5ZS, moins-values 5SZ/5MD, déficits 5PF/5PY/5SG/5YE), vérifiées sur les
  * simulateurs officiels 2026 et 2027.
  */
 export const JUMELLES_PAC_CADRE_5: Record<string, string> = {
@@ -186,6 +186,7 @@ export const JUMELLES_PAC_CADRE_5: Record<string, string> = {
   case5pf: 'case5nf',
   case5py: 'case5ny',
   case5sg: 'case5jj',
+  case5ye: 'case5we',
 };
 type Imposition = 'bareme' | 'versement_liberatoire';
 
@@ -353,7 +354,7 @@ export function calculerRevenusNonSalaries(
     + somme(input, ['case5nm', 'case5pm', 'case5om']);
   const deficitsLmnp = somme(input, ['case5ny', 'case5oy', 'case5py', 'case5ga', 'case5gb', 'case5gc', 'case5gd', 'case5ge', 'case5gf', 'case5gg', 'case5gh', 'case5gi', 'case5gj']);
   const lmnpSansCotisationsNet = Math.max(0, lmnpSansCotisations - deficitsLmnp);
-  const lmnp = Math.max(0, lmnpSansCotisations + lmnpCotisations - deficitsLmnp - somme(input, ['case5we', 'case5xe']));
+  const lmnp = Math.max(0, lmnpSansCotisations + lmnpCotisations - deficitsLmnp - somme(input, ['case5we', 'case5xe', 'case5ye']));
 
   // Micro-BA : abattement sur la moyenne des recettes de l'année et des années précédentes saisies (N-1
   // obligatoire, N-2 seulement avec N-1), simulateur officiel 2026 et 2027 : 5XB 40 000 + 5XM 70 000 →

@@ -1508,14 +1508,14 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Revenus exonérés zonés** (`5XA`, `5HB`, `5KN`, `5KB`, `5NN`, `5NB`, `5HP`, `5QB`, `5TH`, `5HK`) : RFR.
 - **Source étrangère avec crédit d'impôt égal à l'impôt français** (`5AK`, `5DF`, `5UR`, `5EY`, `5XJ`,
   `5XS`) : hors barème, retenus pour le taux effectif (comme 1AF).
-- **Colonnes « personnes à charge »** (75 cases : `5JA`…`5JY`, `5MB`…`5MZ`, `5PA`…`5PY`, `5SA`…`5SZ`,
-  `5VA`…`5VH`, `5WI`, `5WR`, `5ZA`/`5ZB`/`5ZO`, `5ZJ`/`5ZS`, `5LK`, `5OT`, `5CK`, `5FF`, `5GY`, `5MD`) :
+- **Colonnes « personnes à charge »** (76 cases : `5JA`…`5JY`, `5MB`…`5MZ`, `5PA`…`5PY`, `5SA`…`5SZ`,
+  `5VA`…`5VH`, `5WI`, `5WR`, `5ZA`/`5ZB`/`5ZO`, `5ZJ`/`5ZS`, `5LK`, `5OT`, `5CK`, `5FF`, `5GY`, `5MD`, `5YE`) :
   chaque case rejoint les mêmes agrégats que sa jumelle déclarant 1 (`JUMELLES_PAC_CADRE_5`, appariement
   par l'ordre des champs du simulateur officiel). Paires vérifiées à l'identique (RNI, RFR, impôt et
   PS), dont les crédits 8TK `5CK`/`5FF`/`5WR`/`5GY`/`5ZJ`/`5ZS` (aussi dans le contrôle de 8TK), les
   moins-values `5SZ`/`5MD` et les déficits `5PF`/`5PY`/`5SG` (simulateurs 2026 et 2027) ; `5JY` (= `5HG`)
   exige un bénéfice agricole PAC. Abattement micro, minimum de 305 € et seuils micro appréciés par
-  personne. `5YE` (déficit LMNP soumis aux cotisations, PAC) n'est pas saisi.
+  personne, `5YE` (déficit LMNP relevant des organismes sociaux, jumelle de `5WE`) compris.
 - **Moyenne triennale du micro-BA** (`5XM`/`5YT`/`5ZT` année N-1, `5YM`/`5YU`/`5ZU` année N-2) :
   l'abattement de 87 % porte sur la moyenne des recettes de l'année et des années précédentes saisies,
   N-2 seulement avec N-1 (simulateur officiel 2026 et 2027 : `5XB` 40 000 + `5XM` 70 000 → 55 000 ;

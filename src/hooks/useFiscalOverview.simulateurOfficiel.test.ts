@@ -590,6 +590,15 @@ const CAS: Record<string, Cas> = {
     // Présentation : le simulateur affiche les droits simples et le TMI hors revenus au quotient.
     ecartsConnus: ['droitsSimples', 'tmi'],
   },
+  S53: {
+    description: 'personne à charge : déficit LMNP 5YE relevant des organismes de sécurité sociale',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5pm: 15000, case5ye: 8000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 53800, droitsSimples: 2090, decote: 537, impotNet: 1553, prelevementsSociaux: 0, tmi: 0.11 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {

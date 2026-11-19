@@ -764,6 +764,8 @@ export interface RevenusNonSalariesInput {
   case5pf?: number | null;
   case5py?: number | null;
   case5sg?: number | null;
+  /** Personnes à charge : déficits LMNP relevant des organismes de sécurité sociale (jumelle de 5WE). */
+  case5ye?: number | null;
   /** Micro-BA, moyenne triennale : recettes de l'année N-1 (5XM/5YT/5ZT) et N-2 (5YM/5YU/5ZU), déclarant 1 / déclarant 2 / personnes à charge. */
   case5xm?: number | null;
   case5yt?: number | null;

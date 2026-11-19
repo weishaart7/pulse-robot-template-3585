@@ -13,8 +13,8 @@ const calcul = (o: Partial<RevenusNonSalariesInput>) => {
 };
 
 describe('cadre 5, personnes à charge', () => {
-  it('75 cases, chacune jumelle d’une case déclarant', () => {
-    expect(Object.keys(JUMELLES_PAC_CADRE_5)).toHaveLength(75);
+  it('76 cases, chacune jumelle d’une case déclarant', () => {
+    expect(Object.keys(JUMELLES_PAC_CADRE_5)).toHaveLength(76);
   });
   for (const [pac, jumelle] of Object.entries(JUMELLES_PAC_CADRE_5)) {
     it(`${pac} = ${jumelle}`, () => {
