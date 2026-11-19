@@ -4,6 +4,7 @@ import { calculerDonnees2044, chargerDonnees2044 } from '@/services/declaration2
 import { revenusFonciersPour2042, type Declaration2044Result, type RevenusFonciers2042 } from '@/lib/fiscalite/calculerDeclaration2044';
 import { calculerDonneesIFI, chargerDonneesIFI, type DonneesIFI, type Plafonnement2042 } from '@/services/declarationIFIDonnees';
 import type { DeclarationIFIResultat } from '@/lib/fiscalite/calculerDeclarationIFI';
+import { controlerSaisie2042 } from '@/lib/fiscalite/controlerSaisie2042';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
@@ -310,6 +311,8 @@ export interface FiscalOverview {
   alertesChargesDeductibles: string[];
   /** 8TK différente du total des cases ouvrant droit au crédit égal à l'impôt français (crédit refusé). */
   alerte8TK: string | null;
+  /** Saisies croisant plusieurs cadres que le simulateur officiel refuse (voir controlerSaisie2042.ts), sans effet sur le calcul. */
+  alertesSaisie: string[];
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
   /** Plafonnement global des avantages fiscaux (art. 200-0 A) : excédent ajouté à l'impôt. */
@@ -484,9 +487,11 @@ export function useFiscalOverview(): FiscalOverview {
         foyerInput, revenuNetGlobal, anneeRevenus, revenuNetGlobal + revenuExceptionnelQuotient + revenuCategories8TK, parametres,
       );
       const revenuImposableTotal = revenuNetGlobal - abattementsSpeciaux.total;
-      const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
+      // Arrondi à l'euro comme l'avis (simulateur officiel 2026 et 2027) : impositions proportionnelles arrondies
+      // une seule fois sur leur total (2TR 801 + 3VG 801 → 205,056 → 205), 1AT (7,5 %) à part (67,5 → 68).
+      const impotForfaitaireTotal = Math.round(gainsActionnariat.impotForfaitaire
         + revenuCapitauxMobiliers.impotForfaitaire + plusValuesGainsDivers.impotForfaitaire
-        + revenusNonSalaries.impotForfaitaire;
+        + revenusNonSalaries.impotForfaitaire) + Math.round(pensionsRetraitesRentes.impotForfaitaire);
       const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
       // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) : revenu compris dans la
       // base française, crédit calculé sur les droits avant décote (voir calculerImpot.ts). Accordé seulement si 8TK
@@ -716,6 +721,11 @@ export function useFiscalOverview(): FiscalOverview {
         abattementsSpeciaux,
         alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput, anneeRevenus),
         alerte8TK: verification8TK.alerte,
+        alertesSaisie: controlerSaisie2042({
+          foyer: foyerInput, anneeRevenus, salaires: revenusInput, gains, pensions: pensionsInput,
+          capitauxMobiliers: capitauxMobiliersInput, plusValues, fonciers: fonciers2042Input, nonSalaries: nonSalariesInput,
+          charges, reductions, prelevementSource: prelevementSourceInput,
+        }),
         reductionsCreditsImpot,
         plafonnementNiches,
         prelevementSourceDivers,

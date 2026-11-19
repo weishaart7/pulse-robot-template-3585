@@ -587,8 +587,8 @@ const CAS: Record<string, Cas> = {
       plusValues: { caseRua: 200000, caseNua: 4, caseRva: 100000, caseRsl: 50000 },
     },
     attendu: { parts: 3, revenuFiscalReference: 209300, droitsSimples: 1320, impotNet: 6820, prelevementsSociaux: 37200, tmi: 0.11 },
-    // Présentation : le simulateur affiche les droits simples et le TMI hors revenus au quotient.
-    ecartsConnus: ['droitsSimples', 'tmi'],
+    // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
+    ecartsConnus: ['droitsSimples'],
   },
   S53: {
     description: 'personne à charge : déficit LMNP 5YE relevant des organismes de sécurité sociale',
@@ -598,6 +598,51 @@ const CAS: Record<string, Cas> = {
       nonSalaries: { case5pm: 15000, case5ye: 8000 },
     },
     attendu: { parts: 3, revenuFiscalReference: 53800, droitsSimples: 2090, decote: 537, impotNet: 1553, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S54: {
+    description: 'impositions proportionnelles arrondies une seule fois sur leur total (2TR 801 + 3VG 801 → 205 €)',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 30000 },
+      rcm: { case2tr: 801, case2op: false },
+      plusValues: { case3vg: 801 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 28602, droitsSimples: 1694, decote: 130, impotProportionnel: 205, impotNet: 1769,
+      prelevementsSociaux: 298, tmi: 0.11 },
+  },
+  S55: {
+    description: 'capital retraite 1AT à 7,5 % arrondi à part (67,5 → 68 €), PFU arrondi séparément',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      pensions: { case1as: 30000, case1at: 1000 },
+      rcm: { case2tr: 801, case2op: false },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 28701, droitsSimples: 1694, decote: 130, impotNet: 1735, prelevementsSociaux: 149, tmi: 0.11 },
+  },
+  S56: {
+    description: '5XT imposé au TMI calculé avec le quart des revenus au quotient (30 %, non 41 %)',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 40000 },
+      rcm: { case2op: true },
+      nonSalaries: { case5hc: 30000, case5xt: 10000 },
+      plusValues: { caseRvg: 40000, caseNvg: 4 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 86000, droitsSimples: 12904, impotNet: 27904, prelevementsSociaux: 7440, tmi: 0.3 },
+    // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
+    ecartsConnus: ['droitsSimples'],
+  },
+  S57: {
+    description: 'quotient : ID1 et ID2 arrondis avant l\'écart × 4 (64 532 €), TMI 41 %',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 40000 },
+      rcm: { case2op: true },
+      plusValues: { caseRvg: 200000, caseNvg: 4 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 86000, droitsSimples: 3904, impotNet: 64532, prelevementsSociaux: 37200, tmi: 0.41 },
+    // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
+    ecartsConnus: ['droitsSimples'],
   },
 };
 

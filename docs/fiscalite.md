@@ -231,6 +231,17 @@ fonciers (§4).
   taxes annexes s'ajoutent ensuite, dus en entier ; l'excédent de réductions est perdu. Les crédits d'impôt,
   restituables ou non (2AB, 8VL, services à la personne…), s'imputent sur l'impôt total. Établi sur 14 cas du
   simulateur officiel 2026 (dividendes au PFU et dons : aucune réduction), cas S12 de la non-régression.
+- **Arrondis.** Impositions proportionnelles (PFU, assurance-vie, gains à taux historique, plus-values à long
+  terme, brevets) arrondies à l'euro une seule fois sur leur total, capital retraite 1AT (7,5 %) arrondi à part
+  (`useFiscalOverview.ts`) ; réductions et crédits arrondis ligne par ligne (simulateur officiel 2026 et
+  2027 : 2TR 801 + 3VG 801 → 205 € ; 1AT 1 000 → 68 € ; 7UF 401 + 7UD 333 → 515 €).
+- **Contrôles de saisie entre cadres** (`controlerSaisie2042.ts`, alertes non bloquantes affichées dans
+  `FiscalOverviewCard`, sans effet sur le calcul) : saisies refusées par le simulateur officiel 2026 et 2027
+  qu'Aurevia calcule — 1SM/1DN au-delà de 6QS/6QT, 1NY > 1NX, 1AR…1DR sans 8TK, 2TT avec 2TU…2TX,
+  abattements 3SG/3SL/RSG/RSL et quotient RVG/RUA sans 2OP, 4BY avec micro-foncier, 5HY/5IY/5JY sans revenu
+  professionnel, cotisations PER sans plafond, 7WN > 7WO, 7WM < 7WN, 7WP avec 7WN/7WO, scolarité et garde
+  au-delà des enfants déclarés, 8VL sans 8PL, 8VM/8WM/8UM sans 8PM, plusieurs taux de pension étrangère
+  par déclarant, crédits d'entreprise ou agricoles sans revenu correspondant, 8UY sans recettes micro.
 - **Plafonnement global des avantages fiscaux sur les avantages imputés.** `calculerPlafonnementNiches.ts`
   reçoit les crédits plafonnés en entier (services à la personne, garde, forestier, bornes) et la seule part
   imputée des réductions plafonnées : `useFiscalOverview.ts` calcule l'impôt une première fois sans excédent,
@@ -684,12 +695,14 @@ fonciers (§4).
   `GainsActionnariatSalarieResult`. Calcul (formule BOFiP) : `calculerImpotApresQuotientFamilial` (barème +
   quotient familial + plafonnement, factorisée depuis le code existant) est appelée une fois sur le
   revenu ordinaire (`ID1`), une fois sur le revenu ordinaire + `0XX / 4` (`ID2`) ; supplément
-  = `(ID2 - ID1) × 4` ; impôt brut = `ID1 + supplément`. La décote (art. 197 I 4° CGI, dont le texte
+  = `(ID2 - ID1) × 4`, ID1 et ID2 arrondis à l'euro avant l'écart (simulateur officiel 2026 et 2027 : 1AJ
+  40 000 + RVG 200 000 → 64 532 €) ; impôt brut = `ID1 + supplément`. La décote (art. 197 I 4° CGI, dont le texte
   vise explicitement la « cotisation résultant du barème, y compris [...] revenus soumis à un système de
   quotient ») s'applique donc après, sur ce total — comportement inchangé (`revenuExceptionnelQuotient`
   optionnel, 0 par défaut) pour tous les appels existants. Le montant est traité comme un revenu français
-  à part entière pour la proratisation du taux effectif (`revenuMondialFictif`/TMI incluent `0XX` en
-  valeur pleine, pas divisée par 4) — combinaison système du quotient × taux effectif non vérifiée contre
+  à part entière pour la proratisation du taux effectif (`revenuMondialFictif` inclut `0XX` en valeur
+  pleine ; le TMI, comme l'impôt 5XT/5XU, se lit sur le revenu ordinaire + `0XX / 4`, simulateur
+  officiel 2026 et 2027) — combinaison système du quotient × taux effectif non vérifiée contre
   un exemple BOFiP chiffré (cas rare), à surveiller si les deux mécanismes coexistent en pratique (voir
   §3). Vérifié à la main (exemple chiffré dans `calculerImpot.test.ts`, célibataire 1 part, 70 000 €
   ordinaire + 200 000 € de 0XX : impôt brut attendu 89 690,11 €, contre 98 023,84 € sans quotient) puis en
@@ -1385,7 +1398,10 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   base des PS et le RFR du cadre 3, sans les rendre négatifs.
 - **Contrôles de saisie** (`controlerSaisiePlusValues`, sans effet sur le calcul) : non-cumul
   `3VA`/`3SL`, `3VA` > `3UA`, `3VA + 3TK + 3TM` > 500 000 € (600 000 € pour une cession à de jeunes
-  agriculteurs) ; prérequis du simulateur pour `3WP`/`3WN`/`3XN`, `NVG`/`NUA` = 4, `RUA` sans `RSL`.
+  agriculteurs) ; prérequis du simulateur pour `3WP`/`3WN`/`3XN`, `NVG`/`NUA` = 4, `RUA` sans `RSL` ni
+  `RVA`, `RVA` > `RUA`, `3SL` sans `3UA`, `3SG` sans `3VG`, `RVG` = `3VG` ou `RUA` = `3UA` (double
+  imposition), `3VH` avec `3VG`/`3VT`, `3AN` avec `3BN`. Les contrôles liés à l'option 2OP sont dans
+  `controlerSaisie2042`.
 - **Report 150-0 B ter** (simulateur officiel 2026) : `3WI`/`3WJ` imposés à 24 %/19 % (impôt
   forfaitaire), au RFR, PS à 15,5 % ; `3WN` (PS 15,5 %) et `3XN` (PS 17,2 %, ligne du foncier) au RFR ;
   `3WP` sans effet propre ; `3WR`/`3WS`/`3WT` sont des impôts déjà calculés, ajoutés à l'impôt
@@ -1541,8 +1557,9 @@ Moteur pur `calculerChargesDeductibles(input, revenuBrutGlobal)` (table `charges
   anciens d'abord), puis les charges ; le revenu ne descend jamais sous 0, le reliquat de charges est perdu.
   Revenu insuffisant : les autres charges s'imputent d'abord, puis l'épargne retraite, puis les grosses
   réparations (reportables, donc imputées en dernier pour limiter les pertes définitives).
-- **Reliquats** : `deficitsReportables` (2020 à 2024, par année) et `deficitPerdu` (6FA, 6ᵉ et dernière
-  année) ; `grossesReparationsReportables` (2016, 2017) et `grossesReparationsPerdues` (6HP, dépenses 2015 :
+- **Reliquats** : `deficitsReportables` (déficits N−5 à N−1 non imputés, plus le déficit global de
+  l'année quand le revenu brut global est négatif ; une charge non imputée reste perdue, simulateur
+  officiel 2026 et 2027) et `deficitPerdu` (6FA, déficit N−6, 6ᵉ et dernière année) ; `grossesReparationsReportables` (2016, 2017) et `grossesReparationsPerdues` (6HP, dépenses 2015 :
   report de 10 ans, BOI-IR-BASE-20-60-20 § 140, expiré avec les revenus 2025). Affichés dans `FiscalOverviewCard`.
 - **Pensions alimentaires** : `6EL`/`6EM` plafonnés à 6 855 € par enfant
   (`PLAFOND_PENSION_ENFANT_MAJEUR`), doublé à 13 710 € si la case hors CERFA « enfant entretenu seul »

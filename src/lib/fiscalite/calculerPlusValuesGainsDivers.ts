@@ -233,5 +233,13 @@ export function controlerSaisiePlusValues(input: PlusValuesGainsDiversInput): st
     alertes.push("RUA exige l'abattement renforcé RSL ou l'abattement fixe RVA");
   }
   if ((input.caseRva ?? 0) > (input.caseRua ?? 0)) alertes.push("L'abattement fixe RVA dépasse la plus-value RUA");
+  // Saisies refusées par le simulateur officiel 2026 et 2027.
+  const v = (c: keyof PlusValuesGainsDiversInput) => Number(input[c] ?? 0);
+  if (v('case3sl') > 0 && v('case3ua') <= 0) alertes.push("L'abattement renforcé 3SL exige la plus-value 3UA");
+  if (v('case3sg') > 0 && v('case3vg') <= 0) alertes.push("L'abattement de droit commun 3SG exige la plus-value 3VG");
+  if (v('caseRvg') > 0 && v('caseRvg') === v('case3vg')) alertes.push('RVG égal à 3VG : la plus-value au quotient ne doit pas figurer aussi en 3VG (double imposition)');
+  if (v('caseRua') > 0 && v('caseRua') === v('case3ua')) alertes.push('RUA égal à 3UA : la plus-value au quotient ne doit pas figurer aussi en 3UA (double imposition)');
+  if (v('case3vh') > 0 && (v('case3vg') > 0 || v('case3vt') > 0)) alertes.push('3VH (moins-values) est incompatible avec 3VG ou 3VT : compensez gains et pertes avant saisie');
+  if (v('case3an') > 0 && v('case3bn') > 0) alertes.push('3AN (plus-value) et 3BN (moins-value) de crypto-actifs : compensez avant saisie');
   return alertes;
 }

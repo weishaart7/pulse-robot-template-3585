@@ -599,22 +599,23 @@ describe('calculerImpot — système du quotient (revenus exceptionnels, 0XX)', 
 
   it("atténue la progressivité par rapport à une simple addition au revenu (vérifié à la main)", () => {
     // Célibataire, 1 part, revenu ordinaire 70 000 €, revenu exceptionnel 200 000 € (coefficient 4).
-    // ID1 = impôt(70 000) = 14 103,99 € ; ID2 = impôt(70 000 + 200 000/4 = 120 000) = 33 000,52 €.
-    // Supplément = (33 000,52 - 14 103,99) × 4 = 75 586,12 € ; impôt brut = 89 690,11 €.
+    // ID1 = impôt(70 000) = 14 103,99 → 14 104 € ; ID2 = impôt(70 000 + 200 000/4 = 120 000) = 33 000,52 → 33 001 €.
+    // Supplément = (33 001 - 14 104) × 4 = 75 588 € ; impôt brut 89 692 € (simulateur officiel 2026 et 2027 :
+    // droits simples 14 104 + droit sur les revenus au quotient 75 588).
     const result = calculerImpot(70000, makeParts(), 'celibataire', 0, 'metropole', 0, 200000);
-    expect(result.impotSupplementaireQuotientExceptionnel).toBeCloseTo(75586.12, 1);
-    expect(result.impotApresPlafonnement).toBeCloseTo(89690.11, 1);
-    expect(result.impotNet).toBe(89690);
+    expect(result.impotSupplementaireQuotientExceptionnel).toBe(75588);
+    expect(result.impotApresPlafonnement).toBeCloseTo(89691.99, 1);
+    expect(result.impotNet).toBe(89692);
 
     // Sans le système du quotient (simple addition au revenu), l'impôt serait plus élevé (98 023,84 €).
     const sansQuotient = calculerImpot(270000, makeParts(), 'celibataire');
     expect(result.impotNet).toBeLessThan(sansQuotient.impotNet);
   });
 
-  it('revenuMondialFictif et TMI incluent le revenu exceptionnel', () => {
+  it('revenuMondialFictif inclut le revenu exceptionnel, le TMI son quart (simulateur officiel 2026 et 2027)', () => {
     const result = calculerImpot(70000, makeParts(), 'celibataire', 0, 'metropole', 0, 200000);
     expect(result.revenuMondialFictif).toBe(270000);
-    expect(result.tmi).toBe(0.45);
+    expect(result.tmi).toBe(0.41);
     expect(result.revenuExceptionnelQuotient).toBe(200000);
   });
 

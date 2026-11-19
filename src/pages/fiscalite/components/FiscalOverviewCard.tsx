@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, cdhr, solde, ifi, comparaisonOptionBareme,
+    anneeRevenus, revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesSaisie, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, cdhr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -284,7 +284,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
               />
             )}
             {chargesDeductibles.deficitPerdu > 0 && (
-              <LigneDetail label="Déficit 2019 (6FA) non imputé" note="expiré" valeur={formatEuros(chargesDeductibles.deficitPerdu)} muted />
+              <LigneDetail label={`Déficit ${anneeRevenus - 6} (6FA) non imputé`} note="expiré" valeur={formatEuros(chargesDeductibles.deficitPerdu)} muted />
             )}
             {chargesDeductibles.grossesReparationsReportables.length > 0 && (
               <LigneDetail
@@ -297,6 +297,9 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
             {alerte8TK && (
               <p className="border-b border-border/60 py-2 text-[12px] text-muted-foreground">{alerte8TK}</p>
             )}
+            {alertesSaisie.map(alerte => (
+              <p key={alerte} className="border-b border-border/60 py-2 text-[12px] text-muted-foreground">{alerte}</p>
+            ))}
             {alertesChargesDeductibles.map(alerte => (
               <p key={alerte} className="border-b border-border/60 py-2 text-[12px] text-muted-foreground">{alerte}</p>
             ))}

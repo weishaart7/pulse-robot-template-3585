@@ -312,8 +312,10 @@ export function calculerImpot(
       parts,
       bareme,
     );
+    // ID1 et ID2 arrondis à l'euro avant l'écart × 4 (simulateur officiel 2026 et 2027 : 1AJ 40 000 + RVG 200 000
+    // → 64 532 €, contre 64 530,11 sans arrondi intermédiaire).
     impotSupplementaireQuotientExceptionnel =
-      (qfAvecQuotient.impotApresReductionComplementaire - qfOrdinaire.impotApresReductionComplementaire)
+      (Math.round(qfAvecQuotient.impotApresReductionComplementaire) - Math.round(qfOrdinaire.impotApresReductionComplementaire))
       * COEFFICIENT_QUOTIENT_EXCEPTIONNEL;
     impotApresReductionComplementaire = qfOrdinaire.impotApresReductionComplementaire + impotSupplementaireQuotientExceptionnel;
     revenuMondialFictif = revenuMondialFictifOrdinaire + revenuExceptionnel;
@@ -344,7 +346,10 @@ export function calculerImpot(
 
   const impotApresDecote = Math.max(0, droitsArrondis - decote);
   const partsTauxMarginal = plafonnementApplique ? parts.partsBase : parts.nombreParts;
-  const quotientTauxMarginal = partsTauxMarginal > 0 ? revenuMondialFictif / partsTauxMarginal : 0;
+  // TMI sur le revenu ordinaire augmenté du quart des revenus au quotient (comme ID2), également appliqué à 5XT/5XU
+  // (simulateur officiel 2026 et 2027 : 1AJ 40 000 + RVG 200 000 → 41 % et non 45 % ; 5XT avec RVG 40 000 → 30 %).
+  const revenuTauxMarginalReference = revenuMondialFictifOrdinaire + revenuExceptionnel / COEFFICIENT_QUOTIENT_EXCEPTIONNEL;
+  const quotientTauxMarginal = partsTauxMarginal > 0 ? revenuTauxMarginalReference / partsTauxMarginal : 0;
   const tmi = tmiPourQuotient(quotientTauxMarginal, bareme);
   const impotTauxMarginal = Math.round(Math.max(0, revenuTauxMarginal) * tmi);
   const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;

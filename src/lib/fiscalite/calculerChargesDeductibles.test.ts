@@ -154,3 +154,23 @@ describe('csgDeductibleAnticipee', () => {
     expect(csgDeductibleAnticipee(cm({ case2tr: 10000, case2bh: 4000 }))).toBe(408);
   });
 });
+
+describe('calculerChargesDeductibles — déficit global de l\'année (simulateur officiel 2026 et 2027)', () => {
+  it('revenu brut global négatif : reporté en entier sur l\'année des revenus', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6gu: 5000 }, -23000);
+    expect(r.deficitsReportables).toEqual([{ annee: 2025, montant: 23000 }]);
+    expect(r.chargesImputees).toBe(0);
+  });
+
+  it('charges supérieures à un revenu positif : perdues, rien à reporter', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6gu: 30000 }, 16300);
+    expect(r.deficitsReportables).toEqual([]);
+    expect(r.incidenceRevenuImposable).toBe(-16300);
+  });
+
+  it('déficits antérieurs imputés du plus ancien au plus récent, reliquat 6FL reporté', () => {
+    const r = calculerChargesDeductibles({ ...VIDE, case6fa: 20000, case6fl: 20000 }, 27000);
+    expect(r.deficitPerdu).toBe(0);
+    expect(r.deficitsReportables).toEqual([{ annee: 2024, montant: 13000 }]);
+  });
+});

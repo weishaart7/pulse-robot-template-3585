@@ -84,9 +84,12 @@ export interface ChargesDeductiblesResult {
   epargneRetraitePersonneCharge: EpargneRetraiteDeclarant;
   /** Sans 6QR : déduction supplémentaire qu'apporterait la mutualisation des plafonds (0 sinon). */
   gainMutualisation: number;
-  /** Déficits des années N−5 à N−1 non imputés (6FB à 6FL), reportables sur les revenus N+1. */
+  /**
+   * Déficits reportables sur les revenus N+1 : déficit global de l'année (revenu brut global négatif) et
+   * déficits des années N−5 à N−1 non imputés (6FB à 6FL), simulateur officiel 2026 et 2027.
+   */
   deficitsReportables: ReliquatAnnuel[];
-  /** Reliquat de 6FA (déficit N−6) : sixième et dernière année d'imputation, définitivement perdu. */
+  /** Reliquat de 6FA (déficit N−6, année `anneeRevenus − 6`) : sixième et dernière année d'imputation, définitivement perdu. */
   deficitPerdu: number;
   /** Grosses réparations 2016 et 2017 non imputées (plafond de 25 000 € ou revenu insuffisant), reportables. */
   grossesReparationsReportables: ReliquatAnnuel[];
@@ -113,8 +116,8 @@ export interface ChargesDeductiblesResult {
  * Charges imputées en partie (revenu insuffisant) : les grosses réparations,
  * reportables, sont réputées imputées en dernier, juste après l'épargne
  * retraite (réintégrée au RFR), pour limiter les charges définitivement perdues.
- * Les reliquats 6FA (déficit 2019, art. 156 I CGI : 6 ans) et 6HP (dépenses
- * 2015, art. 156 II 2° quater : 10 ans) expirent avec les revenus 2025.
+ * Le reliquat 6FA (déficit N−6, art. 156 I CGI : 6 ans) expire avec les revenus
+ * de l'année ; 6HP (dépenses 2015, art. 156 II 2° quater : 10 ans) avec les revenus 2025.
  */
 export function calculerChargesDeductibles(
   input: ChargesDeductiblesInput,
@@ -137,7 +140,10 @@ export function calculerChargesDeductibles(
     reliquatsDeficits.push(montant(d) - impute);
   }
   const deficitPerdu = reliquatsDeficits[0];
-  const deficitsReportables = reliquatsDeficits.slice(1)
+  // Déficit global de l'année : reportable en entier ; une charge non imputée reste perdue (simulateur officiel
+  // 2026 et 2027 : 1AJ 30 000 + 5KF 50 000 → 23 000 € reportés ; 4BC 10 700 + 6GU 30 000 → rien).
+  const deficitAnnee = Math.max(0, -(revenuBrutGlobal + sommesAAjouter));
+  const deficitsReportables = [...reliquatsDeficits.slice(1), deficitAnnee]
     .map((m, i) => ({ annee: parametres.anneeRevenus - 5 + i, montant: m }))
     .filter(r => r.montant > 0);
 
