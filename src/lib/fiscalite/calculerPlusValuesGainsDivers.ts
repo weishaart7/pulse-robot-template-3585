@@ -201,7 +201,6 @@ export function calculerPlusValuesGainsDivers(
 /**
  * Contrôles de saisie du cadre 3 (brochure IR 2026 p. 140-141 et 154), sans
  * effet sur le calcul :
- * - l'abattement fixe 3VA ne se cumule pas avec l'abattement renforcé 3SL ;
  * - 3VA ne peut dépasser la plus-value 3UA ;
  * - l'abattement fixe (3VA, 3TK, 3TM) est plafonné à 500 000 € par cédant,
  *   600 000 € en cas de cession à de jeunes agriculteurs.
@@ -209,8 +208,10 @@ export function calculerPlusValuesGainsDivers(
 export function controlerSaisiePlusValues(input: PlusValuesGainsDiversInput): string[] {
   const alertes: string[] = [];
   const abattementFixe = input.case3va ?? 0;
-  if (abattementFixe > 0 && (input.case3sl ?? 0) > 0) {
-    alertes.push("L'abattement fixe 3VA ne se cumule pas avec l'abattement renforcé 3SL");
+  // 3VA puis 3SL sur le reliquat se cumulent (simulateur officiel 2026 et 2027 : 3UA 700 000, 3VA 500 000, 3SL 130 000).
+  const renforceSaisi = input.case3sl ?? 0;
+  if (abattementFixe > 0 && renforceSaisi > 0 && renforceSaisi > Math.max(0, (input.case3ua ?? 0) - abattementFixe)) {
+    alertes.push("L'abattement renforcé 3SL dépasse la plus-value 3UA diminuée de l'abattement fixe 3VA");
   }
   if (abattementFixe > (input.case3ua ?? 0)) {
     alertes.push("L'abattement fixe 3VA dépasse la plus-value 3UA");

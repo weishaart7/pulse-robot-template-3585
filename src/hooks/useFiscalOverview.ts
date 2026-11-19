@@ -657,7 +657,8 @@ export function useFiscalOverview(): FiscalOverview {
           revenuExceptionnelQuotient: impot.revenuExceptionnelQuotient,
           abattementDividendes: revenuCapitauxMobiliers.abattementDividendes,
           produitsBrevets: revenusNonSalaries.produitsBrevets,
-          abattementFixeDirigeant: Math.min(plusValues?.case3va ?? 0, plusValues?.case3ua ?? 0),
+          abattementFixeDirigeant: Math.min(plusValues?.case3va ?? 0, plusValues?.case3ua ?? 0)
+            + Math.min(plusValues?.case3tk ?? 0, plusValues?.case3tj ?? 0) + Math.min(plusValues?.case3tm ?? 0, plusValues?.case3tl ?? 0),
           impotRetenu: impotRetenuCDHR,
           cehr: cehrBrute,
           prelevementsLiberatoires: prelevementsSociauxCapitauxMobiliers.prelevementLiberatoire2DH,

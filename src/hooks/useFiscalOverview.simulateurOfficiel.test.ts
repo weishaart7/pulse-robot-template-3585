@@ -417,6 +417,16 @@ const CAS: Record<string, Cas> = {
     saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, rcm: { case2dc: 350000, case2op: false }, plusValues: { case3ua: 400000, case3va: 300000 } },
     attendu: { parts: 1, revenuFiscalReference: 750000, droitsSimples: 0, impotProportionnel: 57600, cehr: 17500, cdhr: 14900, impotNet: 90000, prelevementsSociaux: 139500, tmi: 0 },
   },
+  S34: {
+    description: 'CDHR : abattement fixe dirigeant sur gains de BSPCE (3TJ/3TK) retiré du RFR autonome, comme 3VA',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, rcm: { case2dc: 300000, case2op: false }, plusValues: { case3tj: 600000, case3tk: 500000 } },
+    attendu: { parts: 1, revenuFiscalReference: 900000, droitsSimples: 0, impotProportionnel: 51200, cehr: 23500, cdhr: 5300, impotNet: 80000, prelevementsSociaux: 167400, tmi: 0 },
+  },
+  S35: {
+    description: 'CDHR : abattement fixe dirigeant sur gains de BSPCE (3TL/3TM) retiré du RFR autonome, comme 3VA',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, rcm: { case2dc: 300000, case2op: false }, plusValues: { case3tl: 600000, case3tm: 500000 } },
+    attendu: { parts: 1, revenuFiscalReference: 900000, droitsSimples: 0, impotProportionnel: 51200, cehr: 23500, cdhr: 5300, impotNet: 80000, prelevementsSociaux: 167400, tmi: 0 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -460,6 +470,8 @@ const ECARTS_2027: Record<string, Partial<Attendu>> = {
   // CEHR retenue par la CDHR au prorata RFR autonome / RFR.
   S32: { cdhr: 18356, impotNet: 93056 },
   S33: { cdhr: 21900, impotNet: 97000 },
+  S34: { cdhr: 18356, impotNet: 93056 },
+  S35: { cdhr: 18356, impotNet: 93056 },
 };
 
 function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}) {

@@ -122,8 +122,9 @@ describe('controlerSaisiePlusValues', () => {
     expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 600000, case3va: 500000 })).toEqual([]);
   });
 
-  it('non-cumul 3VA / 3SL', () => {
-    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 100000, case3va: 50000, case3sl: 10000 })).toHaveLength(1);
+  it('3VA et 3SL se cumulent, 3SL limité au reliquat après 3VA', () => {
+    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 100000, case3va: 50000, case3sl: 10000 })).toHaveLength(0);
+    expect(controlerSaisiePlusValues({ ...VIDE, case3ua: 100000, case3va: 50000, case3sl: 60000 })).toHaveLength(1);
   });
 
   it('3VA supérieur à 3UA', () => {

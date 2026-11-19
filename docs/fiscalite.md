@@ -243,8 +243,8 @@ fonciers (§4).
   [calculerCDHR.ts](src/lib/fiscalite/calculerCDHR.ts) : CDHR = 20 % × RREF − décote − (IR1 + CEHR1 + PREL1
   + majorations), arrondie, due si le RREF dépasse 250 000 € (500 000 € en imposition commune). RREF : RFR
   avec les revenus au quotient pour leur montant total, moins l'abattement de 40 % des dividendes au barème et
-  les produits de brevets à 10 % et l'abattement fixe des dirigeants partant à la retraite (3VA, « RFR
-  autonome » du simulateur). Avec 3VA, la CEHR retenue (CEHR1) est réduite au prorata RREF / RFR à partir
+  les produits de brevets à 10 % et les abattements fixes des dirigeants partant à la retraite (3VA, et 3TK/3TM
+  sur les gains de BSPCE : « RFR autonome » du simulateur). Avec ces abattements, la CEHR retenue (CEHR1) est réduite au prorata RREF / RFR à partir
   des revenus 2026 (`cdhr.cehrProratiseeAbattementFixe`, calc-2027.cgi), en entier en revenus 2025. Décote jusqu'à 330 000 € / 660 000 € : 20 % × RREF − 82,5 % × (RREF − seuil).
   IR1 (construit dans `useFiscalOverview.ts`) : impôt net hors acomptes et crédits d'acompte (2CK,
   assurance-vie), avec réintégration, dans la limite de l'impôt, des crédits conventionnels (2AB, 8VL…, crédit

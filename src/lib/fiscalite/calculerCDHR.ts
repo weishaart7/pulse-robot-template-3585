@@ -16,7 +16,7 @@ export interface CDHRInput {
   /** Produits de brevets imposés à 10 %, retirés du RREF (§180). */
   produitsBrevets: number;
   /**
-   * Abattement fixe des dirigeants partant à la retraite (3VA), retiré du RREF (« RFR autonome » du
+   * Abattements fixes des dirigeants partant à la retraite (3VA, et 3TK/3TM sur les gains de BSPCE), retirés du RREF (« RFR autonome » du
    * simulateur officiel) ; à partir des revenus 2026 (`cehrProratiseeAbattementFixe`), la CEHR retenue
    * est réduite au prorata RREF / RFR.
    */
