@@ -271,7 +271,12 @@ fonciers (§4).
   (`revenus2026.ts`, `statut: 'provisoire'`) : valeurs relevées sur calc-2027.cgi en novembre 2026,
   identiques aux revenus 2025 sauf les dons à 75 % (7UD seul, 2 000 €) et la FCPI (7GQ à 25 %, 7GR
   supprimée) ; le nouveau sens de 7UQ
-  (Chambord) et la suppression de 7VM ne sont pas modélisés, signalés dans le cadre 7. Les cas de
+  (Chambord) et la suppression de 7VM ne sont pas modélisés, signalés dans le cadre 7. Plus largement, le
+  formulaire calc-2027.cgi supprime environ 150 cases (cadre 7 surtout : Pinel 7XA…7XE, Censi-Bouvard,
+  Scellier, PME 7CA/7DC/7CT, bornes 7ZQ…7ZT, 7WI ; outre-mer HGU, HOA…HOK ; 6HP) et en crée environ 140
+  (générations d'investissement décalées d'un an : 7CF…7CN, 7WA…7WG, 7ZA…7ZG, 8HA, 8KA…8KC, HMS…HMW…).
+  Le millésime revenus 2026 garde la liste de cases de 2025 (une 7XA y produit encore sa réduction) :
+  modélisation reportée à la promulgation de la loi de finances pour 2027. Les cas de
   `useFiscalOverview.simulateurOfficiel.test.ts` sont rejoués sur les deux millésimes.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
