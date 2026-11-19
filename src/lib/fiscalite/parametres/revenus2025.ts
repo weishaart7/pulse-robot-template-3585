@@ -50,6 +50,7 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     majorationCouple: 12_500,
     majorationPersonneCharge: 1_500,
     donsReintegres: false,
+    cehrProratiseeAbattementFixe: false,
   },
   abattementsDixPourCent: {
     salaires: { plancher: 509, plafond: 14555 },

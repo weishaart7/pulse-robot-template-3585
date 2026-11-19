@@ -62,6 +62,8 @@ export interface ParametresFiscaux {
     readonly majorationPersonneCharge: number;
     /** Réduction pour dons (art. 200) réintégrée dans l'impôt retenu : à partir des revenus 2026. */
     readonly donsReintegres: boolean;
+    /** CEHR retenue réduite au prorata RREF / RFR quand l'abattement fixe 3VA est retiré du RREF. */
+    readonly cehrProratiseeAbattementFixe: boolean;
   };
   /** Abattements de 10 % (art. 83 3° et 158-5-a CGI) : plancher et plafond revalorisés. */
   readonly abattementsDixPourCent: {

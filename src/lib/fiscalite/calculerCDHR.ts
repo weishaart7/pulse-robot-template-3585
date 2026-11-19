@@ -16,6 +16,12 @@ export interface CDHRInput {
   /** Produits de brevets imposés à 10 %, retirés du RREF (§180). */
   produitsBrevets: number;
   /**
+   * Abattement fixe des dirigeants partant à la retraite (3VA), retiré du RREF (« RFR autonome » du
+   * simulateur officiel) ; à partir des revenus 2026 (`cehrProratiseeAbattementFixe`), la CEHR retenue
+   * est réduite au prorata RREF / RFR.
+   */
+  abattementFixeDirigeant?: number;
+  /**
    * IR1 (§250) : impôt après décote, à taux proportionnel compris, diminué des seuls avantages
    * non réintégrés ; hors impôt sur les brevets (§310), hors acomptes (2CK) et crédits restituables
    * d'acompte.
@@ -51,18 +57,25 @@ export function calculerCDHR(input: CDHRInput, parametres: ParametresFiscaux = P
   const seuil = p.seuilPersonneSeule * facteur;
   const plafondDecote = p.plafondDecotePersonneSeule * facteur;
 
+  const abattementFixe = Math.max(0, input.abattementFixeDirigeant ?? 0);
   const revenuReference = Math.max(0,
     input.revenuFiscalReference
     + Math.max(0, input.revenuExceptionnelQuotient) * 3 / 4
     - Math.max(0, input.abattementDividendes)
-    - Math.max(0, input.produitsBrevets));
+    - Math.max(0, input.produitsBrevets)
+    - abattementFixe);
   const assujetti = revenuReference > seuil;
   const impositionMinimale = revenuReference * p.tauxMinimum;
   const decote = assujetti && revenuReference <= plafondDecote
     ? Math.max(0, impositionMinimale - (revenuReference - seuil) * p.tauxDecote)
     : 0;
   const majorations = (couple ? p.majorationCouple : 0) + Math.max(0, input.personnesCharge) * p.majorationPersonneCharge;
-  const impositionsRetenues = Math.max(0, input.impotRetenu) + Math.max(0, input.cehr)
+  // 2DC 300 000 + 3UA 600 000 / 3VA 500 000 : CEHR 23 500 retenue pour 23 500 × 400 / 900 sur calc-2027.cgi,
+  // en entier sur calc-2026.cgi (CDHR 18 356 € contre 5 300 €).
+  const cehrRetenue = p.cehrProratiseeAbattementFixe && abattementFixe > 0 && input.revenuFiscalReference > 0
+    ? Math.max(0, input.cehr) * Math.max(0, input.revenuFiscalReference - abattementFixe) / input.revenuFiscalReference
+    : Math.max(0, input.cehr);
+  const impositionsRetenues = Math.max(0, input.impotRetenu) + cehrRetenue
     + Math.max(0, input.prelevementsLiberatoires) + majorations;
   const cdhr = assujetti ? Math.max(0, Math.round(impositionMinimale - decote - impositionsRetenues)) : 0;
 

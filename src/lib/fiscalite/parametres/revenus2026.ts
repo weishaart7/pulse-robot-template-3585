@@ -14,7 +14,7 @@ export const PARAMETRES_REVENUS_2026: ParametresFiscaux = {
   statut: 'provisoire',
   source: 'Simulateur officiel calc-2027.cgi, novembre 2026 (loi de finances pour 2027 non promulguée)',
   // Loi de finances pour 2026 : les dons (art. 200) entrent dans les avantages réintégrés (calc-2027.cgi).
-  cdhr: { ...PARAMETRES_REVENUS_2025.cdhr, donsReintegres: true },
+  cdhr: { ...PARAMETRES_REVENUS_2025.cdhr, donsReintegres: true, cehrProratiseeAbattementFixe: true },
   reductionsCredits: {
     ...PARAMETRES_REVENUS_2025.reductionsCredits,
     plafondDons75Premiere: 2000,

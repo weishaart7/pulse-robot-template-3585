@@ -392,6 +392,31 @@ const CAS: Record<string, Cas> = {
     },
     attendu: { parts: 5, revenuFiscalReference: 63000, droitsSimples: 550, impotNet: 0, prelevementsSociaux: 0, tmi: 0.11 },
   },
+  S29: {
+    description: 'dirigeant retraité : 3UA 600 000, abattement fixe 3VA 500 000, PFU ; CDHR nulle (RFR autonome 136 000)',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, pensions: { case1as: 40000 }, plusValues: { case3ua: 600000, case3va: 500000 }, rcm: { case2op: false } },
+    attendu: { parts: 1, revenuFiscalReference: 636000, droitsSimples: 3904, impotProportionnel: 12800, cehr: 12940, cdhr: 0, impotNet: 29644, prelevementsSociaux: 111600, tmi: 0.3 },
+  },
+  S30: {
+    description: 'dirigeant retraité : plus-value entièrement couverte par 3VA, PS sur le montant brut',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, pensions: { case1as: 40000 }, plusValues: { case3ua: 300000, case3va: 300000 }, rcm: { case2op: false } },
+    attendu: { parts: 1, revenuFiscalReference: 336000, droitsSimples: 3904, cehr: 2580, cdhr: 0, impotNet: 6484, prelevementsSociaux: 55800, tmi: 0.3 },
+  },
+  S31: {
+    description: 'dirigeant retraité au barème : 3UA 700 000, 3VA 500 000 et abattement renforcé 3SL',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, pensions: { case1as: 40000 }, plusValues: { case3ua: 700000, case3va: 500000, case3sl: 130000 }, rcm: { case2op: true } },
+    attendu: { parts: 1, revenuFiscalReference: 736000, droitsSimples: 27261, cehr: 16940, cdhr: 0, impotNet: 44201, prelevementsSociaux: 130200, tmi: 0.41 },
+  },
+  S32: {
+    description: 'CDHR : RFR autonome hors abattement fixe 3VA (900 000 → 400 000)',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, rcm: { case2dc: 300000, case2op: false }, plusValues: { case3ua: 600000, case3va: 500000 } },
+    attendu: { parts: 1, revenuFiscalReference: 900000, droitsSimples: 0, impotProportionnel: 51200, cehr: 23500, cdhr: 5300, impotNet: 80000, prelevementsSociaux: 167400, tmi: 0 },
+  },
+  S33: {
+    description: 'CDHR : RFR autonome hors 3VA (750 000 → 450 000)',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, rcm: { case2dc: 350000, case2op: false }, plusValues: { case3ua: 400000, case3va: 300000 } },
+    attendu: { parts: 1, revenuFiscalReference: 750000, droitsSimples: 0, impotProportionnel: 57600, cehr: 17500, cdhr: 14900, impotNet: 90000, prelevementsSociaux: 139500, tmi: 0 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -432,6 +457,9 @@ const ECARTS_2027: Record<string, Partial<Attendu>> = {
   // FCPI 7GQ à 25 % (7GR supprimée).
   S23: { reductions: 2000, impotNet: 96225 },
   S24: { reductions: 15700, impotNet: 258175 },
+  // CEHR retenue par la CDHR au prorata RFR autonome / RFR.
+  S32: { cdhr: 18356, impotNet: 93056 },
+  S33: { cdhr: 21900, impotNet: 97000 },
 };
 
 function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}) {
