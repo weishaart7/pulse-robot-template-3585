@@ -41,7 +41,10 @@ export interface ImpotResult {
   avantageQuotientFamilial: number;
   plafondQuotientFamilial: number;
   plafonnementApplique: boolean;
-  /** Droits simples : impôt après plafonnement, avant la réduction complémentaire. */
+  /**
+   * Impôt après plafonnement, avant la réduction complémentaire, sur le revenu mondial (avant taux
+   * effectif). Les « droits simples » du simulateur, eux, sont après taux effectif.
+   */
   impotApresPlafonnement: number;
   /**
    * Réduction d'impôt complémentaire (art. 197 I 2 CGI) : demi-parts d'invalidité,

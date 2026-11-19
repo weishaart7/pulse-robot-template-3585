@@ -358,6 +358,15 @@ const CAS: Record<string, Cas> = {
     attendu: { parts: 2, revenuFiscalReference: 900890, droitsSimples: 223448, impotProportionnel: 38400,
       reductions: 15000, cehr: 12027, cdhr: 0, impotNet: 258875, prelevementsSociaux: 60960, tmi: 0.45 },
   },
+  S25: {
+    description: 'micro-entrepreneur au versement libératoire (5TB) : droits simples au taux effectif',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1992 },
+      salaires: { case1aj: 40000 },
+      nonSalaries: { case5tb: 20000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 46000, droitsSimples: 5403, impotNet: 5403, prelevementsSociaux: 0, tmi: 0.3 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
@@ -371,7 +380,8 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
   const obtenu: Required<Attendu> = {
     parts: r.parts.nombreParts,
     revenuFiscalReference: r.impot.revenuFiscalReference,
-    droitsSimples: Math.round(r.impot.impotApresPlafonnement),
+    // « Droits simples » du simulateur : après taux effectif (revenus exonérés, VFL), avant la réduction complémentaire.
+    droitsSimples: Math.round(r.impot.impotProportionnel + r.impot.reductionComplementaireQuotientFamilial),
     decote: Math.round(r.impot.decote),
     impotProportionnel: r.impot.impotForfaitaire,
     reductions: r.impot.reductionsImpot,
