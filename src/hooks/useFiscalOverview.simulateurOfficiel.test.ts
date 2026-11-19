@@ -427,6 +427,83 @@ const CAS: Record<string, Cas> = {
     saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1960 }, rcm: { case2dc: 300000, case2op: false }, plusValues: { case3tl: 600000, case3tm: 500000 } },
     attendu: { parts: 1, revenuFiscalReference: 900000, droitsSimples: 0, impotProportionnel: 51200, cehr: 23500, cdhr: 5300, impotNet: 80000, prelevementsSociaux: 167400, tmi: 0 },
   },
+  S36: {
+    description: 'plafond 10 % imputé d\'abord sur 1AJ : 1AC retenu en entier pour le taux effectif',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977 },
+      salaires: { case1aj: 150000 },
+      exoneres: { case1ac: 50000 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 185445, droitsSimples: 31869, impotNet: 31869, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+  S37: {
+    description: 'plafond pensions imputé d\'abord sur 1AS : 1AH ne reçoit que le reliquat (439 €)',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1956, anneeNaissanceDeclarant2: 1958 },
+      pensions: { case1as: 40000 },
+      exoneres: { case1ah: 10000 },
+      fonciers: { case4be: 7200 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 50601, droitsSimples: 2445, decote: 377, impotNet: 2068, prelevementsSociaux: 867, tmi: 0.11 },
+  },
+  S38: {
+    description: 'plancher 10 % sur 1AJ seul (509 €), 1AC reçoit le reste de l\'abattement du total',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 },
+      salaires: { case1aj: 3000 },
+      exoneres: { case1ac: 30000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 29700, droitsSimples: 169, decote: 169, impotNet: 0, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  S39: {
+    description: 'crédit égal à l\'impôt français (1BL/8TK) calculé sur les droits avant décote',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1956, anneeNaissanceDeclarant2: 1958 },
+      pensions: { case1as: 30000, case1bl: 15000 },
+      fonciers: { case4be: 7200 },
+      prelevementSource: { case8tk: 15000 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 45601, droitsSimples: 2464, decote: 368, impotNet: 1365, prelevementsSociaux: 867, tmi: 0.11 },
+  },
+  S40: {
+    description: 'crédit égal à l\'impôt français (1AF/8TK) avant décote, plafonné à l\'impôt après décote',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977 },
+      salaires: { case1aj: 20000, case1bj: 12000, case1af: 15000 },
+      prelevementSource: { case8tk: 15000 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 42300, droitsSimples: 2101, decote: 532, impotNet: 898, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S41: {
+    description: 'seuil personnes âgées apprécié avec les revenus 8TK (1AL) : aucun abattement',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1956, anneeNaissanceDeclarant2: 1958 },
+      pensions: { case1as: 25000, case1al: 12000 },
+      fonciers: { case4be: 7200 },
+      prelevementSource: { case8tk: 12000 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 38340, droitsSimples: 1665, decote: 730, impotNet: 466, prelevementsSociaux: 867, tmi: 0.11 },
+  },
+  S42: {
+    description: 'exonération de CSG-CRDS 8RF sans case 8SH/8SI : ignorée',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977 },
+      salaires: { case1aj: 52000 },
+      fonciers: { case4be: 7200 },
+      prelevementSource: { case8rf: 5040 },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 51840, droitsSimples: 3150, decote: 58, impotNet: 3092, prelevementsSociaux: 867, tmi: 0.11 },
+  },
+  S43: {
+    description: 'exonération de CSG-CRDS 8RF avec 8SI (un conjoint affilié) : CSG-CRDS du foncier retranchée',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977 },
+      salaires: { case1aj: 52000 },
+      fonciers: { case4be: 7200 },
+      prelevementSource: { case8rf: 5040, case8si: true },
+    },
+    attendu: { parts: 2, revenuFiscalReference: 51840, droitsSimples: 3150, decote: 58, impotNet: 3092, prelevementsSociaux: 378, tmi: 0.11 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {

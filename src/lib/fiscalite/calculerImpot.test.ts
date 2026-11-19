@@ -691,11 +691,13 @@ describe('calculerImpot — crédit égal à l\'impôt français', () => {
     expect(r.impotNet).toBe(5341);
   });
 
-  it('crédit imputé après la décote', () => {
+  it('crédit calculé sur les droits avant décote, imputé après la décote (simulateur officiel 2026 et 2027)', () => {
     const parts = makeParts({ partsBase: 1, nombreParts: 1 });
     const r = calculerImpot(15000, parts, 'celibataire', 0, 'metropole', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5000);
     expect(r.decote).toBeGreaterThan(0);
-    expect(r.creditImpotFrancais).toBe(Math.round(r.impotApresDecote * 5000 / 20000));
+    const droits = Math.round(r.impotApresReductionOutreMer);
+    expect(r.creditImpotFrancais).toBe(Math.min(r.impotApresDecote, Math.round(droits * 5000 / 20000)));
+    expect(r.creditImpotFrancais).toBeGreaterThan(Math.round(r.impotApresDecote * 5000 / 20000));
     expect(r.impotNet).toBe(r.impotApresDecote - r.creditImpotFrancais);
   });
 });

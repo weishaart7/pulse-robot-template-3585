@@ -141,9 +141,11 @@ export interface PensionsRetraitesRentesResult {
  * l'art. 158-5-a CGI est unique pour toutes les pensions du foyer, les
  * revenus retenus pour le taux effectif étant déterminés selon les règles de
  * droit commun — un second plafond de 4 439 € pour 1AH surestimerait
- * l'abattement. Leur part nette est isolée proportionnellement
- * (`pensionsExonereesTauxEffectifNettes`) et n'entre PAS dans
- * `totalNetImposable`.
+ * l'abattement. Le plafond est imputé d'abord sur les pensions imposables :
+ * 1AH/1BH ne reçoivent que le reliquat (abattement calculé sur le total moins
+ * abattement des seules pensions imposables, simulateur officiel 2026 et
+ * 2027). Leur part nette (`pensionsExonereesTauxEffectifNettes`) n'entre PAS
+ * dans `totalNetImposable`.
  *
  * Cases hors calcul : voir CASES_PENSIONS_EXCLUES_DU_CALCUL.
  */
@@ -163,39 +165,28 @@ export function calculerPensionsRetraitesRentes(
 
   const pensionEtrangere1 = input.case1al ?? 0;
   const pensionEtrangere2 = input.case1bl ?? 0;
-  const pensionExoneree1 = pensionsExonerees.case1ah ?? 0;
-  const pensionExoneree2 = pensionsExonerees.case1bh ?? 0;
-  const baseAbattement1 = pensionDeclarant1 + pensionEtrangere1 + pensionExoneree1;
-  const baseAbattement2 = pensionDeclarant2 + pensionEtrangere2 + pensionExoneree2;
-  const abattementBrut1 = abattementPensionDeclarant(baseAbattement1, abattement);
-  const abattementBrut2 = abattementPensionDeclarant(baseAbattement2, abattement);
-  const exonereePac1 = pensionsExonerees.case1ch ?? 0;
-  const exonereePac2 = pensionsExonerees.case1dh ?? 0;
-  const baseAbattementPac1 = pensionPac1 + exonereePac1;
-  const baseAbattementPac2 = pensionPac2 + exonereePac2;
-  const abattementBrutPac1 = abattementPensionDeclarant(baseAbattementPac1, abattement);
-  const abattementBrutPac2 = abattementPensionDeclarant(baseAbattementPac2, abattement);
-  const abattementBrutTotal = abattementBrut1 + abattementBrut2 + abattementBrutPac1 + abattementBrutPac2;
-  const abattementCombine = Math.min(abattement.plafondFoyer, abattementBrutTotal);
-  const facteurPlafond = abattementBrutTotal > 0 ? abattementCombine / abattementBrutTotal : 0;
+  // Bases imposables (1AL compris) et exonérées (1AH…1DH) par personne : D1, D2, PAC 1, PAC 2.
+  const imposables = [pensionDeclarant1 + pensionEtrangere1, pensionDeclarant2 + pensionEtrangere2, pensionPac1, pensionPac2];
+  const etrangeres = [pensionEtrangere1, pensionEtrangere2, 0, 0];
+  const exonerees = [pensionsExonerees.case1ah, pensionsExonerees.case1bh, pensionsExonerees.case1ch, pensionsExonerees.case1dh]
+    .map(v => Math.max(0, v ?? 0));
+  // Plafond foyer imputé d'abord sur les pensions imposables ; les pensions exonérées retenues pour le
+  // taux effectif ne reçoivent que le reliquat (abattement sur le total moins abattement sur l'imposable,
+  // simulateur officiel 2026 et 2027 : 1AS 40 000 + 1AH 10 000 → 1AH retenu 9 561, pas 8 448).
+  const abattementsImposables = imposables.map(b => abattementPensionDeclarant(b, abattement));
+  const sommeAbattementsImposables = abattementsImposables.reduce((t, v) => t + v, 0);
+  const abattementImposable = Math.min(abattement.plafondFoyer, sommeAbattementsImposables);
+  const abattementTotal = Math.min(abattement.plafondFoyer, imposables
+    .reduce((t, b, i) => t + abattementPensionDeclarant(b + exonerees[i], abattement), 0));
+  const abattementExonere = Math.max(0, abattementTotal - abattementImposable);
+  const facteurPlafond = sommeAbattementsImposables > 0 ? abattementImposable / sommeAbattementsImposables : 0;
 
-  const netDeclarant1 = baseAbattement1 - abattementBrut1 * facteurPlafond;
-  const netDeclarant2 = baseAbattement2 - abattementBrut2 * facteurPlafond;
-  const ratioEtranger1 = baseAbattement1 > 0 ? pensionEtrangere1 / baseAbattement1 : 0;
-  const ratioEtranger2 = baseAbattement2 > 0 ? pensionEtrangere2 / baseAbattement2 : 0;
-  const ratioExonere1 = baseAbattement1 > 0 ? pensionExoneree1 / baseAbattement1 : 0;
-  const ratioExonere2 = baseAbattement2 > 0 ? pensionExoneree2 / baseAbattement2 : 0;
-  const pensionEtrangereNette = netDeclarant1 * ratioEtranger1 + netDeclarant2 * ratioEtranger2;
-  const netPac1 = baseAbattementPac1 - abattementBrutPac1 * facteurPlafond;
-  const netPac2 = baseAbattementPac2 - abattementBrutPac2 * facteurPlafond;
-  const ratioExonerePac1 = baseAbattementPac1 > 0 ? exonereePac1 / baseAbattementPac1 : 0;
-  const ratioExonerePac2 = baseAbattementPac2 > 0 ? exonereePac2 / baseAbattementPac2 : 0;
-  const pensionsExonereesTauxEffectifNettes = netDeclarant1 * ratioExonere1 + netDeclarant2 * ratioExonere2
-    + netPac1 * ratioExonerePac1 + netPac2 * ratioExonerePac2;
-
-  const pensionsNettes = netDeclarant1 * (1 - ratioEtranger1 - ratioExonere1)
-    + netDeclarant2 * (1 - ratioEtranger2 - ratioExonere2)
-    + netPac1 * (1 - ratioExonerePac1) + netPac2 * (1 - ratioExonerePac2);
+  const netsImposables = imposables.map((b, i) => b - abattementsImposables[i] * facteurPlafond);
+  const pensionEtrangereNette = netsImposables
+    .reduce((t, net, i) => t + (imposables[i] > 0 ? net * etrangeres[i] / imposables[i] : 0), 0);
+  const pensionsNettes = netsImposables.reduce((t, net) => t + net, 0) - pensionEtrangereNette;
+  const totalExonere = exonerees.reduce((t, v) => t + v, 0);
+  const pensionsExonereesTauxEffectifNettes = Math.max(0, totalExonere - abattementExonere);
   const abattementPension = pensionsBrutes - pensionsNettes;
 
   const capitalPER = (input.case1ai ?? 0) + (input.case1bi ?? 0) + (input.case1ci ?? 0) + (input.case1di ?? 0);

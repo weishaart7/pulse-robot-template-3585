@@ -56,6 +56,7 @@ import {
   calculerPrelevementSourceDivers,
   PRELEVEMENT_SOURCE_DIVERS_VIDE,
   exonerationTotaleCsgCrds,
+  exonerationPartielleCsgCrdsOuverte,
   calculerSoldeImpot,
   creditImpotEgalImpotEtranger,
   FoyerFiscalInput,
@@ -471,9 +472,16 @@ export function useFiscalOverview(): FiscalOverview {
         charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, revenuBrutGlobal, capitauxMobiliersInput, parametres,
       );
       const revenuNetGlobal = revenuBrutGlobal + chargesDeductibles.incidenceRevenuImposable;
-      // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total.
+      // Revenus ouvrant droit au crédit égal à l'impôt français, tenus hors de revenuBrutGlobal.
+      const revenuCategories8TK = revenuSalaires.revenuCreditImpotEgalImpotFrancais
+        + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
+        + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais
+        + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais;
+      // Seuil 157 bis apprécié sur le revenu net global, revenus au quotient (0XX) compris pour leur total,
+      // ainsi que les revenus ouvrant droit au crédit 8TK (simulateur officiel 2026 et 2027 : retraités 1AS
+      // 25 000 + 1AL 12 000, revenu global 38 340 > seuil → aucun abattement).
       const abattementsSpeciaux = calculerAbattementsSpeciaux(
-        foyerInput, revenuNetGlobal, anneeRevenus, revenuNetGlobal + revenuExceptionnelQuotient, parametres,
+        foyerInput, revenuNetGlobal, anneeRevenus, revenuNetGlobal + revenuExceptionnelQuotient + revenuCategories8TK, parametres,
       );
       const revenuImposableTotal = revenuNetGlobal - abattementsSpeciaux.total;
       const impotForfaitaireTotal = gainsActionnariat.impotForfaitaire + pensionsRetraitesRentes.impotForfaitaire
@@ -481,7 +489,7 @@ export function useFiscalOverview(): FiscalOverview {
         + revenusNonSalaries.impotForfaitaire;
       const prelevementsSociauxPensionsRetraitesRentes = calculerPrelevementsSociauxPensionsRetraitesRentes(pensionsInput);
       // Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…) : revenu compris dans la
-      // base française, crédit imputé après la décote (voir calculerImpot.ts). Accordé seulement si 8TK
+      // base française, crédit calculé sur les droits avant décote (voir calculerImpot.ts). Accordé seulement si 8TK
       // égale le total brut de ces cases (simulateur officiel 2026, voir controle8TK).
       const prelevementSourceInput = prelevementSource ?? PRELEVEMENT_SOURCE_DIVERS_VIDE;
       const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
@@ -495,10 +503,6 @@ export function useFiscalOverview(): FiscalOverview {
       const revenuExonere = revenuExonereTauxEffectif.totalRetenu
         + revenusFonciers2042.revenuExonereTauxEffectif + revenusNonSalaries.revenuExonereTauxEffectif
         + prelevementSourceDivers.revenuTauxEffectif;
-      const revenuCategories8TK = revenuSalaires.revenuCreditImpotEgalImpotFrancais
-        + pensionsRetraitesRentes.revenuCreditImpotEgalImpotFrancais
-        + revenusFonciers2042.revenuCreditImpotEgalImpotFrancais
-        + revenusNonSalaries.revenuCreditImpotEgalImpotFrancais;
       // Crédit refusé : ces revenus, tenus hors de la base imposée, y reviennent sans crédit.
       const revenuCreditImpotFrancais = verification8TK.creditAccorde ? revenuCategories8TK : 0;
       const revenuImposableHorsCredit = revenuImposableTotal + (verification8TK.creditAccorde ? 0 : revenuCategories8TK);
@@ -601,6 +605,7 @@ export function useFiscalOverview(): FiscalOverview {
       // 8TC/8TG/8TO : non restituables, imputés avec le crédit égal à l'impôt étranger.
       const impot = calculer(creditEtranger.creditImpot + prelevementSourceDivers.creditsNonRestituables, plafonnementNiches.excedent);
       const somme = (...v: (number | null)[]) => v.reduce<number>((t, x) => t + Math.max(0, x ?? 0), 0);
+      const exonerationPartielleOuverte = exonerationPartielleCsgCrdsOuverte(prelevementSourceInput);
       // Bases du foyer par contribution, arrondies une seule fois (voir arrondirPrelevementsSociaux.ts).
       // Fraction 4BK/4BL : crédit égal à l'impôt français, qui neutralise aussi ses PS.
       const ps = arrondirPrelevementsSociaux({
@@ -620,8 +625,9 @@ export function useFiscalOverview(): FiscalOverview {
         neutralisePatrimoine: 0,
         neutraliseFoncier: verification8TK.creditAccorde ? revenusFonciers2042.revenuCreditImpotEgalImpotFrancais : 0,
         exonerationTotaleCsgCrds: exonerationTotale,
-        exonerePatrimoine: somme(prelevementSourceInput.case8rv, prelevementSourceInput.case8rc, prelevementSourceInput.case8rm),
-        exonereFoncier: somme(prelevementSourceInput.case8rf),
+        exonerePatrimoine: exonerationPartielleOuverte
+          ? somme(prelevementSourceInput.case8rv, prelevementSourceInput.case8rc, prelevementSourceInput.case8rm) : 0,
+        exonereFoncier: exonerationPartielleOuverte ? somme(prelevementSourceInput.case8rf) : 0,
         activite: prelevementsSociauxGainsActionnariat.baseLeveeOptions,
         contributionSalariale10: prelevementsSociauxGainsActionnariat.baseLeveeOptions + prelevementsSociauxGainsActionnariat.base1MP
           + prelevementsSociauxGainsActionnariat.base3VN,

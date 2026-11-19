@@ -462,9 +462,11 @@ fonciers (§4).
   l'abattement forfaitaire de 10 % (8 500 €) est en réalité plus favorable que les 4 000 € de frais
   réels déclarés — le forfaitaire s'applique donc à l'ensemble du pool, y compris à la part exonérée
   (35 000 − 10 % = 31 500 € au lieu de 35 000 − 4 000 = 31 000 €). `calculerDeclarant` est étendu d'un
-  5ᵉ paramètre optionnel `remunerationsExonereesTauxEffectif` (même mécanique de répartition
-  proportionnelle que `remunerationsCreditImpot`/1AF ci-dessus, nouveau champ
-  `netImposableExonereTauxEffectif`) ; `calculerRevenuSalaires` accepte désormais un second paramètre
+  5ᵉ paramètre optionnel `remunerationsExonereesTauxEffectif` (champ `netImposableExonereTauxEffectif`).
+  Au forfait, le plafond de 10 % est imputé d'abord sur les rémunérations imposables (1AJ…, 1AF,
+  actionnariat) : 1AC/1BC ne reçoit que le reliquat (abattement sur le total moins abattement sur
+  l'imposable seul, plancher compris), pas une part proportionnelle — simulateur officiel 2026 et 2027 :
+  1AJ 150 000 + 1AC 50 000 → 1AC retenu 50 000 ; 1AJ 3 000 + 1AC 30 000 → 1AC retenu 27 209 ; `calculerRevenuSalaires` accepte désormais un second paramètre
   optionnel (1AC/1BC, 1AE/1BE) et combine les frais réels 1AK+1AE avant l'arbitrage, exposé dans le
   nouveau champ `salairesNetImposablesExoneresTauxEffectif`. Test de non-régression dédié :
   `regressionExempleUtilisateur.test.ts`, rejoue exactement ce cas de bout en bout
@@ -810,9 +812,11 @@ fonciers (§4).
   (1) **abattement de 10 % classique** (art. 158-5-a CGI) sur le total 1AS+1AZ+1AO+1AM **et 1AL**, par
   déclarant puis somme — `abattementPensionDeclarant`/`PENSION_ABATTEMENT_PLAFOND_FOYER` sont définis
   ici (aussi utilisés par `src/lib/retraite/calculNetRetraite.ts`) : plancher 454 €/pensionné, plafond
-  global **4 439 € pour tout le foyer**. 1AH/1BH (second paramètre, encart taux effectif) entrent dans
-  ce même pool ; leur part nette est isolée au prorata (`pensionsExonereesTauxEffectifNettes`, hors
-  `totalNetImposable`), comme 1AL ; (2) **1AI** (capital
+  global **4 439 € pour tout le foyer**. 1AH/1BH (second paramètre, encart taux effectif) partagent ce
+  plafond, imputé d'abord sur les pensions imposables (1AL compris) : 1AH ne reçoit que le reliquat
+  (`pensionsExonereesTauxEffectifNettes`, hors `totalNetImposable`) — simulateur officiel 2026 et 2027 :
+  1AS 40 000 + 1AH 10 000 → 1AH retenu 9 561 (1 € d'écart d'arrondi relevé quand 1AS et 1AH du même
+  déclarant épuisent le plafond à parts égales) ; 1AL reste isolé au prorata des pensions imposables ; (2) **1AI** (capital
   des plans d'épargne retraite) imposable au barème **sans** abattement (texte explicite de la
   brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI) hors barème : abattement spécifique
   de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire`, et 90 % du capital au
@@ -1733,7 +1737,9 @@ cadre 8 est enregistré).
   crédit égal à l'impôt étranger) ; réductions `8PY`, `8PZ` (ajoutées à celles du cadre 7). Les
   prérequis du simulateur (bénéfice BIC ou agricole) ne sont pas contrôlés.
 - **Exonération CSG-CRDS** (`8RF` à 9,7 %, `8RV`/`8RC`/`8RM` à 11,1 %), plafonnée aux PS du patrimoine
-  calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. **Exonération
+  calculés (hors PS des gains d'actionnariat) ; le prélèvement de solidarité reste dû. Montants retenus
+  seulement si `8SH` ou `8SI` est cochée (`exonerationPartielleCsgCrdsOuverte`) : sans case, le
+  simulateur officiel 2026 et 2027 les ignore. **Exonération
   totale** (`exonerationTotaleCsgCrds`) si `8SH` seule (personne seule) ou `8SH` + `8SI` (couple) : les
   montants 8RF…8RM sont ignorés, CSG-CRDS retranchée de tous les PS du patrimoine (fonciers × 9,7/17,2,
   2DI en totalité, autres × 11,1/18,6 ; hors gains d'actionnariat).
@@ -2024,7 +2030,9 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 - **Abattement personnes âgées ou invalides (art. 157 bis CGI)** : calculé
   (`calculerAbattementsSpeciaux.ts`, BOI-IR-BASE-40 §60, revenus 2025 : 2 822 € jusqu'à 17 670 € de
   revenu net global, 1 411 € jusqu'à 28 430 €, par déclarant de plus de 65 ans au 31/12 ou invalide P/F).
-  Retranché du revenu net global après le cadre 6, donc aussi du RFR ; 0XX compté pour son total dans le seuil.
+  Retranché du revenu net global après le cadre 6, donc aussi du RFR ; 0XX compté pour son total dans le
+  seuil, ainsi que les revenus ouvrant droit au crédit 8TK (1AF, 1AL, 4BK/4BL, 5AK…), tenus hors du revenu
+  brut global (simulateur officiel 2026 et 2027).
   Années de naissance 0DA/0DB saisies dans le Ménage ou reprises de Famille ; sans elles, abattement non
   calculé. Hors périmètre : second abattement du conjoint survivant l'année du décès.
 - **Rang des personnes invalides recueillies** : elles ne décalent que les enfants en résidence
@@ -2047,8 +2055,10 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 - **Crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 4BK, 4BL, 5AK…, contrôlé par 8TK) : ordre aligné
   sur l'avis ClickImpôts.** Le revenu reste dans la base française ; l'impôt après taux effectif est
-  arrondi à l'euro, puis le crédit (impôt après décote × revenu / base française, arrondi) est imputé
-  comme une réduction, après la décote et avant le cadre 7 (`calculerImpot.ts::creditImpotFrancais`).
+  arrondi à l'euro, puis le crédit (droits simples **avant** décote × revenu / base française, arrondi,
+  plafonné à l'impôt après décote) est imputé comme une réduction, après la décote et avant le cadre 7
+  (`calculerImpot.ts::creditImpotFrancais`) — base avant décote vérifiée sur le simulateur officiel 2026
+  et 2027 (1BL 15 000, droits 2 464, décote 368 → crédit 731).
   Cas de référence : 1AJ 30 000, 1AF 15 000, 1AC 20 000, 1AH 10 000 → 8 012 − 2 671 = 5 341 €.
   Seule la 2047 alimentera à terme ces cases (report). **1AF/1BF n'a pas
   d'option frais réels modélisée** (pas de case CERFA dédiée identifiée, contrairement à 1AC/1BC qui ont

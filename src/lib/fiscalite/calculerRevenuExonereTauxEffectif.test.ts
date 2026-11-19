@@ -76,15 +76,15 @@ describe('calculerRevenuExonereTauxEffectif — pensions étrangères (1AH/1BH)'
 });
 
 describe('calculerRevenuExonereTauxEffectif — plafond 4 439 € commun avec les pensions imposables', () => {
-  it('1AS et 1AH partagent un seul plafond foyer', () => {
+  it('1AS et 1AH partagent un seul plafond foyer, imputé d\'abord sur 1AS', () => {
     const pensions = { ...PENSIONS_VIDES, case1as: 40000 };
     const exoneres = makeInput({ case1ah: 20000 });
     const result = calculerAvecPool(exoneres, 0, pensions);
     const imposables = calculerPensionsRetraitesRentes(pensions, exoneres);
-    // abattement brut 6000 > 4439 : un seul plafond, réparti au prorata 40/60 → 20/60
+    // abattement brut 6000 > 4439 : 1AS garde ses 4000, 1AH reçoit le reliquat de 439 (simulateur officiel 2026 et 2027)
     expect(result.abattementPension + imposables.abattementPension).toBeCloseTo(4439, 6);
-    expect(result.pensionsNettes).toBeCloseTo(20000 - 4439 / 3, 6);
-    expect(imposables.pensionsNettes).toBeCloseTo(40000 - 4439 * 2 / 3, 6);
+    expect(result.pensionsNettes).toBeCloseTo(19561, 6);
+    expect(imposables.pensionsNettes).toBeCloseTo(36000, 6);
   });
 
   it('sous le plafond : abattement 10 % inchangé de part et d\'autre', () => {
@@ -94,14 +94,14 @@ describe('calculerRevenuExonereTauxEffectif — plafond 4 439 € commun avec le
     expect(calculerPensionsRetraitesRentes(pensions, exoneres).pensionsNettes).toBeCloseTo(18000, 6);
   });
 
-  it('1AS, 1AL et 1AH ensemble : trois parts isolées, un seul plafond', () => {
+  it('1AS, 1AL et 1AH ensemble : plafond épuisé par 1AS + 1AL, 1AH retenu en entier', () => {
     const pensions = { ...PENSIONS_VIDES, case1as: 30000, case1al: 30000 };
     const exoneres = makeInput({ case1ah: 30000 });
     const r = calculerPensionsRetraitesRentes(pensions, exoneres);
-    const net = 90000 - 4439;
-    expect(r.pensionsNettes).toBeCloseTo(net / 3, 6);
-    expect(r.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(net / 3, 6);
-    expect(r.pensionsExonereesTauxEffectifNettes).toBeCloseTo(net / 3, 6);
+    const net = 60000 - 4439;
+    expect(r.pensionsNettes).toBeCloseTo(net / 2, 6);
+    expect(r.revenuCreditImpotEgalImpotFrancais).toBeCloseTo(net / 2, 6);
+    expect(r.pensionsExonereesTauxEffectifNettes).toBeCloseTo(30000, 6);
   });
 });
 

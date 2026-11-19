@@ -203,9 +203,11 @@ function calculerImpotApresQuotientFamilial(
  * `revenuCreditImpotFrancais` (optionnel, 0 par défaut) : revenu ouvrant droit
  * au crédit d'impôt égal à l'impôt français (1AF/1BF, 1AL/1BL, 1AR…1DR, 4BL,
  * 8TK), compris dans la base française et le revenu imposable ; le crédit
- * (impôt après décote × revenu / base française, arrondi) est imputé comme
- * une réduction, après la décote — ordre de l'avis ClickImpôts (1AJ 30 000,
- * 1AF 15 000, 1AC 20 000, 1AH 10 000 : 8 012 − 2 671 = 5 341 €).
+ * (droits simples avant décote × revenu / base française, arrondi, plafonné à
+ * l'impôt après décote) est imputé comme une réduction, après la décote —
+ * ordre de l'avis ClickImpôts (1AJ 30 000, 1AF 15 000, 1AC 20 000, 1AH
+ * 10 000 : 8 012 − 2 671 = 5 341 €) ; base avant décote vérifiée sur le
+ * simulateur officiel 2026 et 2027 (foyers avec décote).
  * `lieuResidence` (optionnel, 'metropole' par défaut) : détermine la
  * réduction outre-mer.
  * `impotForfaitaire` (optionnel, 0 par défaut) : impôt à taux forfaitaire
@@ -346,8 +348,12 @@ export function calculerImpot(
   const tmi = tmiPourQuotient(quotientTauxMarginal, bareme);
   const impotTauxMarginal = Math.round(Math.max(0, revenuTauxMarginal) * tmi);
   const impotAvantReductions = impotApresDecote + Math.max(0, impotForfaitaire) + impotTauxMarginal;
-  // Crédit égal à l'impôt français : quote-part de l'impôt au barème, arrondie, imputée en premier.
-  const creditImpotFrancais = baseFrance > 0 ? Math.round(impotApresDecote * revenuCredit / baseFrance) : 0;
+  // Crédit égal à l'impôt français : quote-part des droits simples AVANT décote, arrondie, imputée en premier
+  // dans la limite de l'impôt après décote (simulateur officiel 2026 et 2027 : droits 2 464, décote 368,
+  // 1BL net 13 520 / base 45 601 → crédit 731 et non 621).
+  const creditImpotFrancais = baseFrance > 0
+    ? Math.min(impotApresDecote, Math.round(droitsArrondis * revenuCredit / baseFrance))
+    : 0;
   // Réductions imputées sur le seul impôt au barème après décote : PFU, taux proportionnels et 5XT restent dus
   // en entier (simulateur officiel 2026) ; l'excédent est perdu.
   const reductionsImpotAppliquees = Math.max(0, Math.min(reductionsImpot, impotApresDecote - creditImpotFrancais));

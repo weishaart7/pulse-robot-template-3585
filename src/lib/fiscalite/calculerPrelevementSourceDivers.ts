@@ -16,6 +16,15 @@ export function exonerationTotaleCsgCrds(input: PrelevementSourceDiversInput, co
   return coupleImpositionCommune ? input.case8sh && input.case8si : input.case8sh;
 }
 
+/**
+ * Montants 8RF/8RV/8RC/8RM exonérés de CSG-CRDS : retenus seulement si au moins un déclarant remplit
+ * la condition d'affiliation (8SH ou 8SI) ; sans case cochée, le simulateur officiel 2026 et 2027 les
+ * ignore (8RF 5 040 € seul → PS inchangés).
+ */
+export function exonerationPartielleCsgCrdsOuverte(input: PrelevementSourceDiversInput): boolean {
+  return input.case8sh || input.case8si;
+}
+
 /** Cadre 8 vide : aucune case saisie. */
 export const PRELEVEMENT_SOURCE_DIVERS_VIDE: PrelevementSourceDiversInput = {
   case8hv: null, case8iv: null, case8jv: null, case8kv: null, case8hw: null, case8iw: null, case8jw: null, case8kw: null, case8hx: null, case8ix: null, case8jx: null, case8kx: null, case8hy: null, case8iy: null, case8jy: null, case8ky: null, case8hz: null, case8iz: null, case8jz: null, case8kz: null, case8hr: null, case8hs: null, case8ea: null, case8tk: null, case8ta: null, case8ut: null, case8ti: null, case8zr: null, case8pl: null, case8vl: null, case8pm: null, case8vm: null, case8wm: null, case8um: null, case8tf: null, case8rf: null, case8rv: null, case8rc: null, case8rm: null, case8tt: false, case8uu: false, case8sh: false, case8si: false, case8fv: false,

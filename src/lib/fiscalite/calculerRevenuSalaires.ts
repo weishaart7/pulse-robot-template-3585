@@ -220,8 +220,10 @@ export interface RevenuSalairesResult {
  * `remunerationsCreditImpot` (1AF/1BF, par défaut 0) et
  * `remunerationsExonereesTauxEffectif` (1AC/1BC, par défaut 0) rejoignent
  * cette même base pour le calcul du plancher/plafond et du choix 10 %/frais
- * réels ; leur part respective dans `netImposable` est ensuite isolée
- * proportionnellement dans `netImposableCreditImpot` et
+ * réels. Au forfait, le plafond est imputé d'abord sur les rémunérations
+ * imposables (1AJ…, 1AF, actionnariat), 1AC/1BC ne recevant que le reliquat
+ * (simulateur officiel 2026 et 2027) ; 1AF est ensuite isolé
+ * proportionnellement dans `netImposableCreditImpot`, 1AC dans
  * `netImposableExonereTauxEffectif`, pour permettre à `calculerRevenuSalaires`
  * de les exclure du revenu imposable France tout en les transmettant
  * séparément aux mécanismes du crédit d'impôt et du taux effectif.
@@ -296,13 +298,19 @@ export function calculerDeclarant(
     netImposableExonereTauxEffectif = netExonere;
     netTotal = netFranceEtCreditImpot + netExonere;
   } else {
-    netTotal = Math.max(0, baseTotale - abattementForfaitaire);
-    const ratioCreditImpot = baseTotale > 0 ? remunerationsCreditImpot / baseTotale : 0;
-    netImposableCreditImpot = netTotal * ratioCreditImpot;
-    const ratioExonereTauxEffectif = baseTotale > 0 ? remunerationsExonereesTauxEffectif / baseTotale : 0;
-    netImposableExonereTauxEffectif = netTotal * ratioExonereTauxEffectif;
-    const ratioActionnariat = baseTotale > 0 ? remunerationsActionnariat / baseTotale : 0;
-    netImposableActionnariat = netTotal * ratioActionnariat;
+    // Plafond imputé d'abord sur les rémunérations imposables (France, 1AF, actionnariat) ; 1AC/1BC ne
+    // reçoit que le reliquat de l'abattement calculé sur le total (simulateur officiel 2026 et 2027 :
+    // 1AJ 150 000 + 1AC 50 000 → 1AC retenu 50 000 ; 1AJ 3 000 + 1AC 30 000 → 1AC retenu 27 209).
+    const baseImposable = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsActionnariat;
+    const abattementImposable = baseImposable <= 0
+      ? 0
+      : Math.round(Math.min(abattement.plafond, Math.max(abattement.plancher, baseImposable * ABATTEMENT_TAUX), baseImposable));
+    const netImposableTotal = baseImposable - abattementImposable;
+    netImposableExonereTauxEffectif = Math.max(0,
+      remunerationsExonereesTauxEffectif - Math.max(0, abattementForfaitaire - abattementImposable));
+    netTotal = netImposableTotal + netImposableExonereTauxEffectif;
+    netImposableCreditImpot = baseImposable > 0 ? netImposableTotal * remunerationsCreditImpot / baseImposable : 0;
+    netImposableActionnariat = baseImposable > 0 ? netImposableTotal * remunerationsActionnariat / baseImposable : 0;
   }
 
   const exonere = Math.max(0, remunerationsExonereesRFR);
