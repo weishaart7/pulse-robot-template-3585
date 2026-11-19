@@ -244,16 +244,21 @@ export function calculerPartsFiscales(
   }
   majorations.push(...majorationsEnfants(enfantsRang, input.personnesInvalidesCharge.length, qf));
 
+  // Les personnes invalides prennent rang après les enfants à charge exclusive et les majeurs rattachés,
+  // avant les enfants en résidence alternée : demi-part « à charge » aux deux premiers rangs, part entière
+  // ensuite (simulateur officiel 2027 : 2 enfants + 1 personne invalide → 1 + 0,5 + 0,5 + 1 + 0,5 = 3,5 parts).
+  const rangsAvantInvalides = enfantsRang.filter(e => !e.residenceAlternee).length;
   input.personnesInvalidesCharge.forEach((_, index) => {
-    const rang = index + 1;
+    const rang = rangsAvantInvalides + index + 1;
+    const partsACharge = rang <= 2 ? 0.5 : 1;
     // CGI art. 196 A bis : la part entière se décompose en 2 demi-parts pour le plafonnement (brochure
     // DGFiP p.85) — une demi-part "à charge" (plafond 1807€) et une demi-part "invalidité" (1807€ + 1801€
     // de complément), même mécanique que la majoration invalidité d'un enfant à charge (voir ci-dessus).
     majorations.push({
       type: `personne_invalide_charge_${rang}`,
       libelle: `Personne invalide à charge (${rangLabel(rang)})`,
-      parts: 0.5,
-      plafondUnitaire: qf.plafondDemiPart,
+      parts: partsACharge,
+      plafondUnitaire: plafondPourParts(partsACharge, qf),
     });
     majorations.push({
       type: `personne_invalide_charge_${rang}_invalidite`,

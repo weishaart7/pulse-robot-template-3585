@@ -303,7 +303,9 @@ fonciers (§4).
   (progression 0,5 pour les 1er/2e, 1 part entière à partir du 3e ; plafond 1 807 € par demi-part, soit
   3 614 € pour une part entière, 904 € pour un quart de part), résidence alternée (moitié des droits, y
   compris pour la majoration invalidité elle-même — confirmé BOFiP BOI-IR-LIQ-10-20-20-20), personne
-  invalide à charge hors enfant (+1 part entière, distincte de la majoration invalidité du foyer),
+  invalide à charge hors enfant (demi-part « à charge » selon son rang, pris après les enfants à charge
+  exclusive et les majeurs rattachés : 0,5 aux deux premiers rangs, 1 part ensuite, plus 0,5 d'invalidité ;
+  2 enfants + 1 personne invalide → 3,5 parts pour une personne seule, simulateur officiel 2027),
   parent isolé (case T, +0,5 part, plafond 2 455 € : l'enfant n°1 et la case T sont plafonnés ensemble à
   4 262 € ; un seul enfant à charge, en résidence alternée : 0,25 part, plafonds réduits de moitié ;
   une seule personne invalide recueillie sans enfant : 0,5 part plafonnée à 1 807 €, simulateur officiel 2026),
@@ -328,8 +330,8 @@ fonciers (§4).
   réduction d'impôt en résultant est **limitée à 1 807 € par demi-part**. Toutefois, lorsque cette
   limite est atteinte pour la demi-part attribuée au titre de l'invalidité de la personne à charge, une
   réduction d'impôt complémentaire d'un montant maximal de **1 801 €** est appliquée. » Modélisé en 2
-  lignes de `majorations[]` (0,5 part chacune, total inchangé = 1 part) : une demi-part « à charge »
-  (plafond 1 807 €) et une demi-part « invalidité » (plafond 1 807 € + complément 1 801 €) — même
+  lignes de `majorations[]` : une part « à charge » (0,5 aux deux premiers rangs, plafond 1 807 € ;
+  1 part à partir du 3e rang, plafond 3 614 €) et une demi-part « invalidité » (plafond 1 807 € + complément 1 801 €) — même
   mécanique que la majoration invalidité d'un enfant à charge, déjà en place. **Cas non modélisé,
   documenté plutôt que deviné** : lorsque le foyer ne compte à charge qu'une seule personne invalide ET
   coche la case T (parent isolé), le plafond spécifique de 4 262 € normalement associé à la case T ne

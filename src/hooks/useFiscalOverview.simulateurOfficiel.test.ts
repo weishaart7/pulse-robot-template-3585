@@ -367,6 +367,31 @@ const CAS: Record<string, Cas> = {
     },
     attendu: { parts: 1, revenuFiscalReference: 46000, droitsSimples: 5403, impotNet: 5403, prelevementsSociaux: 0, tmi: 0.3 },
   },
+  S26: {
+    description: 'concubin, 2 enfants + 1 personne invalide à charge : la personne invalide prend le 3e rang (3,5 parts)',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980, enfantsCharge: [enfant(2012), enfant(2015)], personnesInvalidesCharge: [{ anneeNaissance: 1950 }] },
+      salaires: { case1aj: 70000 },
+    },
+    attendu: { parts: 3.5, revenuFiscalReference: 63000, droitsSimples: 2969, impotNet: 2464, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  S27: {
+    description: 'célibataire, 3 personnes invalides à charge : part entière au 3e rang (4,5 parts)',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980, personnesInvalidesCharge: [{ anneeNaissance: 1950 }, { anneeNaissance: 1950 }, { anneeNaissance: 1950 }] },
+      salaires: { case1aj: 70000 },
+    },
+    attendu: { parts: 4.5, revenuFiscalReference: 63000, droitsSimples: 1188, impotNet: 829, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S28: {
+    description: 'marié, 1 enfant + 2 personnes invalides à charge (5 parts), décote',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1980, anneeNaissanceDeclarant2: 1980,
+        enfantsCharge: [enfant(2012)], personnesInvalidesCharge: [{ anneeNaissance: 1950 }, { anneeNaissance: 1950 }] },
+      salaires: { case1aj: 70000 },
+    },
+    attendu: { parts: 5, revenuFiscalReference: 63000, droitsSimples: 550, impotNet: 0, prelevementsSociaux: 0, tmi: 0.11 },
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
