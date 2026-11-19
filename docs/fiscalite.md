@@ -1394,7 +1394,9 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
 - **Plus-values au quotient** (`RVG`/`NVG`/`RSG`, `RUA`/`NUA`/`RSL`), option barème seulement :
   `(RVG − RSG) + (RUA − RSL)` rejoint `revenuExceptionnelQuotient` avec `0XX` (coefficient 4, RFR au
   quart) ; `RSG`/`RSL` réintégrés au RFR ; PS à 18,6 % sur `RVG + RUA` brut. `RVA` (abattement fixe au
-  quotient) non géré.
+  quotient) s'impute d'abord sur `RUA`, `RSL` sur le reliquat (comme `3VA` puis `3SL` sur `3UA`), et est
+  réintégré au RFR (simulateur officiel 2026 et 2027 : `RUA` 200 000, `RVA` 100 000 → RFR + 25 000 au
+  quotient + 100 000) ; `RVA` > `RUA` est signalé et plafonné à `RUA`.
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
   saisie de `3VG`/`3AN`, reliquat reportable seulement).
 - **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : régime de
@@ -1466,7 +1468,7 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Seuils** (alertes non bloquantes, brochure IR 2026 p. 168 et 177), par déclarant et par catégorie :
   BIC, chiffre d'affaires global (ventes + services) ≤ 188 700 € et services ≤ 77 700 € ; BNC ≤ 77 700 €
   séparément ; 77 700 € toutes locations meublées non professionnelles et 15 000 € meublés non classés,
-  par foyer ; 120 000 € micro-BA par déclarant (moyenne triennale, appréciée ici sur l'année).
+  par foyer ; 120 000 € micro-BA par colonne, sur la moyenne triennale (voir ci-dessous).
 - **Autres alertes** : abattement jeunes créateurs > 50 000 € ; LMNP probablement soumises aux
   cotisations sociales (recettes 5NG + 5NH > 23 000 € ou net 5NG > 6 123 €, brochure p. 173), à déclarer
   en 5NJ/5NK/5NM. Plafond de RFR du versement libératoire rappelé à l'écran (RFR 2023 inconnu).
@@ -1506,19 +1508,25 @@ meublées et non salariés ») et `Dashboard.tsx`.
 - **Revenus exonérés zonés** (`5XA`, `5HB`, `5KN`, `5KB`, `5NN`, `5NB`, `5HP`, `5QB`, `5TH`, `5HK`) : RFR.
 - **Source étrangère avec crédit d'impôt égal à l'impôt français** (`5AK`, `5DF`, `5UR`, `5EY`, `5XJ`,
   `5XS`) : hors barème, retenus pour le taux effectif (comme 1AF).
-- **Colonnes « personnes à charge »** (64 cases : `5JA`…`5JY`, `5MB`…`5MZ`, `5PA`…`5PX`, `5SA`…`5SX`,
-  `5VA`…`5VH`, `5WI`, `5ZA`/`5ZB`/`5ZO`, `5LK`, `5OT`) : chaque case rejoint les mêmes agrégats que sa
-  jumelle déclarant 1 (`JUMELLES_PAC_CADRE_5`, appariement par l'ordre des champs du simulateur
-  officiel 2026). 63 paires vérifiées à l'identique (RNI, RFR, impôt et PS) ; `5JY` (= `5HG`) exige un
-  bénéfice agricole PAC. Abattement micro, minimum de 305 € et seuils micro appréciés par personne.
+- **Colonnes « personnes à charge »** (75 cases : `5JA`…`5JY`, `5MB`…`5MZ`, `5PA`…`5PY`, `5SA`…`5SZ`,
+  `5VA`…`5VH`, `5WI`, `5WR`, `5ZA`/`5ZB`/`5ZO`, `5ZJ`/`5ZS`, `5LK`, `5OT`, `5CK`, `5FF`, `5GY`, `5MD`) :
+  chaque case rejoint les mêmes agrégats que sa jumelle déclarant 1 (`JUMELLES_PAC_CADRE_5`, appariement
+  par l'ordre des champs du simulateur officiel). Paires vérifiées à l'identique (RNI, RFR, impôt et
+  PS), dont les crédits 8TK `5CK`/`5FF`/`5WR`/`5GY`/`5ZJ`/`5ZS` (aussi dans le contrôle de 8TK), les
+  moins-values `5SZ`/`5MD` et les déficits `5PF`/`5PY`/`5SG` (simulateurs 2026 et 2027) ; `5JY` (= `5HG`)
+  exige un bénéfice agricole PAC. Abattement micro, minimum de 305 € et seuils micro appréciés par
+  personne. `5YE` (déficit LMNP soumis aux cotisations, PAC) n'est pas saisi.
+- **Moyenne triennale du micro-BA** (`5XM`/`5YT`/`5ZT` année N-1, `5YM`/`5YU`/`5ZU` année N-2) :
+  l'abattement de 87 % porte sur la moyenne des recettes de l'année et des années précédentes saisies,
+  N-2 seulement avec N-1 (simulateur officiel 2026 et 2027 : `5XB` 40 000 + `5XM` 70 000 → 55 000 ;
+  + `5YM` 100 000 → 70 000 ; `5YM` sans `5XM` ignorée).
 - **Cases « dont » du réel** (30 cases : `5AQ`/`5BQ`/`5CU`, `5AY`/`5BY`/`5CV`, `5DK`/`5EK`/`5FK`,
   `5DM`/`5EM`/`5FM`, `5UT`/`5VT`/`5VQ`, `5UY`/`5VY`/`5VV`, `5XP`/`5YP`/`5ZP`, `5XH`/`5YH`/`5ZH`,
   `5XY`/`5YY`/`5ZY`, `5VM`/`5WM`/`5ZM`) : déjà comprises dans le bénéfice, sans effet sur le simulateur
   officiel 2026 quand elles accompagnent un bénéfice ; non saisies.
 - **Hors périmètre (acté)** : abattement jeunes agriculteurs (`5HM`, sans effet : plafond épargne retraite
   saisi depuis l'avis), paiement fractionné (`5EA`, `5FA`), durée d'exercice et cessation, ECF, cases
-  « dont » du réel (prélèvement à la source), colonne personne à charge, moyenne triennale du micro-BA
-  (approchée sur l'année, signalée à l'écran), réductions et crédits d'impôt de la 2042-C-PRO.
+  « dont » du réel (prélèvement à la source), réductions et crédits d'impôt de la 2042-C-PRO.
 - **Approximation** : les « revenus nets d'autres sources » du seuil agricole sont approchés par le
   revenu imposable du foyer hors déficit agricole.
 
@@ -2233,7 +2241,9 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
     automatiquement).
   - **Résolu — revenus des personnes à charge (cadre 1, colonnes C/D et I/J)** : les 38 cases
     (salaires 1CJ…1JF, frais réels 1CK/1DK, exonérés 1CC/1CE/1CD/1IH/1PD et symétriques, pensions
-    1CS…1DM, 1CH/1DH) sont saisies sous un bloc « Personnes à charge » replié de chaque formulaire.
+    1CS…1DM, 1CH/1DH), plus 1CF/1DF et 1CL/1DL (crédit égal à l'impôt français, comptés dans le
+    contrôle de 8TK, vérifiés sur les simulateurs 2026 et 2027), sont saisies sous un bloc « Personnes
+    à charge » replié de chaque formulaire.
     Chaque case suit la règle de sa jumelle du déclarant 1 (1CJ ↔ 1AJ, 1IB ↔ 1GB, 1CS ↔ 1AS…),
     vérifié case par case sur le simulateur officiel 2026. Salaires : `calculerDeclarant` appelé pour
     PAC 1 et PAC 2 (abattement 10 %, plancher/plafond et frais réels propres à chacune). Pensions :

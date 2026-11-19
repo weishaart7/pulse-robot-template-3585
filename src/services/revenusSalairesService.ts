@@ -72,6 +72,8 @@ interface RevenusSalairesRow {
   case_1jh: number | string | null;
   case_1pd: number | string | null;
   case_1pe: number | string | null;
+  case_1cf: number | string | null;
+  case_1df: number | string | null;
 }
 
 function toNumberOrNull(value: number | string | null): number | null {
@@ -140,6 +142,8 @@ function rowToRevenusSalaires(row: RevenusSalairesRow): RevenusSalaires {
     case1jh: toNumberOrNull(row.case_1jh),
     case1pd: toNumberOrNull(row.case_1pd),
     case1pe: toNumberOrNull(row.case_1pe),
+    case1cf: toNumberOrNull(row.case_1cf),
+    case1df: toNumberOrNull(row.case_1df),
   };
 }
 
@@ -204,6 +208,8 @@ function revenusSalairesToRow(revenus: RevenusSalaires, userId: string) {
     case_1jh: revenus.case1jh ?? null,
     case_1pd: revenus.case1pd ?? null,
     case_1pe: revenus.case1pe ?? null,
+    case_1cf: revenus.case1cf ?? null,
+    case_1df: revenus.case1df ?? null,
   };
 }
 

@@ -15,7 +15,7 @@ const TEXTE_ALERTE = {
   meubles_cotisations_a_verifier: 'Locations meublées de courte durée au-delà de 23 000 € de recettes ou chambres d\'hôtes au-delà de 6 123 € de revenu : revenus probablement soumis aux cotisations sociales, à déclarer en 5NJ/5NK (micro) ou 5NM (réel), sans prélèvements sociaux.',
   meubles_au_dela_du_seuil: 'Locations meublées non professionnelles au-delà de 77 700 € pour le foyer : régime réel obligatoire si le seuil est dépassé deux années consécutives.',
   meubles_non_classes_au_dela_du_seuil: 'Meublés de tourisme non classés au-delà de 15 000 € pour le foyer : régime réel obligatoire si le seuil est dépassé deux années consécutives.',
-  ba_micro_au_dela_du_seuil: 'Recettes agricoles 2025 au-delà de 120 000 € pour un déclarant : le micro-BA s\'apprécie sur la moyenne des trois années précédentes, à vérifier.',
+  ba_micro_au_dela_du_seuil: 'Moyenne des recettes agricoles au-delà de 120 000 € pour une colonne : le régime micro-BA n\'est plus applicable, à vérifier.',
 } as const;
 
 interface RevenusNonSalariesFormProps {
@@ -208,8 +208,10 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           />
         </SousGroupe>
 
-        <SousGroupe titre="Bénéfices agricoles — régime micro-BA" aide="Recettes brutes de l'année : abattement de 87 % calculé ici, minimum 305 €. L'administration retient la moyenne des recettes 2023-2025 ; le calcul est approché sur la seule année.">
+        <SousGroupe titre="Bénéfices agricoles — régime micro-BA" aide="Recettes brutes de l'année : abattement de 87 % calculé ici, minimum 305 €, sur la moyenne des recettes de l'année et des deux années précédentes saisies (l'année N-2 n'est retenue qu'avec l'année N-1).">
           <MontantLigne label="Recettes brutes (abattement 87 %)" code1="5XB" code2="5YB" value1={rns.case5xb} value2={rns.case5yb} onChange1={v => update('case5xb', v)} onChange2={v => update('case5yb', v)} />
+          <MontantLigne label="Recettes brutes de l'année précédente (moyenne triennale)" code1="5XM" code2="5YT" value1={rns.case5xm ?? null} value2={rns.case5yt ?? null} onChange1={v => update('case5xm', v)} onChange2={v => update('case5yt', v)} />
+          <MontantLigne label="Recettes brutes de l'avant-dernière année (moyenne triennale)" code1="5YM" code2="5YU" value1={rns.case5ym ?? null} value2={rns.case5yu ?? null} onChange1={v => update('case5ym', v)} onChange2={v => update('case5yu', v)} />
           <MontantLigne label="Plus-values nettes à court terme" code1="5HW" code2="5IW" value1={rns.case5hw} value2={rns.case5iw} onChange1={v => update('case5hw', v)} onChange2={v => update('case5iw', v)} />
           <MontantLigne label="Moins-values nettes à court terme" code1="5XO" code2="5YO" value1={rns.case5xo} value2={rns.case5yo} onChange1={v => update('case5xo', v)} onChange2={v => update('case5yo', v)} />
           <MontantLigne label="Plus-values nettes à long terme" code1="5HX" code2="5IX" value1={rns.case5hx} value2={rns.case5ix} onChange1={v => update('case5hx', v)} onChange2={v => update('case5ix', v)} />
@@ -244,7 +246,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           <MontantLigne label="Plus-values à long terme exonérées départ à la retraite" code1="5HG" code2="5IG" value1={rns.case5hg} value2={rns.case5ig} onChange1={v => update('case5hg', v)} onChange2={v => update('case5ig', v)} />
         </SousGroupe>
 
-        <PersonnesAChargeCadre ouvert={(rns.case5ja ?? 0) > 0 || (rns.case5jb ?? 0) > 0 || (rns.case5jc ?? 0) > 0 || (rns.case5jd ?? 0) > 0 || (rns.case5je ?? 0) > 0 || (rns.case5jf ?? 0) > 0 || (rns.case5jp ?? 0) > 0 || (rns.case5jq ?? 0) > 0 || (rns.case5jr ?? 0) > 0 || (rns.case5jv ?? 0) > 0 || (rns.case5jw ?? 0) > 0 || (rns.case5jx ?? 0) > 0 || (rns.case5jy ?? 0) > 0 || (rns.case5lk ?? 0) > 0 || (rns.case5mb ?? 0) > 0 || (rns.case5mc ?? 0) > 0 || (rns.case5me ?? 0) > 0 || (rns.case5mf ?? 0) > 0 || (rns.case5mj ?? 0) > 0 || (rns.case5mn ?? 0) > 0 || (rns.case5mo ?? 0) > 0 || (rns.case5mp ?? 0) > 0 || (rns.case5mq ?? 0) > 0 || (rns.case5mu ?? 0) > 0 || (rns.case5mv ?? 0) > 0 || (rns.case5mx ?? 0) > 0 || (rns.case5my ?? 0) > 0 || (rns.case5mz ?? 0) > 0 || (rns.case5ot ?? 0) > 0 || (rns.case5pa ?? 0) > 0 || (rns.case5pb ?? 0) > 0 || (rns.case5pc ?? 0) > 0 || (rns.case5pe ?? 0) > 0 || (rns.case5pg ?? 0) > 0 || (rns.case5ph ?? 0) > 0 || (rns.case5pi ?? 0) > 0 || (rns.case5pj ?? 0) > 0 || (rns.case5pk ?? 0) > 0 || (rns.case5pl ?? 0) > 0 || (rns.case5pm ?? 0) > 0 || (rns.case5pn ?? 0) > 0 || (rns.case5po ?? 0) > 0 || (rns.case5pp ?? 0) > 0 || (rns.case5pq ?? 0) > 0 || (rns.case5px ?? 0) > 0 || (rns.case5sa ?? 0) > 0 || (rns.case5sb ?? 0) > 0 || (rns.case5sc ?? 0) > 0 || (rns.case5sd ?? 0) > 0 || (rns.case5se ?? 0) > 0 || (rns.case5sf ?? 0) > 0 || (rns.case5sj ?? 0) > 0 || (rns.case5sl ?? 0) > 0 || (rns.case5sx ?? 0) > 0 || (rns.case5va ?? 0) > 0 || (rns.case5vb ?? 0) > 0 || (rns.case5vc ?? 0) > 0 || (rns.case5ve ?? 0) > 0 || (rns.case5vf ?? 0) > 0 || (rns.case5vh ?? 0) > 0 || (rns.case5wi ?? 0) > 0 || (rns.case5za ?? 0) > 0 || (rns.case5zb ?? 0) > 0 || (rns.case5zo ?? 0) > 0}>
+        <PersonnesAChargeCadre ouvert={(rns.case5ja ?? 0) > 0 || (rns.case5jb ?? 0) > 0 || (rns.case5jc ?? 0) > 0 || (rns.case5jd ?? 0) > 0 || (rns.case5je ?? 0) > 0 || (rns.case5jf ?? 0) > 0 || (rns.case5jp ?? 0) > 0 || (rns.case5jq ?? 0) > 0 || (rns.case5jr ?? 0) > 0 || (rns.case5jv ?? 0) > 0 || (rns.case5jw ?? 0) > 0 || (rns.case5jx ?? 0) > 0 || (rns.case5jy ?? 0) > 0 || (rns.case5lk ?? 0) > 0 || (rns.case5mb ?? 0) > 0 || (rns.case5mc ?? 0) > 0 || (rns.case5me ?? 0) > 0 || (rns.case5mf ?? 0) > 0 || (rns.case5mj ?? 0) > 0 || (rns.case5mn ?? 0) > 0 || (rns.case5mo ?? 0) > 0 || (rns.case5mp ?? 0) > 0 || (rns.case5mq ?? 0) > 0 || (rns.case5mu ?? 0) > 0 || (rns.case5mv ?? 0) > 0 || (rns.case5mx ?? 0) > 0 || (rns.case5my ?? 0) > 0 || (rns.case5mz ?? 0) > 0 || (rns.case5ot ?? 0) > 0 || (rns.case5pa ?? 0) > 0 || (rns.case5pb ?? 0) > 0 || (rns.case5pc ?? 0) > 0 || (rns.case5pe ?? 0) > 0 || (rns.case5pg ?? 0) > 0 || (rns.case5ph ?? 0) > 0 || (rns.case5pi ?? 0) > 0 || (rns.case5pj ?? 0) > 0 || (rns.case5pk ?? 0) > 0 || (rns.case5pl ?? 0) > 0 || (rns.case5pm ?? 0) > 0 || (rns.case5pn ?? 0) > 0 || (rns.case5po ?? 0) > 0 || (rns.case5pp ?? 0) > 0 || (rns.case5pq ?? 0) > 0 || (rns.case5px ?? 0) > 0 || (rns.case5sa ?? 0) > 0 || (rns.case5sb ?? 0) > 0 || (rns.case5sc ?? 0) > 0 || (rns.case5sd ?? 0) > 0 || (rns.case5se ?? 0) > 0 || (rns.case5sf ?? 0) > 0 || (rns.case5sj ?? 0) > 0 || (rns.case5sl ?? 0) > 0 || (rns.case5sx ?? 0) > 0 || (rns.case5va ?? 0) > 0 || (rns.case5vb ?? 0) > 0 || (rns.case5vc ?? 0) > 0 || (rns.case5ve ?? 0) > 0 || (rns.case5vf ?? 0) > 0 || (rns.case5vh ?? 0) > 0 || (rns.case5wi ?? 0) > 0 || (rns.case5za ?? 0) > 0 || (rns.case5zb ?? 0) > 0 || (rns.case5zo ?? 0) > 0 || (rns.case5ck ?? 0) > 0 || (rns.case5ff ?? 0) > 0 || (rns.case5wr ?? 0) > 0 || (rns.case5gy ?? 0) > 0 || (rns.case5zj ?? 0) > 0 || (rns.case5zs ?? 0) > 0 || (rns.case5sz ?? 0) > 0 || (rns.case5md ?? 0) > 0 || (rns.case5pf ?? 0) > 0 || (rns.case5py ?? 0) > 0 || (rns.case5sg ?? 0) > 0 || (rns.case5zt ?? 0) > 0 || (rns.case5zu ?? 0) > 0}>
           <SousGroupe titre="Micro-entrepreneur ayant opté pour le versement libératoire">
             <SingleMontantLigne label="Ventes de marchandises et assimilées" extra="chiffre d'affaires 2025, abattement 71 %" code="5VA" value={rns.case5va ?? null} onChange={v => update('case5va', v)} />
             <SingleMontantLigne label="Prestations de services et locations meublées" extra="chiffre d'affaires 2025, abattement 50 %" code="5VB" value={rns.case5vb ?? null} onChange={v => update('case5vb', v)} />
@@ -282,21 +284,27 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5ME" value={rns.case5me ?? null} onChange={v => update('case5me', v)} />
             <SingleMontantLigne label="Produits de brevets taxables à 10 %" code="5WI" value={rns.case5wi ?? null} onChange={v => update('case5wi', v)} />
             <SingleMontantLigne label="Revenus exonérés (régimes zonés)" code="5MB" value={rns.case5mb ?? null} onChange={v => update('case5mb', v)} />
+            <SingleMontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code="5FF" value={rns.case5ff ?? null} onChange={v => update('case5ff', v)} />
           </SousGroupe>
           <SousGroupe titre="BIC non professionnels — plus-values et revenus exonérés du micro-BIC">
             <SingleMontantLigne label="Plus-values nettes à court terme" code="5PX" value={rns.case5px ?? null} onChange={v => update('case5px', v)} />
+            <SingleMontantLigne label="Moins-values nettes à court terme" code="5SZ" value={rns.case5sz ?? null} onChange={v => update('case5sz', v)} />
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5PQ" value={rns.case5pq ?? null} onChange={v => update('case5pq', v)} />
             <SingleMontantLigne label="Revenus nets exonérés (régimes zonés)" code="5PN" value={rns.case5pn ?? null} onChange={v => update('case5pn', v)} />
           </SousGroupe>
           <SousGroupe titre="BIC non professionnels — régime du bénéfice réel">
             <SingleMontantLigne label="Revenus imposables" code="5PC" value={rns.case5pc ?? null} onChange={v => update('case5pc', v)} />
+            <SingleMontantLigne label="Déficits" code="5PF" value={rns.case5pf ?? null} onChange={v => update('case5pf', v)} />
+            <SingleMontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code="5WR" value={rns.case5wr ?? null} onChange={v => update('case5wr', v)} />
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5PE" value={rns.case5pe ?? null} onChange={v => update('case5pe', v)} />
             <SingleMontantLigne label="Produits de brevets taxables à 10 %" code="5VF" value={rns.case5vf ?? null} onChange={v => update('case5vf', v)} />
             <SingleMontantLigne label="Revenus exonérés (régimes zonés)" code="5PB" value={rns.case5pb ?? null} onChange={v => update('case5pb', v)} />
           </SousGroupe>
           <SousGroupe titre="Locations meublées non professionnelles — régime du bénéfice réel">
             <SingleMontantLigne label="Revenus imposables" code="5PA" value={rns.case5pa ?? null} onChange={v => update('case5pa', v)} />
+            <SingleMontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code="5GY" value={rns.case5gy ?? null} onChange={v => update('case5gy', v)} />
             <SingleMontantLigne label="Revenus soumis aux cotisations sociales" code="5PM" value={rns.case5pm ?? null} onChange={v => update('case5pm', v)} />
+            <SingleMontantLigne label="Déficits" code="5PY" value={rns.case5py ?? null} onChange={v => update('case5py', v)} />
           </SousGroupe>
           <SousGroupe titre="BNC professionnels — plus-values et revenus exonérés du micro-BNC">
             <SingleMontantLigne label="Plus-values nettes à court terme" code="5JV" value={rns.case5jv ?? null} onChange={v => update('case5jv', v)} />
@@ -306,6 +314,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           </SousGroupe>
           <SousGroupe titre="BNC professionnels — régime de la déclaration contrôlée">
             <SingleMontantLigne label="Revenus imposables" code="5SC" value={rns.case5sc ?? null} onChange={v => update('case5sc', v)} />
+            <SingleMontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code="5ZJ" value={rns.case5zj ?? null} onChange={v => update('case5zj', v)} />
             <SingleMontantLigne label="Déficits, y compris inventeurs non professionnels" code="5SE" value={rns.case5se ?? null} onChange={v => update('case5se', v)} />
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5SD" value={rns.case5sd ?? null} onChange={v => update('case5sd', v)} />
             <SingleMontantLigne label="Jeunes créateurs : abattement de 50 % (déjà déduit des revenus imposables)" code="5SL" value={rns.case5sl ?? null} onChange={v => update('case5sl', v)} />
@@ -314,11 +323,14 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           </SousGroupe>
           <SousGroupe titre="BNC non professionnels — plus-values et revenus exonérés du micro-BNC">
             <SingleMontantLigne label="Plus-values nettes à court terme" code="5MY" value={rns.case5my ?? null} onChange={v => update('case5my', v)} />
+            <SingleMontantLigne label="Moins-values nettes à court terme" code="5MD" value={rns.case5md ?? null} onChange={v => update('case5md', v)} />
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5MV" value={rns.case5mv ?? null} onChange={v => update('case5mv', v)} />
             <SingleMontantLigne label="Revenus nets exonérés (régimes zonés)" code="5VH" value={rns.case5vh ?? null} onChange={v => update('case5vh', v)} />
           </SousGroupe>
           <SousGroupe titre="BNC non professionnels — régime de la déclaration contrôlée">
             <SingleMontantLigne label="Revenus imposables" code="5SF" value={rns.case5sf ?? null} onChange={v => update('case5sf', v)} />
+            <SingleMontantLigne label="Déficits" code="5SG" value={rns.case5sg ?? null} onChange={v => update('case5sg', v)} />
+            <SingleMontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code="5ZS" value={rns.case5zs ?? null} onChange={v => update('case5zs', v)} />
             <SingleMontantLigne label="Jeunes créateurs : abattement de 50 % (déjà déduit des revenus imposables)" code="5SX" value={rns.case5sx ?? null} onChange={v => update('case5sx', v)} />
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5OT" value={rns.case5ot ?? null} onChange={v => update('case5ot', v)} />
             <SingleMontantLigne label="Inventeurs, auteurs de logiciels : produits taxables à 10 %" code="5SJ" value={rns.case5sj ?? null} onChange={v => update('case5sj', v)} />
@@ -327,6 +339,8 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           </SousGroupe>
           <SousGroupe titre="Bénéfices agricoles — régime micro-BA">
             <SingleMontantLigne label="Recettes brutes (abattement 87 %)" code="5ZB" value={rns.case5zb ?? null} onChange={v => update('case5zb', v)} />
+            <SingleMontantLigne label="Recettes brutes de l'année précédente (moyenne triennale)" code="5ZT" value={rns.case5zt ?? null} onChange={v => update('case5zt', v)} />
+            <SingleMontantLigne label="Recettes brutes de l'avant-dernière année (moyenne triennale)" code="5ZU" value={rns.case5zu ?? null} onChange={v => update('case5zu', v)} />
             <SingleMontantLigne label="Plus-values nettes à court terme" code="5JW" value={rns.case5jw ?? null} onChange={v => update('case5jw', v)} />
             <SingleMontantLigne label="Moins-values nettes à court terme" code="5ZO" value={rns.case5zo ?? null} onChange={v => update('case5zo', v)} />
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5JX" value={rns.case5jx ?? null} onChange={v => update('case5jx', v)} />
@@ -339,6 +353,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
             <SingleMontantLigne label="Plus-values nettes à long terme" code="5JE" value={rns.case5je ?? null} onChange={v => update('case5je', v)} />
             <SingleMontantLigne label="Produits de brevets taxables à 10 %" code="5JA" value={rns.case5ja ?? null} onChange={v => update('case5ja', v)} />
             <SingleMontantLigne label="Revenus exonérés (régimes zonés)" code="5JB" value={rns.case5jb ?? null} onChange={v => update('case5jb', v)} />
+            <SingleMontantLigne label="Revenus de source étrangère avec crédit d'impôt égal à l'impôt français" code="5CK" value={rns.case5ck ?? null} onChange={v => update('case5ck', v)} />
           </SousGroupe>
           <SousGroupe titre="BA, BIC, BNC à imposer aux prélèvements sociaux">
             <SingleMontantLigne label="Plus-values à long terme exonérées départ à la retraite" code="5JY" value={rns.case5jy ?? null} onChange={v => update('case5jy', v)} />

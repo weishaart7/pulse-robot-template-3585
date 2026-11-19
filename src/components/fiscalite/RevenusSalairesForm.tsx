@@ -222,7 +222,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
           checked1={revenus.case1gk} checked2={revenus.case1gl}
           onChange1={v => update('case1gk', v)} onChange2={v => update('case1gl', v)}
         />
-        <PersonnesAChargeCadre ouvert={(revenus.case1cj ?? 0) > 0 || (revenus.case1dj ?? 0) > 0 || (revenus.case1ca ?? 0) > 0 || (revenus.case1da ?? 0) > 0 || (revenus.case1ih ?? 0) > 0 || (revenus.case1jh ?? 0) > 0 || (revenus.case1pd ?? 0) > 0 || (revenus.case1pe ?? 0) > 0 || (revenus.case1cd ?? 0) > 0 || (revenus.case1dd ?? 0) > 0 || (revenus.case1cp ?? 0) > 0 || (revenus.case1dp ?? 0) > 0 || (revenus.case1cg ?? 0) > 0 || (revenus.case1dg ?? 0) > 0 || (revenus.case1ib ?? 0) > 0 || (revenus.case1jb ?? 0) > 0 || (revenus.case1if ?? 0) > 0 || (revenus.case1jf ?? 0) > 0 || (revenus.case1ck ?? 0) > 0 || (revenus.case1dk ?? 0) > 0}>
+        <PersonnesAChargeCadre ouvert={(revenus.case1cj ?? 0) > 0 || (revenus.case1dj ?? 0) > 0 || (revenus.case1ca ?? 0) > 0 || (revenus.case1da ?? 0) > 0 || (revenus.case1ih ?? 0) > 0 || (revenus.case1jh ?? 0) > 0 || (revenus.case1pd ?? 0) > 0 || (revenus.case1pe ?? 0) > 0 || (revenus.case1cd ?? 0) > 0 || (revenus.case1dd ?? 0) > 0 || (revenus.case1cp ?? 0) > 0 || (revenus.case1dp ?? 0) > 0 || (revenus.case1cg ?? 0) > 0 || (revenus.case1dg ?? 0) > 0 || (revenus.case1ib ?? 0) > 0 || (revenus.case1jb ?? 0) > 0 || (revenus.case1if ?? 0) > 0 || (revenus.case1jf ?? 0) > 0 || (revenus.case1ck ?? 0) > 0 || (revenus.case1dk ?? 0) > 0 || (revenus.case1cf ?? 0) > 0 || (revenus.case1df ?? 0) > 0}>
           <DeclarantsHeader colonne1="Personne 1" colonne2="Personne 2" />
           <MontantLigne
             label="Traitements et salaires"
@@ -259,6 +259,13 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
             code1="1CP" code2="1DP"
             value1={revenus.case1cp ?? null} value2={revenus.case1dp ?? null}
             onChange1={v => update('case1cp', v)} onChange2={v => update('case1dp', v)}
+          />
+          <MontantLigne
+            label="Salaires de source étrangère avec crédit d'impôt égal à l'impôt français"
+            extra="report de la 2047"
+            code1="1CF" code2="1DF"
+            value1={revenus.case1cf ?? null} value2={revenus.case1df ?? null}
+            onChange1={v => update('case1cf', v)} onChange2={v => update('case1df', v)}
           />
           <MontantLigne
             label="Autres salaires imposables de source étrangère"

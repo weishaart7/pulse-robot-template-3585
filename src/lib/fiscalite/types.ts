@@ -113,6 +113,9 @@ export interface RevenusSalairesInput {
   case1jh?: number | null;
   case1pd?: number | null;
   case1pe?: number | null;
+  /** Personnes à charge : salaires de source étrangère ouvrant droit au crédit égal à l'impôt français (jumelles de 1AF/1BF). */
+  case1cf?: number | null;
+  case1df?: number | null;
 }
 
 export interface GainsActionnariatSalarieInput {
@@ -182,6 +185,9 @@ export interface PensionsRetraitesRentesInput {
   case1do?: number | null;
   case1cm?: number | null;
   case1dm?: number | null;
+  /** Personnes à charge : pensions de source étrangère ouvrant droit au crédit égal à l'impôt français (jumelles de 1AL/1BL). */
+  case1cl?: number | null;
+  case1dl?: number | null;
 }
 
 export interface RevenusExoneresTauxEffectifInput {
@@ -331,6 +337,8 @@ export interface PlusValuesGainsDiversInput {
   caseRua?: number | null;
   caseNua?: number | null;
   caseRsl?: number | null;
+  /** Abattement fixe départ à la retraite d'un dirigeant (3VA) sur la plus-value au quotient RUA */
+  caseRva?: number | null;
 }
 
 /**
@@ -742,6 +750,27 @@ export interface RevenusNonSalariesInput {
   case5za?: number | null;
   case5zb?: number | null;
   case5zo?: number | null;
+  /** Personnes à charge, ajoutées après la campagne 2042 de novembre 2026 (simulateur officiel 2026 et 2027) :
+   * crédit égal à l'impôt français (5CK BA, 5FF BIC pro, 5WR BIC non pro, 5GY LMNP, 5ZJ BNC pro, 5ZS BNC non pro),
+   * moins-values à court terme (5SZ micro-BIC non pro, 5MD micro-BNC non pro), déficits (5PF BIC non pro, 5PY LMNP, 5SG BNC non pro). */
+  case5ck?: number | null;
+  case5ff?: number | null;
+  case5wr?: number | null;
+  case5gy?: number | null;
+  case5zj?: number | null;
+  case5zs?: number | null;
+  case5sz?: number | null;
+  case5md?: number | null;
+  case5pf?: number | null;
+  case5py?: number | null;
+  case5sg?: number | null;
+  /** Micro-BA, moyenne triennale : recettes de l'année N-1 (5XM/5YT/5ZT) et N-2 (5YM/5YU/5ZU), déclarant 1 / déclarant 2 / personnes à charge. */
+  case5xm?: number | null;
+  case5yt?: number | null;
+  case5zt?: number | null;
+  case5ym?: number | null;
+  case5yu?: number | null;
+  case5zu?: number | null;
 }
 
 /**

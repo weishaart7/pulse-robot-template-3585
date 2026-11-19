@@ -495,7 +495,8 @@ export function useFiscalOverview(): FiscalOverview {
       const prelevementSourceDivers = calculerPrelevementSourceDivers(prelevementSourceInput);
       const nonSalariesInput = nonSalaries ?? REVENUS_NON_SALARIES_VIDE;
       const fonciers2042Input = fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT;
-      const totalCategories8TK = [revenusInput.case1af, revenusInput.case1bf, pensionsInput.case1al, pensionsInput.case1bl,
+      const totalCategories8TK = [revenusInput.case1af, revenusInput.case1bf, revenusInput.case1cf, revenusInput.case1df,
+        pensionsInput.case1al, pensionsInput.case1bl, pensionsInput.case1cl, pensionsInput.case1dl,
         fonciers2042Input.case4bk, fonciers2042Input.case4bl,
         ...CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5.map(cle => nonSalariesInput[cle])]
         .reduce<number>((t, v) => t + Math.max(0, v ?? 0), 0);

@@ -166,8 +166,9 @@ export function calculerPensionsRetraitesRentes(
   const pensionEtrangere1 = input.case1al ?? 0;
   const pensionEtrangere2 = input.case1bl ?? 0;
   // Bases imposables (1AL compris) et exonérées (1AH…1DH) par personne : D1, D2, PAC 1, PAC 2.
-  const imposables = [pensionDeclarant1 + pensionEtrangere1, pensionDeclarant2 + pensionEtrangere2, pensionPac1, pensionPac2];
-  const etrangeres = [pensionEtrangere1, pensionEtrangere2, 0, 0];
+  // 1CL/1DL : pensions étrangères des personnes à charge, jumelles de 1AL/1BL (simulateur officiel 2026 et 2027).
+  const etrangeres = [pensionEtrangere1, pensionEtrangere2, input.case1cl ?? 0, input.case1dl ?? 0];
+  const imposables = [pensionDeclarant1, pensionDeclarant2, pensionPac1, pensionPac2].map((b, i) => b + etrangeres[i]);
   const exonerees = [pensionsExonerees.case1ah, pensionsExonerees.case1bh, pensionsExonerees.case1ch, pensionsExonerees.case1dh]
     .map(v => Math.max(0, v ?? 0));
   // Plafond foyer imputé d'abord sur les pensions imposables ; les pensions exonérées retenues pour le

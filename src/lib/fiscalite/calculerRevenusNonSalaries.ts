@@ -69,7 +69,9 @@ export function taxeAgentGeneral(indemnite: number): number {
 
 /** Cadre 5 : revenus de source étrangère ouvrant droit au crédit d'impôt égal à l'impôt français. */
 export const CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5 = ['case5ak', 'case5bk', 'case5df', 'case5ef', 'case5ur', 'case5vr',
-  'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys'] as const;
+  'case5ey', 'case5fy', 'case5xj', 'case5yj', 'case5xs', 'case5ys',
+  // Personnes à charge (simulateur officiel 2026 et 2027 : même crédit que la jumelle déclarant).
+  'case5ck', 'case5ff', 'case5wr', 'case5gy', 'case5zj', 'case5zs'] as const;
 
 export const REVENUS_NON_SALARIES_VIDE: RevenusNonSalariesInput = {
   case5ta: null, case5ua: null, case5tb: null, case5ub: null, case5te: null, case5ue: null, case5ko: null, case5lo: null,
@@ -104,7 +106,9 @@ type Cle = keyof RevenusNonSalariesInput;
 /**
  * Colonnes « personnes à charge » du cadre 5 et leur jumelle déclarant 1 (ordre des champs du simulateur
  * officiel 2026) : chaque case PAC rejoint les mêmes agrégats que sa jumelle — 63 paires vérifiées à
- * l'identique (RNI, RFR, impôt et PS), 5JY avec un bénéfice agricole PAC (= 5HG).
+ * l'identique (RNI, RFR, impôt et PS), 5JY avec un bénéfice agricole PAC (= 5HG) ; 11 paires ajoutées en
+ * novembre 2026 (crédit 8TK 5CK…5ZS, moins-values 5SZ/5MD, déficits 5PF/5PY/5SG), vérifiées sur les
+ * simulateurs officiels 2026 et 2027.
  */
 export const JUMELLES_PAC_CADRE_5: Record<string, string> = {
   case5ja: 'case5ha',
@@ -171,6 +175,17 @@ export const JUMELLES_PAC_CADRE_5: Record<string, string> = {
   case5za: 'case5xa',
   case5zb: 'case5xb',
   case5zo: 'case5xo',
+  case5ck: 'case5ak',
+  case5ff: 'case5df',
+  case5wr: 'case5ur',
+  case5gy: 'case5ey',
+  case5zj: 'case5xj',
+  case5zs: 'case5xs',
+  case5sz: 'case5iu',
+  case5md: 'case5ju',
+  case5pf: 'case5nf',
+  case5py: 'case5ny',
+  case5sg: 'case5jj',
 };
 type Imposition = 'bareme' | 'versement_liberatoire';
 
@@ -326,23 +341,31 @@ export function calculerRevenusNonSalaries(
   // Non professionnels : déficits imputables seulement sur la même catégorie (plancher 0).
   const bicNonPro = Math.max(0, micro(['case5no', 'case5po', 'case5oo', 'case5np', 'case5pp', 'case5op'])
     + somme(input, ['case5nx', 'case5px', 'case5ox', 'case5nc', 'case5pc', 'case5oc'])
-    - somme(input, ['case5iu', 'case5rz', 'case5nf', 'case5of', 'case5rn', 'case5ro', 'case5rp', 'case5rq', 'case5rr', 'case5rw']));
+    - somme(input, ['case5iu', 'case5rz', 'case5sz', 'case5nf', 'case5of', 'case5pf', 'case5rn', 'case5ro', 'case5rp', 'case5rq', 'case5rr', 'case5rw']));
   const bncNonPro = Math.max(0, micro(['case5ku', 'case5mu', 'case5lu'])
     + somme(input, ['case5ky', 'case5my', 'case5ly', 'case5jg', 'case5sf', 'case5rf'])
-    - somme(input, ['case5ju', 'case5ld', 'case5jj', 'case5rg', 'case5ht', 'case5it', 'case5jt', 'case5kt', 'case5lt', 'case5mt']));
+    - somme(input, ['case5ju', 'case5ld', 'case5md', 'case5jj', 'case5rg', 'case5sg', 'case5ht', 'case5it', 'case5jt', 'case5kt', 'case5lt', 'case5mt']));
 
   // LMNP : déficits imputables sur les seuls revenus LMNP (10 ans).
   const lmnpSansCotisations = micro(['case5ng', 'case5pg', 'case5og', 'case5nh', 'case5ph', 'case5oh', 'case5ni', 'case5pi', 'case5oi'])
     + somme(input, ['case5na', 'case5pa', 'case5oa']);
   const lmnpCotisations = micro(['case5nj', 'case5pj', 'case5oj', 'case5nk', 'case5pk', 'case5ok', 'case5nl', 'case5pl', 'case5ol'])
     + somme(input, ['case5nm', 'case5pm', 'case5om']);
-  const deficitsLmnp = somme(input, ['case5ny', 'case5oy', 'case5ga', 'case5gb', 'case5gc', 'case5gd', 'case5ge', 'case5gf', 'case5gg', 'case5gh', 'case5gi', 'case5gj']);
+  const deficitsLmnp = somme(input, ['case5ny', 'case5oy', 'case5py', 'case5ga', 'case5gb', 'case5gc', 'case5gd', 'case5ge', 'case5gf', 'case5gg', 'case5gh', 'case5gi', 'case5gj']);
   const lmnpSansCotisationsNet = Math.max(0, lmnpSansCotisations - deficitsLmnp);
   const lmnp = Math.max(0, lmnpSansCotisations + lmnpCotisations - deficitsLmnp - somme(input, ['case5we', 'case5xe']));
 
+  // Micro-BA : abattement sur la moyenne des recettes de l'année et des années précédentes saisies (N-1
+  // obligatoire, N-2 seulement avec N-1), simulateur officiel 2026 et 2027 : 5XB 40 000 + 5XM 70 000 →
+  // moyenne 55 000 ; + 5YM 100 000 → 70 000 ; 5YM sans 5XM ignorée.
+  const recettesMicroBA = (n: Cle, n1: Cle, n2: Cle) => {
+    if (v(n) <= 0 || v(n1) <= 0) return v(n);
+    return v(n2) > 0 ? (v(n) + v(n1) + v(n2)) / 3 : (v(n) + v(n1)) / 2;
+  };
+  const recettesBA = [recettesMicroBA('case5xb', 'case5xm', 'case5ym'), recettesMicroBA('case5yb', 'case5yt', 'case5yu'),
+    recettesMicroBA('case5zb', 'case5zt', 'case5zu')];
   // Bénéfices agricoles : déficits antérieurs sur les seuls BA ; déficit de l'année traité par l'appelant.
-  const baBenefice = netMicro(v('case5xb'), ABATTEMENT_MICRO_BA) + netMicro(v('case5yb'), ABATTEMENT_MICRO_BA)
-    + netMicro(v('case5zb'), ABATTEMENT_MICRO_BA)
+  const baBenefice = recettesBA.reduce((t, r) => t + netMicro(r, ABATTEMENT_MICRO_BA), 0)
     + somme(input, ['case5hw', 'case5jw', 'case5iw', 'case5hc', 'case5jc', 'case5ic', 'case5hd', 'case5jd', 'case5id'])
     - somme(input, ['case5xo', 'case5zo', 'case5yo']);
   // Les moins-values à court terme du micro-BA (5XO/5YO) s'imputent sur le revenu global : un BA négatif est conservé.
@@ -383,7 +406,7 @@ export function calculerRevenusNonSalaries(
   const meubles = meublesNonClasses + somme(input, ['case5ng', 'case5pg', 'case5og', 'case5ni', 'case5pi', 'case5oi', 'case5nj', 'case5pj', 'case5oj', 'case5nl', 'case5pl', 'case5ol']);
   if (meubles > seuils.seuilMicroMeubles) alertes.push('meubles_au_dela_du_seuil');
   if (meublesNonClasses > seuils.seuilMicroMeublesNonClasses) alertes.push('meubles_non_classes_au_dela_du_seuil');
-  if (v('case5xb') > seuils.seuilMicroBA || v('case5yb') > seuils.seuilMicroBA || v('case5zb') > seuils.seuilMicroBA) alertes.push('ba_micro_au_dela_du_seuil');
+  if (recettesBA.some(r => r > seuils.seuilMicroBA)) alertes.push('ba_micro_au_dela_du_seuil');
 
   return {
     totalNetImposable: bicPro + bncPro + bicNonPro + bncNonPro + lmnp + ba,

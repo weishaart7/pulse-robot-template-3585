@@ -148,8 +148,12 @@ export function calculerPlusValuesGainsDivers(
   const reportsAvantAbattement = (input.case3wn ?? 0) + (input.case3xn ?? 0);
 
   // Quotient (RVG/RUA, coefficient NVG/NUA = 4) : seulement avec l'option barème ; abattements réintégrés au RFR.
+  // RVA (abattement fixe dirigeant) s'impute d'abord sur RUA, RSL sur le reliquat, comme 3VA puis 3SL sur 3UA
+  // (simulateur officiel 2026 et 2027 : RUA 200 000, RVA 100 000 → RFR + 25 000 au quotient + 100 000).
+  const abattementFixeQuotient = optionBareme ? Math.min(input.caseRva ?? 0, input.caseRua ?? 0) : 0;
   const abattementQuotient = optionBareme
-    ? Math.min(input.caseRsg ?? 0, input.caseRvg ?? 0) + Math.min(input.caseRsl ?? 0, input.caseRua ?? 0)
+    ? Math.min(input.caseRsg ?? 0, input.caseRvg ?? 0) + abattementFixeQuotient
+      + Math.min(input.caseRsl ?? 0, Math.max(0, (input.caseRua ?? 0) - abattementFixeQuotient))
     : 0;
   const revenuExceptionnelQuotient = optionBareme
     ? Math.max(0, (input.caseRvg ?? 0) + (input.caseRua ?? 0) - abattementQuotient)
@@ -216,15 +220,18 @@ export function controlerSaisiePlusValues(input: PlusValuesGainsDiversInput): st
   if (abattementFixe > (input.case3ua ?? 0)) {
     alertes.push("L'abattement fixe 3VA dépasse la plus-value 3UA");
   }
-  const totalAbattementsFixes = abattementFixe + (input.case3tk ?? 0) + (input.case3tm ?? 0);
+  const totalAbattementsFixes = abattementFixe + (input.case3tk ?? 0) + (input.case3tm ?? 0) + (input.caseRva ?? 0);
   if (totalAbattementsFixes > PLAFOND_ABATTEMENT_FIXE_DIRIGEANT) {
-    alertes.push('Abattements fixes 3VA + 3TK + 3TM supérieurs à 500 000 € (600 000 € seulement pour une cession à de jeunes agriculteurs)');
+    alertes.push('Abattements fixes 3VA + 3TK + 3TM + RVA supérieurs à 500 000 € (600 000 € seulement pour une cession à de jeunes agriculteurs)');
   }
   const reports = (input.case3wn ?? 0) + (input.case3xn ?? 0);
   if ((input.case3wp ?? 0) > 0 && reports <= 0) alertes.push('3WP exige le montant avant abattement en 3WN ou 3XN');
   if (reports > 0 && (input.case3wp ?? 0) <= 0) alertes.push('3WN ou 3XN exige les plus-values imposables en 3WP');
   if ((input.caseRvg ?? 0) > 0 && input.caseNvg !== 4) alertes.push('NVG doit valoir 4 quand RVG est rempli');
   if ((input.caseRua ?? 0) > 0 && input.caseNua !== 4) alertes.push('NUA doit valoir 4 quand RUA est rempli');
-  if ((input.caseRua ?? 0) > 0 && (input.caseRsl ?? 0) <= 0) alertes.push("RUA exige l'abattement renforcé RSL (ou l'abattement fixe RVA, non géré)");
+  if ((input.caseRua ?? 0) > 0 && (input.caseRsl ?? 0) <= 0 && (input.caseRva ?? 0) <= 0) {
+    alertes.push("RUA exige l'abattement renforcé RSL ou l'abattement fixe RVA");
+  }
+  if ((input.caseRva ?? 0) > (input.caseRua ?? 0)) alertes.push("L'abattement fixe RVA dépasse la plus-value RUA");
   return alertes;
 }

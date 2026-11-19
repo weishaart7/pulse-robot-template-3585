@@ -10,7 +10,7 @@ const CASES_NUMERIQUES = [
   'case3an', 'case3bn', 'case3vz', 'case3vw',
   'case3sj', 'case3tj', 'case3tk', 'case3sk', 'case3tl', 'case3tm', 'case3pc', 'case3pe', 'case3vq', 'case3vr', 'case3vc', 'case3ex',
   'case3wi', 'case3wj', 'case3wn', 'case3xn', 'case3wp', 'case3wr', 'case3ws', 'case3wt',
-  'caseRvg', 'caseNvg', 'caseRsg', 'caseRua', 'caseNua', 'caseRsl',
+  'caseRvg', 'caseNvg', 'caseRsg', 'caseRua', 'caseNua', 'caseRsl', 'caseRva',
 ] as const;
 
 /** case3vg → case_3vg, caseRvg → case_rvg (colonne Supabase). */

@@ -413,21 +413,22 @@ export function calculerRevenuSalaires(
     + (input.case1bq ?? 0) + (input.case1ey ?? 0) + (input.case1dn ?? 0) + (input.case1pc ?? 0);
 
   // Personnes à charge : jumelles du déclarant 1 (1CJ ↔ 1AJ, 1CA ↔ 1AA, 1CP ↔ 1AP, 1CG ↔ 1AG,
-  // 1IB ↔ 1GB, 1IF ↔ 1GF, 1CK ↔ 1AK, 1CD ↔ 1AD, 1IH ↔ 1GH, 1PD ↔ 1PB), seuil PPV standard.
+  // 1IB ↔ 1GB, 1IF ↔ 1GF, 1CK ↔ 1AK, 1CD ↔ 1AD, 1IH ↔ 1GH, 1PD ↔ 1PB, 1CF ↔ 1AF), seuil PPV standard.
   const pac = (j: number | null | undefined, a: number | null | undefined, p: number | null | undefined,
     g: number | null | undefined, b: number | null | undefined, f: number | null | undefined,
     k: number | null | undefined, d: number | null | undefined, h: number | null | undefined,
-    pb: number | null | undefined, cc: number | null | undefined, ce: number | null | undefined) => {
+    pb: number | null | undefined, cc: number | null | undefined, ce: number | null | undefined,
+    cf: number | null | undefined) => {
     const surplusH = Math.max(0, (h ?? 0) - PLAFOND_EXONERATION_1GH);
     const surplusD = Math.max(0, (d ?? 0) - PLAFOND_EXONERATION_1AD);
     const remunerations = (j ?? 0) + (a ?? 0) + (p ?? 0) + (g ?? 0) + (b ?? 0) + (f ?? 0) + surplusH + surplusD;
     const exonereRFR = Math.min(h ?? 0, PLAFOND_EXONERATION_1GH) + Math.min(d ?? 0, PLAFOND_EXONERATION_1AD) + (pb ?? 0);
-    return calculerDeclarant(remunerations, 0, k ?? null, 0, cc ?? 0, ce ?? null, 0, exonereRFR, abattement);
+    return calculerDeclarant(remunerations, 0, k ?? null, cf ?? 0, cc ?? 0, ce ?? null, 0, exonereRFR, abattement);
   };
   const pac1 = pac(input.case1cj, input.case1ca, input.case1cp, input.case1cg, input.case1ib, input.case1if,
-    input.case1ck, input.case1cd, input.case1ih, input.case1pd, exoneres?.case1cc, exoneres?.case1ce);
+    input.case1ck, input.case1cd, input.case1ih, input.case1pd, exoneres?.case1cc, exoneres?.case1ce, input.case1cf);
   const pac2 = pac(input.case1dj, input.case1da, input.case1dp, input.case1dg, input.case1jb, input.case1jf,
-    input.case1dk, input.case1dd, input.case1jh, input.case1pe, exoneres?.case1dc, exoneres?.case1de);
+    input.case1dk, input.case1dd, input.case1jh, input.case1pe, exoneres?.case1dc, exoneres?.case1de, input.case1df);
 
   const declarant1 = calculerDeclarant(
     remunerations1, input.case1ga ?? 0, input.case1ak ?? null, input.case1af ?? 0, exoneres?.case1ac ?? 0,
@@ -440,7 +441,8 @@ export function calculerRevenuSalaires(
 
   const indemnitesPrejudiceMoral = (input.case1pm ?? 0) + (input.case1qm ?? 0);
 
-  const revenuCreditImpotEgalImpotFrancais = declarant1.netImposableCreditImpot + declarant2.netImposableCreditImpot;
+  const revenuCreditImpotEgalImpotFrancais = declarant1.netImposableCreditImpot + declarant2.netImposableCreditImpot
+    + pac1.netImposableCreditImpot + pac2.netImposableCreditImpot;
   const salairesNetImposablesExoneresTauxEffectif = declarant1.netImposableExonereTauxEffectif
     + declarant2.netImposableExonereTauxEffectif + pac1.netImposableExonereTauxEffectif + pac2.netImposableExonereTauxEffectif;
   const revenuExonereRetenuPourRFR = declarant1.exonereRetenuRFR + declarant2.exonereRetenuRFR

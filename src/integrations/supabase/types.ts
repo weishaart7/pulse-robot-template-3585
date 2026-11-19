@@ -2387,6 +2387,8 @@ export type Database = {
       pensions_retraites_rentes: {
         Row: {
           case_1cs: number | null
+          case_1cl: number | null
+          case_1dl: number | null
           case_1ds: number | null
           case_1ct: number | null
           case_1dt: number | null
@@ -2429,6 +2431,8 @@ export type Database = {
         }
         Insert: {
           case_1cs?: number | null
+          case_1cl?: number | null
+          case_1dl?: number | null
           case_1ds?: number | null
           case_1ct?: number | null
           case_1dt?: number | null
@@ -2471,6 +2475,8 @@ export type Database = {
         }
         Update: {
           case_1cs?: number | null
+          case_1cl?: number | null
+          case_1dl?: number | null
           case_1ds?: number | null
           case_1ct?: number | null
           case_1dt?: number | null
@@ -2545,6 +2551,7 @@ export type Database = {
           case_nvg: number | null
           case_rsg: number | null
           case_rua: number | null
+          case_rva: number | null
           case_nua: number | null
           case_rsl: number | null
           case_3an: number | null
@@ -2593,6 +2600,7 @@ export type Database = {
           case_nvg?: number | null
           case_rsg?: number | null
           case_rua?: number | null
+          case_rva?: number | null
           case_nua?: number | null
           case_rsl?: number | null
           case_3an?: number | null
@@ -2641,6 +2649,7 @@ export type Database = {
           case_nvg?: number | null
           case_rsg?: number | null
           case_rua?: number | null
+          case_rva?: number | null
           case_nua?: number | null
           case_rsl?: number | null
           case_3an?: number | null
@@ -5338,6 +5347,23 @@ export type Database = {
           case_5zb: number | null
           case_5zo: number | null
           case_5ak: number | null
+          case_5ck: number | null
+          case_5ff: number | null
+          case_5wr: number | null
+          case_5gy: number | null
+          case_5zj: number | null
+          case_5zs: number | null
+          case_5sz: number | null
+          case_5md: number | null
+          case_5pf: number | null
+          case_5py: number | null
+          case_5sg: number | null
+          case_5xm: number | null
+          case_5yt: number | null
+          case_5zt: number | null
+          case_5ym: number | null
+          case_5yu: number | null
+          case_5zu: number | null
           case_5bk: number | null
           case_5df: number | null
           case_5ef: number | null
@@ -5604,6 +5630,23 @@ export type Database = {
           case_5zb?: number | null
           case_5zo?: number | null
           case_5ak?: number | null
+          case_5ck?: number | null
+          case_5ff?: number | null
+          case_5wr?: number | null
+          case_5gy?: number | null
+          case_5zj?: number | null
+          case_5zs?: number | null
+          case_5sz?: number | null
+          case_5md?: number | null
+          case_5pf?: number | null
+          case_5py?: number | null
+          case_5sg?: number | null
+          case_5xm?: number | null
+          case_5yt?: number | null
+          case_5zt?: number | null
+          case_5ym?: number | null
+          case_5yu?: number | null
+          case_5zu?: number | null
           case_5bk?: number | null
           case_5df?: number | null
           case_5ef?: number | null
@@ -5870,6 +5913,23 @@ export type Database = {
           case_5zb?: number | null
           case_5zo?: number | null
           case_5ak?: number | null
+          case_5ck?: number | null
+          case_5ff?: number | null
+          case_5wr?: number | null
+          case_5gy?: number | null
+          case_5zj?: number | null
+          case_5zs?: number | null
+          case_5sz?: number | null
+          case_5md?: number | null
+          case_5pf?: number | null
+          case_5py?: number | null
+          case_5sg?: number | null
+          case_5xm?: number | null
+          case_5yt?: number | null
+          case_5zt?: number | null
+          case_5ym?: number | null
+          case_5yu?: number | null
+          case_5zu?: number | null
           case_5bk?: number | null
           case_5df?: number | null
           case_5ef?: number | null
@@ -6075,6 +6135,8 @@ export type Database = {
       revenus_salaires: {
         Row: {
           case_1cj: number | null
+          case_1cf: number | null
+          case_1df: number | null
           case_1dj: number | null
           case_1ca: number | null
           case_1da: number | null
@@ -6139,6 +6201,8 @@ export type Database = {
         }
         Insert: {
           case_1cj?: number | null
+          case_1cf?: number | null
+          case_1df?: number | null
           case_1dj?: number | null
           case_1ca?: number | null
           case_1da?: number | null
@@ -6203,6 +6267,8 @@ export type Database = {
         }
         Update: {
           case_1cj?: number | null
+          case_1cf?: number | null
+          case_1df?: number | null
           case_1dj?: number | null
           case_1ca?: number | null
           case_1da?: number | null

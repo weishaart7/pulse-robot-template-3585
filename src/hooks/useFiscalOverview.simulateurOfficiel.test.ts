@@ -504,6 +504,92 @@ const CAS: Record<string, Cas> = {
     },
     attendu: { parts: 2, revenuFiscalReference: 51840, droitsSimples: 3150, decote: 58, impotNet: 3092, prelevementsSociaux: 378, tmi: 0.11 },
   },
+  S44: {
+    description: "personne à charge : salaire étranger 1CF avec crédit égal à l'impôt français (8TK)",
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000, case1cf: 10000 },
+      prelevementSource: { case8tk: 10000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 55800, droitsSimples: 2310, decote: 438, impotNet: 1499, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S45: {
+    description: "personne à charge : pension étrangère 1CL avec crédit égal à l'impôt français (8TK)",
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      pensions: { case1cl: 8000 },
+      prelevementSource: { case8tk: 8000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 54000, droitsSimples: 2112, decote: 527, impotNet: 1303, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S46: {
+    description: "personne à charge : BA étranger 5CK avec crédit égal à l'impôt français (8TK)",
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5ck: 10000 },
+      prelevementSource: { case8tk: 10000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 56800, droitsSimples: 2420, decote: 388, impotNet: 1606, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S47: {
+    description: 'personne à charge : BIC non professionnels, moins-value 5SZ et déficit 5PF imputés sur la catégorie',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5po: 30000, case5sz: 3000, case5pc: 20000, case5pf: 10000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 62500, droitsSimples: 3047, decote: 104, impotNet: 2943, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S48: {
+    description: 'personne à charge : déficit LMNP 5PY imputé sur le revenu LMNP, PS compris',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5pa: 15000, case5py: 8000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 53800, droitsSimples: 2090, decote: 537, impotNet: 1553, prelevementsSociaux: 1302, tmi: 0.11 },
+  },
+  S49: {
+    description: 'personne à charge : BNC non professionnels, moins-value 5MD et déficit 5SG',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5mu: 20000, case5md: 3000, case5sf: 15000, case5sg: 8000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 64000, droitsSimples: 3212, decote: 30, impotNet: 3182, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S50: {
+    description: 'micro-BA : moyenne triennale 5XB / 5XM / 5YM',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5xb: 40000, case5xm: 70000, case5ym: 100000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 55900, droitsSimples: 2321, decote: 433, impotNet: 1888, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S51: {
+    description: 'micro-BA : moyennes D2 (5YB/5YT) et personne à charge (5ZB/5ZT/5ZU)',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      nonSalaries: { case5yb: 40001, case5yt: 70000, case5zb: 30000, case5zt: 50000, case5zu: 20000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 58283, droitsSimples: 2583, decote: 314, impotNet: 2269, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S52: {
+    description: 'plus-value au quotient RUA : abattement fixe RVA puis abattement renforcé RSL sur le reliquat',
+    saisies: {
+      foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1975, anneeNaissanceDeclarant2: 1977, enfantsCharge: [enfant(2012), enfant(2015)] },
+      salaires: { case1aj: 52000 },
+      rcm: { case2op: true },
+      plusValues: { caseRua: 200000, caseNua: 4, caseRva: 100000, caseRsl: 50000 },
+    },
+    attendu: { parts: 3, revenuFiscalReference: 209300, droitsSimples: 1320, impotNet: 6820, prelevementsSociaux: 37200, tmi: 0.11 },
+    // Présentation : le simulateur affiche les droits simples et le TMI hors revenus au quotient.
+    ecartsConnus: ['droitsSimples', 'tmi'],
+  },
 };
 
 function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {

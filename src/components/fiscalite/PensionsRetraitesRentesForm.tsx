@@ -128,7 +128,7 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
           checked1={pensions.case1hk} checked2={pensions.case1hl}
           onChange1={v => update('case1hk', v)} onChange2={v => update('case1hl', v)}
         />
-        <PersonnesAChargeCadre ouvert={(pensions.case1cs ?? 0) > 0 || (pensions.case1ds ?? 0) > 0 || (pensions.case1ct ?? 0) > 0 || (pensions.case1dt ?? 0) > 0 || (pensions.case1ci ?? 0) > 0 || (pensions.case1di ?? 0) > 0 || (pensions.case1cz ?? 0) > 0 || (pensions.case1dz ?? 0) > 0 || (pensions.case1co ?? 0) > 0 || (pensions.case1do ?? 0) > 0 || (pensions.case1cm ?? 0) > 0 || (pensions.case1dm ?? 0) > 0}>
+        <PersonnesAChargeCadre ouvert={(pensions.case1cs ?? 0) > 0 || (pensions.case1ds ?? 0) > 0 || (pensions.case1ct ?? 0) > 0 || (pensions.case1dt ?? 0) > 0 || (pensions.case1ci ?? 0) > 0 || (pensions.case1di ?? 0) > 0 || (pensions.case1cz ?? 0) > 0 || (pensions.case1dz ?? 0) > 0 || (pensions.case1co ?? 0) > 0 || (pensions.case1do ?? 0) > 0 || (pensions.case1cm ?? 0) > 0 || (pensions.case1dm ?? 0) > 0 || (pensions.case1cl ?? 0) > 0 || (pensions.case1dl ?? 0) > 0}>
           <DeclarantsHeader colonne1="Personne 1" colonne2="Personne 2" />
           <MontantLigne
             label="Pensions, retraites et rentes"
@@ -165,6 +165,13 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
             code1="1CM" code2="1DM"
             value1={pensions.case1cm ?? null} value2={pensions.case1dm ?? null}
             onChange1={v => update('case1cm', v)} onChange2={v => update('case1dm', v)}
+          />
+          <MontantLigne
+            label="Pensions de source étrangère avec crédit d'impôt égal à l'impôt français"
+            extra="report de la 2047"
+            code1="1CL" code2="1DL"
+            value1={pensions.case1cl ?? null} value2={pensions.case1dl ?? null}
+            onChange1={v => update('case1cl', v)} onChange2={v => update('case1dl', v)}
           />
         </PersonnesAChargeCadre>
 

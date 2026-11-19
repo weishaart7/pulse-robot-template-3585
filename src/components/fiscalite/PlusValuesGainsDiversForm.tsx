@@ -86,6 +86,7 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
           <SingleMontantLigne label="Plus-value avec abattement renforcé, avant abattement, au quotient" code="RUA" value={pv.caseRua ?? null} onChange={v => update('caseRua', v)} />
           <SingleMontantLigne label="Quotient" extra="4" code="NUA" value={pv.caseNua ?? null} onChange={v => update('caseNua', v)} />
           <SingleMontantLigne label="Abattement renforcé au quotient" code="RSL" value={pv.caseRsl ?? null} onChange={v => update('caseRsl', v)} />
+          <SingleMontantLigne label="Abattement fixe (départ à la retraite d'un dirigeant) au quotient" code="RVA" value={pv.caseRva ?? null} onChange={v => update('caseRva', v)} />
         </SousGroupe>
 
         <SousGroupe titre="Autres gains">
