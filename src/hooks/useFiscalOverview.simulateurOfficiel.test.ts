@@ -587,8 +587,6 @@ const CAS: Record<string, Cas> = {
       plusValues: { caseRua: 200000, caseNua: 4, caseRva: 100000, caseRsl: 50000 },
     },
     attendu: { parts: 3, revenuFiscalReference: 209300, droitsSimples: 1320, impotNet: 6820, prelevementsSociaux: 37200, tmi: 0.11 },
-    // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
-    ecartsConnus: ['droitsSimples'],
   },
   S53: {
     description: 'personne à charge : déficit LMNP 5YE relevant des organismes de sécurité sociale',
@@ -629,8 +627,6 @@ const CAS: Record<string, Cas> = {
       plusValues: { caseRvg: 40000, caseNvg: 4 },
     },
     attendu: { parts: 1, revenuFiscalReference: 86000, droitsSimples: 12904, impotNet: 27904, prelevementsSociaux: 7440, tmi: 0.3 },
-    // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
-    ecartsConnus: ['droitsSimples'],
   },
   S58: {
     description: 'outre-mer logement social HYJ : plafond commun de 133 333 € (40 000 € ÷ 30 %)',
@@ -694,8 +690,6 @@ const CAS: Record<string, Cas> = {
       plusValues: { caseRvg: 200000, caseNvg: 4 },
     },
     attendu: { parts: 1, revenuFiscalReference: 86000, droitsSimples: 3904, impotNet: 64532, prelevementsSociaux: 37200, tmi: 0.41 },
-    // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
-    ecartsConnus: ['droitsSimples'],
   },
 };
 
@@ -711,7 +705,7 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
     parts: r.parts.nombreParts,
     revenuFiscalReference: r.impot.revenuFiscalReference,
     // « Droits simples » du simulateur : après taux effectif (revenus exonérés, VFL), avant la réduction complémentaire.
-    droitsSimples: Math.round(r.impot.impotProportionnel + r.impot.reductionComplementaireQuotientFamilial),
+    droitsSimples: r.presentationReductions.droitsSimples,
     decote: Math.round(r.impot.decote),
     impotProportionnel: r.impot.impotForfaitaire,
     // « Total des réductions » du simulateur : crédit 8TK compris, mécénat 7US exclu (présenté en crédit).

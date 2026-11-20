@@ -80,6 +80,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const impositionTotale = impositionRevenus + (ifi?.ifiNet ?? 0);
 
   const noteImpot = [
+    `droits simples ${formatEuros(presentationReductions.droitsSimples)}`,
     impot.decote > 0 ? `après décote de ${formatEuros(impot.decote)}` : null,
     // Présentation du simulateur officiel : crédit 8TK parmi les réductions, mécénat 7US parmi les crédits.
     presentationReductions.totalReductions > 0 ? `réductions ${formatEuros(presentationReductions.totalReductions)}` : null,

@@ -318,7 +318,7 @@ export interface FiscalOverview {
    * Présentation du simulateur officiel, sans effet sur le calcul : « Total des réductions » comprend le crédit
    * égal à l'impôt français (8TK) et exclut le mécénat d'entreprise 7US, listé avec les crédits.
    */
-  presentationReductions: { totalReductions: number; mecenatEntreprise: number };
+  presentationReductions: { totalReductions: number; mecenatEntreprise: number; droitsSimples: number };
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
   /** Plafonnement global des avantages fiscaux (art. 200-0 A) : excédent ajouté à l'impôt. */
@@ -752,7 +752,11 @@ export function useFiscalOverview(): FiscalOverview {
         alerte8TK: verification8TK.alerte,
         presentationReductions: (() => {
           const mecenatEntreprise = Math.min(souscriptionsCapital.mecenatEntreprise, impot.reductionsImpot);
-          return { totalReductions: impot.reductionsImpot - mecenatEntreprise + impot.creditImpotFrancais, mecenatEntreprise };
+          // « Droits simples » du simulateur : après taux effectif, avant la réduction complémentaire du quotient
+          // familial, hors impôt sur les revenus au quotient (RVG/RUA, 0XX), ajouté plus loin dans son calcul.
+          const droitsSimples = Math.round(impot.impotProportionnel + impot.reductionComplementaireQuotientFamilial
+            - impot.impotSupplementaireQuotientExceptionnel);
+          return { totalReductions: impot.reductionsImpot - mecenatEntreprise + impot.creditImpotFrancais, mecenatEntreprise, droitsSimples };
         })(),
         alertesSaisie: controlerSaisie2042({
           foyer: foyerInput, anneeRevenus, salaires: revenusInput, gains, pensions: pensionsInput,

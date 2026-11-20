@@ -2079,9 +2079,10 @@ cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ). Absence d'effet vérifiée s
 RVA/RSL/RSG au-delà de RUA/RVG réintégrés au RFR, 1AC avec frais réels (deux comparaisons France / mondial),
 impôt sur le revenu mondial arrondi avant le taux effectif. Présentation alignée (`presentationReductions`, cas S67) : le total
 des réductions affiché comprend le crédit égal à l'impôt français 8TK et exclut le mécénat d'entreprise 7US,
-affiché avec les crédits (non restituable : ignoré pour un foyer non imposable, comme au simulateur). Reste une
-différence de présentation : le simulateur affiche les droits simples hors impôt sur les revenus au quotient
-(taxe 1AT comprise). L'écart de 1 € des parts en tiers n'a pas de règle identifiée (38 cas relevés, une
+affiché avec les crédits (non restituable : ignoré pour un foyer non imposable, comme au simulateur). Droits simples
+présentés comme au simulateur (`presentationReductions.droitsSimples`, affichés dans la synthèse) : après taux
+effectif, hors impôt sur les revenus au quotient (RVG/RUA, 0XX) et hors taxes proportionnelles (1AT) ; les cas
+S52, S56 et S57 ne sont plus des écarts connus. L'écart de 1 € des parts en tiers n'a pas de règle identifiée (38 cas relevés, une
 soixantaine de modèles d'arrondi testés) : modèle actuel exact pour tout déclarant seul.
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
