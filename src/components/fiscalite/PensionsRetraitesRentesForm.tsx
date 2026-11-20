@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { usePensionsRetraitesRentes } from '@/hooks/usePensionsRetraitesRentes';
@@ -54,8 +56,12 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
     setPensions(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('pensions');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...pensions, id: pensionsId });
+    await casesInformatives.enregistrer();
     setPensionsId(saved.id);
     onSaved?.(saved);
   };
@@ -200,6 +206,7 @@ export const PensionsRetraitesRentesForm = ({ onSaved }: PensionsRetraitesRentes
             { ageLabel: 'À partir de 70 ans', code: '1DR', value: pensions.case1dr, onChange: v => update('case1dr', v) },
           ]}
         />
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

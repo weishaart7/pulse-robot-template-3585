@@ -300,7 +300,8 @@ fonciers (§4).
   « Déclaration 2027 » du cadre 7 (libellés du formulaire, [libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts))
   et champs à côté des jumelles, affichés pour les revenus 2026 (HMT et HYK : mêmes plafonds que leurs
   jumelles, 90 000 € et 133 333 €, cas T13/T14). Restent à traiter à la loi de finances : cases supprimées
-  encore calculées (une 7XA ou 6HP produit encore sa réduction), cases créées sans effet au simulateur. Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
+  encore calculées (une 7XA ou 6HP produit encore sa réduction) ; les cases nouvelles sans effet sont saisissables
+  pour mémoire (`casesInformatives2027.ts`). Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
   rejoués sur les deux millésimes, ceux des cases 2027 (`CAS_2027`) sur les revenus 2026 seuls.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
@@ -2043,11 +2044,19 @@ cadre 3), sans bloquer le calcul. Revenus 2026 : rentes 1AR…1DR au crédit 8TK
 
 **Écarts restants, revenus 2026** (formulaire 2027 provisoire, à reprendre à la loi de finances pour 2027) :
 - cases supprimées du formulaire 2027 encore calculées : 160 cases d'Aurevia, dont 140 au cadre 7 (anciennes
-  cohortes, qui produisent encore leur réduction), 6HP (déduite), 3SZ, colonnes PAC du prélèvement à la source ;
-- 117 cases du formulaire 2027 sans effet au simulateur non saisissables (cases à cocher, durées
-  d'exercice, ventilation des prélèvements libératoires, page CDHR 8KB…8KJ…).
+  cohortes, qui produisent encore leur réduction), 6HP (déduite), 3SZ, colonnes PAC du prélèvement à la source.
 
-**Non testable sur un foyer résident** : exit tax (3WM…3YB), 3SE, 8TM, 8TA, 8KA (page détail de 0XX).
+**Cases du formulaire 2027 sans effet sur le calcul** (115) : saisissables pour mémoire à partir des revenus
+2026, jamais lues par le moteur. Catalogue `casesInformatives2027.ts` (libellés du formulaire, type montant,
+case à cocher, mois, taux…), table dédiée `cases_informatives_2042` (une ligne par foyer, migration
+`20261120200000`), bloc `CasesInformatives2027` en fin de chaque cadre (1, 2, 3, 4, 5, 8), enregistré par le
+bouton du cadre (chaque formulaire n'écrit que ses colonnes). Cadre 1 : colonnes des personnes à charge
+(1CV…1JE), gains en report 1NP…1OQ ; cadre 2 : ventilation avant/après le 20.2.2026 (2DK…2XZ) ; 3WG/3WH ;
+4BB ; cadre 5 : durées d'exercice, cessations, « dont » plus et moins-values à court terme, jeunes
+agriculteurs 5HM…5JM, paiement fractionné 5EA…5EU, moins-values à long terme des personnes à charge ;
+cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ). Absence d'effet vérifiée sur calc-2027.
+
+**Non testable sur un foyer résident, hors périmètre** : exit tax (3TA…3YB), 3SE, 8TD, 8TM, 8TN, 8TA.
 
 **Écarts mineurs connus** : 1 € de RFR quand 1AS et 1AH d'un même déclarant épuisent le plafond à parts
 égales ; RVA supérieur à RUA plafonné à RUA (le simulateur réintègre RVA en entier au RFR, saisie

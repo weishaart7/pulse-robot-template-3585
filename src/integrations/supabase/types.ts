@@ -786,6 +786,372 @@ export type Database = {
         }
         Relationships: []
       }
+      cases_informatives_2042: {
+        Row: {
+          case_1cv: boolean
+          case_1dv: boolean
+          case_1gp: boolean
+          case_1gq: boolean
+          case_1hp: boolean
+          case_1hq: boolean
+          case_1ia: number | null
+          case_1ie: boolean
+          case_1ja: number | null
+          case_1je: boolean
+          case_1np: number | null
+          case_1nq: number | null
+          case_1op: number | null
+          case_1oq: number | null
+          case_2dk: number | null
+          case_2dl: number | null
+          case_2ef: number | null
+          case_2eg: number | null
+          case_2eh: number | null
+          case_2vj: number | null
+          case_2vk: number | null
+          case_2vl: number | null
+          case_2xw: number | null
+          case_2xy: number | null
+          case_2xz: number | null
+          case_3wg: number | null
+          case_3wh: number | null
+          case_4bb: number | null
+          case_5ad: number | null
+          case_5af: boolean
+          case_5ah: boolean
+          case_5ai: boolean
+          case_5an: boolean
+          case_5ao: boolean
+          case_5ap: boolean
+          case_5aq: number | null
+          case_5ay: number | null
+          case_5bd: number | null
+          case_5bf: boolean
+          case_5bh: boolean
+          case_5bi: boolean
+          case_5bn: boolean
+          case_5bo: boolean
+          case_5bp: boolean
+          case_5bq: number | null
+          case_5by: number | null
+          case_5cd: number | null
+          case_5cf: boolean
+          case_5ci: boolean
+          case_5cm: boolean
+          case_5cn: boolean
+          case_5cq: boolean
+          case_5cr: boolean
+          case_5cu: number | null
+          case_5cv: number | null
+          case_5db: number | null
+          case_5dd: number | null
+          case_5dk: number | null
+          case_5dm: number | null
+          case_5ea: number | null
+          case_5eb: number | null
+          case_5ed: number | null
+          case_5ei: number | null
+          case_5ek: number | null
+          case_5em: number | null
+          case_5eu: number | null
+          case_5fb: number | null
+          case_5fd: number | null
+          case_5fk: number | null
+          case_5fm: number | null
+          case_5hm: number | null
+          case_5im: number | null
+          case_5jm: number | null
+          case_5js: number | null
+          case_5mr: number | null
+          case_5mw: number | null
+          case_5pr: number | null
+          case_5tp: number | null
+          case_5up: number | null
+          case_5ut: number | null
+          case_5uy: number | null
+          case_5vm: number | null
+          case_5vp: number | null
+          case_5vq: number | null
+          case_5vt: number | null
+          case_5vv: number | null
+          case_5vy: number | null
+          case_5wm: number | null
+          case_5xh: number | null
+          case_5xi: number | null
+          case_5xp: number | null
+          case_5xr: number | null
+          case_5xy: number | null
+          case_5yh: number | null
+          case_5yi: number | null
+          case_5yp: number | null
+          case_5yr: number | null
+          case_5yy: number | null
+          case_5zh: number | null
+          case_5zi: number | null
+          case_5zm: number | null
+          case_5zn: number | null
+          case_5zp: number | null
+          case_5zr: number | null
+          case_5zy: number | null
+          case_8cd: number | null
+          case_8ka: number | null
+          case_8kb: number | null
+          case_8kc: number | null
+          case_8kd: number | null
+          case_8ke: number | null
+          case_8kf: number | null
+          case_8kg: number | null
+          case_8ki: number | null
+          case_8kj: number | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          case_1cv?: boolean
+          case_1dv?: boolean
+          case_1gp?: boolean
+          case_1gq?: boolean
+          case_1hp?: boolean
+          case_1hq?: boolean
+          case_1ia?: number | null
+          case_1ie?: boolean
+          case_1ja?: number | null
+          case_1je?: boolean
+          case_1np?: number | null
+          case_1nq?: number | null
+          case_1op?: number | null
+          case_1oq?: number | null
+          case_2dk?: number | null
+          case_2dl?: number | null
+          case_2ef?: number | null
+          case_2eg?: number | null
+          case_2eh?: number | null
+          case_2vj?: number | null
+          case_2vk?: number | null
+          case_2vl?: number | null
+          case_2xw?: number | null
+          case_2xy?: number | null
+          case_2xz?: number | null
+          case_3wg?: number | null
+          case_3wh?: number | null
+          case_4bb?: number | null
+          case_5ad?: number | null
+          case_5af?: boolean
+          case_5ah?: boolean
+          case_5ai?: boolean
+          case_5an?: boolean
+          case_5ao?: boolean
+          case_5ap?: boolean
+          case_5aq?: number | null
+          case_5ay?: number | null
+          case_5bd?: number | null
+          case_5bf?: boolean
+          case_5bh?: boolean
+          case_5bi?: boolean
+          case_5bn?: boolean
+          case_5bo?: boolean
+          case_5bp?: boolean
+          case_5bq?: number | null
+          case_5by?: number | null
+          case_5cd?: number | null
+          case_5cf?: boolean
+          case_5ci?: boolean
+          case_5cm?: boolean
+          case_5cn?: boolean
+          case_5cq?: boolean
+          case_5cr?: boolean
+          case_5cu?: number | null
+          case_5cv?: number | null
+          case_5db?: number | null
+          case_5dd?: number | null
+          case_5dk?: number | null
+          case_5dm?: number | null
+          case_5ea?: number | null
+          case_5eb?: number | null
+          case_5ed?: number | null
+          case_5ei?: number | null
+          case_5ek?: number | null
+          case_5em?: number | null
+          case_5eu?: number | null
+          case_5fb?: number | null
+          case_5fd?: number | null
+          case_5fk?: number | null
+          case_5fm?: number | null
+          case_5hm?: number | null
+          case_5im?: number | null
+          case_5jm?: number | null
+          case_5js?: number | null
+          case_5mr?: number | null
+          case_5mw?: number | null
+          case_5pr?: number | null
+          case_5tp?: number | null
+          case_5up?: number | null
+          case_5ut?: number | null
+          case_5uy?: number | null
+          case_5vm?: number | null
+          case_5vp?: number | null
+          case_5vq?: number | null
+          case_5vt?: number | null
+          case_5vv?: number | null
+          case_5vy?: number | null
+          case_5wm?: number | null
+          case_5xh?: number | null
+          case_5xi?: number | null
+          case_5xp?: number | null
+          case_5xr?: number | null
+          case_5xy?: number | null
+          case_5yh?: number | null
+          case_5yi?: number | null
+          case_5yp?: number | null
+          case_5yr?: number | null
+          case_5yy?: number | null
+          case_5zh?: number | null
+          case_5zi?: number | null
+          case_5zm?: number | null
+          case_5zn?: number | null
+          case_5zp?: number | null
+          case_5zr?: number | null
+          case_5zy?: number | null
+          case_8cd?: number | null
+          case_8ka?: number | null
+          case_8kb?: number | null
+          case_8kc?: number | null
+          case_8kd?: number | null
+          case_8ke?: number | null
+          case_8kf?: number | null
+          case_8kg?: number | null
+          case_8ki?: number | null
+          case_8kj?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          case_1cv?: boolean
+          case_1dv?: boolean
+          case_1gp?: boolean
+          case_1gq?: boolean
+          case_1hp?: boolean
+          case_1hq?: boolean
+          case_1ia?: number | null
+          case_1ie?: boolean
+          case_1ja?: number | null
+          case_1je?: boolean
+          case_1np?: number | null
+          case_1nq?: number | null
+          case_1op?: number | null
+          case_1oq?: number | null
+          case_2dk?: number | null
+          case_2dl?: number | null
+          case_2ef?: number | null
+          case_2eg?: number | null
+          case_2eh?: number | null
+          case_2vj?: number | null
+          case_2vk?: number | null
+          case_2vl?: number | null
+          case_2xw?: number | null
+          case_2xy?: number | null
+          case_2xz?: number | null
+          case_3wg?: number | null
+          case_3wh?: number | null
+          case_4bb?: number | null
+          case_5ad?: number | null
+          case_5af?: boolean
+          case_5ah?: boolean
+          case_5ai?: boolean
+          case_5an?: boolean
+          case_5ao?: boolean
+          case_5ap?: boolean
+          case_5aq?: number | null
+          case_5ay?: number | null
+          case_5bd?: number | null
+          case_5bf?: boolean
+          case_5bh?: boolean
+          case_5bi?: boolean
+          case_5bn?: boolean
+          case_5bo?: boolean
+          case_5bp?: boolean
+          case_5bq?: number | null
+          case_5by?: number | null
+          case_5cd?: number | null
+          case_5cf?: boolean
+          case_5ci?: boolean
+          case_5cm?: boolean
+          case_5cn?: boolean
+          case_5cq?: boolean
+          case_5cr?: boolean
+          case_5cu?: number | null
+          case_5cv?: number | null
+          case_5db?: number | null
+          case_5dd?: number | null
+          case_5dk?: number | null
+          case_5dm?: number | null
+          case_5ea?: number | null
+          case_5eb?: number | null
+          case_5ed?: number | null
+          case_5ei?: number | null
+          case_5ek?: number | null
+          case_5em?: number | null
+          case_5eu?: number | null
+          case_5fb?: number | null
+          case_5fd?: number | null
+          case_5fk?: number | null
+          case_5fm?: number | null
+          case_5hm?: number | null
+          case_5im?: number | null
+          case_5jm?: number | null
+          case_5js?: number | null
+          case_5mr?: number | null
+          case_5mw?: number | null
+          case_5pr?: number | null
+          case_5tp?: number | null
+          case_5up?: number | null
+          case_5ut?: number | null
+          case_5uy?: number | null
+          case_5vm?: number | null
+          case_5vp?: number | null
+          case_5vq?: number | null
+          case_5vt?: number | null
+          case_5vv?: number | null
+          case_5vy?: number | null
+          case_5wm?: number | null
+          case_5xh?: number | null
+          case_5xi?: number | null
+          case_5xp?: number | null
+          case_5xr?: number | null
+          case_5xy?: number | null
+          case_5yh?: number | null
+          case_5yi?: number | null
+          case_5yp?: number | null
+          case_5yr?: number | null
+          case_5yy?: number | null
+          case_5zh?: number | null
+          case_5zi?: number | null
+          case_5zm?: number | null
+          case_5zn?: number | null
+          case_5zp?: number | null
+          case_5zr?: number | null
+          case_5zy?: number | null
+          case_8cd?: number | null
+          case_8ka?: number | null
+          case_8kb?: number | null
+          case_8kc?: number | null
+          case_8kd?: number | null
+          case_8ke?: number | null
+          case_8kf?: number | null
+          case_8kg?: number | null
+          case_8ki?: number | null
+          case_8kj?: number | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       charges: {
         Row: {
           commentaire: string | null

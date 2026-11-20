@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { usePrelevementSourceDivers } from '@/hooks/usePrelevementSourceDivers';
 import { PrelevementSourceDivers } from '@/services/prelevementSourceDiversService';
@@ -31,8 +33,12 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
     setPs(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('prelevementSource');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...ps, id: psId });
+    await casesInformatives.enregistrer();
     setPsId(saved.id);
     onSaved?.(saved);
   };
@@ -240,6 +246,7 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
             <SingleMontantLigne label="Montant de la taxe due" code="8HC" value={ps.case8hc ?? null} onChange={v => update('case8hc', v)} />
           </SousGroupe>
         )}
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

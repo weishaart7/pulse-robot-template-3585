@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { useRevenusExoneresTauxEffectif } from '@/hooks/useRevenusExoneresTauxEffectif';
 import { RevenusExoneresTauxEffectif } from '@/services/revenusExoneresTauxEffectifService';
@@ -39,8 +41,12 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
     setRevenus(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('exoneres');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...revenus, id: revenusId });
+    await casesInformatives.enregistrer();
     setRevenusId(saved.id);
     onSaved?.(saved);
   };
@@ -110,6 +116,7 @@ export const RevenusExoneresTauxEffectifForm = ({ onSaved }: RevenusExoneresTaux
             onChange1={v => update('case1ch', v)} onChange2={v => update('case1dh', v)}
           />
         </PersonnesAChargeCadre>
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

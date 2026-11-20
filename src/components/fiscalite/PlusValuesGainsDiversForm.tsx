@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { usePlusValuesGainsDivers } from '@/hooks/usePlusValuesGainsDivers';
@@ -41,8 +43,12 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
     setPv(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('plusValues');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...pv, id: pvId });
+    await casesInformatives.enregistrer();
     setPvId(saved.id);
     onSaved?.(saved);
   };
@@ -133,6 +139,7 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
           <SingleMontantLigne label="Plus-values nettes de cession d'immeubles ou de biens meubles déjà imposées à 19 %" code="3VZ" value={pv.case3vz} onChange={v => update('case3vz', v)} />
           <SingleMontantLigne label="Plus-value exonérée, première cession d'un logement autre que la résidence principale" extra="sous condition de remploi" code="3VW" value={pv.case3vw} onChange={v => update('case3vw', v)} />
         </SousGroupe>
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

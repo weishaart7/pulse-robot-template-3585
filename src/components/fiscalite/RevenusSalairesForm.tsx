@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { useRevenusSalaires } from '@/hooks/useRevenusSalaires';
 import { RevenusSalaires } from '@/services/revenusSalairesService';
@@ -67,8 +69,12 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
     setRevenus(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('salaires');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...revenus, id: revenusId });
+    await casesInformatives.enregistrer();
     setRevenusId(saved.id);
     onSaved?.(saved);
   };
@@ -292,6 +298,7 @@ export const RevenusSalairesForm = ({ onSaved }: RevenusSalairesFormProps) => {
             onChange1={v => update('case1ck', v)} onChange2={v => update('case1dk', v)}
           />
         </PersonnesAChargeCadre>
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

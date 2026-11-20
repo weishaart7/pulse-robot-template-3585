@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,8 +75,12 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
     setRf(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('fonciers');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...rf, id: rfId });
+    await casesInformatives.enregistrer();
     setRfId(saved.id);
     onSaved?.(saved);
   };
@@ -140,6 +146,7 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
 
         <SingleCaseLigne label="Vous ne percevez plus de revenus fonciers en 2026" code="4BN" checked={rf.case4bn} onChange={v => update('case4bn', v)} />
         <SingleCaseLigne label="Vous souscrivez une déclaration n° 2044 spéciale" code="4BZ" checked={declaration2044 ? true : rf.case4bz} disabled={!!declaration2044} onChange={v => update('case4bz', v)} />
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

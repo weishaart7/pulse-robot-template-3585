@@ -235,6 +235,21 @@ const LigneEclatee = ({ label, aide, items }: { label: string; aide?: string; it
   </div>
 );
 
+/** Ligne de cases à cocher côte à côte (ex. cession ou cessation d'activité par déclarant et personne à charge). */
+export const CasesCocherEclateeLigne = ({ label, aide, items }: { label: string; aide?: string; items: { label: string; code: string; checked: boolean; onChange: (v: boolean) => void }[] }) => (
+  <div className="space-y-2.5 border-b border-border/50 py-3">
+    <LigneLabel label={label} aide={aide} />
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.code} className="space-y-1">
+          <span className="block text-[11.5px] text-muted-foreground">{item.label}</span>
+          <CaseCocher code={item.code} checked={item.checked} onChange={item.onChange} />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 /**
  * Ligne montant ventilée par tranche d'âge du foyer (ex. rentes viagères à titre onéreux, art. 158 6
  * CGI), pas par déclarant 1/2 — libellé au-dessus des tranches plutôt qu'à côté.

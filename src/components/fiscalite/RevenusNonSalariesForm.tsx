@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useState } from 'react';
 import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { useRevenusNonSalaries } from '@/hooks/useRevenusNonSalaries';
@@ -42,8 +44,12 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
     setRns(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('nonSalaries');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...rns, id: rnsId });
+    await casesInformatives.enregistrer();
     setRnsId(saved.id);
     onSaved?.(saved);
   };
@@ -368,6 +374,7 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
             <SingleMontantLigne label="Plus-values à long terme exonérées départ à la retraite" code="5JY" value={rns.case5jy ?? null} onChange={v => update('case5jy', v)} />
           </SousGroupe>
         </PersonnesAChargeCadre>
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };

@@ -1,3 +1,5 @@
+import { useCasesInformatives2042 } from '@/hooks/useCasesInformatives2042';
+import { CasesInformatives2027 } from './CasesInformatives2027';
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { useRevenusCapitauxMobiliers } from '@/hooks/useRevenusCapitauxMobiliers';
@@ -59,8 +61,12 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
     setRevenus(prev => ({ ...prev, [key]: value }));
   };
 
+  // Cases du formulaire 2027 sans effet sur le calcul, enregistrées avec le cadre.
+  const casesInformatives = useCasesInformatives2042('capitauxMobiliers');
+
   const handleSubmit = async () => {
     const saved = await saveData({ ...revenus, id: revenusId });
+    await casesInformatives.enregistrer();
     setRevenusId(saved.id);
     onSaved?.(saved);
   };
@@ -199,6 +205,7 @@ export const RevenusCapitauxMobiliersForm = ({ onSaved }: RevenusCapitauxMobilie
           ))}
           {!loadingOverview && <ComparatifOptionBareme comparaison={comparatif} />}
         </SousGroupe>
+      <CasesInformatives2027 cases={casesInformatives} />
     </Cadre2042>
   );
 };
