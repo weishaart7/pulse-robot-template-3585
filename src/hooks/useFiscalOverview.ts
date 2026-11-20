@@ -388,7 +388,13 @@ export function useFiscalOverview(): FiscalOverview {
   const gains = useMemo(() => masquerCases2027(gainsSaisis, 'gains', anneeRevenus), [gainsSaisis, anneeRevenus]);
   const plusValues = useMemo(() => masquerCases2027(plusValuesSaisies, 'plusValues', anneeRevenus), [plusValuesSaisies, anneeRevenus]);
   const nonSalaries = useMemo(() => masquerCases2027(nonSalariesSaisis, 'nonSalaries', anneeRevenus), [nonSalariesSaisis, anneeRevenus]);
-  const reductions = useMemo(() => masquerCases2027(reductionsSaisies, 'reductions', anneeRevenus), [reductionsSaisies, anneeRevenus]);
+  // Reports sans effet sur l'impôt de l'année (revenus 2026 : 7JT, 7KC) retirés du calcul.
+  const reductions = useMemo(() => {
+    const visibles = masquerCases2027(reductionsSaisies, 'reductions', anneeRevenus);
+    const sansEffet = parametres.reductionsCredits.reportsSansEffet;
+    if (!visibles || sansEffet.length === 0) return visibles;
+    return { ...visibles, ...Object.fromEntries(sansEffet.map((cle) => [cle, null])) };
+  }, [reductionsSaisies, anneeRevenus, parametres]);
   const prelevementSource = useMemo(
     () => masquerCases2027(prelevementSourceSaisi, 'prelevementSource', anneeRevenus), [prelevementSourceSaisi, anneeRevenus]);
   const { isAuthenticated } = useAuth();
@@ -510,6 +516,8 @@ export function useFiscalOverview(): FiscalOverview {
       const fonciers2042Input = fonciers2042 ?? REVENUS_FONCIERS_2042_PAR_DEFAUT;
       const totalCategories8TK = [revenusInput.case1af, revenusInput.case1bf, revenusInput.case1cf, revenusInput.case1df,
         pensionsInput.case1al, pensionsInput.case1bl, pensionsInput.case1cl, pensionsInput.case1dl,
+        ...(parametres.reductionsCredits.rentesCreditImpotFrancais
+          ? [pensionsInput.case1ar, pensionsInput.case1br, pensionsInput.case1cr, pensionsInput.case1dr] : []),
         fonciers2042Input.case4bk, fonciers2042Input.case4bl,
         ...CASES_CREDIT_IMPOT_FRANCAIS_CADRE_5.map(cle => nonSalariesInput[cle])]
         .reduce<number>((t, v) => t + Math.max(0, v ?? 0), 0);
@@ -636,7 +644,8 @@ export function useFiscalOverview(): FiscalOverview {
           + plusValuesGainsDivers.basePrelevementsSociaux172,
         // 3XN (report, taux 2017 de 17,2 %) suit les lignes du foncier (simulateur officiel 2026).
         historique155: plusValuesGainsDivers.basePrelevementsSociaux155,
-        neutralisePatrimoine: 0,
+        // Rentes 1AR…1DR (revenus 2026) : crédit égal à l'impôt français, PS neutralisés (calc-2027).
+        neutralisePatrimoine: verification8TK.creditAccorde ? pensionsRetraitesRentes.rentesCreditImpotFrancais : 0,
         neutraliseFoncier: verification8TK.creditAccorde ? revenusFonciers2042.revenuCreditImpotEgalImpotFrancais : 0,
         exonerationTotaleCsgCrds: exonerationTotale,
         exonerePatrimoine: exonerationPartielleOuverte

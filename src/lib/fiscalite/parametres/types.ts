@@ -101,6 +101,12 @@ export interface ParametresFiscaux {
     readonly seuilsRfrAutonomie: { readonly une: number; readonly deux: number; readonly parPersonne: number };
     /** Souscriptions FCPI (art. 199 terdecies-0 A) : taux par case, 0 si la case n'existe plus. */
     readonly tauxFcpi: { readonly case7gr: number; readonly case7gq: number };
+    /** Dons pour la restauration du château de Chambord (7UQ) : plafond propre à 75 %, l'excédent à 66 % ; null = 7UQ suit 7UD. */
+    readonly plafondDonsChambord: number | null;
+    /** Reports du cadre 7 sans effet sur l'impôt de l'année (cases retirées du calcul). */
+    readonly reportsSansEffet: readonly string[];
+    /** Rentes 1AR…1DR : ouvrent droit au crédit égal à l'impôt français (contrôlé par 8TK). */
+    readonly rentesCreditImpotFrancais: boolean;
   };
   /** IFI au 1er janvier suivant l'année de revenus (déclaration déposée avec la 2042). */
   readonly ifi: {

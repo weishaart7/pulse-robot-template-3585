@@ -25,7 +25,7 @@ describe('parametresFiscaux', () => {
     }
   });
 
-  it('revenus 2026 provisoire : seuls les dons, la FCPI et la CEHR retenue par la CDHR diffèrent de 2025 (calc-2027.cgi)', () => {
+  it('revenus 2026 provisoire : seuls les dons, la FCPI, la CEHR retenue par la CDHR, les reports 7JT/7KC et les rentes 1AR…1DR diffèrent de 2025 (calc-2027.cgi)', () => {
     const p2025 = parametresFiscaux(2025);
     const p2026 = parametresFiscaux(2026);
     expect(p2025.statut).toBe('definitif');
@@ -33,9 +33,12 @@ describe('parametresFiscaux', () => {
     expect(p2026.reductionsCredits.plafondDons75Premiere).toBe(2000);
     expect([p2025.cdhr.donsReintegres, p2026.cdhr.donsReintegres]).toEqual([false, true]);
     expect(p2026.reductionsCredits.tauxFcpi).toEqual({ case7gr: 0, case7gq: 0.25 });
+    expect([p2025.reductionsCredits.plafondDonsChambord, p2026.reductionsCredits.plafondDonsChambord]).toEqual([null, 1000]);
+    expect(p2026.reductionsCredits.reportsSansEffet).toEqual(['case7jt', 'case7kc']);
+    expect([p2025.reductionsCredits.rentesCreditImpotFrancais, p2026.reductionsCredits.rentesCreditImpotFrancais]).toEqual([false, true]);
     const sansDons = (p: typeof p2025) => ({ ...p, anneeRevenus: 0, statut: null, source: null,
       reductionsCredits: { ...p.reductionsCredits, plafondDons75Premiere: 0, plafondDons75Annee: 0,
-        tauxFcpi: { case7gr: 0, case7gq: 0 } },
+        tauxFcpi: { case7gr: 0, case7gq: 0 }, plafondDonsChambord: null, reportsSansEffet: [], rentesCreditImpotFrancais: false },
       cdhr: { ...p.cdhr, donsReintegres: null, cehrProratiseeAbattementFixe: null } });
     expect(sansDons(p2026)).toEqual(sansDons(p2025));
   });

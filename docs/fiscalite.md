@@ -281,8 +281,9 @@ fonciers (§4).
   d'ensemble) n'apparaît qu'à partir de deux millésimes. **Revenus 2026 provisoire**
   (`revenus2026.ts`, `statut: 'provisoire'`) : valeurs relevées sur calc-2027.cgi en novembre 2026,
   identiques aux revenus 2025 sauf les dons à 75 % (7UD seul, 2 000 €) et la FCPI (7GQ à 25 %, 7GR
-  supprimée) ; le nouveau sens de 7UQ
-  (Chambord) et la suppression de 7VM ne sont pas modélisés, signalés dans le cadre 7. Plus largement, le
+  supprimée), 7UQ (Chambord : plafond propre de 1 000 € à 75 %, excédent à 66 %, `plafondDonsChambord`),
+  les reports 7JT/7KC sans effet (`reportsSansEffet`) et les rentes 1AR…1DR ouvrant droit au crédit 8TK
+  (`rentesCreditImpotFrancais`) ; la suppression de 7VM n'est pas modélisée, signalée dans le cadre 7. Plus largement, le
   formulaire calc-2027.cgi supprime environ 150 cases (cadre 7 surtout : Pinel 7XA…7XE, Censi-Bouvard,
   Scellier, PME 7CA/7DC/7CT, bornes 7ZQ…7ZT, 7WI ; outre-mer HGU, HOA…HOK ; 6HP) et en crée environ 140
   (générations d'investissement décalées d'un an : 7CF…7CN, 7WA…7WG, 7ZA…7ZG, 8HA, 8KA…8KC, HMS…HMW…).
@@ -297,11 +298,9 @@ fonciers (§4).
   50 %, abattement propre), taxe holdings 8HA/8HB/8HC (8HC ajoutée à l'impôt hors réductions, comme une taxe
   annexe), acomptes de PS 8HU/8IU, crédit 8WB (comme 8WA), report 8PX (comme 8PY). Saisie : section
   « Déclaration 2027 » du cadre 7 (libellés du formulaire, [libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts))
-  et champs à côté des jumelles, affichés pour les revenus 2026. Écart connu : HMT et HYK (outre-mer 2026)
-  plafonnés à 76 795 € sur calc-2027 contre 77 400 € et 91 482 € pour leurs jumelles 2025 (au-delà de
-  ~77 000 € de réduction seulement). Restent à traiter à la loi de finances : cases supprimées encore
-  calculées (une 7XA ou 6HP produit encore sa réduction), cases créées sans effet au simulateur, règles
-  changées (1AR…1DR, Chambord, 7JT/7KC). Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
+  et champs à côté des jumelles, affichés pour les revenus 2026 (HMT et HYK : mêmes plafonds que leurs
+  jumelles, 90 000 € et 133 333 €, cas T13/T14). Restent à traiter à la loi de finances : cases supprimées
+  encore calculées (une 7XA ou 6HP produit encore sa réduction), cases créées sans effet au simulateur. Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
   rejoués sur les deux millésimes, ceux des cases 2027 (`CAS_2027`) sur les revenus 2026 seuls.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
@@ -854,8 +853,10 @@ fonciers (§4).
   (mécanismes exclusifs). **Exclue du calcul** (`CASES_PENSIONS_EXCLUES_DU_CALCUL`) : 1HK/1HL (case
   informative) seulement — 1AL/1BL (pensions étrangères, crédit d'impôt égal à l'impôt français) ne sont
   pas exclues : `revenuCreditImpotEgalImpotFrancais` isole leur part du calcul, hors `totalNetImposable`.
-  1AR/1BR/1CR/1DR (rentes étrangères) entrent dans `totalNetImposable` par tranche d'âge, sans abattement
-  ni crédit (simulateur officiel 2026 : impôt inchangé quel que soit 8TK).
+  1AR/1BR/1CR/1DR (rentes étrangères) : fraction imposable par tranche d'âge, sans abattement. Revenus
+  2025 : dans `totalNetImposable`, sans crédit (simulateur officiel 2026 : impôt inchangé quel que soit 8TK).
+  Revenus 2026 : traitées comme 1AL (crédit égal à l'impôt français, contrôle 8TK sur le montant brut, PS
+  neutralisés ; calc-2027 : 1AJ 40 000 + 1AR 5 000 + 8TK 5 000 → crédit 439 €, cas T9/T10).
   **Bug corrigé — 1AL/1BL était isolée dans un pool d'abattement indépendant, avec son propre plafond de
   4 439 €, au lieu de partager le plafond unique du foyer avec 1AS/1AZ/1AO/1AM.** Audit case par case
   contre le texte intégral de la brochure (p.117) : « L'abattement de 10 % est appliqué automatiquement
@@ -1624,6 +1625,8 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
 - **Dons** : 75 % sur `7UD` (maximum 1 000 €) et `7UD + 7UQ` (maximum 2 000 €), 75 % sur `7UJ`
   (maximum 1 000 €) ; l'excédent rejoint `7UF` à 66 %, dans la limite de 20 % du revenu imposable.
   `7UH` (partis politiques) : 66 %, maximum 15 000 € par foyer, dans la même limite de 20 %.
+  Revenus 2026 : `7UD` seul jusqu'à 2 000 € ; `7UQ` (Chambord) a son propre plafond de 1 000 € à 75 %,
+  cumulable avec `7UD`, l'excédent à 66 % (calc-2027 : 7UD 500 + 7UQ 3 000 → 375 + 750 + 1 320 €, cas T11).
   Organismes européens : `7VA` avec `7UD`, `7VM` avec `7UQ`, `7VC` avec `7UF`. Mayotte `7UO` : 75 %
   dans sa propre limite de 2 000 €, excédent à 66 %. Reports 2020-2024 `7XS`…`7XY` : 66 % dans la
   même limite de 20 %. Le reliquat (`donsExcedentaires`, reportable 5 ans) n'a pas d'effet sur l'année.
@@ -1646,7 +1649,8 @@ salaires bruts (`remunerationsBrutes`) + pensions 1AS/1AZ/1AO/1AM de chaque déc
   `calculerInvestissementsOutreMer.ts`) : montant saisi = réduction (crédit restituable pour `HJA`).
   Table `REGLES_OUTRE_MER` mesurée case par case sur le simulateur officiel 2026 : plafond propre
   (40 000 € / 36 000 € / 30 600 €, 69 545 € et 90 000 € pour les rétrocessions de 56 % et 66 %, aucun
-  pour les régimes avant 2009, l'exploitation directe et le logement social) ; cases à plafond commun
+  pour les régimes avant 2009 et l'exploitation directe ; logement social, part de 30 % : total plafonné
+  à 133 333 € = 40 000 € ÷ 30 %, cas S58) ; cases à plafond commun
   limitées ensemble au plus bas plafond présent ; part au plafonnement global 100 / 44 / 34 / 30 / 0 %.
   `HQA`, `HKC`, `HLV` sans effet. Écart connu : `HGU` 20 000 € + `HOB` 30 000 € → 40 000 € sur le
   simulateur, 30 600 € ici (règle de cumul entre investissements d'entreprise et immobilier agréé
@@ -2034,15 +2038,12 @@ abattements spéciaux, PFU et option barème, système du quotient (ID1/ID2 arro
 CDHR, cadres 2 à 6, réductions et crédits du cadre 7, cadre 8 et solde ; colonnes des personnes à charge ;
 moyenne triennale du micro-BA ; arrondis des impositions proportionnelles et des réductions ; déficit global
 de l'année reporté. Les saisies que le simulateur refuse sont signalées (`controlerSaisie2042`, contrôles du
-cadre 3), sans bloquer le calcul.
+cadre 3), sans bloquer le calcul. Revenus 2026 : rentes 1AR…1DR au crédit 8TK, Chambord 7UQ, reports
+7JT/7KC sans effet ; plafond commun du logement social outre-mer (133 333 €) sur les deux millésimes.
 
 **Écarts restants, revenus 2026** (formulaire 2027 provisoire, à reprendre à la loi de finances pour 2027) :
 - cases supprimées du formulaire 2027 encore calculées : 160 cases d'Aurevia, dont 140 au cadre 7 (anciennes
   cohortes, qui produisent encore leur réduction), 6HP (déduite), 3SZ, colonnes PAC du prélèvement à la source ;
-- règles changées par calc-2027 : rentes 1AR…1DR désormais ouvrant droit au crédit 8TK, Chambord 7UQ avec un
-  plafond propre de 1 000 € à 75 %, reports 7JT/7KC ignorés ;
-- plafond outre-mer 2026 de HMT et HYK (76 795 € au simulateur, jumelles 2025 à 77 400 € et 91 482 €),
-  au-delà de 77 000 € de réduction seulement ;
 - 117 cases du formulaire 2027 sans effet au simulateur non saisissables (cases à cocher, durées
   d'exercice, ventilation des prélèvements libératoires, page CDHR 8KB…8KJ…).
 

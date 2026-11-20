@@ -80,6 +80,8 @@ export interface PensionsRetraitesRentesResult {
    * décote — hypothèse retenue, voir docs/fiscalite.md).
    */
   revenuCreditImpotEgalImpotFrancais: number;
+  /** Fraction imposable de 1AR…1DR ouvrant droit au crédit (revenus 2026), comprise dans la ligne précédente. */
+  rentesCreditImpotFrancais: number;
   /**
    * Part nette de 1AH/1BH (pensions exonérées retenues pour le taux effectif),
    * isolée proportionnellement au sein du pool d'abattement commun — reprise
@@ -201,16 +203,20 @@ export function calculerPensionsRetraitesRentes(
     + (input.case1br ?? 0) * FRACTION_IMPOSABLE_RENTE.de50a59
     + (input.case1cr ?? 0) * FRACTION_IMPOSABLE_RENTE.de60a69
     + (input.case1dr ?? 0) * FRACTION_IMPOSABLE_RENTE.aPartirDe70;
-  // Rentes étrangères 1AR…1DR : imposées comme 1AW, sans crédit (simulateur officiel 2026).
-  const totalNetImposable = pensionsNettes + capitalPER + rentesViageresImposables + rentesEtrangeresImposables;
+  // Rentes étrangères 1AR…1DR : imposées comme 1AW, sans crédit (simulateur officiel 2026) ; à partir des
+  // revenus 2026, fraction imposable ouvrant droit au crédit égal à l'impôt français, tenue hors de la base
+  // comme 1AL (calc-2027 : crédit au prorata, accordé si 8TK égale le montant brut).
+  const rentesCreditImpotFrancais = parametres.reductionsCredits.rentesCreditImpotFrancais ? rentesEtrangeresImposables : 0;
+  const totalNetImposable = pensionsNettes + capitalPER + rentesViageresImposables + rentesEtrangeresImposables
+    - rentesCreditImpotFrancais;
 
   const capitalRetraite = (input.case1at ?? 0) + (input.case1bt ?? 0) + (input.case1ct ?? 0) + (input.case1dt ?? 0);
   const impotForfaitaire = capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX) * CAPITAL_RETRAITE_TAUX_FORFAITAIRE;
 
 
-  // Rentes 1AR…1DR : imposées sans crédit égal à l'impôt français, et hors du contrôle de 8TK
-  // (simulateur officiel 2026 : 1AR 5 000 € → impôt inchangé quel que soit 8TK).
-  const revenuCreditImpotEgalImpotFrancais = pensionEtrangereNette;
+  // Rentes 1AR…1DR : sans crédit pour les revenus 2025 (simulateur officiel 2026 : 1AR 5 000 € → impôt
+  // inchangé quel que soit 8TK), avec crédit à partir des revenus 2026.
+  const revenuCreditImpotEgalImpotFrancais = pensionEtrangereNette + rentesCreditImpotFrancais;
 
   return {
     pensionsBrutes,
@@ -222,6 +228,7 @@ export function calculerPensionsRetraitesRentes(
     impotForfaitaire,
     revenuExonereRetenuPourRFR: capitalRetraite * (1 - CAPITAL_RETRAITE_ABATTEMENT_TAUX),
     revenuCreditImpotEgalImpotFrancais,
+    rentesCreditImpotFrancais,
     pensionsExonereesTauxEffectifNettes,
     casesExclues: CASES_PENSIONS_EXCLUES_DU_CALCUL,
   };

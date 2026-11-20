@@ -76,6 +76,9 @@ export const PARAMETRES_REVENUS_2025: ParametresFiscaux = {
     seuilsRfrAutonomie: { une: 31393, deux: 49995, parPersonne: 6976 },
     // 7GR : versements 2025 à 25 % ; 7GQ : 18 %.
     tauxFcpi: { case7gr: 0.25, case7gq: 0.18 },
+    plafondDonsChambord: null,
+    reportsSansEffet: [],
+    rentesCreditImpotFrancais: false,
   },
   ifi: {
     seuilExonerationRurale: 101_897,

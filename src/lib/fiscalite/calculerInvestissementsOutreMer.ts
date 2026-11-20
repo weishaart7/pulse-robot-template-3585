@@ -12,9 +12,14 @@ import { ajouterJumelles2027 } from './cases2027';
  *   (HOB + HOI → 36 000 € ; HOB + HOT, HGU + HOZ → 30 600 €). Écart connu : HGU 20 000 € +
  *   HOB 30 000 € donne 40 000 € sur le simulateur, 30 600 € ici ;
  * - part retenue au plafonnement global (art. 200-0 A) : 100 %, 44 %, 34 %, 30 % ou 0 % ;
+ * - logement social (part de 30 %) : total des cases plafonné à 40 000 € ÷ 30 % (133 333 €), plafond
+ *   distinct des autres (simulateur officiel 2026 et 2027 : HYJ 80 000 + HYE 80 000 → 133 333 € ;
+ *   HYJ 134 000 + HOA 10 000 → 143 333 €) ;
  * - HJA : crédit restituable, hors plafonds ; HQA, HKC, HLV : sans effet.
  */
 export const PLAFOND_OUTRE_MER_RECENT = 30_600;
+const PART_LOGEMENT_SOCIAL = 0.3;
+export const PLAFOND_OUTRE_MER_LOGEMENT_SOCIAL = Math.round(40_000 / PART_LOGEMENT_SOCIAL);
 
 type Nature = 'reduction' | 'credit' | 'sans_effet';
 interface RegleCase {
@@ -139,10 +144,12 @@ export function calculerInvestissementsOutreMer(input: ReductionsCreditsImpotInp
   let reductionsHorsCommun = 0;
   let avantagesHorsCommun = 0;
   let credit = 0;
+  let logementSocial = 0;
   for (const [cle, regle] of Object.entries(REGLES_OUTRE_MER) as [CleOutreMer, RegleCase][]) {
     const montant = Math.max(0, input[cle] ?? 0);
     if (montant === 0 || regle.nature === 'sans_effet') continue;
     if (regle.nature === 'credit') { credit += montant; continue; }
+    if (regle.plafond === null && regle.part === PART_LOGEMENT_SOCIAL) { logementSocial += montant; continue; }
     if (regle.commun && regle.plafond !== null) {
       communSaisi += montant;
       communPartSaisie += montant * regle.part;
@@ -153,6 +160,9 @@ export function calculerInvestissementsOutreMer(input: ReductionsCreditsImpotInp
       avantagesHorsCommun += retenu * regle.part;
     }
   }
+  const logementSocialRetenu = Math.min(logementSocial, PLAFOND_OUTRE_MER_LOGEMENT_SOCIAL);
+  reductionsHorsCommun += logementSocialRetenu;
+  avantagesHorsCommun += logementSocialRetenu * PART_LOGEMENT_SOCIAL;
   const communRetenu = Math.min(communSaisi, plafondCommun);
   // Part au plafonnement global du total commun : au prorata des montants saisis.
   const avantagesCommun = communSaisi > 0 ? communPartSaisie * communRetenu / communSaisi : 0;

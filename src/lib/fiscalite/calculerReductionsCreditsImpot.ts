@@ -102,17 +102,20 @@ export function calculerReductionsCreditsImpot(
   revenusActivite: RevenusActiviteDeclarants = { declarant1: 0, declarant2: 0 },
   parametres: ParametresFiscaux = PARAMETRES_PAR_DEFAUT,
 ): ReductionsCreditsImpotResult {
-  const { plafondDons75Premiere, plafondDons75Annee, seuilsRfrAutonomie } = parametres.reductionsCredits;
+  const { plafondDons75Premiere, plafondDons75Annee, seuilsRfrAutonomie, plafondDonsChambord } = parametres.reductionsCredits;
   // Dons à un organisme européen : 7VA avec 7UD, 7VM avec 7UQ, 7VC avec 7UF (simulateur officiel 2026).
+  // Revenus 2026 : 7UQ (Chambord) a son propre plafond à 75 %, l'excédent rejoint les dons à 66 % (calc-2027).
+  const chambord = plafondDonsChambord === null ? 0 : montant(input.case7uq);
+  const retenusChambord = Math.min(chambord, plafondDonsChambord ?? 0);
   const dons1 = montant(input.case7ud) + montant(input.case7va);
-  const dons2 = montant(input.case7uq) + montant(input.case7vm);
+  const dons2 = (plafondDonsChambord === null ? montant(input.case7uq) : 0) + montant(input.case7vm);
   const retenus1 = Math.min(dons1, plafondDons75Premiere);
-  const retenusDifficulte = Math.min(retenus1 + dons2, plafondDons75Annee);
+  const retenusDifficulte = Math.min(retenus1 + dons2, plafondDons75Annee) + retenusChambord;
   const religieux = montant(input.case7uj);
   const retenusReligieux = Math.min(religieux, PLAFOND_DONS_PATRIMOINE_RELIGIEUX);
   const mayotte = montant(input.case7uo);
   const retenusMayotte = Math.min(mayotte, PLAFOND_DONS_MAYOTTE);
-  const excedent75 = dons1 + dons2 - retenusDifficulte + religieux - retenusReligieux + mayotte - retenusMayotte;
+  const excedent75 = dons1 + dons2 + chambord - retenusDifficulte + religieux - retenusReligieux + mayotte - retenusMayotte;
 
   // 7UH entre dans la même limite de 20 % que 7UF (simulateur officiel 2026 : 7UH 8 000 € + 7UF 8 000 €, RNI 54 000 € → 7 128 €).
   // Reports de dons 7XS…7XY : 66 % dans la même limite.

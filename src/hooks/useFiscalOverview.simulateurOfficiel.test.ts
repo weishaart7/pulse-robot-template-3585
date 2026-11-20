@@ -632,6 +632,11 @@ const CAS: Record<string, Cas> = {
     // Présentation : le simulateur affiche les droits simples hors impôt dû sur les revenus au quotient.
     ecartsConnus: ['droitsSimples'],
   },
+  S58: {
+    description: 'outre-mer logement social HYJ : plafond commun de 133 333 € (40 000 € ÷ 30 %)',
+    saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHyj: 150000 } },
+    attendu: { revenuFiscalReference: 885445, droitsSimples: 374974, impotNet: 286559, parts: 1, prelevementsSociaux: 0, tmi: 0.45 },
+  },
   S57: {
     description: 'quotient : ID1 et ID2 arrondis avant l\'écart × 4 (64 532 €), TMI 41 %',
     saisies: {
@@ -754,6 +759,36 @@ const CAS_2027: Record<string, Cas> = {
     description: 'cadre 7 : Denormandie 2026 7LN, Scellier 7WE, outre-mer entreprise HMS',
     saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 120000 }, reductions: { case7ln: 100000, case7we: 30000, caseHms: 5000 } },
     attendu: { parts: 1, revenuFiscalReference: 108000, droitsSimples: 28081, impotNet: 20681, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+  T9: {
+    description: 'rente 1AR avec 8TK : crédit égal à l\'impôt français au prorata, PS neutralisés',
+    saisies: { foyer: FOYER, salaires: { case1aj: 40000 }, pensions: { case1ar: 5000 }, prelevementSource: { case8tk: 5000 } },
+    attendu: { parts: 1, revenuFiscalReference: 39500, droitsSimples: 4954, impotNet: 4515, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  T10: {
+    description: 'rente 1DR (70 ans et plus, 30 %) avec 8TK',
+    saisies: { foyer: FOYER, salaires: { case1aj: 40000 }, pensions: { case1dr: 5000 }, prelevementSource: { case8tk: 5000 } },
+    attendu: { parts: 1, revenuFiscalReference: 37500, droitsSimples: 4354, impotNet: 4180, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  T11: {
+    description: 'Chambord 7UQ : plafond propre de 1 000 € à 75 %, cumulé avec 7UD, excédent à 66 %',
+    saisies: { foyer: FOYER, salaires: { case1aj: 60000 }, reductions: { case7ud: 500, case7uq: 3000 } },
+    attendu: { parts: 1, revenuFiscalReference: 54000, droitsSimples: 9304, reductions: 2445, impotNet: 6859, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  T12: {
+    description: 'reports 7JT et 7KC sans effet',
+    saisies: { foyer: FOYER, salaires: { case1aj: 60000 }, reductions: { case7jt: 1000, case7kc: 1000 } },
+    attendu: { parts: 1, revenuFiscalReference: 54000, droitsSimples: 9304, impotNet: 9304, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  T13: {
+    description: 'outre-mer entreprise HMT au-delà de son plafond (90 000 €)',
+    saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHmt: 100000 } },
+    attendu: { revenuFiscalReference: 885445, droitsSimples: 374974, impotNet: 320492, parts: 1, prelevementsSociaux: 0, tmi: 0.45 },
+  },
+  T14: {
+    description: 'outre-mer logement social HYK au-delà de son plafond commun (133 333 €)',
+    saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHyk: 200000 } },
+    attendu: { revenuFiscalReference: 885445, droitsSimples: 374974, impotNet: 286559, parts: 1, prelevementsSociaux: 0, tmi: 0.45 },
   },
 };
 
