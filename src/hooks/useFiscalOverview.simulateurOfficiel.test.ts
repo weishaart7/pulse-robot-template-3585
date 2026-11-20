@@ -837,6 +837,19 @@ const CAS_2027: Record<string, Cas> = {
     },
     attendu: { parts: 1, revenuFiscalReference: 54000, droitsSimples: 9304, impotNet: 9304, prelevementsSociaux: 0, tmi: 0.3 },
   },
+  T16: {
+    description: 'cohortes Pinel, Denormandie et Duflot retirées du formulaire 2027 (7QM, 7NM, 7SY, 7FW, 7RB) sans effet',
+    saisies: {
+      foyer: FOYER, salaires: { case1aj: 60000 },
+      reductions: { case7qm: 3000, case7nm: 2000, case7sy: 1500, case7fw: 1000, case7rb: 800 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 54000, droitsSimples: 9304, impotNet: 9304, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  T17: {
+    description: 'HOB et HOC, absentes du formulaire 2027, toujours appliquées par calc-2027',
+    saisies: { foyer: FOYER, salaires: { case1aj: 400000 }, reductions: { caseHob: 30000, caseHoc: 1000 } },
+    attendu: { parts: 1, revenuFiscalReference: 385445, droitsSimples: 149974, impotNet: 123037, prelevementsSociaux: 0, tmi: 0.45 },
+  },
   T14: {
     description: 'outre-mer logement social HYK au-delà de son plafond commun (133 333 €)',
     saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHyk: 200000 } },

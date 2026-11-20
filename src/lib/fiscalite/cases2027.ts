@@ -83,10 +83,12 @@ export function ajouterJumelles2027<R extends object>(regles: Partial<Record<str
 }
 
 /**
- * Cases retirées du formulaire 2027 (présentes dans calc-2026, absentes de calc-2027), sans effet à partir
- * des revenus 2026 : fin de dispositif ou de délai de report (Scellier, Censi-Bouvard, reports PME/ESUS 2021,
- * Malraux 2022, forêt, dons temporaires 2025, PPRT, bornes de recharge, outre-mer, 6HP). Pinel, Denormandie,
- * Duflot et 8YS/8YU restent calculées, faute de certitude sur la fin de l'avantage.
+ * Cases retirées du formulaire 2027 (142 présentes dans calc-2026) sans effet à partir des revenus 2026 : 134,
+ * vérifiées une à une sur calc-2027 (1 000 € saisis, impôt inchangé). Fin de dispositif ou de délai de report
+ * (Scellier, Censi-Bouvard, reports PME/ESUS 2021, Malraux 2022, forêt, dons temporaires 2025, PPRT, bornes de
+ * recharge, outre-mer, 6HP), cohortes Pinel, Denormandie et Duflot (annuité à reprendre au formulaire
+ * définitif), 8YS/8YU. Restent calculées, car calc-2027 les applique encore bien qu'absentes du formulaire :
+ * 7JU et HOA, HOB, HOC, HOH, HOI, HOJ, HOK.
  */
 export const CASES_SUPPRIMEES_2027 = {
   reductions: [
@@ -101,7 +103,10 @@ export const CASES_SUPPRIMEES_2027 = {
     'case7xl', 'case7xm', 'case7xn', 'case7ya', 'case7yc', 'case7ym', 'case7yn', 'case7yo', 'case7yp',
     'case7zi', 'case7zj', 'case7zk', 'case7zl', 'case7zq', 'case7zr', 'case7zs', 'case7zt', 'case7zw',
     'case7zx', 'case7zy', 'case7zz', 'caseHgs', 'caseHgt', 'caseHgu', 'caseHgw', 'caseHkc', 'caseHlv',
-    'caseHoa', 'caseHob', 'caseHoc', 'caseHoh', 'caseHoi', 'caseHoj', 'caseHok', 'caseHvk', 'caseHye'
+    'caseHvk', 'caseHye', 'case7fw', 'case7jn', 'case7jp', 'case7jr', 'case7na', 'case7nb', 'case7nc',
+    'case7nd', 'case7nm', 'case7nn', 'case7of', 'case7og', 'case7pf', 'case7pg', 'case7qm', 'case7qn',
+    'case7qo', 'case7qp', 'case7rb', 'case7rd', 'case7rt', 'case7ru', 'case7rx', 'case7ry', 'case7sh',
+    'case7si', 'case7sy', 'case7sz', 'case7xa', 'case7xb', 'case8ys', 'case8yu'
   ],
   charges: ['case6hp'],
 } as const;

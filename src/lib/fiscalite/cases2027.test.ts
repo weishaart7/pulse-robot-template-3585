@@ -43,11 +43,13 @@ describe('cases de la déclaration 2027', () => {
 });
 
 describe('cases retirées du formulaire 2027', () => {
-  it('109 cases neutralisées, hors Pinel/Denormandie/Duflot et 8YS/8YU', async () => {
+  it('134 cases neutralisées, sans doublon ; 7JU et HOA…HOK restent calculées (calc-2027)', async () => {
     const { CASES_SUPPRIMEES_2027 } = await import('./cases2027');
     const toutes: string[] = [...CASES_SUPPRIMEES_2027.reductions, ...CASES_SUPPRIMEES_2027.charges];
-    expect(toutes).toHaveLength(109);
-    for (const cle of ['case7xa', 'case7qm', 'case7jn', 'case8ys', 'case8yu']) expect(toutes).not.toContain(cle);
+    expect(toutes).toHaveLength(134);
+    expect(new Set(toutes).size).toBe(134);
+    for (const cle of ['case7xa', 'case7qm', 'case7jn', 'case8ys', 'case8yu', 'case6hp', 'caseHgu']) expect(toutes).toContain(cle);
+    for (const cle of ['case7ju', 'caseHoa', 'caseHob', 'caseHoc', 'caseHoh', 'caseHoi', 'caseHoj', 'caseHok']) expect(toutes).not.toContain(cle);
   });
 
   it('neutralisées à partir des revenus 2026 seulement, signalées si saisies', async () => {

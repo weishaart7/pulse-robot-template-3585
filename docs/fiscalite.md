@@ -278,31 +278,35 @@ fonciers (§4).
   déclarations par année, suivent le millésime choisi (2044 de l'année de revenus, IFI au 1er janvier
   suivant) : en règles 2026, la 2044 revenus 2025 n'est pas reprise. Le sélecteur
   ([MillesimeSelector.tsx](src/pages/fiscalite/components/MillesimeSelector.tsx), en-tête de la Vue
-  d'ensemble) n'apparaît qu'à partir de deux millésimes. **Revenus 2026 provisoire**
-  (`revenus2026.ts`, `statut: 'provisoire'`) : valeurs relevées sur calc-2027.cgi en novembre 2026,
-  identiques aux revenus 2025 sauf les dons à 75 % (7UD seul, 2 000 €) et la FCPI (7GQ à 25 %, 7GR
-  supprimée), 7UQ (Chambord : plafond propre de 1 000 € à 75 %, excédent à 66 %, `plafondDonsChambord`),
-  les reports 7JT/7KC sans effet (`reportsSansEffet`) et les rentes 1AR…1DR ouvrant droit au crédit 8TK
-  (`rentesCreditImpotFrancais`) ; la suppression de 7VM n'est pas modélisée, signalée dans le cadre 7. Plus largement, le
-  formulaire calc-2027.cgi supprime 142 cases d'Aurevia (cadre 7 surtout : Pinel 7XA…7XE, Censi-Bouvard,
-  Scellier, PME 7CA/7DC/7CT, bornes 7ZQ…7ZT, 7WI ; outre-mer HGU, HOA…HOK ; 6HP) et en crée environ 140
-  (générations d'investissement décalées d'un an : 7CF…7CN, 7WA…7WG, 7ZA…7ZG, 8HA, 8KA…8KC, HMS…HMW…).
-  **Cases créées avec effet sur l'impôt : modélisées** ([cases2027.ts](src/lib/fiscalite/cases2027.ts)) —
-  124 colonnes (migration `20261120100000`), prises en compte à partir des revenus 2026 et neutralisées pour
-  les millésimes antérieurs (`masquerCases2027`, saisies communes aux millésimes). Cadre 7 (111 cases) : chaque
-  case reprend la règle de sa jumelle de la cohorte précédente (`JUMELLES_CADRE_7_2027`, copiée dans les
-  tables Pinel, Scellier, Censi-Bouvard et outre-mer : nature, taux, plafond, millésime de plafonnement),
-  choisie sur la réponse de calc-2027 à 1 000, 50 000 et 400 000 € ; Loc'Avantages 7AK…7AO, Malraux 7KZ, forêt
-  7VN/7TM, PME/ESUS 7CN/7CX/7DN dans leurs listes ; JEII 7CZ à 40 %, 50 000 € par part, hors plafonnement
-  global. Hors cadre 7 : 1PP/1PQ (comme 1MP/1MQ), 3YN (comme 3XN, PS à 18,6 %), 5KM/5LM/5MM (micro-BIC
-  50 %, abattement propre), taxe holdings 8HA/8HB/8HC (8HC ajoutée à l'impôt hors réductions, comme une taxe
-  annexe), acomptes de PS 8HU/8IU, crédit 8WB (comme 8WA), report 8PX (comme 8PY). Saisie : section
-  « Déclaration 2027 » du cadre 7 (libellés du formulaire, [libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts))
-  et champs à côté des jumelles, affichés pour les revenus 2026 (HMT et HYK : mêmes plafonds que leurs
-  jumelles, 90 000 € et 133 333 €, cas T13/T14). Restent à traiter à la loi de finances : cases supprimées
-  encore calculées (Pinel/Denormandie/Duflot et 8YS/8YU ; les 109 autres sont neutralisées) ; les cases nouvelles sans effet sont saisissables
-  pour mémoire (`casesInformatives2027.ts`). Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
-  rejoués sur les deux millésimes, ceux des cases 2027 (`CAS_2027`) sur les revenus 2026 seuls.
+  d'ensemble) n'apparaît qu'à partir de deux millésimes.
+  **Revenus 2026, provisoire** (`revenus2026.ts`, `statut: 'provisoire'`, formulaire calc-2027.cgi relevé en
+  novembre 2026, loi de finances pour 2027 non promulguée). Règles identiques aux revenus 2025, sauf :
+  - dons à 75 % : 7UD seul, 2 000 € ; 7UQ (Chambord) avec son plafond propre de 1 000 € à 75 %, excédent à
+    66 % (`plafondDonsChambord`) ;
+  - FCPI : 7GQ à 25 %, 7GR supprimée ;
+  - reports 7JT/7KC sans effet (`reportsSansEffet`) ;
+  - rentes 1AR…1DR ouvrant droit au crédit égal à l'impôt français, contrôlé par 8TK (`rentesCreditImpotFrancais`).
+
+  Le formulaire suit les cohortes d'un an de plus. Trois traitements, tous dans
+  [cases2027.ts](src/lib/fiscalite/cases2027.ts) et [casesInformatives2027.ts](src/lib/fiscalite/casesInformatives2027.ts) :
+  - **cases créées avec effet (124)** : prises en compte à partir des revenus 2026, neutralisées avant
+    (`masquerCases2027`, saisies communes aux millésimes ; migration `20261120100000`). Cadre 7 (111) : chaque
+    case reprend la règle de sa jumelle de la cohorte précédente (`JUMELLES_CADRE_7_2027`, copiée dans les
+    tables Pinel, Scellier, Censi-Bouvard et outre-mer), choisie sur la réponse de calc-2027 à 1 000, 50 000 et
+    400 000 € ; Loc'Avantages 7AK…7AO, Malraux 7KZ, forêt 7VN/7TM, PME/ESUS 7CN/7CX/7DN ; JEII 7CZ à 40 %, hors
+    plafonnement global. Hors cadre 7 : 1PP/1PQ (comme 1MP/1MQ), 3YN (comme 3XN), 5KM/5LM/5MM (micro-BIC 50 %),
+    taxe holdings 8HA/8HB/8HC (8HC ajoutée à l'impôt hors réductions), acomptes de PS 8HU/8IU, 8WB (comme 8WA),
+    8PX (comme 8PY). Saisie : section « Déclaration 2027 » du cadre 7
+    ([libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts)) et champs à côté des jumelles ;
+  - **cases créées sans effet (115)** : saisissables pour mémoire, jamais lues par le moteur (table
+    `cases_informatives_2042`, voir §3) ;
+  - **cases retirées (142)** : chacune testée sur calc-2027 (1 000 € saisis). 134 sont sans effet à partir des
+    revenus 2026, comme sur le simulateur (`CASES_SUPPRIMEES_2027`, `masquerCasesSupprimees2027`), et une
+    saisie restante est signalée dans `alertesSaisie` ; 8 restent calculées car calc-2027 les applique encore
+    bien qu'absentes du formulaire (7JU, HOA, HOB, HOC, HOH, HOI, HOJ, HOK). Voir §3.
+
+  Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont rejoués sur les deux millésimes, ceux des
+  cases 2027 (`CAS_2027`) sur les revenus 2026 seuls.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
   `Declaration2042Interface.tsx` reprend la mécanique de l'ancien `IFIInterface.tsx` (overlay
@@ -594,7 +598,8 @@ fonciers (§4).
   Transmis à `calculerImpot` en dernier paramètre optionnel et additionné **seulement** à
   `revenuFiscalReference`, jamais à `revenuMondialFictif` (qui reste réservé au calcul de l'impôt
   lui-même — ces revenus n'entrent jamais dans l'assiette taxée ni dans le taux effectif). **Écart
-  résiduel non expliqué (2 € et 102 € sur les 2 cas ci-dessus) : reste ouvert**, voir
+  résiduel (2 € et 102 € sur les 2 cas ci-dessus), relevé avant la règle des deux comparaisons de 1AC (voir
+  `calculerDeclarant`) ; non rejoué depuis**, voir
   `regressionExempleUtilisateur.test.ts` (second cas, `revenuFiscalReference` attendu à 122 300 € pour un
   RFR officiel de 122 402 €).
   **Investigation approfondie de l'écart de 102 € : cause isolée, mais non résolue — piste abandonnée
@@ -2035,55 +2040,63 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 ### Synthèse : conformité au simulateur officiel (2042 complète)
 
-Toutes les cases de la 2042 et de la 2042-C-PRO (cadres 1 à 8, environ 1 300) ont été comparées une à une
-au simulateur officiel, sur une situation de base commune puis avec prérequis, plafonds et cumuls : revenus
-2025 contre calc-2026.cgi, revenus 2026 contre calc-2027.cgi (formulaire provisoire). Cas de non-régression :
-`useFiscalOverview.simulateurOfficiel.test.ts` (S1…S57 sur les deux millésimes, T1…T8 sur les revenus 2026).
+Toutes les cases de la 2042 et de la 2042-C-PRO (cadres 1 à 8, environ 1 300) ont été comparées une à une au
+simulateur officiel, sur une situation de base commune puis avec prérequis, plafonds et cumuls : revenus 2025
+contre calc-2026.cgi, revenus 2026 contre calc-2027.cgi (formulaire provisoire). Cas de non-régression :
+`useFiscalOverview.simulateurOfficiel.test.ts` (S1…S67 sur les deux millésimes, T1…T17 sur les revenus 2026).
 
-**Aligné** (IR, PS, RFR et solde à l'euro) : barème, quotient familial et plafonnement, décote, taux effectif,
-crédit égal à l'impôt français (sur les droits avant décote), plafond de 10 % imputé d'abord sur l'imposable,
-abattements spéciaux, PFU et option barème, système du quotient (ID1/ID2 arrondis, TMI au quart), PS, CEHR,
-CDHR, cadres 2 à 6, réductions et crédits du cadre 7, cadre 8 et solde ; colonnes des personnes à charge ;
-moyenne triennale du micro-BA ; arrondis des impositions proportionnelles et des réductions ; déficit global
-de l'année reporté. Les saisies que le simulateur refuse sont signalées (`controlerSaisie2042`, contrôles du
-cadre 3), sans bloquer le calcul. Revenus 2026 : rentes 1AR…1DR au crédit 8TK, Chambord 7UQ, reports
-7JT/7KC sans effet ; plafond commun du logement social outre-mer (133 333 €) sur les deux millésimes.
+**Aligné** (IR, PS, RFR, droits simples, total des réductions et solde à l'euro) :
+- barème, quotient familial et plafonnement, décote, taux effectif (impôt sur le revenu mondial arrondi avant
+  le prorata), système du quotient (ID1/ID2 arrondis, TMI au quart), PFU et option barème, PS, CEHR, CDHR ;
+- salaires : plafond de 10 % imputé d'abord sur l'imposable ; avec 1AC, deux comparaisons distinctes (revenu
+  imposable France : forfait France ou 1AK ; revenu mondial : forfait total ou 1AK + 1AE) ;
+- pensions : plafond de 4 439 € imputé d'abord sur l'imposable, puis réparti entre pensions imposables et
+  exonérées du foyer, parts arrondies 0,50 vers le bas ; crédit égal à l'impôt français sur les droits avant
+  décote ; colonnes des personnes à charge ;
+- cadres 2 à 8 : abattements spéciaux, quotient RVG/RUA (abattements RVA/RSL/RSG réintégrés en entier au RFR),
+  micro-BA triennal, déficit global de l'année reporté, réductions et crédits du cadre 7, plafond commun du
+  logement social outre-mer (133 333 €), cadre 8 et solde ;
+- revenus 2026 : règles et cases propres au formulaire 2027 (voir §2, millésimes) ;
+- présentation (`presentationReductions`) : droits simples hors impôt au quotient et hors 1AT ; total des
+  réductions avec le crédit 8TK, mécénat 7US parmi les crédits.
 
-**Écarts restants, revenus 2026** (formulaire 2027 provisoire, à reprendre à la loi de finances pour 2027) :
-- cases retirées du formulaire 2027 (142, présentes dans calc-2026) : 109 neutralisées à partir des revenus
-  2026 (`CASES_SUPPRIMEES_2027`, `masquerCasesSupprimees2027`), car leur dispositif ou leur délai de report
-  s'achève — Scellier 61, Censi-Bouvard 11, autres cadre 7 21 (reports PME/ESUS 2021, 7GR, Malraux 7KY,
-  forêt, dons 7UJ/7UO/7VM, PPRT, bornes 7ZQ…7ZT), outre-mer 15, 6HP ; une saisie restante est signalée
-  (`alertesSaisie`), cas T15. **Encore calculées** (33) : Pinel/Denormandie/Duflot (31, cohortes dont
-  l'annuité peut passer dans une case de report du nouveau formulaire) et 8YS/8YU, à trancher au
-  formulaire définitif.
+Les saisies que le simulateur refuse sont signalées (`controlerSaisie2042`, contrôles du cadre 3), sans
+bloquer le calcul.
 
-**Cases propres à Aurevia, absentes des deux simulateurs** (21, sans écart à corriger) : prélèvement à la
-source des personnes à charge 8JV…8JZ/8KV…8KZ, plafond épargne retraite global 6PS/6PT/6PU (APS…DPU au
-simulateur), cases à cocher 8TT/8UU/8FV, texte libre RSE/RSF, 4BZ (reportée de la 2044), 7HB, 3SZ.
+**Écarts restants** :
+- 1 € de RFR, sans effet sur l'impôt, quand le plafond des pensions se répartit en tiers dans un couple
+  (1AS 15 000 + 1AH 15 000 + 1BH 15 000 : 40 562 € au simulateur, 40 561 € ici). Aucune règle identifiée
+  (38 cas relevés, une soixantaine de modèles d'arrondi testés) ; exact pour tout déclarant seul ;
+- revenus 2025 seulement, outre-mer : `HGU` 20 000 € + `HOB` 30 000 € → 40 000 € de réduction au
+  simulateur, 30 600 € ici (règle de cumul entre investissements d'entreprise et immobilier ancien non
+  élucidée). Sans objet pour les revenus 2026 (HGU retirée).
+
+**À revoir au formulaire 2027 définitif** (loi de finances pour 2027) :
+- cases retirées (142) : 134 neutralisées pour les revenus 2026, comme sur le simulateur provisoire —
+  Scellier 61, Pinel/Denormandie/Duflot 30, Censi-Bouvard 11, autres cadre 7 21 (reports PME/ESUS 2021, 7GR,
+  Malraux 7KY, forêt, dons 7UJ/7UO/7VM, PPRT, bornes 7ZQ…7ZT), outre-mer 8 (HGS, HGT, HGU, HGW, HKC, HLV, HVK,
+  HYE), 6HP, 8YS/8YU ; 8 encore appliquées par calc-2027 et calculées ici (7JU, HOA…HOK, cas T17). Pour les
+  cohortes Pinel/Denormandie encore sous engagement (7QM…7QP, 7NM/7NN/7PF/7PG, 7SY/7SZ, 7JN/7JP/7JR), le droit
+  continue : identifier la case de report qui reprend l'annuité et orienter la saisie ;
+- règles provisoires du millésime 2026 (voir §2) et cases créées (jumelles du cadre 7).
+
+**Cases propres à Aurevia, absentes des deux simulateurs** (21, sans écart) : prélèvement à la source des
+personnes à charge 8JV…8JZ/8KV…8KZ, plafond épargne retraite global 6PS/6PT/6PU (APS…DPU au simulateur), cases
+à cocher 8TT/8UU/8FV, texte libre RSE/RSF, 4BZ (reportée de la 2044), 7HB, 3SZ.
 
 **Cases du formulaire 2027 sans effet sur le calcul** (115) : saisissables pour mémoire à partir des revenus
 2026, jamais lues par le moteur. Catalogue `casesInformatives2027.ts` (libellés du formulaire, type montant,
-case à cocher, mois, taux…), table dédiée `cases_informatives_2042` (une ligne par foyer, migration
-`20261120200000`), bloc `CasesInformatives2027` en fin de chaque cadre (1, 2, 3, 4, 5, 8), enregistré par le
-bouton du cadre (chaque formulaire n'écrit que ses colonnes). Cadre 1 : colonnes des personnes à charge
-(1CV…1JE), gains en report 1NP…1OQ ; cadre 2 : ventilation avant/après le 20.2.2026 (2DK…2XZ) ; 3WG/3WH ;
-4BB ; cadre 5 : durées d'exercice, cessations, « dont » plus et moins-values à court terme, jeunes
-agriculteurs 5HM…5JM, paiement fractionné 5EA…5EU, moins-values à long terme des personnes à charge ;
-cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ). Absence d'effet vérifiée sur calc-2027.
+case à cocher, mois, taux…), table `cases_informatives_2042` (une ligne par foyer, migration `20261120200000`),
+bloc `CasesInformatives2027` en fin de cadre (1, 2, 3, 4, 5, 8), enregistré par le bouton du cadre. Cadre 1 :
+colonnes des personnes à charge (1CV…1JE), gains en report 1NP…1OQ ; cadre 2 : ventilation avant/après le
+20.2.2026 (2DK…2XZ) ; 3WG/3WH ; 4BB ; cadre 5 : durées d'exercice, cessations, « dont » plus et moins-values à
+court terme, jeunes agriculteurs 5HM…5JM, paiement fractionné 5EA…5EU, moins-values à long terme des personnes
+à charge ; cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ).
 
-**Non testable sur un foyer résident, hors périmètre** : exit tax (3TA…3YB), 3SE, 8TD, 8TM, 8TN, 8TA.
+**Hors périmètre (non-résidents)** : exit tax (3TA…3YB), 3SE, 8TD, 8TM, 8TN, 8TA.
 
-**Écarts mineurs connus** : 1 € de RFR quand le plafond des pensions se répartit sur des parts d'un tiers
-(1AS 15 000 + 1AH 15 000 + 1BH 15 000). Corrigés (cas S59 à S66) : arrondi des parts du plafond des pensions,
-RVA/RSL/RSG au-delà de RUA/RVG réintégrés au RFR, 1AC avec frais réels (deux comparaisons France / mondial),
-impôt sur le revenu mondial arrondi avant le taux effectif. Présentation alignée (`presentationReductions`, cas S67) : le total
-des réductions affiché comprend le crédit égal à l'impôt français 8TK et exclut le mécénat d'entreprise 7US,
-affiché avec les crédits (non restituable : ignoré pour un foyer non imposable, comme au simulateur). Droits simples
-présentés comme au simulateur (`presentationReductions.droitsSimples`, affichés dans la synthèse) : après taux
-effectif, hors impôt sur les revenus au quotient (RVG/RUA, 0XX) et hors taxes proportionnelles (1AT) ; les cas
-S52, S56 et S57 ne sont plus des écarts connus. L'écart de 1 € des parts en tiers n'a pas de règle identifiée (38 cas relevés, une
-soixantaine de modèles d'arrondi testés) : modèle actuel exact pour tout déclarant seul.
+**Non rejoué** : le cas réel avec 1GB (écart de RFR de 102 € relevé avant la règle des deux comparaisons de
+1AC ; données dans `exemples/`).
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
