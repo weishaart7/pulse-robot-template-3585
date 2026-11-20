@@ -2021,6 +2021,39 @@ régime réel uniquement (le micro-foncier, case 4BE, n'en relève pas : choix d
 
 ## 3. Dette identifiée
 
+### Synthèse : conformité au simulateur officiel (2042 complète)
+
+Toutes les cases de la 2042 et de la 2042-C-PRO (cadres 1 à 8, environ 1 300) ont été comparées une à une
+au simulateur officiel, sur une situation de base commune puis avec prérequis, plafonds et cumuls : revenus
+2025 contre calc-2026.cgi, revenus 2026 contre calc-2027.cgi (formulaire provisoire). Cas de non-régression :
+`useFiscalOverview.simulateurOfficiel.test.ts` (S1…S57 sur les deux millésimes, T1…T8 sur les revenus 2026).
+
+**Aligné** (IR, PS, RFR et solde à l'euro) : barème, quotient familial et plafonnement, décote, taux effectif,
+crédit égal à l'impôt français (sur les droits avant décote), plafond de 10 % imputé d'abord sur l'imposable,
+abattements spéciaux, PFU et option barème, système du quotient (ID1/ID2 arrondis, TMI au quart), PS, CEHR,
+CDHR, cadres 2 à 6, réductions et crédits du cadre 7, cadre 8 et solde ; colonnes des personnes à charge ;
+moyenne triennale du micro-BA ; arrondis des impositions proportionnelles et des réductions ; déficit global
+de l'année reporté. Les saisies que le simulateur refuse sont signalées (`controlerSaisie2042`, contrôles du
+cadre 3), sans bloquer le calcul.
+
+**Écarts restants, revenus 2026** (formulaire 2027 provisoire, à reprendre à la loi de finances pour 2027) :
+- cases supprimées du formulaire 2027 encore calculées : 160 cases d'Aurevia, dont 140 au cadre 7 (anciennes
+  cohortes, qui produisent encore leur réduction), 6HP (déduite), 3SZ, colonnes PAC du prélèvement à la source ;
+- règles changées par calc-2027 : rentes 1AR…1DR désormais ouvrant droit au crédit 8TK, Chambord 7UQ avec un
+  plafond propre de 1 000 € à 75 %, reports 7JT/7KC ignorés ;
+- plafond outre-mer 2026 de HMT et HYK (76 795 € au simulateur, jumelles 2025 à 77 400 € et 91 482 €),
+  au-delà de 77 000 € de réduction seulement ;
+- 117 cases du formulaire 2027 sans effet au simulateur non saisissables (cases à cocher, durées
+  d'exercice, ventilation des prélèvements libératoires, page CDHR 8KB…8KJ…).
+
+**Non testable sur un foyer résident** : exit tax (3WM…3YB), 3SE, 8TM, 8TA, 8KA (page détail de 0XX).
+
+**Écarts mineurs connus** : 1 € de RFR quand 1AS et 1AH d'un même déclarant épuisent le plafond à parts
+égales ; RVA supérieur à RUA plafonné à RUA (le simulateur réintègre RVA en entier au RFR, saisie
+incohérente signalée). Différences de présentation seulement : le simulateur range le crédit 8TK dans
+« Total des réductions » (pas 7US), et affiche les droits simples hors impôt sur les revenus au quotient
+(taxe 1AT comprise).
+
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 
 - **Résolu (voir §2) — un moteur de calcul de l'impôt sur le revenu existe désormais**
