@@ -70,7 +70,7 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
   const {
     impot, revenuSalaires, gainsActionnariat, pensionsRetraitesRentes, revenuCapitauxMobiliers, plusValuesGainsDivers, revenuExonereTauxEffectif,
     prelevementsSociauxCapitauxMobiliers, prelevementsSociauxPensionsRetraitesRentes, prelevementsSociauxGainsActionnariat,
-    anneeRevenus, revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesSaisie, alertesChargesDeductibles, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, cdhr, solde, ifi, comparaisonOptionBareme,
+    anneeRevenus, revenusFonciers, revenusFonciers2042, revenusNonSalaries, plafonnementNiches, deficitAgricoleImpute, chargesDeductibles, abattementsSpeciaux, alerte8TK, alertesSaisie, alertesChargesDeductibles, presentationReductions, prelevementSourceDivers, reductionPrelevementsSociaux, prelevementsSociauxTotal, cehr, cdhr, solde, ifi, comparaisonOptionBareme,
   } = overview;
 
   // PS sur les salaires (prélevés en paie) restent hors total : seules les impositions calculées sont sommées.
@@ -81,8 +81,10 @@ const FiscalOverviewCard = ({ overview }: { overview: FiscalOverview }) => {
 
   const noteImpot = [
     impot.decote > 0 ? `après décote de ${formatEuros(impot.decote)}` : null,
-    impot.reductionsImpot > 0 ? `réductions ${formatEuros(impot.reductionsImpot)}` : null,
-    impot.creditsImpotCadre7 > 0 ? `crédits d'impôt ${formatEuros(impot.creditsImpotCadre7)}` : null,
+    // Présentation du simulateur officiel : crédit 8TK parmi les réductions, mécénat 7US parmi les crédits.
+    presentationReductions.totalReductions > 0 ? `réductions ${formatEuros(presentationReductions.totalReductions)}` : null,
+    impot.creditsImpotCadre7 + presentationReductions.mecenatEntreprise > 0
+      ? `crédits d'impôt ${formatEuros(impot.creditsImpotCadre7 + presentationReductions.mecenatEntreprise)}` : null,
     plafonnementNiches.excedent > 0 ? `plafonnement global des avantages fiscaux +${formatEuros(plafonnementNiches.excedent)}` : null,
   ].filter(Boolean).join(' · ') || undefined;
 

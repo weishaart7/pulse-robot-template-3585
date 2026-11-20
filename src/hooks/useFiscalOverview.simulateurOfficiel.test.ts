@@ -677,6 +677,14 @@ const CAS: Record<string, Cas> = {
     saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980 }, salaires: { case1aj: 80000, case1ak: 2000 }, exoneres: { case1ac: 30000, case1ae: 12000 } },
     attendu: { parts: 1, revenuFiscalReference: 96000, droitsSimples: 17371, impotNet: 17371, prelevementsSociaux: 0, tmi: 0.41 },
   },
+  S67: {
+    description: 'présentation : crédit 8TK compté dans le total des réductions, mécénat 7US parmi les crédits',
+    saisies: {
+      foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980 }, salaires: { case1aj: 40000 }, pensions: { case1al: 10000 },
+      nonSalaries: { case5hc: 10000 }, reductions: { case7us: 500, case7uf: 1000 }, prelevementSource: { case8tk: 10000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 55000, droitsSimples: 9604, reductions: 2232, impotNet: 6872, prelevementsSociaux: 0, tmi: 0.3 },
+  },
   S57: {
     description: 'quotient : ID1 et ID2 arrondis avant l\'écart × 4 (64 532 €), TMI 41 %',
     saisies: {
@@ -706,7 +714,8 @@ function calculer(saisies: Record<string, unknown>, anneeRevenus: number) {
     droitsSimples: Math.round(r.impot.impotProportionnel + r.impot.reductionComplementaireQuotientFamilial),
     decote: Math.round(r.impot.decote),
     impotProportionnel: r.impot.impotForfaitaire,
-    reductions: r.impot.reductionsImpot,
+    // « Total des réductions » du simulateur : crédit 8TK compris, mécénat 7US exclu (présenté en crédit).
+    reductions: r.presentationReductions.totalReductions,
     cehr: r.cehr,
     cdhr: r.cdhr.cdhr,
     plafonnement: r.plafonnementNiches.excedent,

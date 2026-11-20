@@ -2077,9 +2077,12 @@ cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ). Absence d'effet vérifiée s
 **Écarts mineurs connus** : 1 € de RFR quand le plafond des pensions se répartit sur des parts d'un tiers
 (1AS 15 000 + 1AH 15 000 + 1BH 15 000). Corrigés (cas S59 à S66) : arrondi des parts du plafond des pensions,
 RVA/RSL/RSG au-delà de RUA/RVG réintégrés au RFR, 1AC avec frais réels (deux comparaisons France / mondial),
-impôt sur le revenu mondial arrondi avant le taux effectif. Différences de présentation seulement : le simulateur range le crédit 8TK dans
-« Total des réductions » (pas 7US), et affiche les droits simples hors impôt sur les revenus au quotient
-(taxe 1AT comprise).
+impôt sur le revenu mondial arrondi avant le taux effectif. Présentation alignée (`presentationReductions`, cas S67) : le total
+des réductions affiché comprend le crédit égal à l'impôt français 8TK et exclut le mécénat d'entreprise 7US,
+affiché avec les crédits (non restituable : ignoré pour un foyer non imposable, comme au simulateur). Reste une
+différence de présentation : le simulateur affiche les droits simples hors impôt sur les revenus au quotient
+(taxe 1AT comprise). L'écart de 1 € des parts en tiers n'a pas de règle identifiée (38 cas relevés, une
+soixantaine de modèles d'arrondi testés) : modèle actuel exact pour tout déclarant seul.
 
 ### 🔴 Bloquant (peut fausser un calcul montré au client)
 

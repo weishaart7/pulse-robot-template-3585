@@ -314,6 +314,11 @@ export interface FiscalOverview {
   alerte8TK: string | null;
   /** Saisies croisant plusieurs cadres que le simulateur officiel refuse (voir controlerSaisie2042.ts), sans effet sur le calcul. */
   alertesSaisie: string[];
+  /**
+   * Présentation du simulateur officiel, sans effet sur le calcul : « Total des réductions » comprend le crédit
+   * égal à l'impôt français (8TK) et exclut le mécénat d'entreprise 7US, listé avec les crédits.
+   */
+  presentationReductions: { totalReductions: number; mecenatEntreprise: number };
   /** Cadre 7 (dons, services à la personne) — voir calculerReductionsCreditsImpot.ts. */
   reductionsCreditsImpot: ReductionsCreditsImpotResult;
   /** Plafonnement global des avantages fiscaux (art. 200-0 A) : excédent ajouté à l'impôt. */
@@ -745,6 +750,10 @@ export function useFiscalOverview(): FiscalOverview {
         abattementsSpeciaux,
         alertesChargesDeductibles: alertesChargesDeductibles(charges ?? CHARGES_DEDUCTIBLES_PAR_DEFAUT, foyerInput, anneeRevenus),
         alerte8TK: verification8TK.alerte,
+        presentationReductions: (() => {
+          const mecenatEntreprise = Math.min(souscriptionsCapital.mecenatEntreprise, impot.reductionsImpot);
+          return { totalReductions: impot.reductionsImpot - mecenatEntreprise + impot.creditImpotFrancais, mecenatEntreprise };
+        })(),
         alertesSaisie: controlerSaisie2042({
           foyer: foyerInput, anneeRevenus, salaires: revenusInput, gains, pensions: pensionsInput,
           capitauxMobiliers: capitauxMobiliersInput, plusValues, fonciers: fonciers2042Input, nonSalaries: nonSalariesInput,

@@ -77,6 +77,8 @@ const plafonne = (v: unknown, plafond: number, taux: number) => Math.min(montant
 export interface SouscriptionsCapitalResult {
   /** Total des réductions (non restituables). */
   reductions: number;
+  /** 7US (mécénat d'entreprise), compris dans `reductions` : présenté en crédit par le simulateur officiel. */
+  mecenatEntreprise: number;
   /** Part soumise au seul plafond de 10 000 €. */
   avantagesPlafonnesCourants: number;
   /** Part ESUS majorant le plafond de 3 000 € (7DC, 7BS, 7EK). */
@@ -116,6 +118,7 @@ export function calculerSouscriptionsCapital(
   const courants = pme.reduction - pme.majorante + fcpi + fip + presse + objetsMH + reports;
   return {
     reductions: courants + esus + sofica + horsPlafond,
+    mecenatEntreprise: revenuProfessionnelReel ? montant(input.case7us) : 0,
     avantagesPlafonnesCourants: courants,
     esus,
     sofica,
