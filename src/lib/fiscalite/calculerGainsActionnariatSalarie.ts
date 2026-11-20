@@ -38,9 +38,9 @@ const TAUX_3VF = 0.41;
 export function basesGainsSalariaux(input: GainsActionnariatSalarieInput): { declarant1: number; declarant2: number } {
   return {
     declarant1: (input.case1tp ?? 0) + (input.case1tt ?? 0)
-      + (input.case1nx ?? 0) + (input.case1ay ?? 0) + (input.case1mp ?? 0) + (input.case3vj ?? 0),
+      + (input.case1nx ?? 0) + (input.case1ay ?? 0) + (input.case1mp ?? 0) + (input.case1pp ?? 0) + (input.case3vj ?? 0),
     declarant2: (input.case1up ?? 0) + (input.case1ut ?? 0)
-      + (input.case1ox ?? 0) + (input.case1by ?? 0) + (input.case1mq ?? 0) + (input.case3vk ?? 0),
+      + (input.case1ox ?? 0) + (input.case1by ?? 0) + (input.case1mq ?? 0) + (input.case1pq ?? 0) + (input.case3vk ?? 0),
   };
 }
 

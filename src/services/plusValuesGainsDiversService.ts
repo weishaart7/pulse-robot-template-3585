@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { PlusValuesGainsDiversInput } from '@/lib/fiscalite';
+import { CASES_2027 } from '@/lib/fiscalite/cases2027';
 
 export interface PlusValuesGainsDivers extends PlusValuesGainsDiversInput {
   id?: string;
@@ -11,6 +12,8 @@ const CASES_NUMERIQUES = [
   'case3sj', 'case3tj', 'case3tk', 'case3sk', 'case3tl', 'case3tm', 'case3pc', 'case3pe', 'case3vq', 'case3vr', 'case3vc', 'case3ex',
   'case3wi', 'case3wj', 'case3wn', 'case3xn', 'case3wp', 'case3wr', 'case3ws', 'case3wt',
   'caseRvg', 'caseNvg', 'caseRsg', 'caseRua', 'caseNua', 'caseRsl', 'caseRva',
+  // Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts.
+  ...CASES_2027.plusValues,
 ] as const;
 
 /** case3vg → case_3vg, caseRvg → case_rvg (colonne Supabase). */

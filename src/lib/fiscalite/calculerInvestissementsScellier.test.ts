@@ -12,7 +12,7 @@ const baisse = (o: Partial<ReductionsCreditsImpotInput>, courants = 0) => {
 };
 
 describe('calculerInvestissementsScellier, case par case', () => {
-  it('175 cases', () => { expect(Object.keys(REGLES_SCELLIER)).toHaveLength(175); });
+  it('175 cases + 57 cases de la déclaration 2027', () => { expect(Object.keys(REGLES_SCELLIER)).toHaveLength(232); });
   it.each<[keyof ReductionsCreditsImpotInput, number, number]>([
     ['case7rt', 1000, 1000],
     ['case7rt', 100000, 16000],

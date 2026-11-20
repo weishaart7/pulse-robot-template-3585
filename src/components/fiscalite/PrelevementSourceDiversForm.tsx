@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { usePrelevementSourceDivers } from '@/hooks/usePrelevementSourceDivers';
 import { PrelevementSourceDivers } from '@/services/prelevementSourceDiversService';
-import { PRELEVEMENT_SOURCE_DIVERS_VIDE, PrelevementSourceDiversInput, calculerPrelevementSourceDivers } from '@/lib/fiscalite';
+import { ANNEE_REVENUS_CASES_2027, PRELEVEMENT_SOURCE_DIVERS_VIDE, PrelevementSourceDiversInput, calculerPrelevementSourceDivers } from '@/lib/fiscalite';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { CaseLigne, MontantEclateLigne, SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -21,6 +22,10 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
       setPsId(id);
     }
   }, [data]);
+
+  // Cases de la déclaration 2027 (revenus 2026) affichées seulement pour ce millésime.
+  const { anneeRevenus } = useMillesimeFiscal();
+  const declaration2027 = anneeRevenus >= ANNEE_REVENUS_CASES_2027;
 
   const update = <K extends keyof PrelevementSourceDiversInput>(key: K, value: PrelevementSourceDiversInput[K]) => {
     setPs(prev => ({ ...prev, [key]: value }));
@@ -68,6 +73,15 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
               { label: '2e pers. à charge', code: '8KX', value: ps.case8kx, onChange: v => update('case8kx', v) },
             ]}
           />
+          {declaration2027 && (
+            <MontantEclateLigne
+              label="Acomptes de prélèvements sociaux à 18,6 % (déclaration 2027)"
+              items={[
+                { label: 'Déclarant 1', code: '8HU', value: ps.case8hu ?? null, onChange: v => update('case8hu', v) },
+                { label: 'Déclarant 2', code: '8IU', value: ps.case8iu ?? null, onChange: v => update('case8iu', v) },
+              ]}
+            />
+          )}
         </SousGroupe>
 
         <SousGroupe titre="Remboursement de trop-prélevé déjà obtenu">
@@ -191,6 +205,9 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           <SingleMontantLigne label="Crédit métiers d'art" code="8WR" value={ps.case8wr ?? null} onChange={v => update('case8wr', v)} />
           <SingleMontantLigne label="Micro-entrepreneur : versements libératoires dont le remboursement est demandé" code="8UY" value={ps.case8uy ?? null} onChange={v => update('case8uy', v)} />
           <SingleMontantLigne label="Crédit agriculture biologique" extra="bénéfice agricole requis" code="8WA" value={ps.case8wa ?? null} onChange={v => update('case8wa', v)} />
+          {declaration2027 && (
+            <SingleMontantLigne label="Crédit mécanisation collective des exploitations agricoles (dépenses engagées à compter du 21.2.2026)" extra="déclaration 2027, bénéfice agricole au réel requis" code="8WB" value={ps.case8wb ?? null} onChange={v => update('case8wb', v)} />
+          )}
           <SingleMontantLigne label="Exploitation agricole à haute valeur environnementale" extra="bénéfice agricole requis" code="8WH" value={ps.case8wh ?? null} onChange={v => update('case8wh', v)} />
           <SingleMontantLigne label="Remplacement pour congé des agriculteurs" extra="bénéfice agricole requis" code="8WT" value={ps.case8wt ?? null} onChange={v => update('case8wt', v)} />
         </SousGroupe>
@@ -204,6 +221,9 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
 
         <SousGroupe titre="Réductions d'impôt" aide="Non restituables.">
           <SingleMontantLigne label="Report de réduction d'impôt non imputée de 2024" code="8PY" value={ps.case8py ?? null} onChange={v => update('case8py', v)} />
+          {declaration2027 && (
+            <SingleMontantLigne label="Report de réduction d'impôt non imputée de 2025" extra="déclaration 2027" code="8PX" value={ps.case8px ?? null} onChange={v => update('case8px', v)} />
+          )}
           <SingleMontantLigne label="Prêt à taux zéro mobilité" code="8PZ" value={ps.case8pz ?? null} onChange={v => update('case8pz', v)} />
         </SousGroupe>
 
@@ -213,6 +233,13 @@ export const PrelevementSourceDiversForm = ({ onSaved }: PrelevementSourceDivers
           <SingleCaseLigne label="Contrats de capitalisation ou d'assurance-vie souscrits à l'étranger" aide="Joindre la déclaration n° 3916-3916 bis." code="8TT" checked={ps.case8tt} onChange={v => update('case8tt', v)} />
           <SingleCaseLigne label="Comptes ouverts, détenus, utilisés ou clos à l'étranger" aide="Joindre la déclaration n° 3916-3916 bis." code="8UU" checked={ps.case8uu} onChange={v => update('case8uu', v)} />
         </SousGroupe>
+        {declaration2027 && (
+          <SousGroupe titre="Taxe sur les actifs des holdings patrimoniales (déclaration 2027)" aide="Les trois cases se remplissent ensemble ; le montant 8HC s'ajoute à l'impôt, sans réduction ni crédit imputable.">
+            <SingleMontantLigne label="Base des actifs taxables" code="8HA" value={ps.case8ha ?? null} onChange={v => update('case8ha', v)} />
+            <SingleMontantLigne label="Nombre de sociétés déclarées" code="8HB" value={ps.case8hb ?? null} onChange={v => update('case8hb', v)} />
+            <SingleMontantLigne label="Montant de la taxe due" code="8HC" value={ps.case8hc ?? null} onChange={v => update('case8hc', v)} />
+          </SousGroupe>
+        )}
     </Cadre2042>
   );
 };

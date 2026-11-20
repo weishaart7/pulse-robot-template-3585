@@ -145,7 +145,8 @@ export function calculerPlusValuesGainsDivers(
   const report2012 = (input.case3wi ?? 0) + (input.case3wj ?? 0);
   const impotReports = (input.case3wi ?? 0) * TAUX_3WI + (input.case3wj ?? 0) * TAUX_3WJ
     + (input.case3wr ?? 0) + (input.case3ws ?? 0) + (input.case3wt ?? 0);
-  const reportsAvantAbattement = (input.case3wn ?? 0) + (input.case3xn ?? 0);
+  // 3YN (déclaration 2027, plus-values réalisées depuis 2025) : RFR comme 3XN, PS à 18,6 % (simulateur calc-2027).
+  const reportsAvantAbattement = (input.case3wn ?? 0) + (input.case3xn ?? 0) + (input.case3yn ?? 0);
 
   // Quotient (RVG/RUA, coefficient NVG/NUA = 4) : seulement avec l'option barème ; abattements réintégrés au RFR.
   // RVA (abattement fixe dirigeant) s'impute d'abord sur RUA, RSL sur le reliquat, comme 3VA puis 3SL sur 3UA
@@ -180,7 +181,7 @@ export function calculerPlusValuesGainsDivers(
 
   const basePrelevementsSociaux = Math.max(0, droitCommun + complementPrixReport + renforce + actifsNumeriques + (input.case3sz ?? 0)
     + bspceAvant2018 + bspceAncien + bspceCession2025 + gainExerciceBspce
-    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) + pea + instrumentsFinanciers - moinsValueImpatries
+    + bspceMoinsDeTroisAns + (input.case3vq ?? 0) + pea + instrumentsFinanciers + (input.case3yn ?? 0) - moinsValueImpatries
     + (optionBareme ? (input.caseRvg ?? 0) + (input.caseRua ?? 0) : 0));
   // 3VT (PEA avant 5 ans) et 3PI (instruments à 50 %) soumis à 18,6 % (simulateur officiel 2026 : 5 000 € → 930 €).
 
@@ -224,9 +225,9 @@ export function controlerSaisiePlusValues(input: PlusValuesGainsDiversInput): st
   if (totalAbattementsFixes > PLAFOND_ABATTEMENT_FIXE_DIRIGEANT) {
     alertes.push('Abattements fixes 3VA + 3TK + 3TM + RVA supérieurs à 500 000 € (600 000 € seulement pour une cession à de jeunes agriculteurs)');
   }
-  const reports = (input.case3wn ?? 0) + (input.case3xn ?? 0);
-  if ((input.case3wp ?? 0) > 0 && reports <= 0) alertes.push('3WP exige le montant avant abattement en 3WN ou 3XN');
-  if (reports > 0 && (input.case3wp ?? 0) <= 0) alertes.push('3WN ou 3XN exige les plus-values imposables en 3WP');
+  const reports = (input.case3wn ?? 0) + (input.case3xn ?? 0) + (input.case3yn ?? 0);
+  if ((input.case3wp ?? 0) > 0 && reports <= 0) alertes.push('3WP exige le montant avant abattement en 3WN, 3XN ou 3YN');
+  if (reports > 0 && (input.case3wp ?? 0) <= 0) alertes.push('3WN, 3XN ou 3YN exige les plus-values imposables en 3WP');
   if ((input.caseRvg ?? 0) > 0 && input.caseNvg !== 4) alertes.push('NVG doit valoir 4 quand RVG est rempli');
   if ((input.caseRua ?? 0) > 0 && input.caseNua !== 4) alertes.push('NUA doit valoir 4 quand RUA est rempli');
   if ((input.caseRua ?? 0) > 0 && (input.caseRsl ?? 0) <= 0 && (input.caseRva ?? 0) <= 0) {

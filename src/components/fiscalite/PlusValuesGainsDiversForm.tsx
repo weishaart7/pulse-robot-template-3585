@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { usePlusValuesGainsDivers } from '@/hooks/usePlusValuesGainsDivers';
 import { PlusValuesGainsDivers } from '@/services/plusValuesGainsDiversService';
-import { PlusValuesGainsDiversInput, controlerSaisiePlusValues } from '@/lib/fiscalite';
+import { ANNEE_REVENUS_CASES_2027, PlusValuesGainsDiversInput, controlerSaisiePlusValues } from '@/lib/fiscalite';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -31,6 +32,10 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
       setPvId(id);
     }
   }, [data]);
+
+  // Cases de la déclaration 2027 (revenus 2026) affichées seulement pour ce millésime.
+  const { anneeRevenus } = useMillesimeFiscal();
+  const declaration2027 = anneeRevenus >= ANNEE_REVENUS_CASES_2027;
 
   const update = <K extends keyof PlusValuesGainsDiversInput>(key: K, value: PlusValuesGainsDiversInput[K]) => {
     setPv(prev => ({ ...prev, [key]: value }));
@@ -73,7 +78,10 @@ export const PlusValuesGainsDiversForm = ({ onSaved }: PlusValuesGainsDiversForm
           <SingleMontantLigne label="Réalisées du 14.11 au 31.12.2012, taxables à 19 %" code="3WJ" value={pv.case3wj ?? null} onChange={v => update('case3wj', v)} />
           <SingleMontantLigne label="Plus-values avant abattement réalisées de 2013 à 2016" code="3WN" value={pv.case3wn ?? null} onChange={v => update('case3wn', v)} />
           <SingleMontantLigne label="Plus-values avant abattement réalisées depuis le 1.1.2017" code="3XN" value={pv.case3xn ?? null} onChange={v => update('case3xn', v)} />
-          <SingleMontantLigne label="Plus-values imposables" extra="exigée avec 3WN ou 3XN" code="3WP" value={pv.case3wp ?? null} onChange={v => update('case3wp', v)} />
+          {declaration2027 && (
+            <SingleMontantLigne label="Plus-values avant abattement réalisées à compter du 1.1.2025" extra="déclaration 2027" code="3YN" value={pv.case3yn ?? null} onChange={v => update('case3yn', v)} />
+          )}
+          <SingleMontantLigne label="Plus-values imposables" extra="exigée avec 3WN, 3XN ou 3YN" code="3WP" value={pv.case3wp ?? null} onChange={v => update('case3wp', v)} />
           <SingleMontantLigne label="IR au taux historique du barème" extra="montant d'impôt" code="3WR" value={pv.case3wr ?? null} onChange={v => update('case3wr', v)} />
           <SingleMontantLigne label="IR au taux historique de 12,8 %" extra="montant d'impôt" code="3WS" value={pv.case3ws ?? null} onChange={v => update('case3ws', v)} />
           <SingleMontantLigne label="Contribution exceptionnelle sur les hauts revenus" extra="montant d'impôt" code="3WT" value={pv.case3wt ?? null} onChange={v => update('case3wt', v)} />

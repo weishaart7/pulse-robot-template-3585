@@ -7,7 +7,7 @@ const p = (o: Partial<ReductionsCreditsImpotInput>) => calculerInvestissementsPi
 
 /** Baisses d'impôt relevées sur le simulateur officiel 2026 (couple, impôt 164 948 €), hors plafonnement atteint. */
 describe('calculerInvestissementsPinel, case par case', () => {
-  it('122 cases', () => { expect(Object.keys(REGLES_PINEL)).toHaveLength(122); });
+  it('122 cases + 33 cases de la déclaration 2027', () => { expect(Object.keys(REGLES_PINEL)).toHaveLength(155); });
   it.each<[keyof ReductionsCreditsImpotInput, number, number]>([
     ['case7nm', 1000, 20],
     ['case7nm', 100000, 2000],

@@ -1,4 +1,5 @@
 import { ReductionsCreditsImpotInput } from './types';
+import { ajouterJumelles2027 } from './cases2027';
 import { MillesimeScellier } from './calculerInvestissementsScellier';
 
 /**
@@ -70,6 +71,9 @@ export const REGLES_CENSI_BOUVARD: Partial<Record<Cle, RegleCensiBouvard>> = {
   case7ps: { nature: 'rep', taux: 0, plafond: null, millesime: null, libelle: "Solde de l'année 2023, investissements réalisés depuis 2013" },
   case7px: { nature: 'rep', taux: 0, plafond: null, millesime: null, libelle: "Solde de l'année 2024, investissements réalisés depuis 2013" },
 };
+// Cases de la déclaration 2027 : règle de la cohorte précédente (voir cases2027.ts).
+ajouterJumelles2027(REGLES_CENSI_BOUVARD as Partial<Record<string, RegleCensiBouvard>>,
+  (r, cle) => ({ ...r, libelle: `${r.libelle} — règle reprise pour la case 2027 ${cle.slice(4).toUpperCase()}` }));
 
 const montant = (v: unknown) => Math.max(0, typeof v === 'number' ? v : 0);
 

@@ -150,7 +150,8 @@ export function calculerPrelevementsSociauxGainsActionnariatSalarie(
   const baseCarriedInterest1NY = (input.case1ny ?? 0) + (input.case1oy ?? 0);
   const contributionSalariale1NY = baseCarriedInterest1NY * TAUX_CONTRIBUTION_SALARIALE_1NY;
 
-  const base1MP = (input.case1mp ?? 0) + (input.case1mq ?? 0);
+  // 1PP/1PQ (déclaration 2027, report expiré) : même contribution de 10 % que 1MP/1MQ (simulateur calc-2027).
+  const base1MP = (input.case1mp ?? 0) + (input.case1mq ?? 0) + (input.case1pp ?? 0) + (input.case1pq ?? 0);
   const contributionSalariale1MP = base1MP * TAUX_CONTRIBUTION_SALARIALE_1MP;
 
   const base3VN = input.case3vn ?? 0;

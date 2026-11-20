@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { PrelevementSourceDiversInput } from '@/lib/fiscalite';
+import { CASES_2027 } from '@/lib/fiscalite/cases2027';
 
 export interface PrelevementSourceDivers extends PrelevementSourceDiversInput {
   id?: string;
@@ -10,6 +11,8 @@ const CASES_NUMERIQUES = [
   'case8tq', 'case8tr', 'case8sc', 'case8sw', 'case8sx', 'case8tw', 'case8tv', 'case8qv', 'case8th', 'case8qh', 'case8tx', 'case8qx', 'case8sa', 'case8sd', 'case8sb',
   'case8tb', 'case8wk', 'case8uz', 'case8cv', 'case8ts', 'case8wc', 'case8wr', 'case8uy', 'case8wa', 'case8wh', 'case8wt',
   'case8tc', 'case8tg', 'case8to', 'case8tp', 'case8py', 'case8pz',
+  // Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts.
+  ...CASES_2027.prelevementSource,
 ] as const;
 const CASES_A_COCHER = ['case8tt', 'case8uu', 'case8sh', 'case8si', 'case8fv'] as const;
 

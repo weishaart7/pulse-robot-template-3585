@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { RevenusNonSalariesInput } from '@/lib/fiscalite';
+import { CASES_2027 } from '@/lib/fiscalite/cases2027';
 
 export interface RevenusNonSalaries extends RevenusNonSalariesInput {
   id?: string;
@@ -34,6 +35,8 @@ const CASES_NUMERIQUES = [
   'case5sv', 'case5sw', 'case5qm', 'case5rm',
   'case5ck', 'case5ff', 'case5wr', 'case5gy', 'case5zj', 'case5zs', 'case5sz', 'case5md', 'case5pf', 'case5py', 'case5sg', 'case5ye',
   'case5xm', 'case5yt', 'case5zt', 'case5ym', 'case5yu', 'case5zu',
+  // Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts.
+  ...CASES_2027.nonSalaries,
 ] as const;
 
 /** case5ko → case_5ko (colonne Supabase). */

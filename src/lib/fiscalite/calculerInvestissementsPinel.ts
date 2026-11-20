@@ -1,4 +1,5 @@
 import { ReductionsCreditsImpotInput } from './types';
+import { ajouterJumelles2027 } from './cases2027';
 
 /**
  * Pinel, Pinel+, Denormandie et Duflot (2042-RICI, revenus 2025/impôt 2026). Règles relevées sur le
@@ -154,6 +155,9 @@ export const REGLES_PINEL: Partial<Record<ClePinel, ReglePinel>> = {
   case7wy: { nature: 'rep', taux: 0, plafond: null, outreMer: false, libelle: "Report 1/3 seconde prorogation 2024, Pinel 2015, métropole" },
   case7wz: { nature: 'rep', taux: 0, plafond: null, outreMer: true, libelle: "Report 1/3 seconde prorogation 2024, Pinel 2015, outre-mer" },
 };
+// Cases de la déclaration 2027 : règle de la cohorte précédente (voir cases2027.ts).
+ajouterJumelles2027(REGLES_PINEL as Partial<Record<string, ReglePinel>>,
+  (r, cle) => ({ ...r, libelle: `${r.libelle} — règle reprise pour la case 2027 ${cle.slice(4).toUpperCase()}` }));
 
 const montant = (v: unknown) => Math.max(0, typeof v === 'number' ? v : 0);
 

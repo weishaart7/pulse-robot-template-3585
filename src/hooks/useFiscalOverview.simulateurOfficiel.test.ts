@@ -691,9 +691,9 @@ const ECARTS_2027: Record<string, Partial<Attendu>> = {
   S35: { cdhr: 18356, impotNet: 93056 },
 };
 
-function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}) {
+function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<string, Partial<Attendu>> = {}, liste: Record<string, Cas> = CAS) {
   describe(titre, () => {
-    for (const [nom, cas] of Object.entries(CAS)) {
+    for (const [nom, cas] of Object.entries(liste)) {
       const attendu = { ...cas.attendu, ...ecarts[nom] };
       describe(`${nom} : ${cas.description}`, () => {
         for (const poste of Object.keys(attendu) as (keyof Attendu)[]) {
@@ -707,5 +707,56 @@ function decrireCampagne(titre: string, anneeRevenus: number, ecarts: Record<str
   });
 }
 
+
+/**
+ * Cases propres à la déclaration 2027 (revenus 2026, voir cases2027.ts) : relevées sur calc-2027.cgi
+ * (novembre 2026), sans équivalent sur calc-2026 ; testées sur le seul millésime 2026.
+ */
+const CAS_2027: Record<string, Cas> = {
+  T1: {
+    description: 'management package 1PP (report expiré) : comme 1MP, IR et contribution de 10 %',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 20000 }, gains: { case1pp: 40000 } },
+    attendu: { parts: 1, revenuFiscalReference: 54000, droitsSimples: 9304, impotNet: 9304, prelevementsSociaux: 4000, tmi: 0.3 },
+  },
+  T2: {
+    description: 'report 3YN (plus-values réalisées depuis 2025) : RFR comme 3XN, PS à 18,6 %',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 20000 }, plusValues: { case3yn: 40000, case3wp: 40000, case3ws: 5120 } },
+    attendu: { parts: 1, revenuFiscalReference: 58000, droitsSimples: 704, decote: 578, impotNet: 5246, prelevementsSociaux: 7440, tmi: 0.11 },
+  },
+  T3: {
+    description: 'micro-BIC professionnel, locations meublées 5KM : abattement 50 %',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 20000 }, nonSalaries: { case5km: 30000 } },
+    attendu: { parts: 1, revenuFiscalReference: 33000, droitsSimples: 3004, impotNet: 3004, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  T4: {
+    description: 'taxe holdings 8HC ajoutée à l\'impôt, non réduite par les dons',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 20000 }, reductions: { case7uf: 3000 },
+      prelevementSource: { case8ha: 1000000, case8hb: 1, case8hc: 2000 } },
+    attendu: { parts: 1, revenuFiscalReference: 18000, droitsSimples: 704, decote: 578, impotNet: 2000, solde: 2000, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  T5: {
+    // Solde d'IR seul ici ; 8HU réduit le solde des PS (simulateur : 1 396 € à payer = 766 + 930 − 300), voir cases2027.test.ts.
+    description: 'acomptes de PS à 18,6 % 8HU : solde d\'IR inchangé',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 20000 }, rcm: { case2tr: 5000, case2op: false }, prelevementSource: { case8hu: 300 } },
+    attendu: { parts: 1, revenuFiscalReference: 23000, droitsSimples: 704, decote: 578, impotNet: 766, solde: 766, prelevementsSociaux: 930, tmi: 0.11 },
+  },
+  T6: {
+    description: 'cadre 7 : Loc\'Avantages 2026 7AK, report Denormandie 7NI, Malraux 7KZ, Scellier 7MS',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 120000 }, reductions: { case7ak: 20000, case7ni: 3000, case7kz: 2000, case7ms: 1000 } },
+    attendu: { parts: 1, revenuFiscalReference: 108000, droitsSimples: 28081, impotNet: 19081, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+  T7: {
+    description: 'JEII 7CZ : 40 %, hors plafonnement global, plafond propre de versements',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 300000 }, reductions: { case7cz: 50000, case7ci: 50000 } },
+    attendu: { parts: 1, revenuFiscalReference: 285445, droitsSimples: 104974, impotNet: 77037, prelevementsSociaux: 0, tmi: 0.45 },
+  },
+  T8: {
+    description: 'cadre 7 : Denormandie 2026 7LN, Scellier 7WE, outre-mer entreprise HMS',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 120000 }, reductions: { case7ln: 100000, case7we: 30000, caseHms: 5000 } },
+    attendu: { parts: 1, revenuFiscalReference: 108000, droitsSimples: 28081, impotNet: 20681, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+};
+
 decrireCampagne('useFiscalOverview — simulateur officiel 2026 (revenus 2025)', 2025);
 decrireCampagne('useFiscalOverview — simulateur officiel 2027 (revenus 2026, millésime provisoire)', 2026, ECARTS_2027);
+decrireCampagne('useFiscalOverview — cases propres à la déclaration 2027 (calc-2027, revenus 2026)', 2026, {}, CAS_2027);

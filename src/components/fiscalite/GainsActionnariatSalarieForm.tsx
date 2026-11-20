@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useGainsActionnariatSalarie } from '@/hooks/useGainsActionnariatSalarie';
 import { GainsActionnariatSalarie } from '@/services/gainsActionnariatSalarieService';
-import { GainsActionnariatSalarieInput } from '@/lib/fiscalite';
+import { ANNEE_REVENUS_CASES_2027, GainsActionnariatSalarieInput } from '@/lib/fiscalite';
+import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { DeclarantsHeader, MontantLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement, SeparateurCadre } from './Cadre2042';
 
@@ -47,6 +48,10 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
       setGainsId(id);
     }
   }, [data]);
+
+  // Cases de la déclaration 2027 (revenus 2026) affichées seulement pour ce millésime.
+  const { anneeRevenus } = useMillesimeFiscal();
+  const declaration2027 = anneeRevenus >= ANNEE_REVENUS_CASES_2027;
 
   const update = <K extends keyof GainsActionnariatSalarieInput>(key: K, value: GainsActionnariatSalarieInput[K]) => {
     setGains(prev => ({ ...prev, [key]: value }));
@@ -139,6 +144,15 @@ export const GainsActionnariatSalarieForm = ({ onSaved }: GainsActionnariatSalar
           value1={gains.case1mp} value2={gains.case1mq}
           onChange1={v => update('case1mp', v)} onChange2={v => update('case1mq', v)}
         />
+        {declaration2027 && (
+          <MontantLigne
+            label="Management packages : fraction des gains antérieurs dont le report d'imposition a expiré en 2026"
+            extra="déclaration 2027"
+            code1="1PP" code2="1PQ"
+            value1={gains.case1pp ?? null} value2={gains.case1pq ?? null}
+            onChange1={v => update('case1pp', v)} onChange2={v => update('case1pq', v)}
+          />
+        )}
 
         <SeparateurCadre />
 

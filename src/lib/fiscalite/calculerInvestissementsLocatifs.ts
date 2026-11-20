@@ -21,8 +21,10 @@ type Cle = keyof ReductionsCreditsImpotInput;
 const BORNES: Cle[] = ['case7zq', 'case7zr', 'case7zs', 'case7zt'];
 const LOC_AVANTAGES: [Cle, number][] = [
   ['case7bk', 0.15], ['case7bl', 0.20], ['case7bm', 0.35], ['case7bn', 0.40], ['case7bo', 0.65],
+  // Conventions enregistrées à compter du 1.1.2026 (déclaration 2027, mêmes taux, simulateur calc-2027).
+  ['case7ak', 0.15], ['case7al', 0.20], ['case7am', 0.35], ['case7an', 0.40], ['case7ao', 0.65],
 ];
-const REPORTS_MALRAUX: Cle[] = ['case7kw', 'case7ky', 'case7kx'];
+const REPORTS_MALRAUX: Cle[] = ['case7kw', 'case7ky', 'case7kx', 'case7kz']; // 7KZ : report 2025 (déclaration 2027)
 
 const montant = (v: unknown) => Math.max(0, typeof v === 'number' ? v : 0);
 

@@ -1,4 +1,5 @@
 import { ReductionsCreditsImpotInput } from './types';
+import { ajouterJumelles2027 } from './cases2027';
 
 /**
  * Investissements outre-mer (2042-IOM, revenus 2025/impôt 2026). Le montant saisi est déjà la
@@ -24,7 +25,7 @@ interface RegleCase {
 }
 type CleOutreMer = Extract<keyof ReductionsCreditsImpotInput, `caseH${string}`>;
 
-export const REGLES_OUTRE_MER: Record<CleOutreMer, RegleCase> = {
+export const REGLES_OUTRE_MER: Partial<Record<CleOutreMer, RegleCase>> = {
   caseHqa: { nature: 'sans_effet', plafond: null, commun: false, part: 0.0 },
   caseHyj: { nature: 'reduction', plafond: null, commun: false, part: 0.3 },
   caseHye: { nature: 'reduction', plafond: null, commun: false, part: 0.3 },
@@ -119,6 +120,8 @@ export const REGLES_OUTRE_MER: Record<CleOutreMer, RegleCase> = {
   caseHkw: { nature: 'reduction', plafond: null, commun: false, part: 1.0 },
   caseHja: { nature: 'credit', plafond: null, commun: false, part: 0.0 },
 };
+// Cases de la déclaration 2027 : règle de la cohorte précédente (voir cases2027.ts).
+ajouterJumelles2027(REGLES_OUTRE_MER as Partial<Record<string, RegleCase>>, r => ({ ...r }));
 
 export interface InvestissementsOutreMerResult {
   /** Réductions retenues après plafonds propres (non restituables). */

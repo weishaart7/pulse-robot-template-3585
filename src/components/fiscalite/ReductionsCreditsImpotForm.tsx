@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useReductionsCreditsImpot } from '@/hooks/useReductionsCreditsImpot';
 import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { ReductionsCreditsImpot } from '@/services/reductionsCreditsImpotService';
-import { ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel, REGLES_SCELLIER, RegleScellier, REGLES_CENSI_BOUVARD } from '@/lib/fiscalite';
+import {
+  ReductionsCreditsImpotInput, REGLES_PINEL, ReglePinel, REGLES_SCELLIER, RegleScellier, REGLES_CENSI_BOUVARD,
+  CASES_2027, ANNEE_REVENUS_CASES_2027, LIBELLES_CADRE_7_2027,
+} from '@/lib/fiscalite';
 import { SingleCaseLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement } from './Cadre2042';
 
@@ -11,10 +14,14 @@ const REDUCTIONS_VIDE: ReductionsCreditsImpotInput = {
   case7db: null, case7dr: null, case7dl: null, case7dq: false, case7dg: false, membresPlus65Ans: null,
 };
 
+/** Cases de la déclaration 2027 : présentées dans leur propre section, pas dans les groupes par dispositif. */
+const CLES_2027 = new Set<string>(CASES_2027.reductions);
+const FAMILLES_2027 = [...new Set(LIBELLES_CADRE_7_2027.map(l => l.famille))];
+
 /** Cases Pinel/Denormandie/Duflot regroupées par nature (voir REGLES_PINEL). */
 const casesPinel = (nature: ReglePinel['nature'][]) =>
   (Object.entries(REGLES_PINEL) as [keyof ReductionsCreditsImpotInput, ReglePinel][])
-    .filter(([, r]) => nature.includes(r.nature));
+    .filter(([cle, r]) => nature.includes(r.nature) && !CLES_2027.has(cle));
 const GROUPES_PINEL: { titre: string; aide: string; natures: ReglePinel['nature'][] }[] = [
   { titre: 'Pinel, Pinel+ et Denormandie achevés en 2025', aide: "Prix de revient. Réduction de l'année (1/6 ou 1/9), plafond de 300 000 € commun.", natures: ['inv'] },
   { titre: 'Pinel, Denormandie et Duflot : reports', aide: 'Montant de la réduction reportée (1/6, 1/9 ou 1/3), plafonné selon le dispositif.', natures: ['rep', 'sans_effet'] },
@@ -23,7 +30,7 @@ const GROUPES_PINEL: { titre: string; aide: string; natures: ReglePinel['nature'
 
 const casesScellier = (nature: RegleScellier['nature']) =>
   (Object.entries(REGLES_SCELLIER) as [keyof ReductionsCreditsImpotInput, RegleScellier][])
-    .filter(([, r]) => r.nature === nature);
+    .filter(([cle, r]) => r.nature === nature && !CLES_2027.has(cle));
 const GROUPES_SCELLIER: { titre: string; aide: string; nature: RegleScellier['nature'] }[] = [
   { titre: 'Scellier : reports de réduction', aide: "Montant de la réduction reportée (1/9, solde, 1/3 de complément). Plafonnement global de l'année d'investissement appliqué par l'outil.", nature: 'rep' },
   { titre: 'Scellier : compléments de prorogation 2025', aide: "Prix de revient (300 000 € maximum). 4 %, 5 % ou 6 % sur 3 ans selon l'année d'investissement.", nature: 'comp' },
@@ -238,7 +245,8 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
         ))}
 
         <SousGroupe titre="Censi-Bouvard (location meublée non professionnelle)" aide="Investissements : prix de revient (11 % sur 9 ans, 300 000 € par case). Reports et soldes : montant de la réduction.">
-          {(Object.entries(REGLES_CENSI_BOUVARD) as [keyof ReductionsCreditsImpotInput, { libelle: string }][]).map(([cle, r]) => (
+          {(Object.entries(REGLES_CENSI_BOUVARD) as [keyof ReductionsCreditsImpotInput, { libelle: string }][])
+            .filter(([cle]) => !CLES_2027.has(cle)).map(([cle, r]) => (
             <SingleMontantLigne key={cle} label={r.libelle} code={cle.slice(4).toUpperCase()}
               value={(rc[cle] as number | null | undefined) ?? null} onChange={v => update(cle, v)} />
           ))}
@@ -383,6 +391,16 @@ export const ReductionsCreditsImpotForm = ({ onSaved }: ReductionsCreditsImpotFo
           <SingleMontantLigne label="Case liée, sans effet sur le calcul" code="HKC" value={rc.caseHkc ?? null} onChange={v => update('caseHkc', v)} />
           <SingleMontantLigne label="Case liée, sans effet sur le calcul" code="HLV" value={rc.caseHlv ?? null} onChange={v => update('caseHlv', v)} />
         </SousGroupe>
+
+        {anneeRevenus >= ANNEE_REVENUS_CASES_2027 && FAMILLES_2027.map(famille => (
+          <SousGroupe key={famille} titre={`Déclaration 2027 — ${famille}`}
+            aide="Cases nouvelles du formulaire 2027 (revenus 2026, formulaire provisoire du simulateur officiel). Même saisie que la cohorte précédente : prix de revient pour un investissement, montant de la réduction pour un report.">
+            {LIBELLES_CADRE_7_2027.filter(l => l.famille === famille).map(({ cle, libelle }) => (
+              <SingleMontantLigne key={cle} label={libelle} code={cle.slice(4).toUpperCase()}
+                value={(rc[cle] as number | null | undefined) ?? null} onChange={v => update(cle, v)} />
+            ))}
+          </SousGroupe>
+        ))}
     </Cadre2042>
   );
 };

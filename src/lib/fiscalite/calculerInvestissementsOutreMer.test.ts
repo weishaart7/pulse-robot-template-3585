@@ -25,7 +25,7 @@ const baisse = (o: Partial<ReductionsCreditsImpotInput>, creditCourant = 0) => {
 describe('investissements outre-mer', () => {
   it('base', () => {
     expect(calculerImpot(470890, parts, 'marie').impotNet).toBe(164948);
-    expect(Object.keys(REGLES_OUTRE_MER)).toHaveLength(93);
+    expect(Object.keys(REGLES_OUTRE_MER)).toHaveLength(100); // 93 + 7 cases de la déclaration 2027
   });
   it('cases seules : plafonds propres et plafonnement global', () => {
     const cas: [Partial<ReductionsCreditsImpotInput>, number][] = [

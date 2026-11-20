@@ -63,6 +63,6 @@ describe('plus-values au quotient', () => {
   });
   it('contrôles de saisie (prérequis du simulateur)', () => {
     expect(controlerSaisiePlusValues({ caseRvg: 1, caseNvg: 2 } as PlusValuesGainsDiversInput)).toContain('NVG doit valoir 4 quand RVG est rempli');
-    expect(controlerSaisiePlusValues({ case3wp: 1 } as PlusValuesGainsDiversInput)).toContain('3WP exige le montant avant abattement en 3WN ou 3XN');
+    expect(controlerSaisiePlusValues({ case3wp: 1 } as PlusValuesGainsDiversInput)).toContain('3WP exige le montant avant abattement en 3WN, 3XN ou 3YN');
   });
 });

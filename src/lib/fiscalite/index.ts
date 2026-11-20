@@ -29,3 +29,5 @@ export * from './calculerInvestissementsPinel';
 export * from './calculerInvestissementsScellier';
 export * from './calculerInvestissementsCensiBouvard';
 export * from './calculerCDHR';
+export * from './cases2027';
+export * from './libellesCases2027';

@@ -25,6 +25,7 @@ const TRAVAUX: [Cle, number][] = [
   ['case7vu', 0.25], ['case7ti', 0.25], ['case7vs', 0.18], ['case7th', 0.18], // 2022
   ['case7vv', 0.25], ['case7tj', 0.25], // 2023
   ['case7vt', 0.25], ['case7tk', 0.25], // 2024
+  ['case7vn', 0.25], ['case7tm', 0.25], // report des dépenses 2025 (déclaration 2027)
   ['case7up', 0.25], ['case7ut', 0.25], // 2025
 ];
 

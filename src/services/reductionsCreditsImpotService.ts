@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ReductionsCreditsImpotInput } from '@/lib/fiscalite';
+import { CASES_2027 } from '@/lib/fiscalite/cases2027';
 
 export interface ReductionsCreditsImpot extends ReductionsCreditsImpotInput {
   id?: string;
@@ -19,6 +20,8 @@ const CASES_NUMERIQUES = [
   'case7mn', 'case7mw', 'case7mz', 'case7pz', 'case7sl', 'case7sx', 'case7st', 'case7ss', 'case7sm', 'case7sp', 'case7sn', 'case7so', 'case7sa', 'case7sb', 'case7sc', 'case7ht', 'case7hd', 'case7ke', 'case7oa', 'case7po', 'case7pt', 'case7hu', 'case7he', 'case7kf', 'case7ob', 'case7pp', 'case7pu', 'case7hv', 'case7hf', 'case7kg', 'case7oc', 'case7pq', 'case7pv', 'case7hw', 'case7hg', 'case7kh', 'case7od', 'case7pr', 'case7pw', 'case7hx', 'case7hh', 'case7ki', 'case7oe', 'case7ps', 'case7px',
   'case7wl', 'case7gz', 'case7cd', 'case7ce', 'case7wi', 'case7zz', 'case7zy', 'case7zx', 'case7zw', 'case8ys', 'case8yu',
   'caseHqa', 'caseHyj', 'caseHye', 'caseHyf', 'caseHyg', 'caseHyh', 'caseHyi', 'caseHoa', 'caseHob', 'caseHoc', 'caseHoh', 'caseHoi', 'caseHoj', 'caseHok', 'caseHol', 'caseHom', 'caseHon', 'caseHoo', 'caseHop', 'caseHoq', 'caseHor', 'caseHos', 'caseHot', 'caseHou', 'caseHov', 'caseHow', 'caseHod', 'caseHoe', 'caseHof', 'caseHog', 'caseHox', 'caseHoy', 'caseHoz', 'caseHua', 'caseHub', 'caseHuc', 'caseHud', 'caseHue', 'caseHuf', 'caseHug', 'caseHuh', 'caseHui', 'caseHuj', 'caseHuk', 'caseHul', 'caseHum', 'caseHun', 'caseHuo', 'caseHup', 'caseHuq', 'caseHur', 'caseHus', 'caseHut', 'caseHuu', 'caseHkc', 'caseHva', 'caseHvb', 'caseHvc', 'caseHvd', 'caseHve', 'caseHvf', 'caseHvg', 'caseHvk', 'caseHvl', 'caseHvm', 'caseHvn', 'caseHvo', 'caseHls', 'caseHlt', 'caseHlu', 'caseHlv', 'caseHlw', 'caseHgs', 'caseHgt', 'caseHgu', 'caseHgw', 'caseHhs', 'caseHht', 'caseHhu', 'caseHhw', 'caseHis', 'caseHit', 'caseHiu', 'caseHiw', 'caseHjs', 'caseHjt', 'caseHju', 'caseHjw', 'caseHks', 'caseHkt', 'caseHku', 'caseHkw', 'caseHja',
+  // Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts.
+  ...CASES_2027.reductions,
 ] as const;
 
 /** case7ud → case_7ud (colonne Supabase). */

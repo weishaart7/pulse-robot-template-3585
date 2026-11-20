@@ -5,6 +5,7 @@ import { revenusFonciersPour2042, type Declaration2044Result, type RevenusFoncie
 import { calculerDonneesIFI, chargerDonneesIFI, type DonneesIFI, type Plafonnement2042 } from '@/services/declarationIFIDonnees';
 import type { DeclarationIFIResultat } from '@/lib/fiscalite/calculerDeclarationIFI';
 import { controlerSaisie2042 } from '@/lib/fiscalite/controlerSaisie2042';
+import { masquerCases2027 } from '@/lib/fiscalite/cases2027';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
@@ -371,18 +372,25 @@ export function useFiscalOverview(): FiscalOverview {
   const anneeIFI = anneeRevenus + 1;
   const { data: foyer, loading: loadingFoyer, refetch: refetchFoyer } = useFoyerFiscal();
   const { data: revenus, loading: loadingRevenus, refetch: refetchRevenus } = useRevenusSalaires();
-  const { data: gains, loading: loadingGains, refetch: refetchGains } = useGainsActionnariatSalarie();
+  const { data: gainsSaisis, loading: loadingGains, refetch: refetchGains } = useGainsActionnariatSalarie();
   const { data: exoneres, loading: loadingExoneres, refetch: refetchExoneres } = useRevenusExoneresTauxEffectif();
   const { data: pensions, loading: loadingPensions, refetch: refetchPensions } = usePensionsRetraitesRentes();
   const { data: capitauxMobiliers, loading: loadingCapitauxMobiliers, refetch: refetchCapitauxMobiliers } = useRevenusCapitauxMobiliers();
 
-  const { data: plusValues, loading: loadingPlusValues, refetch: refetchPlusValues } = usePlusValuesGainsDivers();
+  const { data: plusValuesSaisies, loading: loadingPlusValues, refetch: refetchPlusValues } = usePlusValuesGainsDivers();
 
   const { data: fonciers2042, loading: loadingFonciers2042, refetch: refetchFonciers2042 } = useRevenusFonciers2042();
-  const { data: nonSalaries, loading: loadingNonSalaries, refetch: refetchNonSalaries } = useRevenusNonSalaries();
+  const { data: nonSalariesSaisis, loading: loadingNonSalaries, refetch: refetchNonSalaries } = useRevenusNonSalaries();
   const { data: charges, loading: loadingCharges, refetch: refetchCharges } = useChargesDeductibles();
-  const { data: reductions, loading: loadingReductions, refetch: refetchReductions } = useReductionsCreditsImpot();
-  const { data: prelevementSource, loading: loadingPrelevementSource, refetch: refetchPrelevementSource } = usePrelevementSourceDivers();
+  const { data: reductionsSaisies, loading: loadingReductions, refetch: refetchReductions } = useReductionsCreditsImpot();
+  const { data: prelevementSourceSaisi, loading: loadingPrelevementSource, refetch: refetchPrelevementSource } = usePrelevementSourceDivers();
+  // Cases de la déclaration 2027 neutralisées pour les millésimes antérieurs (saisies communes aux millésimes).
+  const gains = useMemo(() => masquerCases2027(gainsSaisis, 'gains', anneeRevenus), [gainsSaisis, anneeRevenus]);
+  const plusValues = useMemo(() => masquerCases2027(plusValuesSaisies, 'plusValues', anneeRevenus), [plusValuesSaisies, anneeRevenus]);
+  const nonSalaries = useMemo(() => masquerCases2027(nonSalariesSaisis, 'nonSalaries', anneeRevenus), [nonSalariesSaisis, anneeRevenus]);
+  const reductions = useMemo(() => masquerCases2027(reductionsSaisies, 'reductions', anneeRevenus), [reductionsSaisies, anneeRevenus]);
+  const prelevementSource = useMemo(
+    () => masquerCases2027(prelevementSourceSaisi, 'prelevementSource', anneeRevenus), [prelevementSourceSaisi, anneeRevenus]);
   const { isAuthenticated } = useAuth();
   const [declaration2044, setDeclaration2044] = useState<Declaration2044Result | null>(null);
   const [loading2044, setLoading2044] = useState(true);
@@ -569,7 +577,7 @@ export function useFiscalOverview(): FiscalOverview {
         creditEtranger,
         prelevementSourceDivers.reprises + excedentPlafonnement,
         revenusNonSalaries.revenuImposableTauxMarginal,
-        revenusNonSalaries.taxeAgentsGeneraux,
+        revenusNonSalaries.taxeAgentsGeneraux + prelevementSourceDivers.taxeHoldings,
         revenuCreditImpotFrancais,
         prelevementSourceDivers.revenuMondial8ZR,
         parametres,

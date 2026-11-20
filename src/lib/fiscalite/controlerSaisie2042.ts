@@ -148,16 +148,21 @@ export function controlerSaisie2042(s: Saisie2042): string[] {
     }
   }
   const creditsEntreprise = ['case8tb', 'case8tc', 'case8wk', 'case8tg', 'case8ts', 'case8uz', 'case8wc', 'case8wr', 'case8cv',
-    'case8pz', 'case8py'].filter(c => lire(prelevementSource, c) > 0);
+    'case8pz', 'case8py', 'case8px'].filter(c => lire(prelevementSource, c) > 0);
   if (creditsEntreprise.length > 0 && revenusActivite <= 0) {
     alertes.push(`${codes(creditsEntreprise)} : crédits ou réductions d'entreprise sans revenu professionnel correspondant (cadre 5).`);
   }
-  const creditsAgricoles = ['case8wa', 'case8wh', 'case8wt'].filter(c => lire(prelevementSource, c) > 0);
+  const creditsAgricoles = ['case8wa', 'case8wh', 'case8wt', 'case8wb'].filter(c => lire(prelevementSource, c) > 0);
   if (creditsAgricoles.length > 0 && somme(nonSalaries, REVENUS_AGRICOLES) <= 0) {
     alertes.push(`${codes(creditsAgricoles)} : crédits agricoles sans bénéfice agricole correspondant (cadre 5).`);
   }
   if (lire(prelevementSource, 'case8uy') > 0 && somme(nonSalaries, RECETTES_MICRO) <= 0) {
     alertes.push('8UY : remboursement de versements libératoires sans recettes micro correspondantes (5KO, 5KP, 5HQ…).');
+  }
+  const holdings = ['case8ha', 'case8hb', 'case8hc'];
+  const holdingsSaisies = holdings.filter(c => lire(prelevementSource, c) > 0).length;
+  if (holdingsSaisies > 0 && holdingsSaisies < holdings.length) {
+    alertes.push('Taxe sur les holdings : 8HA, 8HB et 8HC doivent être remplies ensemble.');
   }
   return alertes;
 }

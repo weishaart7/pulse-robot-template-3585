@@ -143,6 +143,9 @@ export interface GainsActionnariatSalarieInput {
   case3vn: number | null;
   /** Revenus exceptionnels ou différés à imposer selon le système du quotient (art. 163-0 A CGI, montant unique, pas de colonne déclarant 2). */
   case0xx: number | null;
+  /** Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts : ignorées pour les millésimes antérieurs. 1PP/1PQ : management packages, report expiré (comme 1MP/1MQ). */
+  case1pp?: number | null;
+  case1pq?: number | null;
 }
 
 export interface PensionsRetraitesRentesInput {
@@ -339,6 +342,8 @@ export interface PlusValuesGainsDiversInput {
   caseRsl?: number | null;
   /** Abattement fixe départ à la retraite d'un dirigeant (3VA) sur la plus-value au quotient RUA */
   caseRva?: number | null;
+  /** Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts : ignorées pour les millésimes antérieurs. 3YN : report 150-0 B ter expiré, plus-values réalisées depuis 2025 (comme 3XN, PS à 18,6 %). */
+  case3yn?: number | null;
 }
 
 /**
@@ -773,6 +778,10 @@ export interface RevenusNonSalariesInput {
   case5ym?: number | null;
   case5yu?: number | null;
   case5zu?: number | null;
+  /** Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts : ignorées pour les millésimes antérieurs. Micro-BIC professionnel : locations meublées (abattement 50 %). */
+  case5km?: number | null;
+  case5lm?: number | null;
+  case5mm?: number | null;
 }
 
 /**
@@ -1455,6 +1464,118 @@ export interface ReductionsCreditsImpotInput {
   caseHku?: number | null;
   caseHkw?: number | null;
   caseHja?: number | null;
+  /** Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts : ignorées pour les millésimes antérieurs. */
+  case7ln?: number | null;
+  case7ly?: number | null;
+  case7lz?: number | null;
+  case7ni?: number | null;
+  case7nj?: number | null;
+  case7nk?: number | null;
+  case7nl?: number | null;
+  case7ir?: number | null;
+  case7is?: number | null;
+  case7it?: number | null;
+  case7iu?: number | null;
+  case7ho?: number | null;
+  case7hp?: number | null;
+  case7rq?: number | null;
+  case7rr?: number | null;
+  case7yh?: number | null;
+  case7yi?: number | null;
+  case7tp?: number | null;
+  case7tq?: number | null;
+  case7hq?: number | null;
+  case7hr?: number | null;
+  case7pm?: number | null;
+  case7pn?: number | null;
+  case7qi?: number | null;
+  case7qj?: number | null;
+  case7re?: number | null;
+  case7rg?: number | null;
+  case7rs?: number | null;
+  case7rz?: number | null;
+  case7wa?: number | null;
+  case7wb?: number | null;
+  case7wc?: number | null;
+  case7wd?: number | null;
+  case7sq?: number | null;
+  case7ot?: number | null;
+  case7av?: number | null;
+  case7aw?: number | null;
+  case7ax?: number | null;
+  case7ay?: number | null;
+  case7cf?: number | null;
+  case7cg?: number | null;
+  case7ch?: number | null;
+  case7cj?: number | null;
+  case7ck?: number | null;
+  case7cl?: number | null;
+  case7cm?: number | null;
+  case7dd?: number | null;
+  case7de?: number | null;
+  case7df?: number | null;
+  case7gh?: number | null;
+  case7gi?: number | null;
+  case7gj?: number | null;
+  case7gk?: number | null;
+  case7gs?: number | null;
+  case7gt?: number | null;
+  case7gu?: number | null;
+  case7gv?: number | null;
+  case7be?: number | null;
+  case7bf?: number | null;
+  case7bg?: number | null;
+  case7bh?: number | null;
+  case7ms?: number | null;
+  case7mt?: number | null;
+  case7mu?: number | null;
+  case7mv?: number | null;
+  case7op?: number | null;
+  case7oq?: number | null;
+  case7or?: number | null;
+  case7os?: number | null;
+  case7tg?: number | null;
+  case7tl?: number | null;
+  case7tn?: number | null;
+  case7to?: number | null;
+  case7we?: number | null;
+  case7wf?: number | null;
+  case7wg?: number | null;
+  case7wu?: number | null;
+  case7wv?: number | null;
+  case7ww?: number | null;
+  case7yj?: number | null;
+  case7yk?: number | null;
+  case7yl?: number | null;
+  case7yx?: number | null;
+  case7yy?: number | null;
+  case7yz?: number | null;
+  case7za?: number | null;
+  case7zb?: number | null;
+  case7zc?: number | null;
+  case7zd?: number | null;
+  case7ze?: number | null;
+  case7zf?: number | null;
+  case7zg?: number | null;
+  caseHms?: number | null;
+  caseHmt?: number | null;
+  caseHmu?: number | null;
+  caseHmv?: number | null;
+  caseHmw?: number | null;
+  caseHvp?: number | null;
+  caseHyk?: number | null;
+  case7ak?: number | null;
+  case7al?: number | null;
+  case7am?: number | null;
+  case7an?: number | null;
+  case7ao?: number | null;
+  case7kz?: number | null;
+  case7vn?: number | null;
+  case7tm?: number | null;
+  case7cn?: number | null;
+  case7cx?: number | null;
+  case7dn?: number | null;
+  case7cz?: number | null;
 }
 
 /**
@@ -1604,4 +1725,12 @@ export interface PrelevementSourceDiversInput {
   /** Réductions : report de réduction non imputée de 2024 (8PY), prêt à taux zéro mobilité (8PZ) */
   case8py?: number | null;
   case8pz?: number | null;
+  /** Cases de la déclaration 2027 (revenus 2026), voir cases2027.ts : ignorées pour les millésimes antérieurs. Taxe holdings 8HA/8HB/8HC, acomptes PS 18,6 % 8HU/8IU, crédit 8WB, report 8PX. */
+  case8ha?: number | null;
+  case8hb?: number | null;
+  case8hc?: number | null;
+  case8hu?: number | null;
+  case8iu?: number | null;
+  case8wb?: number | null;
+  case8px?: number | null;
 }

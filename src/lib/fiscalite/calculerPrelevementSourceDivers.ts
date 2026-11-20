@@ -40,6 +40,8 @@ const montant = (v: number | null | undefined) => Math.max(0, v ?? 0);
 const somme = (...v: (number | null | undefined)[]) => v.reduce<number>((s, x) => s + montant(x), 0);
 
 export interface PrelevementSourceDiversResult {
+  /** 8HC : taxe sur les actifs des holdings patrimoniales, due en sus de l'IR (déclaration 2027). */
+  taxeHoldings: number;
   /** 8TI : ajouté au revenu retenu pour le taux effectif. */
   revenuTauxEffectif: number;
   /** 8ZR : revenu net mondial associé à 8TI ; s'il est saisi, il remplace tout le revenu mondial (0 sinon). */
@@ -91,9 +93,11 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
     reprises: somme(input.case8tf, input.case8tp),
     // Simulateur officiel 2026 (1 000 € chacun) : restitués si l'impôt est nul, sauf 8TC/8TG/8TO et 8PY/8PZ.
     creditsRestituables: somme(input.case8tb, input.case8wk, input.case8uz, input.case8cv, input.case8ts, input.case8wc,
-      input.case8wr, input.case8uy, input.case8wa, input.case8wh, input.case8wt),
+      input.case8wr, input.case8uy, input.case8wa, input.case8wh, input.case8wt, input.case8wb),
     creditsNonRestituables: somme(input.case8tc, input.case8tg, input.case8to),
-    reductions: somme(input.case8py, input.case8pz),
+    reductions: somme(input.case8py, input.case8pz, input.case8px),
+    // Taxe sur les holdings (déclaration 2027) : 8HC ajoutée à l'impôt, hors réductions (simulateur calc-2027).
+    taxeHoldings: somme(input.case8hc),
     reductionPrelevementsSociaux: Math.round(
       montant(input.case8rf) * TAUX_CSG_CRDS_FONCIER
       + somme(input.case8rv, input.case8rc, input.case8rm) * TAUX_CSG_CRDS_PATRIMOINE,
@@ -102,7 +106,7 @@ export function calculerPrelevementSourceDivers(input: PrelevementSourceDiversIn
     impotDejaPaye: somme(input.case8hv, input.case8iv, input.case8jv, input.case8kv, input.case8hw, input.case8iw, input.case8jw, input.case8kw,
       input.case8hr, input.case8hs)
       - somme(input.case8hy, input.case8iy, input.case8jy, input.case8ky),
-    prelevementsSociauxDejaPayes: somme(input.case8hx, input.case8ix, input.case8jx, input.case8kx)
+    prelevementsSociauxDejaPayes: somme(input.case8hx, input.case8ix, input.case8jx, input.case8kx, input.case8hu, input.case8iu)
       - somme(input.case8hz, input.case8iz, input.case8jz, input.case8kz),
     avanceReductionsCredits: montant(input.case8ea),
     // Chaque contribution arrondie à l'euro, comme sur l'avis d'imposition.

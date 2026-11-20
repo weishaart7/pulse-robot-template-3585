@@ -20,7 +20,7 @@ const baisse = (o: Partial<ReductionsCreditsImpotInput>, credit = 0) => {
 };
 
 describe('calculerInvestissementsCensiBouvard', () => {
-  it('45 cases', () => { expect(Object.keys(REGLES_CENSI_BOUVARD)).toHaveLength(45); });
+  it('45 cases + 2 cases de la déclaration 2027', () => { expect(Object.keys(REGLES_CENSI_BOUVARD)).toHaveLength(47); });
   it.each<[keyof ReductionsCreditsImpotInput, number, number, number?]>([
     ['case7mn', 1000, 12],
     ['case7mn', 100000, 1222],

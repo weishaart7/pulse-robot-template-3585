@@ -29,6 +29,8 @@ interface GainsActionnariatSalarieRow {
   case_1ay: number | string | null;
   case_1by: number | string | null;
   case_1mp: number | string | null;
+  case_1pp: number | string | null;
+  case_1pq: number | string | null;
   case_1mq: number | string | null;
   case_3vd: number | string | null;
   case_3vi: number | string | null;
@@ -62,6 +64,8 @@ function rowToGainsActionnariatSalarie(row: GainsActionnariatSalarieRow): GainsA
     case1ay: toNumberOrNull(row.case_1ay),
     case1by: toNumberOrNull(row.case_1by),
     case1mp: toNumberOrNull(row.case_1mp),
+    case1pp: toNumberOrNull(row.case_1pp),
+    case1pq: toNumberOrNull(row.case_1pq),
     case1mq: toNumberOrNull(row.case_1mq),
     case3vd: toNumberOrNull(row.case_3vd),
     case3vi: toNumberOrNull(row.case_3vi),
@@ -91,6 +95,8 @@ function gainsActionnariatSalarieToRow(gains: GainsActionnariatSalarie, userId: 
     case_1ay: gains.case1ay,
     case_1by: gains.case1by,
     case_1mp: gains.case1mp,
+    case_1pp: gains.case1pp ?? null,
+    case_1pq: gains.case1pq ?? null,
     case_1mq: gains.case1mq,
     case_3vd: gains.case3vd,
     case_3vi: gains.case3vi,

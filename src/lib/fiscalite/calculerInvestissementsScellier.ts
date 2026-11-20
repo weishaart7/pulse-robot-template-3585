@@ -1,4 +1,5 @@
 import { ReductionsCreditsImpotInput } from './types';
+import { ajouterJumelles2027 } from './cases2027';
 
 /**
  * Scellier (2042-RICI, revenus 2025/impôt 2026). Règles relevées sur le simulateur officiel 2026
@@ -202,6 +203,9 @@ export const REGLES_SCELLIER: Partial<Record<CleScellier, RegleScellier>> = {
   case7vo: { nature: 'rep', taux: 0, plafond: null, millesime: 2012, libelle: "Report du solde de l'année 2023, investissement 2012" },
   case7vp: { nature: 'rep', taux: 0, plafond: null, millesime: 2012, libelle: "Report du solde de l'année 2024, investissement 2012" },
 };
+// Cases de la déclaration 2027 : règle de la cohorte précédente (voir cases2027.ts).
+ajouterJumelles2027(REGLES_SCELLIER as Partial<Record<string, RegleScellier>>,
+  (r, cle) => ({ ...r, libelle: `${r.libelle} — règle reprise pour la case 2027 ${cle.slice(4).toUpperCase()}` }));
 
 const montant = (v: unknown) => Math.max(0, typeof v === 'number' ? v : 0);
 

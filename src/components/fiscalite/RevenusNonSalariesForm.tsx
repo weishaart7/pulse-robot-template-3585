@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMillesimeFiscal } from '@/contexts/MillesimeFiscalContext';
 import { useRevenusNonSalaries } from '@/hooks/useRevenusNonSalaries';
 import { RevenusNonSalaries } from '@/services/revenusNonSalariesService';
-import { calculerRevenusNonSalaries, REVENUS_NON_SALARIES_VIDE, RevenusNonSalariesInput } from '@/lib/fiscalite';
+import { ANNEE_REVENUS_CASES_2027, calculerRevenusNonSalaries, REVENUS_NON_SALARIES_VIDE, RevenusNonSalariesInput } from '@/lib/fiscalite';
 import { DeclarantsHeader, MontantEclateLigne, MontantLigne, SingleMontantLigne, SousGroupe } from './DeclarationLigne';
 import { Cadre2042, Cadre2042Chargement, PersonnesAChargeCadre } from './Cadre2042';
 
@@ -24,7 +24,9 @@ interface RevenusNonSalariesFormProps {
 
 export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps) => {
   const { data, loading, saving, saveData } = useRevenusNonSalaries();
-  const { parametres } = useMillesimeFiscal();
+  const { parametres, anneeRevenus } = useMillesimeFiscal();
+  // Cases de la déclaration 2027 (revenus 2026) affichées seulement pour ce millésime.
+  const declaration2027 = anneeRevenus >= ANNEE_REVENUS_CASES_2027;
   const [rns, setRns] = useState<RevenusNonSalariesInput>(REVENUS_NON_SALARIES_VIDE);
   const [rnsId, setRnsId] = useState<string | undefined>(undefined);
 
@@ -70,6 +72,9 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
         <SousGroupe titre="Revenus industriels et commerciaux professionnels — micro-BIC">
           <MontantLigne label="Ventes de marchandises et assimilées" extra="abattement 71 %" code1="5KO" code2="5LO" value1={rns.case5ko} value2={rns.case5lo} onChange1={v => update('case5ko', v)} onChange2={v => update('case5lo', v)} />
           <MontantLigne label="Prestations de services et locations meublées professionnelles" extra="abattement 50 %" code1="5KP" code2="5LP" value1={rns.case5kp} value2={rns.case5lp} onChange1={v => update('case5kp', v)} onChange2={v => update('case5lp', v)} />
+          {declaration2027 && (
+            <MontantLigne label="Locations meublées professionnelles" extra="déclaration 2027, abattement 50 %" code1="5KM" code2="5LM" value1={rns.case5km ?? null} value2={rns.case5lm ?? null} onChange1={v => update('case5km', v)} onChange2={v => update('case5lm', v)} />
+          )}
         </SousGroupe>
 
         <SousGroupe titre="Revenus industriels et commerciaux non professionnels — micro-BIC" aide="Autres que les locations meublées non professionnelles.">
@@ -255,6 +260,9 @@ export const RevenusNonSalariesForm = ({ onSaved }: RevenusNonSalariesFormProps)
           <SousGroupe titre="Revenus industriels et commerciaux professionnels — micro-BIC">
             <SingleMontantLigne label="Ventes de marchandises et assimilées" extra="abattement 71 %" code="5MO" value={rns.case5mo ?? null} onChange={v => update('case5mo', v)} />
             <SingleMontantLigne label="Prestations de services et locations meublées professionnelles" extra="abattement 50 %" code="5MP" value={rns.case5mp ?? null} onChange={v => update('case5mp', v)} />
+            {declaration2027 && (
+              <SingleMontantLigne label="Locations meublées professionnelles" extra="déclaration 2027, abattement 50 %" code="5MM" value={rns.case5mm ?? null} onChange={v => update('case5mm', v)} />
+            )}
           </SousGroupe>
           <SousGroupe titre="Revenus industriels et commerciaux non professionnels — micro-BIC">
             <SingleMontantLigne label="Ventes de marchandises et assimilées" extra="abattement 71 %" code="5PO" value={rns.case5po ?? null} onChange={v => update('case5po', v)} />

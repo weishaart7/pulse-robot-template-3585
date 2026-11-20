@@ -1884,6 +1884,8 @@ export type Database = {
       }
       gains_actionnariat_salarie: {
         Row: {
+          case_1pp: number | null
+          case_1pq: number | null
           case_0xx: number | null
           case_1ay: number | null
           case_1by: number | null
@@ -1913,6 +1915,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_1pp?: number | null
+          case_1pq?: number | null
           case_0xx?: number | null
           case_1ay?: number | null
           case_1by?: number | null
@@ -1942,6 +1946,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_1pp?: number | null
+          case_1pq?: number | null
           case_0xx?: number | null
           case_1ay?: number | null
           case_1by?: number | null
@@ -2539,6 +2545,7 @@ export type Database = {
       }
       plus_values_gains_divers: {
         Row: {
+          case_3yn: number | null
           case_3wi: number | null
           case_3wj: number | null
           case_3wn: number | null
@@ -2588,6 +2595,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_3yn?: number | null
           case_3wi?: number | null
           case_3wj?: number | null
           case_3wn?: number | null
@@ -2637,6 +2645,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_3yn?: number | null
           case_3wi?: number | null
           case_3wj?: number | null
           case_3wn?: number | null
@@ -2689,6 +2698,13 @@ export type Database = {
       }
       prelevement_source_divers: {
         Row: {
+          case_8ha: number | null
+          case_8hb: number | null
+          case_8hc: number | null
+          case_8hu: number | null
+          case_8iu: number | null
+          case_8wb: number | null
+          case_8px: number | null
           case_8tb: number | null
           case_8tc: number | null
           case_8wk: number | null
@@ -2771,6 +2787,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_8ha?: number | null
+          case_8hb?: number | null
+          case_8hc?: number | null
+          case_8hu?: number | null
+          case_8iu?: number | null
+          case_8wb?: number | null
+          case_8px?: number | null
           case_8tb?: number | null
           case_8tc?: number | null
           case_8wk?: number | null
@@ -2853,6 +2876,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_8ha?: number | null
+          case_8hb?: number | null
+          case_8hc?: number | null
+          case_8hu?: number | null
+          case_8iu?: number | null
+          case_8wb?: number | null
+          case_8px?: number | null
           case_8tb?: number | null
           case_8tc?: number | null
           case_8wk?: number | null
@@ -3000,6 +3030,117 @@ export type Database = {
       }
       reductions_credits_impot: {
         Row: {
+          case_7ln: number | null
+          case_7ly: number | null
+          case_7lz: number | null
+          case_7ni: number | null
+          case_7nj: number | null
+          case_7nk: number | null
+          case_7nl: number | null
+          case_7ir: number | null
+          case_7is: number | null
+          case_7it: number | null
+          case_7iu: number | null
+          case_7ho: number | null
+          case_7hp: number | null
+          case_7rq: number | null
+          case_7rr: number | null
+          case_7yh: number | null
+          case_7yi: number | null
+          case_7tp: number | null
+          case_7tq: number | null
+          case_7hq: number | null
+          case_7hr: number | null
+          case_7pm: number | null
+          case_7pn: number | null
+          case_7qi: number | null
+          case_7qj: number | null
+          case_7re: number | null
+          case_7rg: number | null
+          case_7rs: number | null
+          case_7rz: number | null
+          case_7wa: number | null
+          case_7wb: number | null
+          case_7wc: number | null
+          case_7wd: number | null
+          case_7sq: number | null
+          case_7ot: number | null
+          case_7av: number | null
+          case_7aw: number | null
+          case_7ax: number | null
+          case_7ay: number | null
+          case_7cf: number | null
+          case_7cg: number | null
+          case_7ch: number | null
+          case_7cj: number | null
+          case_7ck: number | null
+          case_7cl: number | null
+          case_7cm: number | null
+          case_7dd: number | null
+          case_7de: number | null
+          case_7df: number | null
+          case_7gh: number | null
+          case_7gi: number | null
+          case_7gj: number | null
+          case_7gk: number | null
+          case_7gs: number | null
+          case_7gt: number | null
+          case_7gu: number | null
+          case_7gv: number | null
+          case_7be: number | null
+          case_7bf: number | null
+          case_7bg: number | null
+          case_7bh: number | null
+          case_7ms: number | null
+          case_7mt: number | null
+          case_7mu: number | null
+          case_7mv: number | null
+          case_7op: number | null
+          case_7oq: number | null
+          case_7or: number | null
+          case_7os: number | null
+          case_7tg: number | null
+          case_7tl: number | null
+          case_7tn: number | null
+          case_7to: number | null
+          case_7we: number | null
+          case_7wf: number | null
+          case_7wg: number | null
+          case_7wu: number | null
+          case_7wv: number | null
+          case_7ww: number | null
+          case_7yj: number | null
+          case_7yk: number | null
+          case_7yl: number | null
+          case_7yx: number | null
+          case_7yy: number | null
+          case_7yz: number | null
+          case_7za: number | null
+          case_7zb: number | null
+          case_7zc: number | null
+          case_7zd: number | null
+          case_7ze: number | null
+          case_7zf: number | null
+          case_7zg: number | null
+          case_hms: number | null
+          case_hmt: number | null
+          case_hmu: number | null
+          case_hmv: number | null
+          case_hmw: number | null
+          case_hvp: number | null
+          case_hyk: number | null
+          case_7ak: number | null
+          case_7al: number | null
+          case_7am: number | null
+          case_7an: number | null
+          case_7ao: number | null
+          case_7kz: number | null
+          case_7vn: number | null
+          case_7tm: number | null
+          case_7cn: number | null
+          case_7cx: number | null
+          case_7dn: number | null
+          case_7cz: number | null
           case_hqa: number | null
           case_hyj: number | null
           case_hye: number | null
@@ -3569,6 +3710,117 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_7ln?: number | null
+          case_7ly?: number | null
+          case_7lz?: number | null
+          case_7ni?: number | null
+          case_7nj?: number | null
+          case_7nk?: number | null
+          case_7nl?: number | null
+          case_7ir?: number | null
+          case_7is?: number | null
+          case_7it?: number | null
+          case_7iu?: number | null
+          case_7ho?: number | null
+          case_7hp?: number | null
+          case_7rq?: number | null
+          case_7rr?: number | null
+          case_7yh?: number | null
+          case_7yi?: number | null
+          case_7tp?: number | null
+          case_7tq?: number | null
+          case_7hq?: number | null
+          case_7hr?: number | null
+          case_7pm?: number | null
+          case_7pn?: number | null
+          case_7qi?: number | null
+          case_7qj?: number | null
+          case_7re?: number | null
+          case_7rg?: number | null
+          case_7rs?: number | null
+          case_7rz?: number | null
+          case_7wa?: number | null
+          case_7wb?: number | null
+          case_7wc?: number | null
+          case_7wd?: number | null
+          case_7sq?: number | null
+          case_7ot?: number | null
+          case_7av?: number | null
+          case_7aw?: number | null
+          case_7ax?: number | null
+          case_7ay?: number | null
+          case_7cf?: number | null
+          case_7cg?: number | null
+          case_7ch?: number | null
+          case_7cj?: number | null
+          case_7ck?: number | null
+          case_7cl?: number | null
+          case_7cm?: number | null
+          case_7dd?: number | null
+          case_7de?: number | null
+          case_7df?: number | null
+          case_7gh?: number | null
+          case_7gi?: number | null
+          case_7gj?: number | null
+          case_7gk?: number | null
+          case_7gs?: number | null
+          case_7gt?: number | null
+          case_7gu?: number | null
+          case_7gv?: number | null
+          case_7be?: number | null
+          case_7bf?: number | null
+          case_7bg?: number | null
+          case_7bh?: number | null
+          case_7ms?: number | null
+          case_7mt?: number | null
+          case_7mu?: number | null
+          case_7mv?: number | null
+          case_7op?: number | null
+          case_7oq?: number | null
+          case_7or?: number | null
+          case_7os?: number | null
+          case_7tg?: number | null
+          case_7tl?: number | null
+          case_7tn?: number | null
+          case_7to?: number | null
+          case_7we?: number | null
+          case_7wf?: number | null
+          case_7wg?: number | null
+          case_7wu?: number | null
+          case_7wv?: number | null
+          case_7ww?: number | null
+          case_7yj?: number | null
+          case_7yk?: number | null
+          case_7yl?: number | null
+          case_7yx?: number | null
+          case_7yy?: number | null
+          case_7yz?: number | null
+          case_7za?: number | null
+          case_7zb?: number | null
+          case_7zc?: number | null
+          case_7zd?: number | null
+          case_7ze?: number | null
+          case_7zf?: number | null
+          case_7zg?: number | null
+          case_hms?: number | null
+          case_hmt?: number | null
+          case_hmu?: number | null
+          case_hmv?: number | null
+          case_hmw?: number | null
+          case_hvp?: number | null
+          case_hyk?: number | null
+          case_7ak?: number | null
+          case_7al?: number | null
+          case_7am?: number | null
+          case_7an?: number | null
+          case_7ao?: number | null
+          case_7kz?: number | null
+          case_7vn?: number | null
+          case_7tm?: number | null
+          case_7cn?: number | null
+          case_7cx?: number | null
+          case_7dn?: number | null
+          case_7cz?: number | null
           case_hqa?: number | null
           case_hyj?: number | null
           case_hye?: number | null
@@ -4138,6 +4390,117 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_7ln?: number | null
+          case_7ly?: number | null
+          case_7lz?: number | null
+          case_7ni?: number | null
+          case_7nj?: number | null
+          case_7nk?: number | null
+          case_7nl?: number | null
+          case_7ir?: number | null
+          case_7is?: number | null
+          case_7it?: number | null
+          case_7iu?: number | null
+          case_7ho?: number | null
+          case_7hp?: number | null
+          case_7rq?: number | null
+          case_7rr?: number | null
+          case_7yh?: number | null
+          case_7yi?: number | null
+          case_7tp?: number | null
+          case_7tq?: number | null
+          case_7hq?: number | null
+          case_7hr?: number | null
+          case_7pm?: number | null
+          case_7pn?: number | null
+          case_7qi?: number | null
+          case_7qj?: number | null
+          case_7re?: number | null
+          case_7rg?: number | null
+          case_7rs?: number | null
+          case_7rz?: number | null
+          case_7wa?: number | null
+          case_7wb?: number | null
+          case_7wc?: number | null
+          case_7wd?: number | null
+          case_7sq?: number | null
+          case_7ot?: number | null
+          case_7av?: number | null
+          case_7aw?: number | null
+          case_7ax?: number | null
+          case_7ay?: number | null
+          case_7cf?: number | null
+          case_7cg?: number | null
+          case_7ch?: number | null
+          case_7cj?: number | null
+          case_7ck?: number | null
+          case_7cl?: number | null
+          case_7cm?: number | null
+          case_7dd?: number | null
+          case_7de?: number | null
+          case_7df?: number | null
+          case_7gh?: number | null
+          case_7gi?: number | null
+          case_7gj?: number | null
+          case_7gk?: number | null
+          case_7gs?: number | null
+          case_7gt?: number | null
+          case_7gu?: number | null
+          case_7gv?: number | null
+          case_7be?: number | null
+          case_7bf?: number | null
+          case_7bg?: number | null
+          case_7bh?: number | null
+          case_7ms?: number | null
+          case_7mt?: number | null
+          case_7mu?: number | null
+          case_7mv?: number | null
+          case_7op?: number | null
+          case_7oq?: number | null
+          case_7or?: number | null
+          case_7os?: number | null
+          case_7tg?: number | null
+          case_7tl?: number | null
+          case_7tn?: number | null
+          case_7to?: number | null
+          case_7we?: number | null
+          case_7wf?: number | null
+          case_7wg?: number | null
+          case_7wu?: number | null
+          case_7wv?: number | null
+          case_7ww?: number | null
+          case_7yj?: number | null
+          case_7yk?: number | null
+          case_7yl?: number | null
+          case_7yx?: number | null
+          case_7yy?: number | null
+          case_7yz?: number | null
+          case_7za?: number | null
+          case_7zb?: number | null
+          case_7zc?: number | null
+          case_7zd?: number | null
+          case_7ze?: number | null
+          case_7zf?: number | null
+          case_7zg?: number | null
+          case_hms?: number | null
+          case_hmt?: number | null
+          case_hmu?: number | null
+          case_hmv?: number | null
+          case_hmw?: number | null
+          case_hvp?: number | null
+          case_hyk?: number | null
+          case_7ak?: number | null
+          case_7al?: number | null
+          case_7am?: number | null
+          case_7an?: number | null
+          case_7ao?: number | null
+          case_7kz?: number | null
+          case_7vn?: number | null
+          case_7tm?: number | null
+          case_7cn?: number | null
+          case_7cx?: number | null
+          case_7dn?: number | null
+          case_7cz?: number | null
           case_hqa?: number | null
           case_hyj?: number | null
           case_hye?: number | null
@@ -5282,6 +5645,9 @@ export type Database = {
       }
       revenus_non_salaries: {
         Row: {
+          case_5km: number | null
+          case_5lm: number | null
+          case_5mm: number | null
           case_5ja: number | null
           case_5jb: number | null
           case_5jc: number | null
@@ -5566,6 +5932,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_5km?: number | null
+          case_5lm?: number | null
+          case_5mm?: number | null
           case_5ja?: number | null
           case_5jb?: number | null
           case_5jc?: number | null
@@ -5850,6 +6219,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_5km?: number | null
+          case_5lm?: number | null
+          case_5mm?: number | null
           case_5ja?: number | null
           case_5jb?: number | null
           case_5jc?: number | null

@@ -187,6 +187,7 @@ export const JUMELLES_PAC_CADRE_5: Record<string, string> = {
   case5py: 'case5ny',
   case5sg: 'case5jj',
   case5ye: 'case5we',
+  case5mm: 'case5km',
 };
 type Imposition = 'bareme' | 'versement_liberatoire';
 
@@ -204,6 +205,8 @@ const CATEGORIES: Categorie[] = [
   // Micro-BIC professionnel et non professionnel
   { cles: ['case5ko', 'case5mo', 'case5lo'], taux: 0.71, imposition: 'bareme' },
   { cles: ['case5kp', 'case5mp', 'case5lp'], taux: 0.50, imposition: 'bareme' },
+  // Locations meublées professionnelles (déclaration 2027) : abattement propre de 50 % (simulateur calc-2027).
+  { cles: ['case5km', 'case5mm', 'case5lm'], taux: 0.50, imposition: 'bareme' },
   { cles: ['case5no', 'case5po', 'case5oo'], taux: 0.71, imposition: 'bareme' },
   { cles: ['case5np', 'case5pp', 'case5op'], taux: 0.50, imposition: 'bareme' },
   // Locations meublées non professionnelles
@@ -332,7 +335,7 @@ export function calculerRevenusNonSalaries(
   const micro = (cles: Cle[]) => cles.reduce((t, c) => t + (netParCle.get(c) ?? 0), 0);
 
   // Professionnels : déficits et moins-values à court terme imputables sur le revenu global.
-  const bicPro = micro(['case5ko', 'case5mo', 'case5lo', 'case5kp', 'case5mp', 'case5lp'])
+  const bicPro = micro(['case5ko', 'case5mo', 'case5lo', 'case5kp', 'case5mp', 'case5lp', 'case5km', 'case5mm', 'case5lm'])
     + somme(input, ['case5kx', 'case5mx', 'case5lx', 'case5kc', 'case5mc', 'case5lc'])
     - somme(input, ['case5kj', 'case5mj', 'case5lj', 'case5kf', 'case5mf', 'case5lf']);
   const bncPro = micro(['case5hq', 'case5jq', 'case5iq'])
@@ -390,7 +393,7 @@ export function calculerRevenusNonSalaries(
   const alertes: AlerteRevenusNonSalaries[] = [];
   const parDeclarant = (cles: Cle[][]) => cles.map(c => somme(input, c));
   const ventes = parDeclarant([['case5ta', 'case5ko', 'case5no'], ['case5ua', 'case5lo', 'case5oo'], ['case5va', 'case5mo', 'case5po']]);
-  const services = parDeclarant([['case5tb', 'case5kp', 'case5np'], ['case5ub', 'case5lp', 'case5op'], ['case5vb', 'case5mp', 'case5pp']]);
+  const services = parDeclarant([['case5tb', 'case5kp', 'case5km', 'case5np'], ['case5ub', 'case5lp', 'case5lm', 'case5op'], ['case5vb', 'case5mp', 'case5mm', 'case5pp']]);
   const bnc = parDeclarant([['case5te', 'case5hq', 'case5ku'], ['case5ue', 'case5iq', 'case5lu'], ['case5ve', 'case5jq', 'case5mu']]);
   if (ventes.some((x, d) => x + services[d] > seuils.seuilMicroVentes)) alertes.push('ventes_au_dela_du_seuil');
   if (services.some(x => x > seuils.seuilMicroServices)) alertes.push('services_au_dela_du_seuil');

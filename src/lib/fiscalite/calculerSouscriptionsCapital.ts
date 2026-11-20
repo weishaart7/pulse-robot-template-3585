@@ -42,8 +42,8 @@ type Tranche = [Cle, number][];
 /** Groupe PME/ESUS/SFS, dans l'ordre d'imputation du simulateur (7CV après 7DO : touchée par son double décompte). */
 const GROUPE_PME: Tranche = [
   ['case7dc', 0.25], ['case7ca', 0.25], ['case7ct', 0.18], ['case7cw', 0.25], ['case7cu', 0.18],
-  ['case7cq', 0.25], ['case7cp', 0.18], ['case7dp', 0.25], ['case7do', 0.18], ['case7cv', 0.18],
-  ['case7co', 0.25], ['case7ci', 0.18], ['case7gw', 0.25], ['case7bs', 0.25], ['case7bt', 0.25],
+  ['case7cq', 0.25], ['case7cp', 0.18], ['case7dp', 0.25], ['case7dn', 0.25], ['case7do', 0.18], ['case7cv', 0.18],
+  ['case7cx', 0.18], ['case7co', 0.25], ['case7ci', 0.18], ['case7cn', 0.18], ['case7gw', 0.25], ['case7bs', 0.25], ['case7bt', 0.25],
   ['case7bu', 0.25], ['case7bw', 0.25],
 ];
 /** Cases du groupe PME ouvrant la majoration ESUS de 3 000 €. */
@@ -108,6 +108,8 @@ export function calculerSouscriptionsCapital(
     Math.min(Math.max(0, revenuImposable) * LIMITE_SOFICA_REVENU, PLAFOND_SOFICA)).reduction;
   const horsPlafond = Math.round(plafonne(input.case7cr, PLAFOND_JEI * k, 0.30)
     + plafonne(input.case7dz, PLAFOND_JEIR * k, 0.50)
+    // 7CZ (JEII, déclaration 2027) : 40 % dans la limite de 50 000 € par part, hors plafonnement global (calc-2027).
+    + plafonne(input.case7cz, PLAFOND_JEIR * k, 0.40)
     + plafonne(input.case7fh, PLAFOND_REPRISE_SOCIETE * k, 0.25)
     + plafonne(input.case7uc, PLAFOND_DFCI, 0.50)
     + (revenuProfessionnelReel ? montant(input.case7us) : 0));

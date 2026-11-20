@@ -286,9 +286,23 @@ fonciers (§4).
   formulaire calc-2027.cgi supprime environ 150 cases (cadre 7 surtout : Pinel 7XA…7XE, Censi-Bouvard,
   Scellier, PME 7CA/7DC/7CT, bornes 7ZQ…7ZT, 7WI ; outre-mer HGU, HOA…HOK ; 6HP) et en crée environ 140
   (générations d'investissement décalées d'un an : 7CF…7CN, 7WA…7WG, 7ZA…7ZG, 8HA, 8KA…8KC, HMS…HMW…).
-  Le millésime revenus 2026 garde la liste de cases de 2025 (une 7XA y produit encore sa réduction) :
-  modélisation reportée à la promulgation de la loi de finances pour 2027. Les cas de
-  `useFiscalOverview.simulateurOfficiel.test.ts` sont rejoués sur les deux millésimes.
+  **Cases créées avec effet sur l'impôt : modélisées** ([cases2027.ts](src/lib/fiscalite/cases2027.ts)) —
+  124 colonnes (migration `20261120100000`), prises en compte à partir des revenus 2026 et neutralisées pour
+  les millésimes antérieurs (`masquerCases2027`, saisies communes aux millésimes). Cadre 7 (111 cases) : chaque
+  case reprend la règle de sa jumelle de la cohorte précédente (`JUMELLES_CADRE_7_2027`, copiée dans les
+  tables Pinel, Scellier, Censi-Bouvard et outre-mer : nature, taux, plafond, millésime de plafonnement),
+  choisie sur la réponse de calc-2027 à 1 000, 50 000 et 400 000 € ; Loc'Avantages 7AK…7AO, Malraux 7KZ, forêt
+  7VN/7TM, PME/ESUS 7CN/7CX/7DN dans leurs listes ; JEII 7CZ à 40 %, 50 000 € par part, hors plafonnement
+  global. Hors cadre 7 : 1PP/1PQ (comme 1MP/1MQ), 3YN (comme 3XN, PS à 18,6 %), 5KM/5LM/5MM (micro-BIC
+  50 %, abattement propre), taxe holdings 8HA/8HB/8HC (8HC ajoutée à l'impôt hors réductions, comme une taxe
+  annexe), acomptes de PS 8HU/8IU, crédit 8WB (comme 8WA), report 8PX (comme 8PY). Saisie : section
+  « Déclaration 2027 » du cadre 7 (libellés du formulaire, [libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts))
+  et champs à côté des jumelles, affichés pour les revenus 2026. Écart connu : HMT et HYK (outre-mer 2026)
+  plafonnés à 76 795 € sur calc-2027 contre 77 400 € et 91 482 € pour leurs jumelles 2025 (au-delà de
+  ~77 000 € de réduction seulement). Restent à traiter à la loi de finances : cases supprimées encore
+  calculées (une 7XA ou 6HP produit encore sa réduction), cases créées sans effet au simulateur, règles
+  changées (1AR…1DR, Chambord, 7JT/7KC). Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
+  rejoués sur les deux millésimes, ceux des cases 2027 (`CAS_2027`) sur les revenus 2026 seuls.
 
 - **Navigation de la déclaration 2042 : pattern overlay + sidebar repris du simulateur IFI historique.**
   `Declaration2042Interface.tsx` reprend la mécanique de l'ancien `IFIInterface.tsx` (overlay
