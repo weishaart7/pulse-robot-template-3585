@@ -5,7 +5,7 @@ import { revenusFonciersPour2042, type Declaration2044Result, type RevenusFoncie
 import { calculerDonneesIFI, chargerDonneesIFI, type DonneesIFI, type Plafonnement2042 } from '@/services/declarationIFIDonnees';
 import type { DeclarationIFIResultat } from '@/lib/fiscalite/calculerDeclarationIFI';
 import { controlerSaisie2042 } from '@/lib/fiscalite/controlerSaisie2042';
-import { masquerCases2027 } from '@/lib/fiscalite/cases2027';
+import { casesSupprimees2027Saisies, masquerCases2027, masquerCasesSupprimees2027 } from '@/lib/fiscalite/cases2027';
 import { useFoyerFiscal } from './useFoyerFiscal';
 import { useRevenusSalaires } from './useRevenusSalaires';
 import { useGainsActionnariatSalarie } from './useGainsActionnariatSalarie';
@@ -367,6 +367,11 @@ export interface FiscalOverview {
  * ferme, la Vision générale resterait figée sur les données du premier
  * chargement de la page.
  */
+/** Cases retirées du formulaire 2027 encore saisies : ignorées par le calcul à partir des revenus 2026. */
+const alerteCasesSupprimees = (codes: string[]): string[] => (codes.length === 0 ? [] : [
+  `${codes.join(', ')} : case${codes.length > 1 ? 's' : ''} retirée${codes.length > 1 ? 's' : ''} du formulaire 2027 (fin de dispositif ou de report), sans effet sur l'impôt des revenus 2026.`,
+]);
+
 export function useFiscalOverview(): FiscalOverview {
   const { anneeRevenus, parametres } = useMillesimeFiscal();
   const anneeIFI = anneeRevenus + 1;
@@ -381,7 +386,8 @@ export function useFiscalOverview(): FiscalOverview {
 
   const { data: fonciers2042, loading: loadingFonciers2042, refetch: refetchFonciers2042 } = useRevenusFonciers2042();
   const { data: nonSalariesSaisis, loading: loadingNonSalaries, refetch: refetchNonSalaries } = useRevenusNonSalaries();
-  const { data: charges, loading: loadingCharges, refetch: refetchCharges } = useChargesDeductibles();
+  const { data: chargesSaisies, loading: loadingCharges, refetch: refetchCharges } = useChargesDeductibles();
+  const charges = useMemo(() => masquerCasesSupprimees2027(chargesSaisies, 'charges', anneeRevenus), [chargesSaisies, anneeRevenus]);
   const { data: reductionsSaisies, loading: loadingReductions, refetch: refetchReductions } = useReductionsCreditsImpot();
   const { data: prelevementSourceSaisi, loading: loadingPrelevementSource, refetch: refetchPrelevementSource } = usePrelevementSourceDivers();
   // Cases de la déclaration 2027 neutralisées pour les millésimes antérieurs (saisies communes aux millésimes).
@@ -390,7 +396,8 @@ export function useFiscalOverview(): FiscalOverview {
   const nonSalaries = useMemo(() => masquerCases2027(nonSalariesSaisis, 'nonSalaries', anneeRevenus), [nonSalariesSaisis, anneeRevenus]);
   // Reports sans effet sur l'impôt de l'année (revenus 2026 : 7JT, 7KC) retirés du calcul.
   const reductions = useMemo(() => {
-    const visibles = masquerCases2027(reductionsSaisies, 'reductions', anneeRevenus);
+    // Cases retirées du formulaire 2027 neutralisées à partir des revenus 2026.
+    const visibles = masquerCasesSupprimees2027(masquerCases2027(reductionsSaisies, 'reductions', anneeRevenus), 'reductions', anneeRevenus);
     const sansEffet = parametres.reductionsCredits.reportsSansEffet;
     if (!visibles || sansEffet.length === 0) return visibles;
     return { ...visibles, ...Object.fromEntries(sansEffet.map((cle) => [cle, null])) };
@@ -742,7 +749,7 @@ export function useFiscalOverview(): FiscalOverview {
           foyer: foyerInput, anneeRevenus, salaires: revenusInput, gains, pensions: pensionsInput,
           capitauxMobiliers: capitauxMobiliersInput, plusValues, fonciers: fonciers2042Input, nonSalaries: nonSalariesInput,
           charges, reductions, prelevementSource: prelevementSourceInput,
-        }),
+        }).concat(alerteCasesSupprimees(casesSupprimees2027Saisies({ reductions: reductionsSaisies, charges: chargesSaisies }, anneeRevenus))),
         reductionsCreditsImpot,
         plafonnementNiches,
         prelevementSourceDivers,
@@ -794,7 +801,7 @@ export function useFiscalOverview(): FiscalOverview {
       };
 
     return { ...resultat, comparaisonOptionBareme };
-  }, [anneeRevenus, anneeIFI, parametres, donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, loadingCharges, reductions, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
+  }, [anneeRevenus, anneeIFI, parametres, donneesIFI, loadingIFI, declaration2044, loading2044, foyer, revenus, gains, exoneres, pensions, capitauxMobiliers, plusValues, loadingPlusValues, fonciers2042, loadingFonciers2042, nonSalaries, loadingNonSalaries, charges, chargesSaisies, loadingCharges, reductions, reductionsSaisies, loadingReductions, prelevementSource, loadingPrelevementSource, loadingFoyer, loadingRevenus, loadingGains, loadingExoneres, loadingPensions, loadingCapitauxMobiliers]);
 
   const overview = useMemo(
     () => evaluer(capitauxMobiliers ?? REVENUS_CAPITAUX_MOBILIERS_PAR_DEFAUT),

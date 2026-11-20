@@ -81,3 +81,53 @@ export function ajouterJumelles2027<R extends object>(regles: Partial<Record<str
     if (regle && !regles[nouvelle]) regles[nouvelle] = libelle(regle, nouvelle);
   }
 }
+
+/**
+ * Cases retirées du formulaire 2027 (présentes dans calc-2026, absentes de calc-2027), sans effet à partir
+ * des revenus 2026 : fin de dispositif ou de délai de report (Scellier, Censi-Bouvard, reports PME/ESUS 2021,
+ * Malraux 2022, forêt, dons temporaires 2025, PPRT, bornes de recharge, outre-mer, 6HP). Pinel, Denormandie,
+ * Duflot et 8YS/8YU restent calculées, faute de certitude sur la fin de l'avantage.
+ */
+export const CASES_SUPPRIMEES_2027 = {
+  reductions: [
+    'case7bi', 'case7bq', 'case7bx', 'case7by', 'case7bz', 'case7ca', 'case7ct', 'case7dc', 'case7di',
+    'case7du', 'case7dv', 'case7dx', 'case7el', 'case7em', 'case7eq', 'case7er', 'case7ev', 'case7ew',
+    'case7ex', 'case7fa', 'case7fc', 'case7fd', 'case7gr', 'case7ha', 'case7hj', 'case7hk', 'case7hn',
+    'case7ht', 'case7hu', 'case7hv', 'case7hw', 'case7hx', 'case7hy', 'case7ij', 'case7iq', 'case7iw',
+    'case7ka', 'case7kb', 'case7kd', 'case7kk', 'case7ky', 'case7mo', 'case7mp', 'case7mq', 'case7mr',
+    'case7mz', 'case7pz', 'case7sa', 'case7sb', 'case7sc', 'case7sj', 'case7sk', 'case7sr', 'case7tc',
+    'case7td', 'case7tr', 'case7ts', 'case7ua', 'case7ub', 'case7ue', 'case7ug', 'case7ui', 'case7uj',
+    'case7uk', 'case7uo', 'case7vm', 'case7vq', 'case7vr', 'case7wi', 'case7xc', 'case7xd', 'case7xe',
+    'case7xl', 'case7xm', 'case7xn', 'case7ya', 'case7yc', 'case7ym', 'case7yn', 'case7yo', 'case7yp',
+    'case7zi', 'case7zj', 'case7zk', 'case7zl', 'case7zq', 'case7zr', 'case7zs', 'case7zt', 'case7zw',
+    'case7zx', 'case7zy', 'case7zz', 'caseHgs', 'caseHgt', 'caseHgu', 'caseHgw', 'caseHkc', 'caseHlv',
+    'caseHoa', 'caseHob', 'caseHoc', 'caseHoh', 'caseHoi', 'caseHoj', 'caseHok', 'caseHvk', 'caseHye'
+  ],
+  charges: ['case6hp'],
+} as const;
+
+/** Neutralise les cases retirées du formulaire 2027 à partir des revenus 2026. */
+export function masquerCasesSupprimees2027<T extends object>(
+  input: T | null | undefined,
+  groupe: keyof typeof CASES_SUPPRIMEES_2027,
+  anneeRevenus: number,
+): T | null | undefined {
+  if (!input || anneeRevenus < ANNEE_REVENUS_CASES_2027) return input;
+  const copie = { ...input } as Record<string, unknown>;
+  for (const cle of CASES_SUPPRIMEES_2027[groupe]) if (cle in copie) copie[cle] = null;
+  return copie as T;
+}
+
+/** Codes des cases retirées du formulaire 2027 saisies (montant non nul), à signaler pour les revenus 2026. */
+export function casesSupprimees2027Saisies(
+  saisies: Partial<Record<keyof typeof CASES_SUPPRIMEES_2027, object | null | undefined>>,
+  anneeRevenus: number,
+): string[] {
+  if (anneeRevenus < ANNEE_REVENUS_CASES_2027) return [];
+  return (Object.keys(CASES_SUPPRIMEES_2027) as (keyof typeof CASES_SUPPRIMEES_2027)[]).flatMap((groupe) => {
+    const valeurs = (saisies[groupe] ?? {}) as Record<string, unknown>;
+    return CASES_SUPPRIMEES_2027[groupe]
+      .filter((cle) => typeof valeurs[cle] === 'number' && valeurs[cle] !== 0)
+      .map((cle) => cle.replace(/^case/, '').toUpperCase());
+  });
+}

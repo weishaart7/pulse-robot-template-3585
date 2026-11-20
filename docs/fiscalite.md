@@ -300,7 +300,7 @@ fonciers (§4).
   « Déclaration 2027 » du cadre 7 (libellés du formulaire, [libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts))
   et champs à côté des jumelles, affichés pour les revenus 2026 (HMT et HYK : mêmes plafonds que leurs
   jumelles, 90 000 € et 133 333 €, cas T13/T14). Restent à traiter à la loi de finances : cases supprimées
-  encore calculées (une 7XA ou 6HP produit encore sa réduction) ; les cases nouvelles sans effet sont saisissables
+  encore calculées (Pinel/Denormandie/Duflot et 8YS/8YU ; les 109 autres sont neutralisées) ; les cases nouvelles sans effet sont saisissables
   pour mémoire (`casesInformatives2027.ts`). Les cas de `useFiscalOverview.simulateurOfficiel.test.ts` sont
   rejoués sur les deux millésimes, ceux des cases 2027 (`CAS_2027`) sur les revenus 2026 seuls.
 
@@ -2050,10 +2050,13 @@ cadre 3), sans bloquer le calcul. Revenus 2026 : rentes 1AR…1DR au crédit 8TK
 7JT/7KC sans effet ; plafond commun du logement social outre-mer (133 333 €) sur les deux millésimes.
 
 **Écarts restants, revenus 2026** (formulaire 2027 provisoire, à reprendre à la loi de finances pour 2027) :
-- cases supprimées du formulaire 2027 encore calculées : 142 cases d'Aurevia présentes dans calc-2026, qui
-  produisent encore leur réduction ou déduction — cadre 7 (124 : Scellier 61, Pinel/Denormandie/Duflot 31,
-  Censi-Bouvard 11, autres 21 dont reports PME/ESUS 2021, 7GR, Malraux 7KY, forêt, dons 7UJ/7UO/7VM, PPRT,
-  bornes 7ZQ…7ZT), outre-mer (15 : HGS…HGW, HKC, HLV, HOA…HOK, HVK, HYE), 6HP, 8YS/8YU.
+- cases retirées du formulaire 2027 (142, présentes dans calc-2026) : 109 neutralisées à partir des revenus
+  2026 (`CASES_SUPPRIMEES_2027`, `masquerCasesSupprimees2027`), car leur dispositif ou leur délai de report
+  s'achève — Scellier 61, Censi-Bouvard 11, autres cadre 7 21 (reports PME/ESUS 2021, 7GR, Malraux 7KY,
+  forêt, dons 7UJ/7UO/7VM, PPRT, bornes 7ZQ…7ZT), outre-mer 15, 6HP ; une saisie restante est signalée
+  (`alertesSaisie`), cas T15. **Encore calculées** (33) : Pinel/Denormandie/Duflot (31, cohortes dont
+  l'annuité peut passer dans une case de report du nouveau formulaire) et 8YS/8YU, à trancher au
+  formulaire définitif.
 
 **Cases propres à Aurevia, absentes des deux simulateurs** (21, sans écart à corriger) : prélèvement à la
 source des personnes à charge 8JV…8JZ/8KV…8KZ, plafond épargne retraite global 6PS/6PT/6PU (APS…DPU au

@@ -825,6 +825,15 @@ const CAS_2027: Record<string, Cas> = {
     saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHmt: 100000 } },
     attendu: { revenuFiscalReference: 885445, droitsSimples: 374974, impotNet: 320492, parts: 1, prelevementsSociaux: 0, tmi: 0.45 },
   },
+  T15: {
+    description: 'cases retirées du formulaire 2027 (Scellier 7XC, borne 7ZQ, outre-mer HGU, PME 7CA, 7UJ, 6HP) sans effet',
+    saisies: {
+      foyer: FOYER, salaires: { case1aj: 60000 },
+      reductions: { case7xc: 2000, case7zq: 500, caseHgu: 3000, case7ca: 1000, case7uj: 500 },
+      charges: { case6hp: 2000 },
+    },
+    attendu: { parts: 1, revenuFiscalReference: 54000, droitsSimples: 9304, impotNet: 9304, prelevementsSociaux: 0, tmi: 0.3 },
+  },
   T14: {
     description: 'outre-mer logement social HYK au-delà de son plafond commun (133 333 €)',
     saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHyk: 200000 } },
