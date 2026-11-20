@@ -284,7 +284,7 @@ fonciers (§4).
   supprimée), 7UQ (Chambord : plafond propre de 1 000 € à 75 %, excédent à 66 %, `plafondDonsChambord`),
   les reports 7JT/7KC sans effet (`reportsSansEffet`) et les rentes 1AR…1DR ouvrant droit au crédit 8TK
   (`rentesCreditImpotFrancais`) ; la suppression de 7VM n'est pas modélisée, signalée dans le cadre 7. Plus largement, le
-  formulaire calc-2027.cgi supprime environ 150 cases (cadre 7 surtout : Pinel 7XA…7XE, Censi-Bouvard,
+  formulaire calc-2027.cgi supprime 142 cases d'Aurevia (cadre 7 surtout : Pinel 7XA…7XE, Censi-Bouvard,
   Scellier, PME 7CA/7DC/7CT, bornes 7ZQ…7ZT, 7WI ; outre-mer HGU, HOA…HOK ; 6HP) et en crée environ 140
   (générations d'investissement décalées d'un an : 7CF…7CN, 7WA…7WG, 7ZA…7ZG, 8HA, 8KA…8KC, HMS…HMW…).
   **Cases créées avec effet sur l'impôt : modélisées** ([cases2027.ts](src/lib/fiscalite/cases2027.ts)) —
@@ -2050,8 +2050,14 @@ cadre 3), sans bloquer le calcul. Revenus 2026 : rentes 1AR…1DR au crédit 8TK
 7JT/7KC sans effet ; plafond commun du logement social outre-mer (133 333 €) sur les deux millésimes.
 
 **Écarts restants, revenus 2026** (formulaire 2027 provisoire, à reprendre à la loi de finances pour 2027) :
-- cases supprimées du formulaire 2027 encore calculées : 160 cases d'Aurevia, dont 140 au cadre 7 (anciennes
-  cohortes, qui produisent encore leur réduction), 6HP (déduite), 3SZ, colonnes PAC du prélèvement à la source.
+- cases supprimées du formulaire 2027 encore calculées : 142 cases d'Aurevia présentes dans calc-2026, qui
+  produisent encore leur réduction ou déduction — cadre 7 (124 : Scellier 61, Pinel/Denormandie/Duflot 31,
+  Censi-Bouvard 11, autres 21 dont reports PME/ESUS 2021, 7GR, Malraux 7KY, forêt, dons 7UJ/7UO/7VM, PPRT,
+  bornes 7ZQ…7ZT), outre-mer (15 : HGS…HGW, HKC, HLV, HOA…HOK, HVK, HYE), 6HP, 8YS/8YU.
+
+**Cases propres à Aurevia, absentes des deux simulateurs** (21, sans écart à corriger) : prélèvement à la
+source des personnes à charge 8JV…8JZ/8KV…8KZ, plafond épargne retraite global 6PS/6PT/6PU (APS…DPU au
+simulateur), cases à cocher 8TT/8UU/8FV, texte libre RSE/RSF, 4BZ (reportée de la 2044), 7HB, 3SZ.
 
 **Cases du formulaire 2027 sans effet sur le calcul** (115) : saisissables pour mémoire à partir des revenus
 2026, jamais lues par le moteur. Catalogue `casesInformatives2027.ts` (libellés du formulaire, type montant,
