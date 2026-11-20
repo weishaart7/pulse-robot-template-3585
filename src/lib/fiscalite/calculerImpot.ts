@@ -326,7 +326,9 @@ export function calculerImpot(
   const impotApresPlafonnement = impotApresReductionComplementaire + reductionComplementaireQuotientFamilial;
 
   const baseFrance = revenu + revenuCredit + revenuExceptionnel;
-  const tauxEffectif = revenuMondialFictif > 0 ? impotApresReductionComplementaire / revenuMondialFictif : 0;
+  // Impôt sur le revenu mondial arrondi à l'euro avant le prorata (simulateur officiel 2026 et 2027 :
+  // 1AJ 80 000 + 1AK 9 000 + 1AC 30 000 → 17 493 €, 17 492 € sans arrondi intermédiaire).
+  const tauxEffectif = revenuMondialFictif > 0 ? Math.round(impotApresReductionComplementaire) / revenuMondialFictif : 0;
   // Arrondi à l'euro, comme l'avis (« impôt après application du taux effectif »).
   const impotProportionnel = revenuExonere > 0 || revenuMondialSaisi > 0 ? Math.round(tauxEffectif * baseFrance) : impotApresReductionComplementaire;
 

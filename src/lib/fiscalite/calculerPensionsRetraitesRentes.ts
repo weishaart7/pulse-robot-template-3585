@@ -179,9 +179,23 @@ export function calculerPensionsRetraitesRentes(
   const abattementsImposables = imposables.map(b => abattementPensionDeclarant(b, abattement));
   const sommeAbattementsImposables = abattementsImposables.reduce((t, v) => t + v, 0);
   const abattementImposable = Math.min(abattement.plafondFoyer, sommeAbattementsImposables);
-  const abattementTotal = Math.min(abattement.plafondFoyer, imposables
-    .reduce((t, b, i) => t + abattementPensionDeclarant(b + exonerees[i], abattement), 0));
-  const abattementExonere = Math.max(0, abattementTotal - abattementImposable);
+  // Plafond atteint sur le total : réparti au prorata entre l'ensemble des pensions imposables et
+  // l'ensemble des pensions exonérées du foyer, chaque part arrondie à l'euro, 0,50 vers le bas
+  // (simulateur officiel 2026 : 1AS 25 000 + 1AH 25 000 → 2 219 + 2 219 = 4 438 €, RFR 45 562 ;
+  // 1AS 20 000 + 1AH 30 000 → 1 776 + 2 663 = 4 439 €). Écart connu de 1 € quand les parts tombent
+  // sur un tiers (1AS 15 000 + 1AH 15 000 + 1BH 15 000 : 4 438 € au simulateur, 4 439 € ici).
+  const abattementsTotaux = imposables.map((b, i) => abattementPensionDeclarant(b + exonerees[i], abattement));
+  const sommeAbattementsTotaux = abattementsTotaux.reduce((t, v) => t + v, 0);
+  const arrondiDemiBas = (v: number) => Math.ceil(Math.round(v * 1e6) / 1e6 - 0.5);
+  const partExoneree = abattementsTotaux
+    .reduce((t, a, i) => t + (imposables[i] + exonerees[i] > 0 ? a * exonerees[i] / (imposables[i] + exonerees[i]) : 0), 0);
+  const abattementTotal = sommeAbattementsTotaux <= abattement.plafondFoyer
+    ? sommeAbattementsTotaux
+    : arrondiDemiBas(abattement.plafondFoyer * (sommeAbattementsTotaux - partExoneree) / sommeAbattementsTotaux)
+      + arrondiDemiBas(abattement.plafondFoyer * partExoneree / sommeAbattementsTotaux);
+  // Sans plancher à 0 : l'arrondi des parts peut laisser −1 € (simulateur officiel 2026 : 1AS 44 390 +
+  // 1AH 44 390 → 1AH retenu 44 391, RFR 84 342).
+  const abattementExonere = abattementTotal - abattementImposable;
   const facteurPlafond = sommeAbattementsImposables > 0 ? abattementImposable / sommeAbattementsImposables : 0;
 
   const netsImposables = imposables.map((b, i) => b - abattementsImposables[i] * facteurPlafond);

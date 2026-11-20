@@ -612,7 +612,9 @@ fonciers (§4).
   CGI) ne la confirme ni ne l'infirme** : le seul exemple chiffré du BOFiP sur le taux effectif ne couvre
   qu'un cas 100 % exonéré, jamais un mélange France + exonéré comme ici. Cette formule contredirait par
   ailleurs le principe du choix unique déjà documenté et validé (voir le "Bug corrigé — 1AC/1AE"
-  ci-dessus). **Non implémentée, faute de confirmation.**
+  ci-dessus). **Implémentée depuis** : le simulateur officiel 2026 l'applique aussi sans 1GB (1AJ 80 000 +
+  1AK 9 000 + 1AC 30 000 → revenu imposable 71 000, revenu mondial 99 000, 17 493 € ; cas S65, S66), voir
+  `calculerDeclarant`.
   **Comparatif à 3 outils sur le cas réel (célibataire, 1GB inclus) : l'impôt est identique partout, le
   RFR diverge entre les outils eux-mêmes.** Kairos, le simulateur officiel IRPP et ClickImpôts donnent
   tous les trois 28 866 € d'impôt (revenu net imposable identique) mais des RFR différents : Kairos
@@ -620,7 +622,7 @@ fonciers (§4).
   rien d'autre, cohérent avec la réintégration de 1PB observée sur les cas isolés propres ci-dessous).
   Trois outils de référence qui ne s'accordent pas entre eux sur le RFR (878 € d'écart entre IRPP officiel
   et ClickImpôts) confirme que ce cas 1GB est une zone grise où même les simulateurs professionnels
-  divergent. **Décision : l'écart est laissé en l'état** — l'impôt (la donnée réellement opposable) est
+  divergent. **Décision initiale : l'écart laissé en l'état** (le cas réel n'a pas été rejoué depuis la règle des deux comparaisons France / mondial, qui peut le résorber) — l'impôt (la donnée réellement opposable) est
   exact, et le RFR de Kairos repose sur des sources primaires pour tout ce qu'il inclut ; l'écart résiduel
   est du même ordre de grandeur que la divergence entre outils de référence.
   **1PB/1PC (pourboires exonérés) réintégrés au RFR, sans plafond.** Confirmé par isolation empirique sur
@@ -842,8 +844,11 @@ fonciers (§4).
   global **4 439 € pour tout le foyer**. 1AH/1BH (second paramètre, encart taux effectif) partagent ce
   plafond, imputé d'abord sur les pensions imposables (1AL compris) : 1AH ne reçoit que le reliquat
   (`pensionsExonereesTauxEffectifNettes`, hors `totalNetImposable`) — simulateur officiel 2026 et 2027 :
-  1AS 40 000 + 1AH 10 000 → 1AH retenu 9 561 (1 € d'écart d'arrondi relevé quand 1AS et 1AH du même
-  déclarant épuisent le plafond à parts égales) ; 1AL reste isolé au prorata des pensions imposables ; (2) **1AI** (capital
+  1AS 40 000 + 1AH 10 000 → 1AH retenu 9 561. Plafond atteint sur le total : il est réparti au prorata entre
+  l'ensemble des pensions imposables et l'ensemble des pensions exonérées du foyer, chaque part arrondie à
+  l'euro, 0,50 vers le bas (1AS 25 000 + 1AH 25 000 → 2 219 + 2 219 = 4 438 €, RFR 45 562), sans plancher
+  à 0 pour 1AH (1AS 44 390 + 1AH 44 390 → 1AH retenu 44 391) ; cas S59 à S61. Écart connu de 1 € de RFR
+  quand les parts tombent sur un tiers (1AS 15 000 + 1AH 15 000 + 1BH 15 000) ; 1AL reste isolé au prorata des pensions imposables ; (2) **1AI** (capital
   des plans d'épargne retraite) imposable au barème **sans** abattement (texte explicite de la
   brochure) ; (3) **1AT** (capital retraite, option art. 163 bis CGI) hors barème : abattement spécifique
   de 10 % **non plafonné** puis taux forfaitaire **7,5 %**, dans `impotForfaitaire`, et 90 % du capital au
@@ -1415,7 +1420,7 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
 - **Contrôles de saisie** (`controlerSaisiePlusValues`, sans effet sur le calcul) : non-cumul
   `3VA`/`3SL`, `3VA` > `3UA`, `3VA + 3TK + 3TM` > 500 000 € (600 000 € pour une cession à de jeunes
   agriculteurs) ; prérequis du simulateur pour `3WP`/`3WN`/`3XN`, `NVG`/`NUA` = 4, `RUA` sans `RSL` ni
-  `RVA`, `RVA` > `RUA`, `3SL` sans `3UA`, `3SG` sans `3VG`, `RVG` = `3VG` ou `RUA` = `3UA` (double
+  `RVA`, `3SL` sans `3UA`, `3SG` sans `3VG`, `RVG` = `3VG` ou `RUA` = `3UA` (double
   imposition), `3VH` avec `3VG`/`3VT`, `3AN` avec `3BN`. Les contrôles liés à l'option 2OP sont dans
   `controlerSaisie2042`.
 - **Report 150-0 B ter** (simulateur officiel 2026) : `3WI`/`3WJ` imposés à 24 %/19 % (impôt
@@ -1429,6 +1434,8 @@ Moteur pur `calculerPlusValuesGainsDivers(input, optionBareme)`, branché dans `
   quotient) s'impute d'abord sur `RUA`, `RSL` sur le reliquat (comme `3VA` puis `3SL` sur `3UA`), et est
   réintégré au RFR (simulateur officiel 2026 et 2027 : `RUA` 200 000, `RVA` 100 000 → RFR + 25 000 au
   quotient + 100 000) ; `RVA` > `RUA` est signalé et plafonné à `RUA`.
+  Saisie incohérente `RSG` > `RVG`, `RVA` ou `RSL` au-delà de `RUA` : impôt inchangé, abattement entier
+  réintégré au RFR (`RUA` 50 000, `RVA` 100 000 → RFR + 100 000 ; cas S63, S64).
 - **Sans effet sur l'année** : `3VH` et `3BN` (moins-values déjà imputées par le déclarant avant
   saisie de `3VG`/`3AN`, reliquat reportable seulement).
 - **Hypothèses non vérifiées contre le simulateur officiel** (voir §3) : régime de
@@ -2058,9 +2065,10 @@ cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ). Absence d'effet vérifiée s
 
 **Non testable sur un foyer résident, hors périmètre** : exit tax (3TA…3YB), 3SE, 8TD, 8TM, 8TN, 8TA.
 
-**Écarts mineurs connus** : 1 € de RFR quand 1AS et 1AH d'un même déclarant épuisent le plafond à parts
-égales ; RVA supérieur à RUA plafonné à RUA (le simulateur réintègre RVA en entier au RFR, saisie
-incohérente signalée). Différences de présentation seulement : le simulateur range le crédit 8TK dans
+**Écarts mineurs connus** : 1 € de RFR quand le plafond des pensions se répartit sur des parts d'un tiers
+(1AS 15 000 + 1AH 15 000 + 1BH 15 000). Corrigés (cas S59 à S66) : arrondi des parts du plafond des pensions,
+RVA/RSL/RSG au-delà de RUA/RVG réintégrés au RFR, 1AC avec frais réels (deux comparaisons France / mondial),
+impôt sur le revenu mondial arrondi avant le taux effectif. Différences de présentation seulement : le simulateur range le crédit 8TK dans
 « Total des réductions » (pas 7US), et affiche les droits simples hors impôt sur les revenus au quotient
 (taxe 1AT comprise).
 

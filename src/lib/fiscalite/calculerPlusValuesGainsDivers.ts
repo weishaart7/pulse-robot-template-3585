@@ -159,13 +159,18 @@ export function calculerPlusValuesGainsDivers(
   const revenuExceptionnelQuotient = optionBareme
     ? Math.max(0, (input.caseRvg ?? 0) + (input.caseRua ?? 0) - abattementQuotient)
     : 0;
+  // Saisie incohérente (RSG > RVG, RVA ou RSL au-delà de RUA) : sans effet sur l'impôt, mais l'abattement
+  // entier est réintégré au RFR (simulateur officiel 2026 : RUA 50 000, RVA 100 000 → RFR + 100 000 ;
+  // RVG 50 000, RSG 80 000 → RFR + 80 000).
+  const abattementQuotientSaisi = optionBareme ? (input.caseRsg ?? 0) + (input.caseRva ?? 0) + (input.caseRsl ?? 0) : 0;
+  const excedentAbattementQuotient = Math.max(0, abattementQuotientSaisi - abattementQuotient);
 
   let bareme = 0;
   let basePFU = 0;
   let rfrHorsBareme = plusValuesImmobilieres + abattementFixe
     + abattementBspceAncien + abattementBspceCession2025 + (input.case3vq ?? 0) + capitalRisque
     + (input.case3ex ?? 0) + bspceMoinsDeTroisAns + instrumentsFinanciers + bspceAvant2018 + complementPrixReport
-    + report2012 + reportsAvantAbattement + abattementQuotient;
+    + report2012 + reportsAvantAbattement + abattementQuotient + excedentAbattementQuotient;
 
   if (optionBareme) {
     bareme += droitCommun - abattementDroitCommun + renforceApresFixe - abattementRenforce

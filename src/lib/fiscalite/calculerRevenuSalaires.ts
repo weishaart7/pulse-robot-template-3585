@@ -237,14 +237,12 @@ export interface RevenuSalairesResult {
  * donc plus dans le calcul de `netImposable` ci-dessous ; elle reste
  * seulement exposée dans le détail pour affichage.
  *
- * `fraisReelsDomestique` (1AK/1BK) et `fraisReelsExonere` (1AE/1BE) sont
- * comparés **ensemble** à l'abattement forfaitaire (choix unique par
- * déclarant, voir ci-dessus), mais **une fois les frais réels retenus comme
- * plus favorables, chacun est déduit de sa propre base** (1AK du pool
- * France + 1AF, 1AE du pool 1AC) plutôt que réparti proportionnellement —
- * vérifié empiriquement contre le simulateur officiel (écart de 495 € d'IR
- * constaté avec une répartition proportionnelle, corrigé et vérifié au
- * centime près avec une répartition par source, voir docs/fiscalite.md).
+ * `fraisReelsDomestique` (1AK/1BK) et `fraisReelsExonere` (1AE/1BE) : deux
+ * comparaisons distinctes (simulateur officiel 2026). Le revenu imposable
+ * France retient le plus élevé du forfait calculé sur la seule base imposable
+ * et de 1AK ; le revenu mondial (taux effectif) retient le plus élevé du
+ * forfait calculé sur le total, 1AC compris, et de 1AK + 1AE ; 1AC retenu =
+ * net mondial − net France (voir docs/fiscalite.md).
  * 1AF (crédit d'impôt égal à l'impôt français) n'a pas de case frais réels
  * dédiée : à défaut, il rejoint le pool France pour 1AK, comme pour
  * l'abattement forfaitaire (hypothèse non vérifiée séparément, faute de cas
@@ -286,28 +284,23 @@ export function calculerDeclarant(
   let netImposableExonereTauxEffectif: number;
   let netImposableActionnariat: number;
 
-  if (utiliseFraisReels) {
-    const poolFranceEtCreditImpot = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsActionnariat;
-    const netFranceEtCreditImpot = Math.max(0, poolFranceEtCreditImpot - Math.min(fraisReelsDomestique ?? 0, poolFranceEtCreditImpot));
-    const netExonere = Math.max(0, remunerationsExonereesTauxEffectif - Math.min(fraisReelsExonere ?? 0, remunerationsExonereesTauxEffectif));
-
-    const ratioCreditImpot = poolFranceEtCreditImpot > 0 ? remunerationsCreditImpot / poolFranceEtCreditImpot : 0;
-    netImposableCreditImpot = netFranceEtCreditImpot * ratioCreditImpot;
-    const ratioActionnariat = poolFranceEtCreditImpot > 0 ? remunerationsActionnariat / poolFranceEtCreditImpot : 0;
-    netImposableActionnariat = netFranceEtCreditImpot * ratioActionnariat;
-    netImposableExonereTauxEffectif = netExonere;
-    netTotal = netFranceEtCreditImpot + netExonere;
-  } else {
-    // Plafond imputé d'abord sur les rémunérations imposables (France, 1AF, actionnariat) ; 1AC/1BC ne
-    // reçoit que le reliquat de l'abattement calculé sur le total (simulateur officiel 2026 et 2027 :
-    // 1AJ 150 000 + 1AC 50 000 → 1AC retenu 50 000 ; 1AJ 3 000 + 1AC 30 000 → 1AC retenu 27 209).
+  {
+    // Deux comparaisons distinctes (simulateur officiel 2026, 1AJ 80 000 + 1AC 30 000) :
+    // - revenu imposable France : forfait calculé sur la seule base imposable (France, 1AF, actionnariat)
+    //   ou 1AK, le plus élevé (1AK 9 000 → net 71 000 ; 1AK 2 000 + 1AE 12 000 → net 72 000) ;
+    // - revenu mondial (taux effectif) : forfait calculé sur le total, 1AC compris, ou 1AK + 1AE, le plus
+    //   élevé ; 1AC/1BC retenu = net mondial − net France (1AK 9 000 → 28 000 ; 1AK 2 000 + 1AE 12 000 → 24 000).
+    // Au forfait, le plafond est donc imputé d'abord sur l'imposable, 1AC ne recevant que le reliquat
+    // (1AJ 150 000 + 1AC 50 000 → 1AC retenu 50 000 ; 1AJ 3 000 + 1AC 30 000 → 1AC retenu 27 209).
     const baseImposable = baseApresAbattementSpecifique + remunerationsCreditImpot + remunerationsActionnariat;
     const abattementImposable = baseImposable <= 0
       ? 0
       : Math.round(Math.min(abattement.plafond, Math.max(abattement.plancher, baseImposable * ABATTEMENT_TAUX), baseImposable));
-    const netImposableTotal = baseImposable - abattementImposable;
-    netImposableExonereTauxEffectif = Math.max(0,
-      remunerationsExonereesTauxEffectif - Math.max(0, abattementForfaitaire - abattementImposable));
+    const deductionImposable = Math.min(baseImposable, Math.max(abattementImposable, fraisReelsDomestique ?? 0));
+    const netImposableTotal = baseImposable - deductionImposable;
+    const deductionMonde = utiliseFraisReels ? (fraisReels ?? 0) : abattementForfaitaire;
+    netImposableExonereTauxEffectif = Math.max(0, Math.min(remunerationsExonereesTauxEffectif,
+      baseTotale - deductionMonde - netImposableTotal));
     netTotal = netImposableTotal + netImposableExonereTauxEffectif;
     netImposableCreditImpot = baseImposable > 0 ? netImposableTotal * remunerationsCreditImpot / baseImposable : 0;
     netImposableActionnariat = baseImposable > 0 ? netImposableTotal * remunerationsActionnariat / baseImposable : 0;

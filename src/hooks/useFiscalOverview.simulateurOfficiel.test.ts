@@ -637,6 +637,46 @@ const CAS: Record<string, Cas> = {
     saisies: { foyer: FOYER, salaires: { case1aj: 900000 }, reductions: { caseHyj: 150000 } },
     attendu: { revenuFiscalReference: 885445, droitsSimples: 374974, impotNet: 286559, parts: 1, prelevementsSociaux: 0, tmi: 0.45 },
   },
+  S59: {
+    description: 'plafond pensions atteint : parts imposable et exonérée arrondies, 0,50 vers le bas (4 438 €)',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980 }, pensions: { case1as: 25000 }, exoneres: { case1ah: 25000 } },
+    attendu: { parts: 1, revenuFiscalReference: 45562, droitsSimples: 3345, impotNet: 3345, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  S60: {
+    description: 'plafond pensions du couple : parts imposable et exonérée du foyer (4 438 €)',
+    saisies: { foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1980, anneeNaissanceDeclarant2: 1980 }, pensions: { case1as: 25000, case1bs: 25000 }, exoneres: { case1ah: 25000, case1bh: 25000 } },
+    attendu: { parts: 2, revenuFiscalReference: 95562, droitsSimples: 7093, impotNet: 7093, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  S61: {
+    description: 'plafond pensions épuisé par 1AS : l\'arrondi laisse −1 € d\'abattement à 1AH',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980 }, pensions: { case1as: 44390 }, exoneres: { case1ah: 44390 } },
+    attendu: { parts: 1, revenuFiscalReference: 84342, droitsSimples: 8719, impotNet: 8719, prelevementsSociaux: 0, tmi: 0.3 },
+  },
+  S62: {
+    description: 'taux effectif : impôt sur le revenu mondial arrondi à l\'euro avant le prorata',
+    saisies: { foyer: { ...FOYER, situationFamille: 'marie', anneeNaissanceDeclarant1: 1980, anneeNaissanceDeclarant2: 1980 }, pensions: { case1as: 30000, case1bs: 10000 }, exoneres: { case1bh: 20000 } },
+    attendu: { parts: 2, revenuFiscalReference: 55561, droitsSimples: 2307, impotNet: 1868, prelevementsSociaux: 0, tmi: 0.11 },
+  },
+  S63: {
+    description: 'RVA supérieur à RUA : abattement entier réintégré au RFR, impôt inchangé',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 52000 }, rcm: { case2op: true }, plusValues: { caseRua: 50000, caseNua: 4, caseRva: 100000 } },
+    attendu: { parts: 1, revenuFiscalReference: 146800, droitsSimples: 7144, impotNet: 7144, prelevementsSociaux: 9300, tmi: 0.3 },
+  },
+  S64: {
+    description: 'RSG supérieur à RVG : abattement entier réintégré au RFR',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1975 }, salaires: { case1aj: 52000 }, rcm: { case2op: true }, plusValues: { caseRvg: 50000, caseNvg: 4, caseRsg: 80000 } },
+    attendu: { parts: 1, revenuFiscalReference: 126800, droitsSimples: 7144, impotNet: 7144, prelevementsSociaux: 9300, tmi: 0.3 },
+  },
+  S65: {
+    description: '1AC au forfait sur le total, 1AJ aux frais réels 1AK plus élevés que le forfait France',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980 }, salaires: { case1aj: 80000, case1ak: 9000 }, exoneres: { case1ac: 30000 } },
+    attendu: { parts: 1, revenuFiscalReference: 99000, droitsSimples: 17493, impotNet: 17493, prelevementsSociaux: 0, tmi: 0.41 },
+  },
+  S66: {
+    description: 'frais réels 1AK + 1AE retenus pour le revenu mondial, forfait France pour 1AJ',
+    saisies: { foyer: { ...FOYER, anneeNaissanceDeclarant1: 1980 }, salaires: { case1aj: 80000, case1ak: 2000 }, exoneres: { case1ac: 30000, case1ae: 12000 } },
+    attendu: { parts: 1, revenuFiscalReference: 96000, droitsSimples: 17371, impotNet: 17371, prelevementsSociaux: 0, tmi: 0.41 },
+  },
   S57: {
     description: 'quotient : ID1 et ID2 arrondis avant l\'écart × 4 (64 532 €), TMI 41 %',
     saisies: {
