@@ -35,6 +35,12 @@ describe('controlerSaisie2042 — saisies refusées par le simulateur officiel',
     for (const code of ['2TT', '3SG', 'RVG', '4BY', '5HY', '6NT']) expect(contient(a, code)).toBe(true);
   });
 
+  it('cadre 4 : déficit foncier 4BB/4BC incompatible avec 4BA et 4BE (refus du simulateur)', () => {
+    const a = controler({ fonciers: { case4ba: 5000, case4be: 3000, case4bb: 2000, case4bc: 8000 } });
+    expect(a.filter(t => t.includes('4BB, 4BC'))).toHaveLength(2);
+    expect(controler({ fonciers: { case4bb: 2000, case4bc: 8000 } })).toEqual([]);
+  });
+
   it('cadre 7 : prestation compensatoire incohérente, scolarité et garde au-delà des enfants', () => {
     const a = controler({ reductions: { case7wn: 20000, case7wo: 10000, case7wm: 5000, case7ea: 1, case7ec: 1, case7eb: 1, case7ga: 3000 } });
     for (const code of ['7WN ne peut', '7WM', '7EA', '7EB', '7GA']) expect(contient(a, code)).toBe(true);

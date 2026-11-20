@@ -126,7 +126,9 @@ export const RevenusFonciersForm = ({ onSaved }: RevenusFonciersFormProps) => {
             ? <LectureLigne label="Revenus fonciers imposables" code="4BA" value={declaration2044.case4BA} />
             : <SingleMontantLigne label="Revenus fonciers imposables" extra="parts de sociétés immobilières seulement" code="4BA" value={rf.case4ba} onChange={v => update('case4ba', v)} />}
           <SingleMontantLigne label="Dont revenus de source étrangère" extra="ouvrant droit à un crédit d'impôt égal à l'impôt français" aide="Crédit égal à l'impôt français : IR et prélèvements sociaux neutralisés. Ne pas utiliser pour les PS si la convention exclut la CSG-CRDS (Royaume-Uni, Inde, Bahreïn, Monaco)." code="4BL" value={rf.case4bl} onChange={v => update('case4bl', v)} />
-          <LectureLigne label="Déficit imputable sur les revenus fonciers" code="4BB" value={declaration2044?.case4BB ?? null} />
+          {declaration2044
+            ? <LectureLigne label="Déficit imputable sur les revenus fonciers" code="4BB" value={declaration2044.case4BB} />
+            : <SingleMontantLigne label="Déficit imputable sur les revenus fonciers" extra="reporté sur les revenus fonciers des 10 années suivantes" code="4BB" value={rf.case4bb ?? null} onChange={v => update('case4bb', v)} />}
           {declaration2044
             ? <LectureLigne label="Déficit imputable sur le revenu global" code="4BC" value={declaration2044.case4BC} />
             : <SingleMontantLigne label="Déficit imputable sur le revenu global" extra="retranché du revenu imposable" code="4BC" value={rf.case4bc ?? null} onChange={v => update('case4bc', v)} />}

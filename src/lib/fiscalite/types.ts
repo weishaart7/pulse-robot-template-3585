@@ -364,6 +364,8 @@ export interface RevenusFonciers2042Input {
   case4eb: number | null;
   /** Déficit foncier imputable sur le revenu global (sans 2044 ; avec une 2044, celle-ci le calcule) */
   case4bc?: number | null;
+  /** Déficit foncier imputable sur les revenus fonciers (sans 2044) : reporté, sans effet sur l'impôt de l'année. */
+  case4bb?: number | null;
 }
 
 /**

@@ -3,10 +3,10 @@ import { CASES_INFORMATIVES_2027, TOUTES_CASES_INFORMATIVES_2027 } from './cases
 import { CASES_2027 } from './cases2027';
 
 describe('cases informatives de la déclaration 2027', () => {
-  it('115 cases, sans doublon ni recouvrement avec les cases 2027 à effet', () => {
+  it('114 cases (4BB saisie dans le cadre 4), sans doublon ni recouvrement avec les cases 2027 à effet', () => {
     const codes = TOUTES_CASES_INFORMATIVES_2027.map((c) => c.code);
-    expect(codes).toHaveLength(115);
-    expect(new Set(codes).size).toBe(115);
+    expect(codes).toHaveLength(114);
+    expect(new Set(codes).size).toBe(114);
     const avecEffet = new Set(Object.values(CASES_2027).flat().map((c) => c.replace(/^case/, '').toUpperCase()));
     expect(codes.filter((c) => avecEffet.has(c))).toEqual([]);
   });

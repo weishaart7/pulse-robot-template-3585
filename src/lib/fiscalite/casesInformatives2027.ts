@@ -66,7 +66,6 @@ export const CASES_INFORMATIVES_2027: readonly LigneCasesInformatives[] = [
   { formulaire: 'capitauxMobiliers', groupe: VENTILATION, libelle: 'Prélèvement sur les produits 2XX perçus du 20.2 au 31.12.2026', type: 'montant', cases: [['2XW', 'Montant']] },
   // Cadres 3 et 4
   { formulaire: 'plusValues', groupe: 'Plus-values en report d\'imposition (art. 150-0 B ter CGI)', libelle: 'Plus-values réalisées en 2026', type: 'montant', cases: [['3WH', 'Avant abattement'], ['3WG', 'Après abattement']] },
-  { formulaire: 'fonciers', groupe: 'Revenus fonciers', libelle: 'Déficit imputable sur les revenus fonciers', type: 'montant', cases: [['4BB', 'Montant']] },
   // Cadre 5
   ...regime(AGRICOLES, ['5AD', '5BD', '5ED'], ['5AF', '5AI', '5AH']),
   ...dontPlusMoinsValues(AGRICOLES, 'Bénéfice réel', ['5AQ', '5BQ', '5CU'], ['5AY', '5BY', '5CV']),

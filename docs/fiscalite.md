@@ -298,7 +298,7 @@ fonciers (§4).
     taxe holdings 8HA/8HB/8HC (8HC ajoutée à l'impôt hors réductions), acomptes de PS 8HU/8IU, 8WB (comme 8WA),
     8PX (comme 8PY). Saisie : section « Déclaration 2027 » du cadre 7
     ([libellesCases2027.ts](src/lib/fiscalite/libellesCases2027.ts)) et champs à côté des jumelles ;
-  - **cases créées sans effet (115)** : saisissables pour mémoire, jamais lues par le moteur (table
+  - **cases créées sans effet (114)** : saisissables pour mémoire, jamais lues par le moteur (table
     `cases_informatives_2042`, voir §3) ;
   - **cases retirées (142)** : chacune testée sur calc-2027 (1 000 € saisis). 134 sont sans effet à partir des
     revenus 2026, comme sur le simulateur (`CASES_SUPPRIMEES_2027`, `masquerCasesSupprimees2027`), et une
@@ -1460,7 +1460,9 @@ revenu foncier net imposable de la 2044 de l'année (null sans 2044 ouverte). Br
 - **4BC saisi sans 2044** (`deficitImputableRevenuGlobal`) : retranché du revenu brut global (RNI et
   RFR), pas de la base des PS. Plafond légal de 10 700 € non appliqué, comme sur le simulateur officiel
   2026 (15 000 € retranchés en entier). Avec une 2044, la saisie est ignorée (`4bc_ignore_2044`).
-  Le simulateur refuse `4BC` avec `4BA` ; non contrôlé ici.
+  Le simulateur refuse `4BA` ou `4BE` avec `4BB`/`4BC` : alerte non bloquante dans `controlerSaisie2042`.
+- **4BB saisi sans 2044** (`case4bb`) : déficit reporté sur les revenus fonciers futurs, sans effet sur
+  l'impôt de l'année (vérifié sur calc-2027) ; avec une 2044, lu depuis celle-ci.
 - **4BE (micro-foncier)** : abattement de 30 % (art. 32 CGI), 70 % au barème ; PS 17,2 % sur ce net
   (revenus fonciers non concernés par la hausse de CSG de la LFSS 2026). Avertissement non bloquant si
   4BE dépasse 15 000 €. Si une 2044 est ouverte pour l'année, le micro-foncier est exclu : 4BE, 4BK et
@@ -2084,12 +2086,12 @@ bloquer le calcul.
 personnes à charge 8JV…8JZ/8KV…8KZ, plafond épargne retraite global 6PS/6PT/6PU (APS…DPU au simulateur), cases
 à cocher 8TT/8UU/8FV, texte libre RSE/RSF, 4BZ (reportée de la 2044), 7HB, 3SZ.
 
-**Cases du formulaire 2027 sans effet sur le calcul** (115) : saisissables pour mémoire à partir des revenus
+**Cases du formulaire 2027 sans effet sur le calcul** (114) : saisissables pour mémoire à partir des revenus
 2026, jamais lues par le moteur. Catalogue `casesInformatives2027.ts` (libellés du formulaire, type montant,
 case à cocher, mois, taux…), table `cases_informatives_2042` (une ligne par foyer, migration `20261120200000`),
 bloc `CasesInformatives2027` en fin de cadre (1, 2, 3, 4, 5, 8), enregistré par le bouton du cadre. Cadre 1 :
 colonnes des personnes à charge (1CV…1JE), gains en report 1NP…1OQ ; cadre 2 : ventilation avant/après le
-20.2.2026 (2DK…2XZ) ; 3WG/3WH ; 4BB ; cadre 5 : durées d'exercice, cessations, « dont » plus et moins-values à
+20.2.2026 (2DK…2XZ) ; 3WG/3WH ; cadre 5 : durées d'exercice, cessations, « dont » plus et moins-values à
 court terme, jeunes agriculteurs 5HM…5JM, paiement fractionné 5EA…5EU, moins-values à long terme des personnes
 à charge ; cadre 8 : page détail de la CDHR (8CD, 8KA…8KJ).
 

@@ -815,7 +815,6 @@ export type Database = {
           case_2xz: number | null
           case_3wg: number | null
           case_3wh: number | null
-          case_4bb: number | null
           case_5ad: number | null
           case_5af: boolean
           case_5ah: boolean
@@ -936,7 +935,6 @@ export type Database = {
           case_2xz?: number | null
           case_3wg?: number | null
           case_3wh?: number | null
-          case_4bb?: number | null
           case_5ad?: number | null
           case_5af?: boolean
           case_5ah?: boolean
@@ -1057,7 +1055,6 @@ export type Database = {
           case_2xz?: number | null
           case_3wg?: number | null
           case_3wh?: number | null
-          case_4bb?: number | null
           case_5ad?: number | null
           case_5af?: boolean
           case_5ah?: boolean
@@ -5957,6 +5954,7 @@ export type Database = {
       }
       revenus_fonciers_2042: {
         Row: {
+          case_4bb: number | null
           case_4bc: number | null
           case_4ba: number | null
           case_4bd: number | null
@@ -5974,6 +5972,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          case_4bb?: number | null
           case_4bc?: number | null
           case_4ba?: number | null
           case_4bd?: number | null
@@ -5991,6 +5990,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          case_4bb?: number | null
           case_4bc?: number | null
           case_4ba?: number | null
           case_4bd?: number | null

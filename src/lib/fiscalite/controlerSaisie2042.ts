@@ -89,6 +89,12 @@ export function controlerSaisie2042(s: Saisie2042): string[] {
     alertes.push('4BY (amortissement Robien ou Borloo) est incompatible avec le micro-foncier (4BE, 4EB).');
   }
 
+  const deficitsFonciers = ['case4bb', 'case4bc'].filter(c => lire(fonciers, c) > 0);
+  if (deficitsFonciers.length > 0) {
+    if (lire(fonciers, 'case4ba') > 0) alertes.push(`4BA (bénéfice foncier) est incompatible avec ${codes(deficitsFonciers)} (déficit foncier).`);
+    if (lire(fonciers, 'case4be') > 0) alertes.push(`Le micro-foncier (4BE) est incompatible avec ${codes(deficitsFonciers)} (déficit foncier).`);
+  }
+
   // Cadre 5
   const revenusActivite = somme(nonSalaries, REVENUS_CADRE_5);
   if (somme(nonSalaries, ['case5hy', 'case5iy', 'case5jy']) > 0 && revenusActivite <= 0) {
