@@ -76,6 +76,12 @@ export function controlerSaisie2042(s: Saisie2042): string[] {
     alertes.push(`2TT est incompatible avec ${codes(pertesPrets)} : compensez intérêts et pertes avant saisie.`);
   }
 
+  // Cadre 3 : gains et pertes de cession saisis ensemble (le simulateur exige le solde net)
+  const gainsCession = ['case3vg', 'case3vt'].filter(c => lire(plusValues, c) > 0);
+  if (lire(plusValues, 'case3vh') > 0 && gainsCession.length > 0) {
+    alertes.push(`3VH (moins-value) est incompatible avec ${codes(gainsCession)} : déclarez le solde net des cessions.`);
+  }
+
   // Cadre 3 (option barème)
   if (!optionBareme) {
     const abattements = ['case3sg', 'case3sl', 'caseRsg', 'caseRsl'].filter(c => lire(plusValues, c) > 0);
@@ -110,6 +116,10 @@ export function controlerSaisie2042(s: Saisie2042): string[] {
     if (somme(charges, cotisations) > 0 && lire(charges, plafond) <= 0) {
       alertes.push(`${codes(cotisations)} (${qui}) : cotisations d'épargne retraite sans plafond ${codes([plafond])} saisi, aucune déduction.`);
     }
+  }
+
+  if (charges?.case6qr && (lire(charges, 'case6ps') <= 0 || lire(charges, 'case6pt') <= 0)) {
+    alertes.push('6QR : mutualisation des plafonds d\'épargne retraite demandée sans plafond 6PS et 6PT pour les deux déclarants.');
   }
 
   // Cadre 7

@@ -238,8 +238,8 @@ fonciers (§4).
 - **Contrôles de saisie entre cadres** (`controlerSaisie2042.ts`, alertes non bloquantes affichées dans
   `FiscalOverviewCard`, sans effet sur le calcul) : saisies refusées par le simulateur officiel 2026 et 2027
   qu'Aurevia calcule — 1SM/1DN au-delà de 6QS/6QT, 1NY > 1NX, 1AR…1DR sans 8TK, 2TT avec 2TU…2TX,
-  abattements 3SG/3SL/RSG/RSL et quotient RVG/RUA sans 2OP, 4BY avec micro-foncier, 5HY/5IY/5JY sans revenu
-  professionnel, cotisations PER sans plafond, 7WN > 7WO, 7WM < 7WN, 7WP avec 7WN/7WO, scolarité et garde
+  3VH avec 3VG/3VT, abattements 3SG/3SL/RSG/RSL et quotient RVG/RUA sans 2OP, 4BY avec micro-foncier, 4BA ou 4BE avec 4BB/4BC, 5HY/5IY/5JY sans revenu
+  professionnel, cotisations PER sans plafond, 6QR sans 6PS et 6PT, 7WN > 7WO, 7WM < 7WN, 7WP avec 7WN/7WO, scolarité et garde
   au-delà des enfants déclarés, 8VL sans 8PL, 8VM/8WM/8UM sans 8PM, plusieurs taux de pension étrangère
   par déclarant, crédits d'entreprise ou agricoles sans revenu correspondant, 8UY sans recettes micro.
 - **Plafonnement global des avantages fiscaux sur les avantages imputés.** `calculerPlafonnementNiches.ts`

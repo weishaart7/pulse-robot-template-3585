@@ -41,6 +41,17 @@ describe('controlerSaisie2042 — saisies refusées par le simulateur officiel',
     expect(controler({ fonciers: { case4bb: 2000, case4bc: 8000 } })).toEqual([]);
   });
 
+  it('cadre 3 : 3VH avec 3VG ou 3VT (refus du simulateur)', () => {
+    expect(controler({ plusValues: { case3vg: 20000, case3vt: 1000, case3vh: 4000 } }).filter(a => a.includes('3VH'))).toHaveLength(1);
+    expect(controler({ plusValues: { case3vh: 4000 } })).toEqual([]);
+  });
+
+  it('cadre 6 : 6QR sans plafond pour les deux déclarants (refus du simulateur)', () => {
+    const avec = (charges: Record<string, unknown>) => controler({ charges }).filter(a => a.includes('6QR'));
+    expect(avec({ case6qr: true, case6ps: 12000 })).toHaveLength(1);
+    expect(avec({ case6qr: true, case6ps: 12000, case6pt: 12000 })).toEqual([]);
+  });
+
   it('cadre 7 : prestation compensatoire incohérente, scolarité et garde au-delà des enfants', () => {
     const a = controler({ reductions: { case7wn: 20000, case7wo: 10000, case7wm: 5000, case7ea: 1, case7ec: 1, case7eb: 1, case7ga: 3000 } });
     for (const code of ['7WN ne peut', '7WM', '7EA', '7EB', '7GA']) expect(contient(a, code)).toBe(true);
